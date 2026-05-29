@@ -22,12 +22,12 @@ class MyCubit extends Cubit<MyState> {
 
 ### `stateChanged`
 
-Fired after every state change via `emit`, `update`, or `patch`.
+Fired once per **microtask flush** after state changes via `emit`, `update`, or `patch`. Multiple synchronous mutations are coalesced — the handler receives the final state once, not once per call.
 
 ```ts
 this.onSystemEvent('stateChanged', ({ state, previousState }) => {
-  // state: the new state
-  // previousState: the state before the change
+  // state: the final state after the flush
+  // previousState: the state before any mutations in this flush
 });
 ```
 

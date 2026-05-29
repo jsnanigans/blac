@@ -205,19 +205,19 @@ const analyticsPlugin: BlacPlugin = {
   name: 'analytics',
   version: '1.0.0',
 
-  onInstanceCreated(instance) {
+  onCreated(ctx, instance) {
     analytics.track('bloc_created', { name: instance.name });
   },
 
-  onStateChanged(instance, prev, next, context) {
+  onStateChange(ctx, prev, next, paths) {
     analytics.track('state_changed', {
-      name: instance.name,
+      name: next.name,
       from: prev,
       to: next,
     });
   },
 
-  onInstanceDisposed(instance) {
+  onDestroyed(ctx, instance) {
     analytics.track('bloc_disposed', { name: instance.name });
   },
 };

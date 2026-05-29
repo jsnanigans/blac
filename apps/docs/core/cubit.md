@@ -51,13 +51,20 @@ this.update((current) => ({ ...current, count: current.count + 1 }));
 
 ### `patch(partial)`
 
-Shallow-merge partial changes into the current state. Use when you want to update some fields without touching others.
+Deep-merge partial changes into the current state. Use when you want to update some fields without touching others.
 
 ```ts
 this.patch({ loading: true });
 ```
 
-`patch` skips the update if all provided values are identical to current state (using `Object.is`).
+The argument type is `DeepPartial<S>`, so nested objects can be patched without spreading the full structure:
+
+```ts
+// Only updates user.profile.name — other profile fields are preserved
+this.patch({ user: { profile: { name: 'Alice' } } });
+```
+
+`patch` skips the update if all provided values are identical to current state (using `Object.is` at the leaf level).
 
 ### Choosing a method
 

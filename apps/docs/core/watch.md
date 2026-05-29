@@ -65,18 +65,18 @@ const stop = watch(instance(UserCubit, 'user-123'), (user) => {
 
 ## watch vs subscribe
 
-`subscribe` on a state container fires on **every** state change. `watch` only fires when properties your callback actually reads have changed. This makes `watch` more efficient for selective observation.
+`subscribe` on a state container fires once per **microtask flush** — multiple synchronous mutations are coalesced into a single notification. `watch` only fires when properties your callback actually reads have changed. This makes `watch` more efficient for selective observation.
 
 ```ts
-// subscribe: fires on ANY state change
+// subscribe: fires once per flush, on any state change
 const unsub = ensure(UserCubit).subscribe((state) => {
   console.log(state.name);
 });
 
-// watch: fires only when accessed properties change
+// watch: fires once per flush, only when accessed properties change
 const stop = watch(UserCubit, (user) => {
   console.log(user.state.name); // only re-runs when 'name' changes
 });
 ```
 
-See also: [tracked](/core/tracked), [Patterns & Recipes](/guide/patterns)
+See also: [Patterns & Recipes](/guide/patterns)

@@ -16,24 +16,20 @@ BlaC takes a different approach:
 
 ## Architecture
 
-BlaC has three layers:
+BlaC has two layers:
 
 ```
 ┌─────────────────────────────┐
-│  React        useBloc hook  │  Framework-specific binding
-├─────────────────────────────┤
-│  Adapter      Tracking &    │  Subscription strategies,
-│               subscriptions │  proxy-based change detection
+│  React        useBloc hook  │  Framework-specific binding,
+│               BlocProvider  │  concurrent-mode safe subscriptions
 ├─────────────────────────────┤
 │  Core         Cubit,        │  State containers, registry,
-│               Registry,     │  plugins, watch utilities
-│               Plugins       │
+│               Registry,     │  plugins, watch, path-based
+│               Plugins       │  dirty tracking
 └─────────────────────────────┘
 ```
 
-**Core** (`@blac/core`) provides state containers, a global registry with ref counting, a plugin system, and utilities like `watch` and `tracked`.
-
-**Adapter** (`@blac/adapter`) bridges state containers with framework subscription models. It handles the three tracking modes (auto, manual, none) and manages proxy-based dependency detection.
+**Core** (`@blac/core`) provides state containers, a global registry with ref counting, a plugin system, and utilities like `watch`. Proxy-based dependency tracking is built in — no separate adapter package is needed.
 
 **React** (`@blac/react`) provides the `useBloc` hook built on `useSyncExternalStore` for concurrent mode safety.
 

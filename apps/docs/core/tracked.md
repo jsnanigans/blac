@@ -1,42 +1,36 @@
-# tracked
+# tracked (removed)
 
-`tracked` runs a callback and returns both the result and the list of dependencies that were accessed during execution.
+::: warning Removed in v2
+The standalone `tracked()` function has been removed. It was an internal utility that leaked implementation details. Use the alternatives below instead.
+:::
+
+## Migration
+
+### Debugging which properties a component tracks
+
+Auto-tracking now happens transparently through `useBloc`. To understand which paths trigger re-renders, use the [BlaC DevTools](/plugins/devtools) — the DevTools panel shows exactly which paths changed with each state update.
+
+### Manual subscriptions outside React
+
+Use `watch` to observe state changes reactively outside React. `watch` tracks which properties your callback reads and only re-runs when those change:
 
 ```ts
-import { tracked, ensure } from '@blac/core';
+import { watch } from '@blac/core';
 
-const { result, dependencies } = tracked(() => {
-  const user = ensure(UserCubit);
-  return user.state.name;
+const stop = watch(UserCubit, (user) => {
+  console.log(user.state.name); // only re-runs when 'name' changes
 });
-
-// result: the user's name
-// dependencies: Set of tracked property paths
 ```
 
-## When to use
+### Testing which properties are accessed
 
-- **Debugging auto-tracking** — Check which properties a piece of code accesses to understand why re-renders happen
-- **Building custom reactive systems** — Use the dependency list to set up manual subscriptions
-- **Testing** — Verify that your code only reads the properties you expect
-
-## Advanced: `createTrackedContext`
-
-For fine-grained control, create a tracking context manually:
+Write an assertion against the state directly, or subscribe to verify a specific property changed:
 
 ```ts
-import { createTrackedContext, ensure } from '@blac/core';
-
-const ctx = createTrackedContext();
-ctx.start();
-
-const user = ctx.proxy(ensure(UserCubit));
-const name = user.state.name;
-
-const deps = ctx.stop();
-// deps contains the accessed property paths
+const cubit = ensure(UserCubit);
+const before = cubit.state.name;
+cubit.setName('Alice');
+expect(cubit.state.name).toBe('Alice');
 ```
-
-This is useful when you need to track across multiple operations or integrate with custom frameworks.
 
 See also: [watch](/core/watch), [Dependency Tracking](/react/dependency-tracking)
