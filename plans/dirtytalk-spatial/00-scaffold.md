@@ -208,12 +208,17 @@ export abstract class SceneNode {
 
 ```ts
 import { SceneNode } from './scene-node';
-import type { DirtyRegion } from './types';
+import type { DirtyRegion, Rect } from './types';
 import type { DirtyChannel, Scheduler } from '@dirtytalk/engine';
 
-/** Renderer interface: the spatial package ships this contract, not an implementation. */
+/**
+ * Renderer interface: the spatial package ships this contract, not an implementation.
+ * `paintRegion` is the bounding rect of the frame's paint damages (Phase 3 computes
+ * it via `unionRects`). Keep this signature stable from scaffold onward so the
+ * Phase 1 README examples don't drift from the Phase 3 implementation.
+ */
 export interface Renderer2D {
-  beginFrame(region: DirtyRegion): void;
+  beginFrame(paintRegion: Rect): void;
   endFrame(): void;
 }
 

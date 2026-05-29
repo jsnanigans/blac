@@ -176,7 +176,7 @@ Use `SyncScheduler` so writes flush immediately.
 
 ```ts
 import { describe, expect, it, vi } from 'vite-plus/test';
-import { SyncScheduler } from '@dirtytalk/engine';
+import { SyncScheduler, ManualScheduler } from '@dirtytalk/engine';
 import { SceneNode } from './scene-node';
 import { SceneRoot } from './scene-root';
 import type { Renderer2D, Rect, DamageKind } from './types';
@@ -208,7 +208,7 @@ Required cases:
 2. **A child's `markDamaged` reaches the renderer.** Adopt a `TestNode` (with `bounds`), call its public mark; `renderer.beginFrame` runs with the bounds rect.
 3. **`endFrame` runs after `beginFrame`** in order.
 4. **Single damage entry's bounding region equals its rect.**
-5. **Multiple damage entries' bounding region equals `unionRects([...])`.**
+5. **Multiple damage entries' bounding region equals `unionRects([...])`.** Note: this case is **not** reachable with `SyncScheduler`, because `_emitDamage` marks one `Damage` per call and Sync flushes immediately — so each `_renderFrame` sees a single-entry `dirty` and the `unionRects` branch never runs. To exercise it, either (a) use `ManualScheduler`, call two marks, then `pump()` so both entries accumulate into one flush, or (b) call `root.channel.mark([d1, d2])` directly with a multi-entry region. Use one of these for this case only; the rest of the suite stays on `SyncScheduler`.
 6. **Detached node mutation doesn't reach the renderer.**
 7. **`paint(_layer)` walks children in adoption order.** Adopt three nodes; verify their paint methods called in the right order.
 8. **`data`-kind damage triggers `rebuildData` first**, then `doLayout`, then paint. Use a node with both hooks plus a spy ordering vector.

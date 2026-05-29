@@ -37,7 +37,7 @@ In scope:
 - One cross-unit integration test proving the pieces compose.
 
 Out of scope (separate plans / future):
-- Concrete GPU renderer (`Renderer2D`, layer compositing, scissor/tile dispatch). `SceneRoot` calls `renderer.beginFrame(region)` / `endFrame()` / `walkAndPaint(region)` as abstract hooks; the package ships an interface, not an implementation.
+- Concrete GPU renderer (`Renderer2D`, layer compositing, scissor/tile dispatch). `SceneRoot` calls `renderer.beginFrame(paintRegion)` / `endFrame()` as abstract hooks (and walks its own children to paint between them); the package ships an interface, not an implementation.
 - The plot library (`MountedPlot`, mark layers, viewport, axes) — covered conceptually in `02-insomni.md` but lives in the future `insomni` package.
 - `AnimatedValue` migration — references the spec's plan to swap `invalidator` for `node: SceneNode`, but the animator itself lives elsewhere.
 - v2 spatial-index `RectSpace` (occupancy grid). v1 ships the plain-array representation per spec § "v1 representation".
@@ -149,7 +149,7 @@ Each task file contains: goal + acceptance criteria, inputs, owned files, do-not
 ## Acceptance criteria for the plan as a whole
 
 - [ ] `packages/dirtytalk-spatial/` builds, typechecks, lints, formats, and tests green via `vp run {build,typecheck,lint,format:check,test,verify}`.
-- [ ] Public surface (in `dist/index.d.ts`): `Rect`, `rectOverlaps`, `rectEquals`, `unionRects`, `rectClamp`, `Damage`, `DamageKind`, `RectSpace`, `SceneNode`, `SceneRoot`, `Renderer2D` (interface), `PointerRouter`, `PointerEvent` (re-shape).
+- [ ] Public surface (in `dist/index.d.ts`): `Rect`, `rectOverlaps`, `rectEquals`, `unionRects`, `rectClamp`, `Damage`, `DamageKind`, `RectSpace`, `SceneNode`, `SceneRoot`, `Renderer2D` (interface), `PointerRouter`, `SpatialPointerEvent` (surface-agnostic event shape), `PointerHandler`.
 - [ ] One end-to-end integration test exercises Root + Node + Channel + a stub Renderer end-to-end.
 - [ ] No imports from `@blac/*` or `@dirtytalk/structural` anywhere in the package.
 

@@ -104,6 +104,6 @@ Keep it ≤ ~280 lines. The engine README is the target.
 
 - **Don't write detailed API docs that go stale.** Put signatures and parameter explanations in TSDoc on the source; the README is for concepts and quickstarts.
 - **Don't claim performance numbers.** Architectural claims OK; benchmark numbers no.
-- **Don't include a GPU code snippet** — the renderer is out of scope. Use a stub `Renderer2D` that `console.log`s the damage region in the example.
+- **Don't include a GPU code snippet** — the renderer is out of scope. Use a stub `Renderer2D` that `console.log`s the paint region in the example. The interface is `{ beginFrame(paintRegion: Rect): void; endFrame(): void }` — `beginFrame` takes a single bounding `Rect`, not the damage array. Match this exactly so the example doesn't contradict the Phase 3 implementation.
 - **Don't pad with FAQ or "Comparison with X" sections.** Cut.
 - **Don't reference `MountedPlot` or plot-specific concepts.** Those belong in the future insomni package's README.

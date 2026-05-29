@@ -48,14 +48,14 @@ One file, four test cases. Use public package barrel imports only (`from './inde
 
 ### Test 1 — Damage flows from node mutation to renderer
 
-- Stub `Renderer2D` that records `beginFrame(region)` / `endFrame()` calls.
+- Stub `Renderer2D` that records `beginFrame(paintRegion)` / `endFrame()` calls (`paintRegion` is a `Rect`).
 - `class TestButton extends SceneNode` with a private `_pressed: boolean` field and a `setPressed(v)` setter that does `this._pressed = v; this.markDamaged('paint')`.
 - Construct `SceneRoot` with `SyncScheduler`, bounds `{x:0,y:0,w:200,h:200}`.
 - Adopt a `TestButton` with bounds `{x:10,y:10,w:50,h:20}`.
 - Call `button.setPressed(true)`.
-- Assert: renderer received `beginFrame` with a rect that contains the button's bounds (could be exactly the button bounds, or unioned with the initial adopt-time `paint` damage if Phase 2's `adoptChild`-emit hasn't been overridden by the test setup).
+- Assert: renderer received `beginFrame` with a rect that contains the button's bounds.
 
-Hint: do the initial `adoptChild` *before* construction completes the scheduler subscription, or use `SyncScheduler` and flush the adoption frame, then reset the recorder before the test mutation.
+Hint: adopting a child directly onto the root **does** emit an adopt-time `paint` (Phase 2's `_root()` resolves to the root itself), so under `SyncScheduler` the adoption already produces one frame. Reset the recorder after the `adoptChild` frame and before `button.setPressed(true)` so the assertion sees only the mutation's frame.
 
 ### Test 2 — Render pipeline stage ordering
 

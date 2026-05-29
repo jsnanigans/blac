@@ -11,7 +11,9 @@
 
 Implement `SceneNode` — the abstract base class for anything that paints. It owns its bounds, contributes damage to the root channel when mutated, and provides the `batch` / `setBounds` / `markDamaged` / `adoptChild` primitives consumed by widget subclasses.
 
-`SceneNode` doesn't know about the channel directly; it walks the parent chain to a `SceneRoot` and calls the root's `_emitDamage(...)`. The root holds the channel; Phase 3 wires it.
+`SceneNode` doesn't know about the channel directly; it walks the node-and-ancestors chain to a `SceneRoot` and calls the root's `_emitDamage(...)`. The root holds the channel; Phase 3 wires it.
+
+> **`_root()` includes `this`.** The walk starts at `this`, not `this.parent`, so a node that is itself a root resolves to itself. This is what makes `SceneRoot.adoptChild(widget)` emit the adopt-time `paint` for a *direct* child of the root — if `_root()` only walked `this.parent`, the root's own `_root()` would be `null` and direct children would never get their first paint (and, since v1 is fully damage-driven with no forced initial render, a static scene attached only to the root would never draw a frame at all).
 
 ---
 
@@ -43,7 +45,7 @@ Verify before starting: `grep "not implemented" src/rect.ts src/rect-space.ts` r
 ### Class shape
 
 ```ts
-import { rectClamp, rectEquals } from './rect';
+import { rectClamp, rectEquals, unionRects } from './rect';
 import type { Rect, DamageKind, Damage } from './types';
 
 export interface SceneNodeOptions {
@@ -110,7 +112,10 @@ export abstract class SceneNode {
 
 ```ts
 private _root(): SceneRootLike | null {
-  let n: SceneNode | null = this.parent;
+  // Start at `this`, not `this.parent` — a node that is itself a root must
+  // resolve to itself, otherwise SceneRoot.adoptChild can't emit the
+  // adopt-time paint for its own direct children.
+  let n: SceneNode | null = this;
   while (n) {
     if (isSceneRoot(n)) return n;
     n = n.parent;
@@ -168,7 +173,7 @@ private _emitBatchedDamage(buffer: Damage[]): void {
 }
 ```
 
-Import `unionRects` from `./rect`. The batch unions same-kind damages into one entry (smaller list for the renderer). Across-kind damages stay separate because the pipeline cares about kind.
+`unionRects` is imported from `./rect` in the top import block. The batch unions same-kind damages into one entry (smaller list for the renderer). Across-kind damages stay separate because the pipeline cares about kind.
 
 ### `setBounds(next)`
 
@@ -271,7 +276,7 @@ Required cases:
 7. **`batch` collects same-kind damages into one entry** with a union rect.
 8. **`batch` emits per-kind entries** when multiple kinds present.
 9. **Nested `batch`** — outer batch absorbs inner; only outer emits.
-10. **`adoptChild` emits a `paint` for the child's bounds** when the parent is connected to a root.
+10. **`adoptChild` emits a `paint` for the child's bounds** when the parent is connected to a root. Cover both shapes: (a) adopting directly onto a `StubRoot` (`root.adoptChild(child)` — `_root()` resolves to the root *itself*, so the emit fires), and (b) adopting onto an intermediate node that is itself attached to a root.
 11. **`removeChild` emits a `paint` for the child's prior bounds** before clearing parent.
 12. **`clipsOverflow` ancestor clips a descendant's damage rect.**
 13. **Multiple `clipsOverflow` ancestors clip cumulatively.**
@@ -320,6 +325,7 @@ Required cases:
 
 ## Pitfalls
 
+- **`_root()` must start the walk at `this`, not `this.parent`.** If it starts at the parent, `SceneRoot`'s own `_root()` returns `null` and `adoptChild` skips the adopt-time paint for every direct child of the root — meaning a static scene attached only to the root never produces damage and never draws a first frame. Starting at `this` is behaviorally identical for non-root nodes (`isSceneRoot(this)` is false, so it immediately advances to the parent).
 - **`_emitDamage` is a structural-typing contract,** not a class hierarchy contract. Don't import `SceneRoot` into this file — that's a circular import the bundler has to chase. Use the local `SceneRootLike` interface + duck-typing check.
 - **`adoptChild` must remove from prior parent first.** Forgetting causes the node to appear in two children arrays — silent corruption. The spec implies it; make the implementation explicit.
 - **`removeChild` order: emit damage first, then clear `parent`.** Cleared parent means `markDamaged` no-ops, so the erase damage is lost. Tests catch this.
