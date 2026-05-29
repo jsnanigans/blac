@@ -3,7 +3,7 @@ import {
   MicrotaskScheduler,
   type Scheduler,
 } from '@dirtytalk/engine';
-import { diffAlongSkeleton, pathsFromPatch } from './diff';
+import { changedPathsFromPatch, diffAlongSkeleton } from './diff';
 import { PathInterner } from './path-interner';
 
 /**
@@ -11,7 +11,7 @@ import { PathInterner } from './path-interner';
  *
  * - Plain-object branches recurse so nested patches type-check without casts.
  * - Arrays are accepted as `ReadonlyArray<DeepPartial<U>>` (matching runtime:
- *   `pathsFromPatch` treats arrays as leaves, not per-index expandable).
+ *   `deepMerge` treats arrays as leaves, not per-index expandable).
  * - `Date | Map | Set | RegExp` are kept as-is; without this carve-out TS
  *   would try to partial their internal prototype properties.
  * - Primitives and functions pass through unchanged.
@@ -53,9 +53,10 @@ export interface StructuralContainerOptions {
 
 /**
  * `StructuralContainer<S>` — owns a piece of state, a `DirtyChannel<PathSet>`,
- * and a consumer registry. Mutations route through `pathsFromPatch` (for
- * `patch`) or `diffAlongSkeleton` (for `emit`) so only consumers whose
- * observed paths intersect the change wake up.
+ * and a consumer registry. Mutations mark only paths whose values actually
+ * changed: `emit` value-diffs along the observed skeleton (`diffAlongSkeleton`),
+ * `patch` value-filters the patch shape (`changedPathsFromPatch`). Consumers
+ * (and raw subscribers) whose observed paths didn't change value stay asleep.
  *
  * Single-consumer flows short-circuit to `ALL_PATHS` to avoid the diff cost.
  */
@@ -136,12 +137,7 @@ export abstract class StructuralContainer<S> {
         next,
         this._skeleton,
         this.interner,
-        this._equalsByPathId.size === 0
-          ? undefined
-          : (id, a, b) => {
-              const eq = this._equalsByPathId.get(id);
-              return eq ? eq(a, b) : Object.is(a, b);
-            },
+        this._equalsFn(),
       );
     }
     this._channel.mark(dirty);
@@ -149,17 +145,30 @@ export abstract class StructuralContainer<S> {
 
   /**
    * Shallow-or-deep patch: accepts a `DeepPartial<S>` so nested object
-   * branches type-check without casts (deep-partial: nested object branches
-   * are accepted). Runtime behaviour is unchanged — `pathsFromPatch` walks
-   * plain-object branches and treats class instances, arrays, Date, Map, Set,
-   * etc. as atomic leaves.
+   * branches type-check without casts. `deepMerge` walks plain-object branches
+   * and treats class instances, arrays, Date, Map, Set, etc. as atomic leaves.
+   *
+   * Dirty paths are derived from the patch's shape but **value-filtered**: a
+   * path is marked only if its value actually changed. This keeps marking
+   * precise and skeleton-independent (so raw `subscribe()` callers — devtools,
+   * plugins — wake correctly) while ensuring an over-broad patch (e.g.
+   * spreading a whole parent object when only one field changed) does not
+   * over-wake consumers of the unchanged siblings.
    */
   patch(partial: DeepPartial<S>): void {
     if (Object.keys(partial as object).length === 0) return;
-    const paths = pathsFromPatch(partial as Partial<S>, this.interner);
+    const prev = this._state;
+    const next = deepMerge(prev, partial as Partial<S>);
     // Apply state mutation atomically *before* mark so consumers see the new
     // state when they read it inside the dirty callback.
-    this._state = deepMerge(this._state, partial as Partial<S>);
+    this._state = next;
+    const paths = changedPathsFromPatch(
+      prev,
+      next,
+      partial as Partial<S>,
+      this.interner,
+      this._equalsFn(),
+    );
     this._channel.mark(paths);
   }
 
@@ -194,6 +203,19 @@ export abstract class StructuralContainer<S> {
   // ---------------------------------------------------------------------------
   // Internals
   // ---------------------------------------------------------------------------
+
+  // Per-path custom-equality callback shared by `emit` and `patch`, or
+  // `undefined` when no overrides are configured (the common case → default
+  // `Object.is`).
+  private _equalsFn():
+    | ((id: PathId, a: unknown, b: unknown) => boolean)
+    | undefined {
+    if (this._equalsByPathId.size === 0) return undefined;
+    return (id, a, b) => {
+      const eq = this._equalsByPathId.get(id);
+      return eq ? eq(a, b) : Object.is(a, b);
+    };
+  }
 
   // O(consumers × paths); incremental update is a future optimisation.
   private _recomputeSkeleton(): void {

@@ -18,21 +18,20 @@ describe('trackRender', () => {
     expect(value.user).toBe(value.user);
   });
 
-  it('2. records each intermediate path on a nested read', () => {
+  it('2. records only the leaf (maximal) path on a nested read', () => {
     const interner = new PathInterner();
     const { value, paths } = trackRender(
       { user: { profile: { email: 'a@b' } } },
       interner,
     );
     void value.user.profile.email;
-    expect(asPathStrings(paths, interner)).toEqual([
-      'user',
-      'user.profile',
-      'user.profile.email',
-    ]);
+    // Ancestors (`user`, `user.profile`) are dropped as the read descends;
+    // only the deepest path survives, so an unrelated change that merely
+    // replaces an ancestor object does not falsely wake this consumer.
+    expect(asPathStrings(paths, interner)).toEqual(['user.profile.email']);
   });
 
-  it('3. records every level of an array index read', () => {
+  it('3. records only the leaf path of an array index read', () => {
     const interner = new PathInterner();
     const { value, paths } = trackRender(
       {
@@ -44,9 +43,7 @@ describe('trackRender', () => {
     );
     void value.items[2].name;
     const strings = asPathStrings(paths, interner);
-    expect(strings).toContain('items');
-    expect(strings).toContain('items.2');
-    expect(strings).toContain('items.2.name');
+    expect(strings).toEqual(['items.2.name']);
   });
 
   it('4. iteration coarsens — records entry, not per-index', () => {
@@ -220,5 +217,38 @@ describe('trackRender', () => {
     expect(strings).toContain('full');
     expect(strings).toContain('first');
     expect(strings).toContain('last');
+  });
+
+  it('Map value is a leaf: .get works and records the entry path only', () => {
+    const interner = new PathInterner();
+    const state = { counts: new Map([['a', 1]]) };
+    const { value, paths } = trackRender(state, interner);
+    // Must not throw "Map.prototype.get called on incompatible receiver".
+    expect(value.counts.get('a')).toBe(1);
+    const strings = asPathStrings(paths, interner);
+    expect(strings).toContain('counts');
+    expect(strings).not.toContain('counts.a');
+  });
+
+  it('Set value is a leaf: .has works on the raw collection', () => {
+    const interner = new PathInterner();
+    const state = { tags: new Set(['x']) };
+    const { value } = trackRender(state, interner);
+    expect(value.tags.has('x')).toBe(true);
+    expect(value.tags.size).toBe(1);
+  });
+
+  it('class instance is a leaf: methods retain their receiver', () => {
+    const interner = new PathInterner();
+    class Counter {
+      n = 5;
+      get() {
+        return this.n;
+      }
+    }
+    const state = { c: new Counter() };
+    const { value, paths } = trackRender(state, interner);
+    expect(value.c.get()).toBe(5);
+    expect(asPathStrings(paths, interner)).toContain('c');
   });
 });

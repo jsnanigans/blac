@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vite-plus/test';
 import { PathInterner } from './path-interner';
 import { ALL_PATHS, emptyPathSet, type PathSet } from './path-set';
-import { diffAlongSkeleton, getAt, pathsFromPatch } from './diff';
+import {
+  changedPathsFromPatch,
+  diffAlongSkeleton,
+  getAt,
+  pathsFromPatch,
+} from './diff';
 import type { PathId } from './types';
 
 const skeletonFromPaths = (
@@ -259,6 +264,90 @@ describe('pathsFromPatch', () => {
     const snapshot = JSON.parse(JSON.stringify(patch));
     pathsFromPatch(patch, interner);
     expect(patch).toEqual(snapshot);
+  });
+});
+
+describe('changedPathsFromPatch', () => {
+  const paths = (set: PathSet, interner: PathInterner): string[] => {
+    if (set === ALL_PATHS || !(set instanceof Set))
+      throw new Error('expected Set');
+    return [...set].map((id) => interner.lookup(id)).sort();
+  };
+
+  it('marks only the path whose value actually changed', () => {
+    const interner = new PathInterner();
+    const prev = { user: { name: 'Ada', email: 'a@x.io' } };
+    const next = { user: { name: 'Grace', email: 'a@x.io' } };
+    // Over-spread patch: includes the unchanged email.
+    const result = changedPathsFromPatch(
+      prev,
+      next,
+      { user: { name: 'Grace', email: 'a@x.io' } },
+      interner,
+    );
+    expect(paths(result, interner)).toEqual(['user', 'user.name']);
+  });
+
+  it('skips an unchanged subtree entirely (prunes recursion)', () => {
+    const interner = new PathInterner();
+    const addr = { city: 'Berlin', zip: '10115' };
+    const prev = { user: { name: 'Ada', address: addr } };
+    const next = { user: { name: 'Bob', address: addr } };
+    const result = changedPathsFromPatch(
+      prev,
+      next,
+      { user: { name: 'Bob', address: addr } },
+      interner,
+    );
+    // address ref is unchanged → neither it nor its children are walked.
+    expect(paths(result, interner)).toEqual(['user', 'user.name']);
+  });
+
+  it('marks a swapped nested object and its changed leaves but not siblings', () => {
+    const interner = new PathInterner();
+    const prev = {
+      user: { name: 'Ada', email: 'a@x.io', address: { city: 'Berlin' } },
+    };
+    const next = {
+      user: { name: 'Ada', email: 'a@x.io', address: { city: 'Lisbon' } },
+    };
+    const result = changedPathsFromPatch(
+      prev,
+      next,
+      { user: { name: 'Ada', email: 'a@x.io', address: { city: 'Lisbon' } } },
+      interner,
+    );
+    expect(paths(result, interner)).toEqual([
+      'user',
+      'user.address',
+      'user.address.city',
+    ]);
+  });
+
+  it('honors a custom equality override', () => {
+    const interner = new PathInterner();
+    const prev = { tags: ['a'] };
+    const next = { tags: ['a'] }; // different ref, equal contents
+    const tagsId = interner.intern('tags');
+    const result = changedPathsFromPatch(
+      prev,
+      next,
+      { tags: ['a'] },
+      interner,
+      (id, a, b) =>
+        id === tagsId
+          ? JSON.stringify(a) === JSON.stringify(b)
+          : Object.is(a, b),
+    );
+    expect(paths(result, interner)).toEqual([]);
+  });
+
+  it('returns an empty set when nothing changed', () => {
+    const interner = new PathInterner();
+    const prev = { a: 1, b: 2 };
+    const next = { a: 1, b: 2 };
+    const result = changedPathsFromPatch(prev, next, { a: 1 }, interner);
+    expect(paths(result, interner)).toEqual([]);
   });
 });
 

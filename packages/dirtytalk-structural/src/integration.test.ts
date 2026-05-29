@@ -313,3 +313,88 @@ describe('Integration: two consumers with source-diff isolation', () => {
     expect(themeRenders).toBe(2);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Test 3b — Sibling-leaf isolation under a shared parent
+// ---------------------------------------------------------------------------
+
+describe('Integration: sibling-leaf isolation under a shared parent', () => {
+  interface UserState {
+    user: { name: string; email: string; address: { city: string } };
+  }
+
+  class UserStore extends StructuralContainer<UserState> {}
+
+  it('changing one leaf does not wake siblings, even when the patch spreads the whole parent', () => {
+    const initial: UserState = {
+      user: { name: 'Ada', email: 'ada@x.io', address: { city: 'Berlin' } },
+    };
+    const c = new UserStore(initial, { scheduler: new SyncScheduler() });
+
+    let nameRenders = 0;
+    let emailRenders = 0;
+    let cityRenders = 0;
+
+    function NameChip() {
+      nameRenders++;
+      const [s] = useStructural(c);
+      return React.createElement('span', null, (s as UserState).user.name);
+    }
+    function EmailChip() {
+      emailRenders++;
+      const [s] = useStructural(c);
+      return React.createElement('span', null, (s as UserState).user.email);
+    }
+    function CityChip() {
+      cityRenders++;
+      const [s] = useStructural(c);
+      return React.createElement(
+        'span',
+        null,
+        (s as UserState).user.address.city,
+      );
+    }
+
+    render(
+      React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(NameChip),
+        React.createElement(EmailChip),
+        React.createElement(CityChip),
+      ),
+    );
+    expect([nameRenders, emailRenders, cityRenders]).toEqual([1, 1, 1]);
+
+    // Swap the address by spreading the WHOLE user (the over-broad pattern the
+    // 08-tracking demo used). Value-diff means only city's leaf changed → only
+    // CityChip wakes; name/email are untouched despite `user` getting a new ref.
+    act(() => {
+      c.patch({
+        user: { ...c.state.user, address: { city: 'Lisbon' } },
+      } as Partial<UserState>);
+    });
+    expect([nameRenders, emailRenders, cityRenders]).toEqual([1, 1, 2]);
+
+    // Edit just the name (also over-spread) → only NameChip wakes.
+    act(() => {
+      c.patch({
+        user: { ...c.state.user, name: 'Grace' },
+      } as Partial<UserState>);
+    });
+    expect([nameRenders, emailRenders, cityRenders]).toEqual([2, 1, 2]);
+
+    // Replacing user wholesale with a changed name still wakes NameChip (the
+    // leaf resolves to a new value) but not EmailChip (email unchanged).
+    act(() => {
+      c.patch({
+        user: {
+          name: 'Hopper',
+          email: 'ada@x.io',
+          address: { city: 'Lisbon' },
+        },
+      } as Partial<UserState>);
+    });
+    expect([nameRenders, emailRenders, cityRenders]).toEqual([3, 1, 2]);
+  });
+});

@@ -14,14 +14,34 @@ const isWrappable = (v: unknown): v is object =>
   v !== null && typeof v === 'object';
 
 /**
+ * True when `v` should be recursively proxy-wrapped: plain object literals
+ * (or `Object.create(null)`) and arrays. Everything else — `Map`, `Set`,
+ * `Date`, class instances — is a leaf: wrapping it would rebind its methods'
+ * `this` to the proxy and break receiver-checked built-ins (e.g.
+ * `Map.prototype.get` throws "called on incompatible receiver"). This mirrors
+ * the patch-leaf semantics in `diff.ts` (`isPlainPatchObject`), so a change to
+ * such a value is detected as a reference change at its own path.
+ */
+const isStructurallyWrappable = (v: object): boolean => {
+  if (Array.isArray(v)) return true;
+  const proto = Object.getPrototypeOf(v);
+  return proto === Object.prototype || proto === null;
+};
+
+/**
  * Wrap `state` in a recording `Proxy` and return the proxy plus a fresh
  * `Set<PathId>` that grows as the consumer reads properties.
  *
  * Recording rules:
  * - Only own, non-symbol property reads on the `get` trap record paths.
- * - Each intermediate read records its own path: reading `a.b.c` records
- *   `a`, `a.b`, and `a.b.c` (a change at any ancestor must wake the
- *   consumer).
+ * - Leaf-only (maximal) recording: reading `a.b.c` records just `a.b.c`. As
+ *   each deeper read happens, its immediate parent path is dropped, so the
+ *   recorded set holds only the deepest paths actually read. This is what
+ *   gives sibling-leaf isolation: a consumer that reads `user.name` does NOT
+ *   wake when an immutable update replaces the `user` object because a
+ *   sibling (`user.address`) changed — its only observed path, `user.name`,
+ *   still resolves to the same value. A consumer that reads the whole `user`
+ *   object (no deeper key) keeps `user` as its leaf and wakes on any change.
  * - Primitives, `null`, and `undefined` short-circuit and are returned as-is.
  * - Nested objects/arrays return a child proxy that records into the same
  *   `paths` set. Proxies are cached per-target via a per-call `WeakMap`, so
@@ -85,9 +105,13 @@ export const trackRender = <S>(
           return value;
         }
 
-        // Own property — record the path.
+        // Own property — record the path. Then drop the immediate parent:
+        // this deeper read supersedes it, leaving only maximal (leaf) paths.
+        // Reference changes to an ancestor object therefore can't falsely wake
+        // a consumer that only read a specific leaf beneath it.
         const path = childPath(prefix, key as string);
         paths.add(interner.intern(path));
+        if (prefix !== '') paths.delete(interner.intern(prefix));
 
         if (!isWrappable(value)) {
           // Primitive, null, undefined: return as-is.
@@ -105,6 +129,15 @@ export const trackRender = <S>(
               wrap(t, prefix),
             );
           }
+          return value;
+        }
+
+        // Only recurse into plain objects/arrays. Maps, Sets, Dates, and class
+        // instances are leaves: returning the raw value avoids rebinding their
+        // methods' `this` to the proxy (which breaks receiver-checked built-ins
+        // like `Map.prototype.get`). The path was already recorded above, so a
+        // reference change to the value still wakes the consumer.
+        if (!isStructurallyWrappable(value as object)) {
           return value;
         }
 

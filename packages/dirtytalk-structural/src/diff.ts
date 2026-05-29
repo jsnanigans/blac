@@ -114,3 +114,46 @@ const walkPatch = (
     }
   }
 };
+
+/**
+ * Like `pathsFromPatch`, but value-filtered against the `prev`/`next` states:
+ * a path is included only when its value actually changed.
+ *
+ * Walks the same plain-object branches of `patch` and pulses up (each touched
+ * branch contributes its own path), but compares `getAt(prev, path)` against
+ * `getAt(next, path)` and skips any path that is equal — recursion into an
+ * unchanged branch is pruned too, since `deepMerge` gives a changed branch a
+ * fresh reference (an unchanged subtree keeps its reference, so equal refs
+ * mean nothing beneath changed either).
+ *
+ * This lets `patch` mark precisely the paths that changed — independent of any
+ * consumer skeleton, so raw channel subscribers wake correctly — without
+ * over-waking siblings when a patch over-spreads an unchanged parent.
+ *
+ * `equalsAt` is the same per-path custom-equality seam as `diffAlongSkeleton`;
+ * default is reference equality (`Object.is`).
+ */
+export const changedPathsFromPatch = <S>(
+  prev: S,
+  next: S,
+  patch: Partial<S>,
+  interner: PathInterner,
+  equalsAt?: (pathId: PathId, prev: unknown, next: unknown) => boolean,
+): PathSet => {
+  const out = new Set<PathId>();
+  const walk = (node: unknown, basePath: string): void => {
+    if (!isPlainPatchObject(node)) return;
+    for (const key of Object.keys(node)) {
+      const childPath = basePath === '' ? key : `${basePath}.${key}`;
+      const id = interner.intern(childPath);
+      const pv = getAt(prev, childPath);
+      const nv = getAt(next, childPath);
+      const eq = equalsAt ? equalsAt(id, pv, nv) : Object.is(pv, nv);
+      if (eq) continue; // value unchanged → skip this branch (and its subtree)
+      out.add(id);
+      walk(node[key], childPath);
+    }
+  };
+  walk(patch as unknown, '');
+  return out;
+};
