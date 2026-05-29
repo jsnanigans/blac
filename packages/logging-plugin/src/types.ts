@@ -49,6 +49,9 @@ export interface LoggingPluginConfig {
   /** Include callstack in state change logs (default: false) */
   includeCallstack?: boolean;
 
+  /** Log changed path names in state change output (default: false) */
+  logPaths?: boolean;
+
   /** Warn when instance count exceeds threshold (default: 50) */
   instanceCountWarningThreshold?: number;
 
@@ -75,6 +78,7 @@ export interface ResolvedConfig {
   logLifecycle: boolean;
   logStateChanges: boolean;
   includeCallstack: boolean;
+  logPaths: boolean;
   instanceCountWarningThreshold: number;
   detectRapidLifecycles: boolean;
   rapidLifecycleWindowMs: number;
@@ -95,6 +99,7 @@ export function resolveConfig(
     logLifecycle: config.logLifecycle ?? true,
     logStateChanges: config.logStateChanges ?? true,
     includeCallstack: config.includeCallstack ?? false,
+    logPaths: config.logPaths ?? false,
     instanceCountWarningThreshold: config.instanceCountWarningThreshold ?? 50,
     detectRapidLifecycles: config.detectRapidLifecycles ?? true,
     rapidLifecycleWindowMs: config.rapidLifecycleWindowMs ?? 1000,

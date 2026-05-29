@@ -1,4 +1,10 @@
-import type { BlacPlugin, PluginContext, StateContainer } from '@blac/core';
+import type {
+  BlacPlugin,
+  PathSet,
+  PluginContext,
+  StateContainer,
+} from '@blac/core';
+import { ALL_PATHS } from '@blac/core';
 import { SimpleFormatter } from './formatters/SimpleFormatter';
 import { GroupedFormatter } from './formatters/GroupedFormatter';
 import { InstanceCountMonitor } from './monitors/InstanceCountMonitor';
@@ -11,6 +17,23 @@ import type {
 import { resolveConfig } from './types';
 
 const STATE_CHANGE_RATE_LIMIT = 1000; // max state changes per second
+
+/**
+ * Decode a `PathSet` to an array of path name strings.
+ *
+ * Returns `['<all>']` when `paths === ALL_PATHS`.
+ * Uses `interner.lookup(id)` for all other IDs.
+ *
+ * The `interner` is typed structurally to avoid a direct compile-time
+ * dependency on `@dirtytalk/structural` from this package.
+ */
+function decodePaths(
+  paths: PathSet,
+  interner: { lookup(id: number): string },
+): string[] {
+  if (paths === ALL_PATHS) return ['<all>'];
+  return Array.from(paths as Set<number>).map((id) => interner.lookup(id));
+}
 
 export class LoggingPlugin implements BlacPlugin {
   readonly name = 'LoggingPlugin';
@@ -47,9 +70,9 @@ export class LoggingPlugin implements BlacPlugin {
     this.lifecycleMonitor = new LifecycleMonitor(this.config, warningHandler);
   }
 
-  onInstall(context: PluginContext): void {
-    this.context = context;
-    const stats = context.getStats();
+  onInstall(ctx: PluginContext): void {
+    this.context = ctx;
+    const stats = ctx.getStats();
 
     if (this.config.format === 'simple') {
       this.simpleFormatter.logInstall(stats);
@@ -73,11 +96,10 @@ export class LoggingPlugin implements BlacPlugin {
     this.context = undefined;
   }
 
-  onInstanceCreated(
-    instance: StateContainer<any>,
-    context: PluginContext,
-  ): void {
-    const metadata = context.getInstanceMetadata(instance);
+  onCreated(ctx: PluginContext): void {
+    const instance = ctx.container;
+    if (!instance) return;
+    const metadata = ctx.getInstanceMetadata(instance);
 
     if (!this.shouldLog(instance, metadata.className, metadata.id)) {
       return;
@@ -93,18 +115,20 @@ export class LoggingPlugin implements BlacPlugin {
     } else {
       this.groupedFormatter.logInstanceCreated(
         metadata,
-        context.getState(instance),
+        ctx.getState(instance),
       );
     }
   }
 
-  onStateChanged<S extends object>(
-    instance: StateContainer<S>,
+  onStateChange<S extends object>(
+    ctx: PluginContext,
     previousState: S,
     currentState: S,
-    context: PluginContext,
+    paths: PathSet,
   ): void {
-    const metadata = context.getInstanceMetadata(instance);
+    const instance = ctx.container;
+    if (!instance) return;
+    const metadata = ctx.getInstanceMetadata(instance);
 
     if (!this.shouldLog(instance, metadata.className, metadata.id)) {
       return;
@@ -138,6 +162,10 @@ export class LoggingPlugin implements BlacPlugin {
       ? new Error().stack
       : undefined;
 
+    const decodedPaths = this.config.logPaths
+      ? decodePaths(paths, instance.interner)
+      : undefined;
+
     if (this.config.format === 'simple') {
       this.simpleFormatter.logStateChanged(
         metadata,
@@ -145,6 +173,7 @@ export class LoggingPlugin implements BlacPlugin {
         currentState,
         callstack,
         this.config.includeCallstack,
+        decodedPaths,
       );
     } else {
       this.groupedFormatter.logStateChanged(
@@ -153,15 +182,15 @@ export class LoggingPlugin implements BlacPlugin {
         currentState,
         callstack,
         this.config.includeCallstack,
+        decodedPaths,
       );
     }
   }
 
-  onInstanceDisposed(
-    instance: StateContainer<any>,
-    context: PluginContext,
-  ): void {
-    const metadata = context.getInstanceMetadata(instance);
+  onDestroyed(ctx: PluginContext): void {
+    const instance = ctx.container;
+    if (!instance) return;
+    const metadata = ctx.getInstanceMetadata(instance);
 
     if (!this.shouldLog(instance, metadata.className, metadata.id)) {
       return;
@@ -212,12 +241,12 @@ export class LoggingPlugin implements BlacPlugin {
     }
 
     if (this.config.filter) {
-      const ctx: FilterContext = {
+      const filterCtx: FilterContext = {
         instance,
         className,
         instanceId,
       };
-      return this.config.filter(ctx);
+      return this.config.filter(filterCtx);
     }
 
     return true;

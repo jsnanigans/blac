@@ -44,11 +44,16 @@ export class SimpleFormatter {
     currentState: unknown,
     _callstack: string | undefined,
     includeCallstack: boolean,
+    paths?: string[],
   ): void {
     const instanceId = this.formatInstanceId(metadata.className, metadata.id);
     const prev = this.formatState(previousState);
     const curr = this.formatState(currentState);
     this.logger.log(`${this.prefix} ${instanceId} state: ${prev} → ${curr}`);
+
+    if (paths !== undefined) {
+      this.logger.log(`${this.prefix}   Paths: ${paths.join(', ')}`);
+    }
 
     if (includeCallstack && _callstack) {
       this.logger.log(`${this.prefix}   Callstack: ${_callstack}`);

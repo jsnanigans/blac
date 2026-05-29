@@ -70,11 +70,15 @@ export class GroupedFormatter {
     currentState: unknown,
     callstack: string | undefined,
     includeCallstack: boolean,
+    paths?: string[],
   ): void {
     const instanceId = this.formatInstanceId(metadata.className, metadata.id);
     this.group(`${this.prefix} ${instanceId} state changed`);
     this.logger.log('Previous:', previousState);
     this.logger.log('Current:', currentState);
+    if (paths !== undefined) {
+      this.logger.log('Paths:', paths);
+    }
     if (includeCallstack && callstack) {
       this.logger.log('Callstack:', callstack);
     }
