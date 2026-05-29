@@ -17,7 +17,6 @@ export default defineConfig({
         'packages/blac-react/src/testing',
       ),
       '@blac/react': path.resolve(__dirname, 'packages/blac-react/src'),
-      '@blac/adapter': path.resolve(__dirname, 'packages/blac-adapter/src'),
       '@blac/preact': path.resolve(__dirname, 'packages/blac-preact/src'),
       '@blac/devtools-connect': path.resolve(
         __dirname,
