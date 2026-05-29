@@ -22,9 +22,6 @@
       "testing": [
         "./dist/testing.d.ts"
       ],
-      "tracking": [
-        "./dist/tracking.d.ts"
-      ],
       "debug": [
         "./dist/debug.d.ts"
       ],
@@ -48,16 +45,6 @@
       "require": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
-      }
-    },
-    "./tracking": {
-      "import": {
-        "types": "./dist/tracking.d.ts",
-        "default": "./dist/tracking.js"
-      },
-      "require": {
-        "types": "./dist/tracking.d.cts",
-        "default": "./dist/tracking.cjs"
       }
     },
     "./debug": {

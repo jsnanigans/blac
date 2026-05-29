@@ -141,19 +141,38 @@ export const changedPathsFromPatch = <S>(
   equalsAt?: (pathId: PathId, prev: unknown, next: unknown) => boolean,
 ): PathSet => {
   const out = new Set<PathId>();
-  const walk = (node: unknown, basePath: string): void => {
+  // Thread the prev/next subtree references down the recursion and index by
+  // key, rather than re-deriving each value with `getAt(root, dottedPath)`.
+  // `getAt` re-walks from the root and `split('.')`s a fresh array per path —
+  // pure overhead on the hot mutation path when the parallel subtree is
+  // already in hand. `prevNode[key]` reproduces `getAt(prev, childPath)`
+  // exactly (a non-object node yields `undefined`, matching getAt's guard).
+  const walk = (
+    node: unknown,
+    prevNode: unknown,
+    nextNode: unknown,
+    basePath: string,
+  ): void => {
     if (!isPlainPatchObject(node)) return;
+    const prevObj =
+      prevNode !== null && typeof prevNode === 'object'
+        ? (prevNode as Record<string, unknown>)
+        : undefined;
+    const nextObj =
+      nextNode !== null && typeof nextNode === 'object'
+        ? (nextNode as Record<string, unknown>)
+        : undefined;
     for (const key of Object.keys(node)) {
       const childPath = basePath === '' ? key : `${basePath}.${key}`;
       const id = interner.intern(childPath);
-      const pv = getAt(prev, childPath);
-      const nv = getAt(next, childPath);
+      const pv = prevObj?.[key];
+      const nv = nextObj?.[key];
       const eq = equalsAt ? equalsAt(id, pv, nv) : Object.is(pv, nv);
       if (eq) continue; // value unchanged → skip this branch (and its subtree)
       out.add(id);
-      walk(node[key], childPath);
+      walk(node[key], pv, nv, childPath);
     }
   };
-  walk(patch as unknown, '');
+  walk(patch as unknown, prev, next, '');
   return out;
 };

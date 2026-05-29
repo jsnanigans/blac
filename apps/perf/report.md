@@ -1,5 +1,23 @@
 # React State Management Benchmarks
 
+> [!WARNING]
+> **Stale — pre-dirtytalk numbers.** Everything below was recorded against the
+> old read-time proxy-tracking architecture (`@blac/core/src/tracking/`), which
+> was removed in the dirtytalk migration (commit `766199db`). The figures here
+> do **not** reflect the current `DirtyChannel` / structural-snapshot model and
+> must be regenerated from the dashboard before being cited.
+>
+> In particular, the **"proxy track …" / "proxy cache reuse" / "getter track …"**
+> rows no longer measure tracking internals: Blac's pure-state suite was
+> rewritten so those ops measure raw `state` reads, matching the Zustand/Redux
+> equivalents (see `src/libraries/blac/pure-state.ts`). The old Blac "Action
+> Items" below (proxy track 20 fields 11.6x, proxy cache reuse 6.8x, etc.) point
+> at code that no longer exists.
+>
+> Subscribe-time path-interest tracking — the feature that replaced the proxy
+> tracker — is measured headlessly by `src/migration-bench/run.ts`
+> (`vp run benchmark`).
+
 ## Scorecard
 
 | Library | Wins | Slow (>1.5x) | Geometric Mean |

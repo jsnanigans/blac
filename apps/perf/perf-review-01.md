@@ -1,5 +1,25 @@
 # Perf Review 01 — Blac Bottleneck Investigation
 
+> [!WARNING]
+> **Superseded — investigates removed code.** This review (2026-04-16) analyzes
+> the read-time proxy-tracking subsystem (`@blac/core/src/tracking/tracking-proxy.ts`,
+> `autoTrackSnapshot`, `capturePaths`, `hasDependencyChanges`, …) that was
+> deleted in the dirtytalk migration (commit `766199db`). It is kept as a
+> historical record only.
+>
+> - **RC-A/B/C** and improvement-plan items **P0#1, P1#3, P1#5, P2#6, P2#8**
+>   target files that no longer exist — obsolete.
+> - **RC-D** (`patch()` identity check) is addressed: `StateContainer.patch`
+>   now does a per-key `Object.is` short-circuit before spreading.
+> - **RC-E / RC-F** (listener-snapshot allocation, multi-layer notification)
+>   describe the legacy `subscribe(listener)` path, which still exists but was
+>   rewritten on top of the `DirtyChannel`; re-verify against current
+>   `StateContainer.ts` before acting.
+>
+> Any fresh investigation should start from the post-migration numbers
+> (regenerated dashboard run + `src/migration-bench/run.ts`), not the figures
+> below.
+
 Date: 2026-04-16
 Scope: `apps/perf/report.md` scorecard — 5 critical items (>2x slower)
 

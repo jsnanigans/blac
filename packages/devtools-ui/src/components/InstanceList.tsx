@@ -10,13 +10,16 @@ import { InstanceListItem } from './InstanceListItem';
 import { T } from '../theme';
 
 const EMPTY_TRIGGERS: number[] = [];
+// Stable empty selector: subscribe to the bloc instance without re-rendering
+// on its state changes (replacement for the removed `autoTrack: false`).
+const NO_RERENDER = (): unknown[] => [];
 
 export const InstanceList: FC<{ width?: number }> = React.memo(
   ({ width = 300 }) => {
     const [{ instances, animationTriggers }, instancesBloc] = useBloc(
       DevToolsInstancesBloc,
     );
-    const [, searchBloc] = useBloc(DevToolsSearchBloc, { autoTrack: false });
+    const [, searchBloc] = useBloc(DevToolsSearchBloc, { select: NO_RERENDER });
     const [{ selectedId }, layoutBloc] = useBloc(DevToolsLayoutBloc);
 
     const groupedInstances = searchBloc.getGroupedInstances();

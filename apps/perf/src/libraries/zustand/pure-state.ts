@@ -202,13 +202,21 @@ export const zustandPureState: PureStateBenchmark = {
     'multi-store coordination': (h) => {
       const { counterA, counterB, counterC } = h as ZustandHandle;
       let notifications = 0;
-      const unsubA = counterA.subscribe(() => { notifications++; });
-      const unsubB = counterB.subscribe(() => { notifications++; });
-      const unsubC = counterC.subscribe(() => { notifications++; });
+      const unsubA = counterA.subscribe(() => {
+        notifications++;
+      });
+      const unsubB = counterB.subscribe(() => {
+        notifications++;
+      });
+      const unsubC = counterC.subscribe(() => {
+        notifications++;
+      });
       for (let i = 0; i < 1000; i++) {
         counterA.setState({ count: i });
         counterB.setState({ count: counterA.getState().count * 2 });
-        counterC.setState({ count: counterA.getState().count + counterB.getState().count });
+        counterC.setState({
+          count: counterA.getState().count + counterB.getState().count,
+        });
       }
       unsubA();
       unsubB();
@@ -246,7 +254,7 @@ export const zustandPureState: PureStateBenchmark = {
       counter.setState({ count: 42 });
       const ref = counter.getState();
       for (let i = 0; i < 1000; i++) {
-        counter.getState() === ref;
+        void (counter.getState() === ref);
       }
     },
     'proxy change detection hit': (h) => {

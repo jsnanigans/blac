@@ -159,6 +159,9 @@ export abstract class StructuralContainer<S> {
     if (Object.keys(partial as object).length === 0) return;
     const prev = this._state;
     const next = deepMerge(prev, partial as Partial<S>);
+    // `deepMerge` returns `prev` by reference when nothing actually changed
+    // (shallow or deep no-op) — no paths to mark, no subscribers to wake.
+    if (Object.is(prev, next)) return;
     // Apply state mutation atomically *before* mark so consumers see the new
     // state when they read it inside the dirty callback.
     this._state = next;
@@ -251,14 +254,22 @@ const deepMerge = <S>(target: S, patch: Partial<S>): S => {
   const out: Record<string, unknown> = {
     ...(target as Record<string, unknown>),
   };
+  // Track whether any key actually moved. When nothing changed we return the
+  // original `target` reference so callers can detect no-ops with `Object.is`
+  // (and skip marking/waking entirely) — and a touched-but-equal subtree keeps
+  // its reference, which `changedPathsFromPatch` already relies on.
+  let changed = false;
   for (const key of Object.keys(patch)) {
     const nextVal = (patch as Record<string, unknown>)[key];
     const prevVal = (target as Record<string, unknown>)[key];
     if (isPlainPatchObject(nextVal) && isPlainPatchObject(prevVal)) {
-      out[key] = deepMerge(prevVal, nextVal as Partial<typeof prevVal>);
+      const merged = deepMerge(prevVal, nextVal as Partial<typeof prevVal>);
+      out[key] = merged;
+      if (!Object.is(merged, prevVal)) changed = true;
     } else {
       out[key] = nextVal;
+      if (!Object.is(nextVal, prevVal)) changed = true;
     }
   }
-  return out as S;
+  return changed ? (out as S) : target;
 };

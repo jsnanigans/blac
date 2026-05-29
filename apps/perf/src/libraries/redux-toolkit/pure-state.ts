@@ -355,8 +355,7 @@ export const reduxToolkitPureState: PureStateBenchmark = {
         );
         store.dispatch(
           counterCSlice.actions.setCount(
-            store.getState().counterA.count +
-              store.getState().counterB.count,
+            store.getState().counterA.count + store.getState().counterB.count,
           ),
         );
       }
@@ -393,14 +392,14 @@ export const reduxToolkitPureState: PureStateBenchmark = {
       store.dispatch(counterSlice.actions.setCount(42));
       const ref = store.getState().counter;
       for (let i = 0; i < 1000; i++) {
-        store.getState().counter === ref;
+        void (store.getState().counter === ref);
       }
     },
     'proxy change detection hit': (h) => {
       const store = h as BenchmarkStore;
       for (let i = 0; i < 1000; i++) {
         store.dispatch(counterSlice.actions.setCount(i));
-        store.getState().counter;
+        void store.getState().counter;
       }
     },
     'proxy cache reuse': (h) => {

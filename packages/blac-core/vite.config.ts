@@ -16,7 +16,6 @@ export default defineConfig({
   pack: {
     entry: {
       index: 'src/index.ts',
-      tracking: 'src/tracking.ts',
       debug: 'src/debug.ts',
       plugins: 'src/plugins.ts',
       'watch-entry': 'src/watch-entry.ts',

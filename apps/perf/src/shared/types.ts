@@ -149,12 +149,13 @@ export interface LibraryDefinition {
   name: string;
   Component: React.ComponentType<{ onReady: (api: BenchmarkAPI) => void }>;
   /**
-   * Optional. Blac no longer ships a pure-state suite — the previous one
-   * microbenchmarked `@blac/core/tracking` internals that were deleted in
-   * the dirtytalk migration (commit 766199db). Pure-state remains available
-   * for comparison libraries (Zustand, Redux Toolkit). See
-   * `plans/blac-core-migration/_perf-results.md` for the migration-specific
-   * benchmark that replaced it.
+   * Optional pure-state (no-React) microbenchmark suite, implemented for all
+   * three libraries. Blac's suite was rewritten for the post-dirtytalk API:
+   * the former "proxy/getter tracking" ops measured `@blac/core/tracking`
+   * internals deleted in the migration (commit 766199db); they now measure
+   * raw `state` reads, mirroring the Zustand/Redux equivalents. Subscribe-time
+   * path-interest tracking is measured separately by
+   * `src/migration-bench/run.ts`.
    */
   pureState?: PureStateBenchmark;
 }

@@ -32,17 +32,19 @@ export class BlocObserver {
     const plugin: BlacPlugin = {
       name: `BlocObserverAdapter-${++observerCounter}`,
       version: '0.0.1',
-      onInstanceCreated: (inst) => {
-        this.methods.onBlocAdded?.(inst);
+      onCreated: (ctx) => {
+        if (ctx.container) this.methods.onBlocAdded?.(ctx.container);
       },
-      onStateChanged: (inst, prev, curr) => {
-        this.methods.onChange?.(inst, {
-          currentState: prev,
-          nextState: curr,
-        });
+      onStateChange: (ctx, prev, next) => {
+        if (ctx.container) {
+          this.methods.onChange?.(ctx.container, {
+            currentState: prev,
+            nextState: next,
+          });
+        }
       },
-      onInstanceDisposed: (inst) => {
-        this.methods.onBlocRemoved?.(inst);
+      onDestroyed: (ctx) => {
+        if (ctx.container) this.methods.onBlocRemoved?.(ctx.container);
       },
     };
     getPluginManager().install(plugin);
