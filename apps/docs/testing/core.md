@@ -1,6 +1,6 @@
 # Core Testing API
 
-All core testing utilities are imported from `@blac/core/testing`. They work with any test runner and have no framework-specific dependencies.
+All core testing utilities are imported from `@blac/core/testing`. They work with any test runner and have no framework-specific dependencies — only the test globals (`describe`/`it`/`expect`/`vi`) come from your runner, which in this project is [`vite-plus`](/testing/overview#why-registry-isolation-matters).
 
 ```ts
 import {
@@ -12,9 +12,25 @@ import {
   createCubitStub,
   withBlocState,
   withBlocMethod,
-  flushBlocUpdates,
+  flush,
 } from '@blac/core/testing';
 ```
+
+::: tip Which helper do I reach for?
+These tools overlap, so start from the question you are answering:
+
+| Goal | Helper |
+| --- | --- |
+| Isolate **every** test in a file (the default) | `blacTestSetup()` |
+| Isolate **one block** of code, sync or async | `withTestRegistry(fn)` |
+| Use a **real** instance, just with starting state | `withBlocState(Cubit, state)` |
+| Replace **one method** on a real instance | `withBlocMethod(Cubit, name, impl)` |
+| Build an instance with state, mocked methods, args, or deps | `createCubitStub(Cubit, options)` |
+| Force the registry to return **your** instance (e.g. a stub) | `registerOverride(Cubit, instance)` |
+| Override the registry for a **single expression** | `overrideEnsure(Cubit, instance, fn)` |
+
+Rule of thumb: prefer real instances (`withBlocState`, `withBlocMethod`) so you exercise real logic; reach for stubs and overrides only to control a bloc's *dependencies* or to intercept side effects.
+:::
 
 ## Registry isolation
 
@@ -23,6 +39,7 @@ import {
 Installs `beforeEach` / `afterEach` hooks that swap in a fresh registry for every test. Call it once at the top of a test file or inside a `describe` block.
 
 ```ts
+import { it, expect } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
 import { ensure } from '@blac/core';
 
@@ -148,7 +165,7 @@ function withBlocMethod<T extends StateContainerConstructor>(
 Ensures an instance exists and replaces a single method. Other methods remain fully functional.
 
 ```ts
-import { vi } from 'vitest';
+import { it, expect, vi } from 'vite-plus/test';
 
 blacTestSetup();
 
@@ -166,7 +183,7 @@ This is useful when you want a real instance with real state management, but nee
 
 ## Stubs
 
-### `createCubitStub(BlocClass, options?)`
+### `createCubitStub(BlocClass, options?)` {#create-cubit-stub}
 
 ```ts
 function createCubitStub<T extends StateContainerConstructor>(
@@ -174,13 +191,26 @@ function createCubitStub<T extends StateContainerConstructor>(
   options?: {
     state?: Partial<ExtractState<T>>;
     methods?: Partial<Record<MethodKeys<InstanceType<T>>, Function>>;
+    args?: ExtractArgs<T>;
+    deps?: Partial<ExtractDeps<T>>;
   },
 ): InstanceType<T>;
 ```
 
 Creates a real instance of the cubit with optional pre-set state and method overrides. The stub is a fully functional instance — subscriptions, `emit`, `patch`, and `dispose` all work normally. Only the explicitly overridden methods are replaced.
 
+| Option | Effect |
+| --- | --- |
+| `state` | Seeds starting state. Merged via `patch()` for object state (provide only the fields you care about); replaced via `emit()` for non-object state. |
+| `methods` | Replaces specific methods on the instance. Everything else stays real. |
+| `args` | Runs the bloc's `init(args)` once via the same `initConfig` path the registry uses, so `init` and lifecycle hooks fire. Only allowed when the bloc declares a non-`void` `Args`. |
+| `deps` | Pre-wires a [`deps`](/guide/inputs) slice so `onDepsChanged` fires during the test. |
+
+The options apply in source order: `args` runs `init` first, then `state` overrides on top, then `methods` are swapped, then `deps` are wired (which may itself emit via `onDepsChanged`).
+
 ```ts
+import { it, expect, vi } from 'vite-plus/test';
+
 blacTestSetup();
 
 it('creates a stub with partial state', () => {
@@ -201,6 +231,37 @@ it('creates a stub with mocked methods', () => {
   // login() and other methods still work normally
 });
 ```
+
+#### Stubbing blocs that take `args` or `deps`
+
+If a bloc derives its initial state from `args` in `init()`, pass `args` so `init` actually runs:
+
+```ts
+it('seeds state from args via init()', () => {
+  // class UserCubit extends Cubit<UserState, { userId: string }> {
+  //   protected init(a) { this.emit({ id: a.userId }); }
+  // }
+  const stub = createCubitStub(UserCubit, { args: { userId: 'alice' } });
+  expect(stub.state.id).toBe('alice');
+});
+```
+
+For blocs that react to injected handles, pass `deps` to drive `onDepsChanged`:
+
+```ts
+it('reacts to a wired dependency', () => {
+  const el = { id: 42 };
+  const stub = createCubitStub(CanvasCubit, { deps: { el } });
+
+  expect(stub.deps.el).toBe(el); // onDepsChanged fired with this slice
+});
+```
+
+`args` and `deps` can be combined with `state` and `methods` in the same call.
+
+::: tip
+This is the only place `args` and `deps` enter the testing API. There is no separate `args` option on `withBlocState`; if you need an args-seeded instance in the registry, build it with `createCubitStub({ args })` and inject it with `registerOverride`. See [Inputs](/guide/inputs) for the `args`/`deps`/`instanceId` model.
+:::
 
 Stubs are commonly paired with `registerOverride` to inject them into the registry for use by dependent code or React components.
 
@@ -261,25 +322,37 @@ it('computes total with shipping', () => {
 
 ## Async helpers
 
-### `flushBlocUpdates()`
+### `flush()`
 
 ```ts
-function flushBlocUpdates(): Promise<void>;
+function flush(): Promise<void>;
 ```
 
-Flushes pending microtasks by awaiting a `setTimeout(0)`. Use this after triggering state changes that may propagate asynchronously.
+BlaC coalesces state changes onto a microtask (the default `MicrotaskScheduler`), so a value set inside an action is not visible to subscribers, `onSystemEvent('stateChanged')` handlers, or plugin hooks until the channel flushes. `flush()` drains those pending microtasks — `await` it after triggering a change and before asserting on any side effect.
 
 ```ts
 it('propagates async state', async () => {
   const data = ensure(AsyncDataCubit);
   data.triggerUpdate();
-  await flushBlocUpdates();
+  await flush();
   expect(data.state.updated).toBe(true);
 });
 ```
 
-::: tip
-`flushBlocUpdates` flushes the macrotask queue, not timers. If your code uses `setTimeout` or `setInterval` with a delay, use `vi.useFakeTimers()` and `vi.advanceTimersByTime()` instead.
+::: info Reading `state` directly does not need a flush
+`flush()` is about *propagation*. The instance's own `state` getter is synchronous — `data.state` is up to date the instant `emit`/`patch` returns. You only need `await flush()` when asserting on something downstream of the channel flush (a `subscribe` listener, a `stateChanged` handler, a re-rendered component, a plugin).
+:::
+
+::: warning `flush()` drains microtasks, not timers
+`flush()` awaits the microtask queue. If your code schedules work with `setTimeout`/`setInterval`, drive it with `vi.useFakeTimers()` + `vi.advanceTimersByTime()` instead — `flush()` will not advance real or fake timers. This is the mirror image of the once-per-flush batching described in [System Events](/core/system-events).
+:::
+
+::: details `flushBlocUpdates()` (deprecated alias)
+`flushBlocUpdates()` is a deprecated alias of `flush()` kept for backwards compatibility. New tests should call `flush()`.
+
+```ts
+import { flush } from '@blac/core/testing';
+```
 :::
 
 ## Combining helpers
@@ -287,7 +360,7 @@ it('propagates async state', async () => {
 The real power of these utilities comes from combining them. Here's a complete example testing a cubit that depends on two others:
 
 ```ts
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import {
   blacTestSetup,
   createCubitStub,
@@ -366,7 +439,12 @@ it('includes shipping in total', () => {
 });
 ```
 
-The stub is a real `ShippingCubit` instance, so `cart.getShipping()` works exactly as it would in production — no special mocking framework needed.
+The stub is a real `ShippingCubit` instance, so `cart.getShipping()` works exactly as it would in production — no special mocking framework needed. (For the production-side picture of how `depend()` resolves from the registry, see [Bloc Communication](/core/bloc-communication).)
+
+::: danger Common mistakes
+- **Overriding a dependency *after* the dependent bloc has already read it.** `depend()` resolves lazily on each call, but if your dependent bloc cached a value in `init()` from the dependency, register the override *before* you `ensure` the dependent bloc.
+- **Forgetting that `depend()` uses `ensure` (no ref).** Within a test the registry is isolated, so this rarely bites — but in app code a depended-on bloc can be disposed if nothing holds a ref. See [Bloc Communication](/core/bloc-communication).
+:::
 
 ## Testing keyed instances
 
@@ -387,4 +465,10 @@ it('manages independent editor instances', () => {
 });
 ```
 
-See also: [Testing Overview](/testing/overview), [React Testing](/testing/react), [Instance Management](/core/instance-management)
+## See also
+
+- [Testing Overview](/testing/overview) — why registry isolation matters and the import convention
+- [React Testing](/testing/react) — `renderWithBloc` / `renderWithRegistry`, built on these primitives
+- [Instance Management](/core/instance-management) — the registry, `ensure`, and ref counting these helpers isolate
+- [Bloc Communication](/core/bloc-communication) — the canonical `depend()` / cross-bloc example
+- [System Events](/core/system-events) — the once-per-flush batching that `flush()` drains

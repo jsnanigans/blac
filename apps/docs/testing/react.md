@@ -1,10 +1,21 @@
 # React Testing
 
-The React testing utilities build on top of `@blac/core/testing` and `@testing-library/react` to provide a simple way to render components with controlled bloc state.
+The React testing utilities build on top of [`@blac/core/testing`](/testing/core) and `@testing-library/react` to provide a simple way to render components with controlled bloc state. They follow the same principle as the core helpers: render the component into a fresh, isolated [registry](/core/instance-management) so each test starts from a known set of bloc instances.
 
 ```ts
 import { renderWithBloc, renderWithRegistry } from '@blac/react/testing';
 ```
+
+::: tip Which one do I use?
+- **One bloc to control?** Reach for `renderWithBloc` — it stubs and registers a single bloc in one call.
+- **Multiple blocs, or fine-grained setup?** Use `renderWithRegistry` and configure the registry yourself in a callback.
+
+Both isolate the registry and restore it on unmount, so they compose freely with `blacTestSetup()`.
+:::
+
+::: info Test globals
+As elsewhere in this project, import `describe`/`it`/`expect`/`vi` from [`vite-plus/test`](/testing/overview#why-registry-isolation-matters). The examples below also use `userEvent`, which comes from `@testing-library/user-event`.
+:::
 
 ::: tip
 `@testing-library/react` is an optional peer dependency of `@blac/react`. Install it alongside your test runner to use these utilities.
@@ -19,6 +30,8 @@ function renderWithBloc<T extends StateContainerConstructor>(
     bloc: T;
     state?: Partial<ExtractState<T>>;
     methods?: Partial<Record<MethodKeys<InstanceType<T>>, Function>>;
+    args?: ExtractArgs<T>;
+    deps?: Partial<ExtractDeps<T>>;
     instanceKey?: string;
   },
 ): RenderResult & { bloc: InstanceType<T> };
@@ -27,17 +40,19 @@ function renderWithBloc<T extends StateContainerConstructor>(
 Renders a React component with a single bloc pre-configured in an isolated registry. Under the hood it:
 
 1. Creates a fresh test registry
-2. Creates a cubit stub with the provided `state` and `methods`
-3. Registers it as an override
+2. Creates a cubit stub with the provided options (`state`, `methods`, `args`, `deps`)
+3. Registers it as an override under `instanceKey`
 4. Renders the component via `@testing-library/react`
 5. Wraps `unmount()` to restore the previous registry
 
 The returned object is the standard `RenderResult` from Testing Library, plus a `bloc` property containing the stub instance.
 
+Aside from `bloc` and `instanceKey`, the options are exactly the [`createCubitStub`](/testing/core#create-cubit-stub) options — including `args` (to run `init()`) and `deps` (to fire `onDepsChanged`). See [Inputs](/guide/inputs) for what those lanes mean.
+
 ### Basic usage
 
 ```tsx
-import { it, expect } from 'vitest';
+import { it, expect } from 'vite-plus/test';
 import { screen } from '@testing-library/react';
 import { renderWithBloc } from '@blac/react/testing';
 
@@ -68,11 +83,19 @@ it('updates when count changes', () => {
 });
 ```
 
+::: tip `act()` vs `userEvent`
+Wrap **direct bloc mutations** (`bloc.increment()`) in `act()` so React processes the resulting re-render before you assert. For **user-driven interactions** (typing, clicking), prefer `userEvent` — it already wraps its actions in `act()`, so you do not need to add your own. As a rule: reach into the bloc → `act()`; drive the UI → `userEvent`.
+:::
+
 ### Mocking methods
 
 Pass `methods` to replace specific methods on the stub. This is useful for intercepting side effects like API calls or navigation:
 
 ```tsx
+import { it, expect, vi } from 'vite-plus/test';
+import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 it('calls save on form submit', async () => {
   const mockSave = vi.fn();
   renderWithBloc(<SettingsForm />, {
@@ -101,6 +124,33 @@ it('renders the correct editor', () => {
 });
 ```
 
+::: warning Match the resolved instance key
+`instanceKey` here must match the key your component's `useBloc` resolves to. With an explicit `useBloc(Cubit, { instanceId })`, that is the stringified `instanceId`. With `args`-keyed blocs the key is derived structurally from the args, so prefer to control identity by seeding the stub directly (next section) rather than guessing the key. See [Inputs](/guide/inputs) for how identity is resolved.
+:::
+
+### `args`- and `deps`-based blocs
+
+When a component renders a bloc that takes `args` or `deps`, you can pre-build the stub with those lanes so the component sees fully-initialized state. Pass `args` (runs `init()`) and `deps` (fires `onDepsChanged`) right alongside `state`:
+
+```tsx
+it('renders a profile seeded from args and deps', () => {
+  // function Profile() {
+  //   const [s] = useBloc(ProfileCubit, { args: { name: 'Alice' }, deps: { token } });
+  //   ...
+  // }
+  const { bloc } = renderWithBloc(<Profile />, {
+    bloc: ProfileCubit,
+    args: { name: 'Alice' },
+    deps: { token: 'secret' },
+  });
+
+  expect(bloc.state.displayName).toBe('Alice');
+  expect(screen.getByText('Alice')).toBeInTheDocument();
+});
+```
+
+Because the stub is seeded before render, the component reads the initialized state on its very first paint — no `flush()` needed for the initial values.
+
 ## `renderWithRegistry(ui, setup)`
 
 ```ts
@@ -115,6 +165,8 @@ Renders a component with a fresh registry that you configure via a callback. Use
 ### Multi-bloc components
 
 ```tsx
+import { it, expect } from 'vite-plus/test';
+import { screen } from '@testing-library/react';
 import { renderWithRegistry } from '@blac/react/testing';
 import { createCubitStub, registerOverride } from '@blac/core/testing';
 
@@ -209,6 +261,10 @@ it('shows error message on failure', () => {
 ### Testing user interactions
 
 ```tsx
+import { it, expect } from 'vite-plus/test';
+import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 it('adds a todo item', async () => {
   const { bloc } = renderWithBloc(<TodoApp />, {
     bloc: TodoCubit,
@@ -229,6 +285,8 @@ it('adds a todo item', async () => {
 Components that use `onMount` to trigger data loading can have that method mocked:
 
 ```tsx
+import { it, expect, vi } from 'vite-plus/test';
+
 it('calls fetchData on mount', () => {
   const mockFetch = vi.fn();
   renderWithBloc(<DataView />, {
@@ -262,4 +320,14 @@ it('displays computed total', () => {
 
 The getter runs against real state, so you test real logic — not a mocked return value.
 
-See also: [Testing Overview](/testing/overview), [Core Testing API](/testing/core), [useBloc](/react/use-bloc)
+::: danger Common mistakes
+- **Mismatched `instanceKey`.** If the component resolves a named or args-keyed instance but you register the stub under `default`, the component will spin up its own real instance and ignore your stub. Match the key, or seed via `args`/`deps` so identity lines up.
+- **Asserting before React commits.** Direct bloc mutations need `act()`; user-driven flows need `await userEvent...`; async data needs `await screen.findBy*` (or `await flush()` then a sync query). A missing `await` is the usual cause of "the test sees the old UI."
+:::
+
+## See also
+
+- [Core Testing API](/testing/core) — the stub/override/seeding primitives these helpers wrap
+- [Testing Overview](/testing/overview) — registry isolation and the import convention
+- [useBloc](/react/use-bloc) — the hook your components use, and how it resolves instance identity
+- [Inputs](/guide/inputs) — the `args` / `deps` / `instanceId` lanes you seed in tests

@@ -1,5 +1,9 @@
 # React Getting Started
 
+BlaC's mental model is one line: **state lives in a class (a Cubit), and `useBloc` connects a component to it, re-rendering only when the data that component actually reads changes.** No providers to wire up, no reducers, no selectors required. For the full reasoning behind that design, see [Mental Model](/guide/mental-model).
+
+This page gets you from install to a working counter and todo list. For the framework-agnostic introduction to Cubits, see [Getting Started](/guide/getting-started); this page focuses on the React binding.
+
 ## Installation
 
 ::: code-group
@@ -16,9 +20,9 @@ npm install @blac/core @blac/react
 
 Requires React 18+ and TypeScript is recommended.
 
-## Basic usage
+## Your first component
 
-Define a Cubit for your state, then connect it to a component with `useBloc`:
+Two steps: define a Cubit that holds state and exposes methods to change it, then connect a component to it with `useBloc`. The snippet below is complete and copy-pasteable.
 
 ```tsx
 import { Cubit } from '@blac/core';
@@ -26,9 +30,11 @@ import { useBloc } from '@blac/react';
 
 class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
-    super({ count: 0 });
+    super({ count: 0 }); // initial state goes to super()
   }
 
+  // Arrow-function fields keep `this` bound, so you can pass them straight
+  // to onClick without wrapping. (See "common mistakes" below.)
   increment = () => this.emit({ count: this.state.count + 1 });
   decrement = () => this.update((s) => ({ count: s.count - 1 }));
 }
@@ -46,42 +52,69 @@ function Counter() {
 }
 ```
 
-`useBloc` returns `[state, bloc]`:
+`useBloc` returns a tuple `[state, bloc]`:
 
-- **state** — current state, tracked for re-renders (only properties you read trigger updates)
-- **bloc** — the Cubit instance (call methods on it)
+- **state** — the current state, tracked for re-renders. Reading `state.count` here subscribes this component to `count` only; if the state grows other fields, changing them won't re-render `Counter`.
+- **bloc** — the Cubit instance. Call its methods to drive state changes (`counter.increment()`).
 
-## Global configuration
+There is no `<Provider>` to add at the root and nothing to register. The first component to call `useBloc(CounterCubit)` creates the instance; the last one to unmount disposes it.
 
-Optionally configure defaults for all `useBloc` calls:
+### Three ways to update state
 
-```ts
-import { configureBlacReact } from '@blac/react';
+A Cubit exposes three mutation methods. Most code uses `emit`; reach for the others when they read better:
 
-configureBlacReact({
-  autoTrack: true, // default: true
-});
-```
+| Method   | Shape                          | Use when                                                  |
+| -------- | ------------------------------ | --------------------------------------------------------- |
+| `emit`   | `emit(nextState)`              | You're replacing the whole state object.                  |
+| `update` | `update((prev) => nextState)`  | The next state derives from the previous one.             |
+| `patch`  | `patch(partial)`               | You want to deep-merge a few fields and leave the rest.   |
+
+::: warning Common mistakes
+- **Regular methods lose `this`.** `increment() { ... }` (a normal method) loses its `this` binding when passed as `onClick={counter.increment}`. Use arrow-function class fields (`increment = () => { ... }`) as every example here does — they capture `this` at construction.
+- **`emit` replaces, it does not merge.** `emit({ count: 1 })` on a state of `{ count, name }` drops `name`. To change only some fields, use `patch({ count: 1 })` (deep-merge) or spread inside `update((s) => ({ ...s, count: 1 }))`.
+:::
+
+::: details Where does the state live?
+The instance is held in a global registry and reference-counted by `useBloc`. The "what just happened" details — acquire on mount, release on unmount, automatic disposal at zero refs — are covered in [Instance Management](/core/instance-management), and the reasoning behind the design is in [Mental Model](/guide/mental-model).
+:::
 
 ## Tracking modes at a glance
 
-| Mode          | How to enable               | Re-renders when           |
-| ------------- | --------------------------- | ------------------------- |
-| Auto-tracking | Default                     | Tracked properties change |
-| Manual select | `select: (s) => [s.count]` | Selected values change    |
-| No tracking   | `autoTrack: false`          | Any state change          |
+Auto-tracking is on by default and needs no configuration. The only knob is per call: pass a `select` function to `useBloc` to choose exactly what drives re-renders instead.
 
-See [Dependency Tracking](/react/dependency-tracking) for details.
+| Mode          | How to enable                  | Re-renders when                       |
+| ------------- | ------------------------------ | ------------------------------------- |
+| Auto-tracking | Default (no `select`)          | A state path you read during render changes |
+| Manual select | `select: (s) => [s.count]`     | A selected value changes (per-index `Object.is`) |
+
+::: tip There is no `autoTrack` flag and no required config
+Tracking is automatic and structural — driven by a render-time proxy, not by decorating fields or flipping a switch. `configureBlacReact` exists but currently has no options. To opt out of auto-tracking for one component, use `select`. See [Dependency Tracking](/react/dependency-tracking) for the full model.
+:::
 
 ## Instance modes at a glance
 
-| Mode   | How to enable           | Behavior                          |
-| ------ | ----------------------- | --------------------------------- |
-| Shared | Default                 | All components share one instance |
-| Named  | `{ instanceId: 'key' }` | Shared within same key            |
+By default all components calling `useBloc(SameCubit)` share one instance. You can scope instances per key or per mount:
+
+| Mode      | How to enable                  | Behavior                                          |
+| --------- | ------------------------------ | ------------------------------------------------- |
+| Shared    | Default                        | All components share one instance                 |
+| Named     | `{ instanceId: 'key' }`        | Components with the same key share an instance     |
+| Per-args  | `{ args: { id } }`             | Each distinct `args` value gets its own instance   |
+| Per-mount | `{ instanceId: useId() }`      | Each component mount gets a private instance        |
+
+See [Passing Inputs](/guide/inputs) for the full identity model and precedence.
 
 ## What's next?
 
-- [useBloc](/react/use-bloc) — Full hook reference
-- [Dependency Tracking](/react/dependency-tracking) — Understanding re-render optimization
+Once the counter works, the natural next steps are reading state efficiently and giving blocs input:
+
+- [useBloc](/react/use-bloc) — Full hook reference, options, and identity rules
+- [Dependency Tracking](/react/dependency-tracking) — How smart re-renders work and their limits
+- [Passing Inputs](/guide/inputs) — `args`, per-mount instances, and identity keying
+
+## See also
+
+- [Mental Model](/guide/mental-model) — Why BlaC works the way it does
+- [Cubit](/core/cubit) — The state container: `emit`, `update`, `patch`, lifecycle
 - [Performance](/react/performance) — Patterns and anti-patterns
+- [Getting Started](/guide/getting-started) — Framework-agnostic introduction

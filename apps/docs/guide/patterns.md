@@ -2,6 +2,10 @@
 
 Common patterns for structuring BlaC applications. Each pattern is drawn from real examples in the codebase.
 
+::: info Recipes vs. principles
+This page is a **cookbook**: concrete, copy-pasteable solutions to recurring problems. For the *principles* behind these choices — when to reach for one approach over another, and the smells to avoid — see [Best Practices](/guide/best-practices). Rule of thumb: come here when you know *what* you want to build; go there when you're deciding *whether* an approach is sound.
+:::
+
 ## Async operations
 
 ### Loading / error / success
@@ -39,11 +43,11 @@ class FeedCubit extends Cubit<FeedState> {
 }
 ```
 
-The `requestId` pattern is simpler than AbortController for most cases. Each new call invalidates previous in-flight responses.
+The `requestId` pattern is simpler than AbortController for most cases. Each new call invalidates previous in-flight responses. Modelling async state as an explicit `status` enum (rather than scattered `isLoading`/`error` booleans) is a principle covered in [Best Practices](/guide/best-practices).
 
 ### Hydration-aware loading
 
-When using the persistence plugin, state may arrive asynchronously from IndexedDB. Wait for hydration before making API calls:
+When using the [persistence plugin](/plugins/persistence), state may arrive asynchronously from IndexedDB. Override `init` and `await this.waitForHydration()` before making API calls, so you don't overwrite restored values with a stale fetch:
 
 ```ts
 class SettingsCubit extends Cubit<SettingsState> {
@@ -51,27 +55,35 @@ class SettingsCubit extends Cubit<SettingsState> {
     super({ theme: 'light', locale: 'en' });
   }
 
-  init = async () => {
+  protected override async init() {
     await this.waitForHydration();
     // Now this.state has restored values from IndexedDB
     await this.refreshFromServer();
-  };
+  }
 }
 ```
 
+`init` is the framework's once-per-instance setup hook — a protected method called after construction, before the first state snapshot, with the bloc's `args`. `waitForHydration()` resolves once the persistence plugin finishes restoring (or immediately if nothing is persisted); see [system events](/core/system-events) for the `hydrationChanged` event that drives it.
+
 ## Action-only components
 
-Components that only trigger actions and never display state don't need tracking at all. Disable it to avoid unnecessary re-renders:
+Components that only trigger actions and never display state don't need tracking at all. Opt out of auto-tracking by passing a `select` that returns a constant empty array — it has nothing that can change, so the component never re-renders:
 
 ```tsx
+const selectNothing = () => [];
+
 function QuickAdd() {
-  const [, todo] = useBloc(TodoCubit, { autoTrack: false });
+  const [, todo] = useBloc(TodoCubit, { select: selectNothing });
 
   return <button onClick={() => todo.addItem('New item')}>Add Item</button>;
 }
 ```
 
 This component renders once and never re-renders, regardless of state changes.
+
+::: tip Keep `select` referentially stable
+Define the selector outside the component (or wrap it in `useCallback`). A fresh function every render re-keys the subscription. There is no `autoTrack` option — passing `select` *is* how you opt out. See [Performance](/react/performance) for the full reader/writer split rationale and [useBloc](/react/use-bloc) for `select` semantics.
+:::
 
 ## Named instances
 
@@ -101,32 +113,36 @@ function FormSection({ instanceId }: { instanceId: string }) {
 
 Named instances are ref-counted independently. When all components using `"billing"` unmount, that instance is disposed while `"shipping"` stays alive.
 
+When the distinguishing key is *meaningful data* (a `userId`, a `docId`) rather than an arbitrary label, prefer keying by `args` instead — see [Passing Inputs](/guide/inputs). Reach for an explicit `instanceId` when the key is anonymous or externally managed.
+
 ## Persisting state outside React
 
-Use `watch` to observe state changes from non-React code — saving to localStorage, syncing to a server, or feeding analytics:
+Use [`watch`](/core/watch) to observe state changes from non-React code — saving to localStorage, syncing to a server, or feeding analytics. The callback receives the **bloc instance** (read its state via `bloc.state`), fires once immediately, then on every change:
 
 ```ts
-import { watch } from '@blac/core/watch';
+import { watch } from '@blac/core';
 
-watch(TodoCubit, (state) => {
-  localStorage.setItem('todos', JSON.stringify(state.items));
+watch(TodoCubit, (bloc) => {
+  localStorage.setItem('todos', JSON.stringify(bloc.state.items));
 });
 ```
 
-`watch` uses the same proxy-based tracking as `useBloc`. In this example, only changes to `state.items` trigger the callback. Changes to `state.filter` are ignored.
+`watch` resolves the instance via `ensure` (no ref count, so it does not keep the bloc alive) and observes all of its state.
 
 To stop watching, either call the returned function or return `watch.STOP` from the callback:
 
 ```ts
-const stop = watch(AuthCubit, (state) => {
-  if (state.user) {
-    analytics.identify(state.user.id);
+const stop = watch(AuthCubit, (bloc) => {
+  if (bloc.state.user) {
+    analytics.identify(bloc.state.user.id);
     return watch.STOP; // one-shot
   }
 });
 ```
 
 ## Cross-bloc communication
+
+The recipes below are the common shapes; [Bloc Communication](/core/bloc-communication) is the full reference for `depend()` and its lifecycle caveats, and [Best Practices](/guide/best-practices) covers when cross-bloc coupling is a smell versus a clean dependency.
 
 ### Reading state from another bloc
 
@@ -198,32 +214,34 @@ class ChannelCubit extends Cubit<ChannelState> {
 
 ## Custom plugins
 
-Plugins observe lifecycle events across all state containers. Use them for cross-cutting concerns like analytics, logging, or monitoring.
+Plugins observe lifecycle events across all state containers. Use them for cross-cutting concerns like analytics, logging, or monitoring. Every hook takes the `PluginContext` first; the bloc the event is about is `ctx.container`, and `prev`/`next` in `onStateChange` are the **state objects**, not the bloc:
 
 ```ts
 const analyticsPlugin: BlacPlugin = {
   name: 'analytics',
   version: '1.0.0',
 
-  onCreated(ctx, instance) {
-    analytics.track('bloc_created', { name: instance.name });
+  onCreated(ctx) {
+    analytics.track('bloc_created', { name: ctx.container?.name });
   },
 
   onStateChange(ctx, prev, next, paths) {
     analytics.track('state_changed', {
-      name: next.name,
+      name: ctx.container?.name,
       from: prev,
       to: next,
     });
   },
 
-  onDestroyed(ctx, instance) {
-    analytics.track('bloc_disposed', { name: instance.name });
+  onDestroyed(ctx) {
+    analytics.track('bloc_disposed', { name: ctx.container?.name });
   },
 };
 
 getPluginManager().install(analyticsPlugin);
 ```
+
+See [Plugin Authoring](/core/plugins) for the full hook reference, the `paths` parameter, and the `environment` option (skip a plugin outside `development`, for example).
 
 ## Keep-alive instances
 
@@ -242,11 +260,28 @@ class ThemeCubit extends Cubit<{ mode: 'light' | 'dark' }> {
 }
 ```
 
-The instance is created on first use and stays alive for the entire app session, even if all components using it unmount.
+The instance is created on first use and stays alive for the entire app session, even if all components using it unmount. `keepAlive` only disables the *auto-dispose at refcount zero*; the instance is still disposable via `clear()` or a forced release. See [Configuration](/core/configuration) for the option and [Instance Management](/core/instance-management) for how ref-counting and auto-dispose interact.
+
+## Per-component private instances
+
+When a component needs its *own* instance — never shared with siblings, disposed when it unmounts — give it a per-mount `instanceId`. `useId()` is the idiomatic source of a stable-per-mount key:
+
+```tsx
+import { useId } from 'react';
+
+function UploadWidget() {
+  const instanceId = useId(); // unique per mount, stable across this mount's renders
+  const [state, upload] = useBloc(UploadCubit, { instanceId });
+
+  return <progress value={state.progress} max={100} />;
+}
+```
+
+Two `<UploadWidget />` siblings get two independent instances; each is disposed on its own unmount. This is the supported replacement for the removed `autoInstance` option. To seed the instance with identity data, combine it with `args` — see [Passing Inputs](/guide/inputs).
 
 ## Getter-based computed values
 
-Define getters on your Cubit for derived state. The tracking system detects getter access and only re-renders when the computed result changes.
+Define getters on your Cubit for derived state instead of storing the computed value in state. One caveat: auto-tracking records reads on the `state` proxy only, so reading a getter off the `bloc` instance (`todo.activeCount`) does **not** register a dependency by itself. Wake the consumer either by reading the getter's source path through `state` in render, or by depending on the getter via `select`. See [Performance: getters as computed properties](/react/performance#pattern-getters-as-computed-properties).
 
 ```ts
 class TodoCubit extends Cubit<TodoState> {
@@ -268,8 +303,22 @@ class TodoCubit extends Cubit<TodoState> {
 
 ```tsx
 function TodoStats() {
-  const [, todo] = useBloc(TodoCubit);
-  // Only re-renders when activeCount or completedCount changes
+  const [state, todo] = useBloc(TodoCubit);
+  // Read the getter's source path through `state` so the consumer wakes,
+  // then call the getter for the computed result.
+  void state.items;
+  return (
+    <span>
+      {todo.activeCount} active, {todo.completedCount} done
+    </span>
+  );
+}
+
+// Or depend on the getters explicitly with `select` (each runs the getter):
+function TodoStatsSelected() {
+  const [, todo] = useBloc(TodoCubit, {
+    select: (_, bloc) => [bloc.activeCount, bloc.completedCount],
+  });
   return (
     <span>
       {todo.activeCount} active, {todo.completedCount} done
@@ -278,4 +327,15 @@ function TodoStats() {
 }
 ```
 
-See also: [Cubit](/core/cubit), [Bloc Communication](/core/bloc-communication), [Instance Management](/core/instance-management)
+::: tip Derive, don't duplicate
+Storing `activeCount` *in state* alongside `items` means every mutation has to remember to update both — they drift. A getter computes on read and can never go stale. Best Practices treats "derive with getters, don't store computed values" as a core principle.
+:::
+
+## See also
+
+- [Best Practices](/guide/best-practices) — the principles behind these recipes
+- [Performance](/react/performance) — reader/writer splitting and proxy-cost mechanics
+- [Bloc Communication](/core/bloc-communication) — full `depend()` reference and lifecycle caveats
+- [Instance Management](/core/instance-management) — ref-counting, `keepAlive`, and auto-dispose
+- [Passing Inputs](/guide/inputs) — `args`, `deps`, and per-mount instances
+- [Cubit](/core/cubit) — `init`, `emit`/`patch`/`update`, and getters

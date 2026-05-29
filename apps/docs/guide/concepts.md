@@ -1,6 +1,6 @@
 # Core Concepts
 
-This page explains the mental model behind BlaC. Understanding these concepts will help you make good decisions about how to structure your state.
+This is the quick conceptual tour — one screen per idea, enough to start making good decisions about how to structure your state. For the deep "why it works this way" (the reactivity model, the per-consumer tracker, batching and ref-counting rationale, and honest comparisons to other libraries), read the [Mental Model](/guide/mental-model). For one-line definitions of every term, see the [Glossary](/guide/glossary).
 
 ## State Containers
 
@@ -36,7 +36,7 @@ The registry is a global singleton that manages state container instances. When 
 
 It maps each class (and optional instance key) to a single instance, plus a ref count tracking how many consumers are using it:
 
-```
+```text
 Registry
 ├── CounterCubit (default)  →  instance, refCount: 2   ← two components
 ├── AuthCubit (default)     →  instance, refCount: 1
@@ -51,15 +51,16 @@ If you want an instance to survive even when nothing is using it, mark it with `
 
 ### Registry functions
 
-In React, `useBloc` handles the registry for you. Outside React (tests, scripts, server-side), you interact with the registry directly:
+In React, `useBloc` handles the registry for you. Outside React (tests, scripts, server-side), you interact with it directly. The headline verbs:
 
 | Function            | Creates? | Ref count | Use when                                        |
 | ------------------- | -------- | --------- | ----------------------------------------------- |
 | `acquire(Class)`    | Yes      | +1        | You own this reference (must `release` later)   |
 | `ensure(Class)`     | Yes      | No change | You need the instance but don't own a reference |
 | `borrow(Class)`     | No       | No change | Instance must already exist (throws if not)     |
-| `borrowSafe(Class)` | No       | No change | Like `borrow` but returns `{ error, instance }` |
 | `release(Class)`    | No       | -1        | Done with your reference                        |
+
+This is the quick version. The complete function table (including `borrowSafe`, `getRefCount`, `clear`, and the keying rules) lives in [Instance Management](/core/instance-management).
 
 ## Instance Modes
 
@@ -79,9 +80,19 @@ useBloc(EditorCubit, { instanceId: 'doc-42' });
 
 With `@blac({ keepAlive: true })`, the instance survives even when all components using it unmount. It persists for the lifetime of the app.
 
+## Inputs: args, deps, instanceId
+
+Components rarely need a blank container — they need one seeded with data. BlaC keeps that data in three separate lanes so a shared instance with many consumers never races:
+
+- **`args`** — serializable data that *identifies* an instance (e.g. a document id). Same args resolve to the same instance.
+- **`deps`** — non-serializable handles (callbacks, services) injected per consumer, never used for identity.
+- **`instanceId`** — an explicit key when you want a distinct instance regardless of args.
+
+This is just the teaser; the full model, the precedence rules, and the failure modes live in [Inputs](/guide/inputs).
+
 ## Dependency Tracking
 
-This is BlaC's key performance feature. When you call `useBloc`, the returned `state` is wrapped in a Proxy that records which properties your component actually reads during render:
+This is BlaC's key performance feature — the quick tour here, with the full mechanism and its edge cases in [Dependency Tracking](/react/dependency-tracking). When you call `useBloc`, the returned `state` is wrapped in a Proxy that records which properties your component actually reads during render:
 
 ```tsx
 function UserName() {
@@ -94,19 +105,19 @@ If `state.email` changes but `state.name` doesn't, this component **won't re-ren
 
 The tracking also works for:
 
-- Nested properties: `state.user.profile.name`
+- Nested properties: `state.user.profile.name` (records the leaf path)
 - Array access: `state.items.length`, `state.items[0]`
-- Getters on the bloc instance: `bloc.total`, `bloc.isEmpty`
 
-Three tracking modes are available:
+Only reads on the `state` proxy are recorded. Reading a getter on the `bloc` instance (`bloc.total`) does **not** auto-track on its own — wake the consumer by reading the getter's source path through `state` in render, or depend on the getter via `select`. See [Dependency Tracking](/react/dependency-tracking).
 
-| Mode                        | How                                | Best for                            |
-| --------------------------- | ---------------------------------- | ----------------------------------- |
-| **Auto-tracking** (default) | Proxy records property access      | Most components                     |
-| **`select`** (manual)       | You provide a selector array       | Complex conditions, computed values |
-| **No tracking**             | Re-renders on every state change   | Action-only components, debugging   |
+There are two tracking modes, chosen by whether you pass a `select` option — there is no separate on/off flag:
 
-See [Dependency Tracking](/react/dependency-tracking) for details.
+| Mode                        | How                                          | Best for                            |
+| --------------------------- | -------------------------------------------- | ----------------------------------- |
+| **Auto-tracking** (default) | Proxy records property access during render  | Most components                     |
+| **`select`** (manual)       | You return an array; re-render when it changes per-index | Complex conditions, computed values, or opting out |
+
+A component that wants to *never* re-render on state (an action-only button, say) is just the `select` mode with a constant array. See [Dependency Tracking](/react/dependency-tracking) for the full story, including the conditional-read caveat.
 
 ## Plugins
 
@@ -126,23 +137,19 @@ Official plugins: [Logging](/plugins/logging), [DevTools](/plugins/devtools), [P
 
 ## Glossary
 
-| Term                  | Meaning                                                                      |
-| --------------------- | ---------------------------------------------------------------------------- |
-| **StateContainer**    | Abstract base class for all state containers                                 |
-| **Cubit**             | Concrete state container with public `emit`, `update`, `patch`               |
-| **Registry**          | Global singleton managing instance creation, sharing, and disposal           |
-| **acquire / release** | Increment / decrement an instance's ref count                                |
-| **Ref count**         | Number of active references to an instance; disposed at zero                 |
-| **Named instance**    | An instance keyed by a string, allowing multiple instances of the same class |
-| **Keep alive**        | Instance persists even when ref count reaches zero                           |
-| **Auto-tracking**     | Proxy-based detection of which state properties a component reads            |
-| **Plugin**            | Observer that hooks into state container lifecycle events                    |
-| **Hydration**         | Restoring persisted state into a state container on startup                  |
-| **depend()**          | Declare a cross-bloc dependency; returns a lazy getter                       |
+Every term used above — `StateContainer`, `Cubit`, registry, ref counting, auto-tracking, `args`/`deps`/`instanceId`, hydration, `depend()`, and the rest — has a one-line definition in the [Glossary](/guide/glossary), each linking to its deep page.
 
 ## What's next?
 
+- [Mental Model](/guide/mental-model) — The deep "why" behind everything on this page
+- [Inputs](/guide/inputs) — args, deps, and instance identity in full
 - [Patterns & Recipes](/guide/patterns) — Common patterns for structuring your app
 - [Cubit](/core/cubit) — Full Cubit API reference
 - [useBloc](/react/use-bloc) — Hook options and tracking modes
-- [DevTools](/plugins/devtools) — Inspect and debug your state
+
+## See also
+
+- [Mental Model](/guide/mental-model) — the deep version of this tour
+- [Glossary](/guide/glossary) — definitions for every term here
+- [Instance Management](/core/instance-management) — the complete registry function reference
+- [Dependency Tracking](/react/dependency-tracking) — auto-tracking in depth

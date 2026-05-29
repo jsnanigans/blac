@@ -47,13 +47,15 @@ yarn add -D @testing-library/react
 
 ## Why registry isolation matters
 
-BlaC uses a global registry to store bloc instances. Without isolation, tests that create or modify blocs will leak state into subsequent tests, causing flaky failures that depend on test execution order.
+BlaC stores every bloc instance in a single global [registry](/core/instance-management). That is what lets any component call `useBloc(CounterCubit)` and reach the *same* instance without prop drilling. In tests, that same shared-by-default behavior works against you: a bloc created or mutated in one test is still in the registry when the next test runs, so tests leak state into each other and fail depending on execution order.
 
-Every testing utility in this guide is designed to solve that problem. The most common approach is `blacTestSetup()`, which swaps in a fresh registry before each test and restores the original after:
+The mental model for testing BlaC is therefore simple: **give every test its own registry.** Once each test starts from an empty registry, the shared-instance model becomes a feature again — you seed exactly the instances a test needs and nothing carries over.
+
+Every testing utility in this guide is built around that idea. The most common approach is `blacTestSetup()`, which swaps in a fresh registry before each test and restores the original after:
 
 ```ts
-import { describe, it, expect } from 'vitest';
-import { blacTestSetup, withBlocState } from '@blac/core/testing';
+import { describe, it, expect } from 'vite-plus/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { ensure } from '@blac/core';
 
 blacTestSetup();
@@ -77,6 +79,7 @@ describe('CounterCubit', () => {
 ### Testing a cubit in isolation
 
 ```ts
+import { it, expect } from 'vite-plus/test';
 import { blacTestSetup, withBlocState } from '@blac/core/testing';
 import { ensure } from '@blac/core';
 import { TodoCubit } from '../blocs/TodoCubit';
@@ -99,7 +102,7 @@ it('can start with seeded state', () => {
 ### Testing a React component
 
 ```tsx
-import { it, expect } from 'vitest';
+import { it, expect } from 'vite-plus/test';
 import { screen } from '@testing-library/react';
 import { renderWithBloc } from '@blac/react/testing';
 import { Counter } from '../components/Counter';
@@ -114,4 +117,24 @@ it('displays the current count', () => {
 });
 ```
 
-See also: [Core Testing API](/testing/core), [React Testing API](/testing/react)
+::: warning Import test globals from `vite-plus/test`
+This project runs tests through `vite-plus`, so `describe`/`it`/`expect`/`vi` are imported from `vite-plus/test`, not from `vitest` directly:
+
+```ts
+import { describe, it, expect, vi } from 'vite-plus/test';
+```
+
+Tests still run if you import bare globals, but linting fails. If you use a different runner, substitute its import — the BlaC helpers themselves are runner-agnostic.
+:::
+
+::: danger Common mistakes
+- **Forgetting `blacTestSetup()`** (or another isolation helper). Without it, a bloc mutated in one test survives into the next and you get order-dependent, flaky failures — exactly the problem isolation exists to prevent. See [Core Testing API](/testing/core) for the lower-level alternatives.
+- **Asserting on async state too early.** State changes are flushed on a microtask, so a value set inside an async action may not be visible on the very next line. `await flushBlocUpdates()` (or React Testing Library's `findBy*` queries) before asserting. See [System Events](/core/system-events) for the batching model.
+:::
+
+## See also
+
+- [Core Testing API](/testing/core) — the full helper reference (`blacTestSetup`, stubs, overrides, seeding)
+- [React Testing API](/testing/react) — rendering components with controlled bloc state
+- [Instance Management](/core/instance-management) — the registry these helpers isolate
+- [Glossary](/guide/glossary) — definitions for *registry*, *stub*, *override*, *instance key*

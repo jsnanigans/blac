@@ -1,47 +1,76 @@
 # Dependency Tracking
 
-BlaC uses dependency tracking to minimize re-renders. Instead of re-rendering on every state change, components only update when the specific properties they read have changed.
+When a component subscribes to a state container, the naive contract is "re-render whenever the state changes." That contract is wasteful: a `UserCubit` holding `name`, `email`, and `avatarUrl` would re-render your avatar component every time the email changes, even though the avatar never reads it.
+
+BlaC fixes this with **auto-tracking**: it records which state properties each component actually reads during render, and re-renders that component only when one of *those* properties changes. You write plain property access; the re-render scope is inferred for you — no selectors, no `useMemo`, no manual dependency arrays.
+
+::: info Mental model
+Auto-tracking, dependency tracking, and "proxy tracking" all name the same mechanism. The feature is **dependency tracking**; the default mode is **auto-tracking**; the implementation is a render-time recording **Proxy**. For the design rationale (why a proxy beats hand-written selectors), see [Mental Model](/guide/mental-model).
+:::
 
 ## The re-render problem
 
-Without tracking, a component subscribed to a state container re-renders on **every** state change — even if the change is to a property the component doesn't use. For containers with many properties, this creates unnecessary work.
+Without per-property tracking, a component subscribed to a container re-renders on **every** state change — even changes to properties it doesn't use. For containers with many fields, or lists of components reading one field each, this is a lot of wasted render work and a common source of jank.
 
-BlaC solves this with three tracking modes.
+BlaC offers two tracking modes. **Auto-tracking** is the default and the right answer for almost everything. **`select`** is an explicit escape hatch for the rare cases where you want to drive re-renders from a computed value or narrow tracking by hand.
 
 ## Auto-tracking (default)
 
-The state returned by `useBloc` is wrapped in a Proxy that records which properties your component reads during render.
+The `state` value returned by `useBloc` is a `Proxy` that records every property your component reads during render. The recorded set becomes the component's re-render scope.
 
 ```tsx
 function UserAvatar() {
   const [state] = useBloc(UserCubit);
   return <img src={state.avatarUrl} />;
-  // only 'avatarUrl' is tracked
-  // changes to state.name, state.email, etc. won't trigger re-render
+  // records: ['avatarUrl']
+  // changes to state.name, state.email, etc. do NOT re-render this component
 }
 ```
 
 ### How it works
 
-1. On first render, the Proxy records every property access (`state.avatarUrl`)
-2. On state change, BlaC compares only the tracked properties between old and new state
-3. If none of the tracked properties changed, the component skips re-rendering
-4. Tracking is updated on every render — if your component conditionally reads different properties, the tracked set adapts
+1. During render, the Proxy records each property access as a **path** (`state.avatarUrl` → `avatarUrl`).
+2. After the render commits, BlaC registers that path set with the container as this consumer's interest.
+3. On a state change, the container diffs which paths actually changed and wakes only the consumers whose recorded paths intersect the change.
+4. Tracking is recomputed on **every** render — if your component conditionally reads different properties next time, the tracked set adapts to match.
 
-### What gets tracked
+Each `useBloc` call gets its own proxy and its own recorded path set, so two components reading the same container are isolated from each other's re-renders.
 
-- Direct property access: `state.name`
-- Nested property access: `state.user.profile.name`
-- Array access: `state.items[0]`, `state.items.length`
-- Getter access on the bloc: `bloc.total`, `bloc.isEmpty`
+### What DOES register a dependency
 
-### Limitations
+| Read pattern | Records | Notes |
+| --- | --- | --- |
+| `state.name` | `name` | Direct property access. |
+| `state.user.profile.name` | `user.profile.name` | Nested reads record the **leaf** path only. |
+| `state.items[0]` | `items.0` | Indexed access on an array. |
+| `state.items.length` | `items.length` | `.length` is an own property read. |
+| Reading the whole object: `const u = state.user` (no deeper key) | `user` | Wakes on **any** change to `user`. |
 
-- Only plain objects `{}` and arrays `[]` are proxied. Custom class instances inside your state are not deeply tracked.
-- Conditional reads can cause missed updates:
+Tracking is recorded by the **`state` proxy only**. Reading a getter on the `bloc` instance (`bloc.total`) does **not** register a dependency — see the warning below.
+
+::: tip Sibling-leaf isolation
+Recording is **leaf-only**: reading `state.user.name` records `user.name`, not `user`. So when an immutable update replaces the `user` object because a *sibling* (`user.address`) changed, a component that only read `user.name` does **not** re-render — its observed leaf still resolves to the same value. Read the whole `user` object (with no deeper key) and you opt back into waking on any change beneath it.
+:::
+
+### What does NOT register a dependency
+
+These are the patterns newcomers expect to track but don't — or that track more or less than intended.
+
+::: warning Common mistakes
+- **Destructuring is just reading** — `const { name } = state` records `name` (good). But `const { user } = state; return user.name` records only `user` (the deeper `.name` read happens off the *raw* destructured value, not the proxy), so you wake on every `user` change. Read through the proxy chain (`state.user.name`) to get leaf isolation.
+- **Spreading reads everything** — `<Card {...state} />` or `{ ...state }` enumerates every own key, so the component tracks the **entire** state object and re-renders on any change. Pass only the fields you need.
+- **Reading inside an effect does not track** — the proxy records during *render*. Anything you read inside `useEffect`, an event handler, or an async callback runs after the render proxy is gone and records nothing. Read the value in the render body (or capture it from `state` there) if it should drive re-renders.
+- **Iteration coarsens to the entry path** — `.map`, `.find`, `.reduce`, `for..of` record the array path (`items`) but **not** per-index paths, and their callbacks receive raw (un-proxied) values. A list re-renders when the array changes, not per item. See [Performance](/react/performance#list-rendering-patterns) for the per-item isolation pattern.
+- **Non-plain values are leaves, not deeply tracked** — only plain objects `{}` and arrays `[]` are proxied. A `Map`, `Set`, `Date`, or class instance in your state is treated as a single leaf: BlaC detects a *reference* change at that value's own path, but reading *into* it (`state.cache.get(id)`) records nothing finer. Replace the whole value on update, or model that data as plain objects/arrays.
+- **Methods read off the prototype don't record** — reading `bloc.increment` without calling it records nothing (methods live on the prototype, not as own properties). This is fine: action handlers shouldn't drive re-renders.
+- **Getters on the `bloc` instance do not auto-track** — only the `state` proxy records paths. Reading `bloc.total` (a getter) does **not** register the state it computes from. To wake on the getter's inputs, read the source path through `state` in the render body (e.g. `state.items.length`), which keeps the getter result current; or depend on the getter explicitly with `select: (state, bloc) => [bloc.total]`.
+:::
+
+### Conditional reads
+
+Auto-tracking re-records on every render, which makes most conditional reads correct automatically. The condition itself must be read for the adaptive behavior to work:
 
 ```tsx
-// Potential issue: 'email' is only tracked when showEmail is true
 function UserInfo() {
   const [state] = useBloc(UserCubit);
   return (
@@ -53,11 +82,15 @@ function UserInfo() {
 }
 ```
 
-This works correctly because `showEmail` is always read, and when it changes from `false` to `true`, the component re-renders and `email` gets tracked on that render.
+This is correct. `state.showEmail` is **always** read, so it's always tracked. While `showEmail` is `false`, `email` is not read and not tracked — but when `showEmail` flips to `true`, the component re-renders (it tracked `showEmail`), the new render reads `email`, and `email` joins the tracked set from that point on.
 
-## Manual selection (`select`)
+::: warning Where conditional reads break
+The hazard is reading a property behind a condition that is **never re-evaluated by a tracked change**. If the deciding value comes from a prop or another hook (not from this bloc's tracked state), flipping it may not re-run the read against the latest state. When the branch and the value both come from the same bloc's state, you're safe. When the deciding value is external, prefer `select` to make the dependency explicit.
+:::
 
-Provide an explicit dependency array. The component re-renders only when the shallow-compared values change.
+## The `select` escape hatch
+
+Providing a `select` function **opts out of auto-tracking** for that call. Instead, the component subscribes to all changes, runs `select` on each, and re-renders only when the returned array changes per-index (`Object.is` per element).
 
 ```tsx
 function CountOnly() {
@@ -68,7 +101,7 @@ function CountOnly() {
 }
 ```
 
-The callback receives both state and the bloc instance:
+The callback receives both the state and the bloc instance, so you can select from getters:
 
 ```tsx
 const [state, cart] = useBloc(CartCubit, {
@@ -76,55 +109,42 @@ const [state, cart] = useBloc(CartCubit, {
 });
 ```
 
-### When to use `select`
+::: warning Keep `select` referentially stable
+`select` must be stable across renders — wrap it in `useCallback` or define it at module scope. A fresh function each render re-keys the subscription, which the underlying channel treats as a brand-new consumer (and defeats the optimization you reached for `select` to get). In `select` mode the returned `state` is the raw state object, not a tracking proxy.
+:::
 
-- Auto-tracking picks up too many properties and you want to narrow it down
-- You need to depend on a computed value (getter) with specific inputs
-- You want explicit control similar to React's `useMemo` dependency array
+### When to reach for `select`
 
-## No tracking
+- You want re-renders driven by a **computed value** (a getter combining several fields) rather than the raw fields auto-tracking would pick up.
+- Auto-tracking records more paths than you want and you want to pin the dependency set explicitly, the way you would a `useMemo` dependency array.
+- You want a value that is intentionally *coarser* or *derived* (e.g. `[bloc.isEmpty]` re-renders on the empty/non-empty boundary, not on every item added).
 
-Disable tracking entirely. The component re-renders on **every** state change.
-
-```tsx
-function StateDebugger() {
-  const [state] = useBloc(AppCubit, { autoTrack: false });
-  return <pre>{JSON.stringify(state, null, 2)}</pre>;
-}
-```
-
-### When to use
-
-- Action-only components that don't display state (just call methods)
-- Debug views that need to show the full state
-- Components where you want to guarantee every update is reflected
-
-```tsx
-// action-only: doesn't read state, just calls methods
-function CounterButtons() {
-  const [, counter] = useBloc(CounterCubit, { autoTrack: false });
-  return <button onClick={counter.increment}>+</button>;
-}
-```
+For the inverse case — a component that should never re-render because it only triggers actions — you don't need any option at all: a component that reads no state property records an empty path set and is never woken. See [Performance: split readers and writers](/react/performance#pattern-split-readers-and-writers).
 
 ## Choosing a mode
 
-```
-Start with auto-tracking (default)
+```text
+Start with auto-tracking (the default — no option)
     │
     ├─ Component only calls methods, never reads state?
-    │   └─ Use autoTrack: false
+    │   └─ Read nothing from `state`; it won't re-render. No option needed.
     │
-    ├─ Auto-tracking causes too many re-renders?
-    │   └─ Use manual dependencies
+    ├─ Want re-renders driven by a computed/derived value,
+    │  or to pin the dependency set by hand?
+    │   └─ Use `select`
     │
-    └─ Otherwise: auto-tracking is fine
+    └─ Otherwise: auto-tracking is correct.
 ```
 
-| Mode             | Re-renders when             | Best for                       |
-| ---------------- | --------------------------- | ------------------------------ |
-| Auto-tracking    | Tracked properties change   | Most components                |
-| `select` (manual)| Selected values change      | Computed conditions, narrowing |
-| No tracking      | Any state change            | Action-only, debug views       |
+| Mode | Re-renders when | Best for |
+| --- | --- | --- |
+| Auto-tracking (default) | A tracked path changes | Almost everything |
+| `select` (escape hatch) | A selected array element changes (`Object.is`) | Computed/derived values, explicit narrowing |
+| No reads | Never (empty path set) | Action-only components |
 
-See also: [useBloc](/react/use-bloc), [Performance](/react/performance)
+## See also
+
+- [useBloc](/react/use-bloc) — the full options reference, including `select`
+- [Performance](/react/performance) — re-render isolation, measuring, and list patterns
+- [Mental Model](/guide/mental-model) — why proxy tracking beats selectors and memoization
+- [Glossary](/guide/glossary) — auto-tracking, path, interner, and friends

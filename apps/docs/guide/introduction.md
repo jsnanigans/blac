@@ -1,6 +1,27 @@
 # What is BlaC?
 
-BlaC (Business Logic Components) is a TypeScript state management library for React. It separates business logic into class-based state containers that are type-safe, testable, and automatically optimized for minimal re-renders.
+BlaC (Business Logic Components) is a TypeScript state management library for React. It separates business logic into class-based state containers — [Cubits](/guide/glossary#core-model) — that are type-safe, testable, and automatically optimized for minimal re-renders.
+
+A first taste — the whole loop in one screen:
+
+```tsx
+import { Cubit } from '@blac/core';
+import { useBloc } from '@blac/react';
+
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+  increment = () => this.emit({ count: this.state.count + 1 });
+}
+
+function Counter() {
+  const [state, counter] = useBloc(CounterCubit);
+  return <button onClick={counter.increment}>Count: {state.count}</button>;
+}
+```
+
+No store setup, no provider, no reducer, no selector. The class holds the logic; the hook connects it; re-renders are tracked automatically.
 
 ## Why BlaC?
 
@@ -14,11 +35,15 @@ BlaC takes a different approach:
 - **Lifecycle is declarative.** Instances are shared by default. Use `instanceId` for named per-component instances or `@blac({ keepAlive: true })` for persistent singletons.
 - **Built for TypeScript.** State types flow from your class definition through the hook return value with zero type annotations needed.
 
+::: info How does this compare to Redux / Zustand / Jotai / MobX?
+The short version: BlaC keeps logic in classes (like flutter_bloc), shares instances through a ref-counted registry (no providers), and tracks re-renders with a render-time proxy (no selectors or `useMemo`). The honest, side-by-side comparison — including where those other libraries are the better fit — lives in the [Mental Model](/guide/mental-model#honest-comparisons).
+:::
+
 ## Architecture
 
 BlaC has two layers:
 
-```
+```text
 ┌─────────────────────────────┐
 │  React        useBloc hook  │  Framework-specific binding,
 │               BlocProvider  │  concurrent-mode safe subscriptions
@@ -31,7 +56,11 @@ BlaC has two layers:
 
 **Core** (`@blac/core`) provides state containers, a global registry with ref counting, a plugin system, and utilities like `watch`. Proxy-based dependency tracking is built in — no separate adapter package is needed.
 
-**React** (`@blac/react`) provides the `useBloc` hook built on `useSyncExternalStore` for concurrent mode safety.
+**React** (`@blac/react`) provides the `useBloc` hook built on `useSyncExternalStore` for concurrent mode safety. The optional `BlocProvider` shown above scopes a default `instanceId` to a subtree — most apps never need it (see [useBloc](/react/use-bloc) for when it helps).
+
+::: details Under the hood: the DirtyTalk engine family
+The "what changed, who cares, when do we tell them" machinery — path-based dirty tracking, the render-time proxy, microtask-batched flushing — lives in a lower-level, framework-agnostic family of packages called [DirtyTalk](/dirtytalk/). BlaC's `StateContainer` extends `@dirtytalk/structural`'s container; you never need to touch it directly, but it's there if you want to understand the foundation.
+:::
 
 ## When to use BlaC
 
@@ -42,11 +71,20 @@ BlaC works best when:
 - You want **testable business logic** that can run without React
 - You value **TypeScript inference** and want the compiler to catch state errors
 
-For a simple app with two or three pieces of state, React's built-in `useState` and `useContext` may be all you need. BlaC adds value as state complexity grows.
+::: tip When you probably don't need BlaC
+If a piece of state lives in exactly one component and never travels, `useState` is the right tool — reach for BlaC when state is *shared*, *complex*, or *worth testing without React*. BlaC adds value as state complexity grows, not at the first `useState`.
+:::
 
 ## What's next?
 
 - [Quick Start](/guide/getting-started) — Install BlaC and build your first component
-- [Core Concepts](/guide/concepts) — Understand the mental model
+- [Core Concepts](/guide/concepts) — A quick tour of the mental model
+- [Mental Model](/guide/mental-model) — The deep "why it works this way," plus honest comparisons
 - [Patterns & Recipes](/guide/patterns) — Common patterns for real apps
 - [useBloc Hook](/react/use-bloc) — Full hook reference
+
+## See also
+
+- [Mental Model](/guide/mental-model) — how auto-tracking, the registry, and batching actually work
+- [Quick Start](/guide/getting-started) — go from install to working component
+- [Glossary](/guide/glossary) — one-line definitions for every term used here

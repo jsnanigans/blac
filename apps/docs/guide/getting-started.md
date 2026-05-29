@@ -40,11 +40,19 @@ class CounterCubit extends Cubit<{ count: number }> {
 
 Three ways to change state:
 
-| Method           | What it does                  | When to use                          |
-| ---------------- | ----------------------------- | ------------------------------------ |
-| `emit(newState)` | Replace the entire state      | You have the full new state ready    |
-| `update(fn)`     | Derive new state from current | You need to read current state first |
-| `patch(partial)` | Shallow-merge partial changes | You want to update some fields       |
+| Method           | What it does                       | When to use                          |
+| ---------------- | ---------------------------------- | ------------------------------------ |
+| `emit(newState)` | Replace the entire state           | You have the full new state ready    |
+| `update(fn)`     | Derive new state from current      | You need to read current state first |
+| `patch(partial)` | Deep-merge partial changes (`DeepPartial<S>`) | You want to update some fields and keep the rest |
+
+::: warning `emit` and `update` replace; only `patch` merges
+`emit(next)` and `update(fn)` set state to *exactly* what you return — any key you forget to include is dropped. `patch(partial)` deep-merges, so the keys you omit survive. The `increment` above is fine because `count` is the only key; for multi-field state, either spread the previous state (`update((s) => ({ ...s, count: s.count + 1 }))`) or use `patch`.
+:::
+
+::: tip Define methods as arrow-function fields
+Every method here is an arrow-function class field (`increment = () => …`), not a regular method. This binds `this` to the instance, so `counter.increment` keeps working when passed straight to `onClick`. A regular method (`increment() { … }`) loses `this` once detached from the instance.
+:::
 
 ## Step 2: Use it in React
 
@@ -114,17 +122,13 @@ class TodoCubit extends Cubit<{ items: string[]; input: string }> {
   addTodo = () => {
     const trimmed = this.state.input.trim();
     if (!trimmed) return;
-    this.update((s) => ({
-      items: [...s.items, trimmed],
-      input: '',
-    }));
+    // emit/update REPLACE state, so list every key you want to keep.
+    this.update((s) => ({ items: [...s.items, trimmed], input: '' }));
   };
 
   removeTodo = (index: number) => {
-    this.update((s) => ({
-      ...s,
-      items: s.items.filter((_, i) => i !== index),
-    }));
+    // patch deep-merges, so we only mention the key we change.
+    this.patch({ items: this.state.items.filter((_, i) => i !== index) });
   };
 
   get isEmpty() {
@@ -133,7 +137,9 @@ class TodoCubit extends Cubit<{ items: string[]; input: string }> {
 }
 ```
 
-Getters like `isEmpty` are tracked automatically — components that read them only re-render when the underlying data changes.
+Notice the two write styles: `addTodo` uses `update` and lists *both* keys (replacing the whole state), while `removeTodo` uses `patch` and mentions *only* `items` (merging into the rest). Both are correct — the difference is exactly the replace-vs-merge rule from Step 1.
+
+Getters like `isEmpty` derive a value on every read, so they can never drift from `items`. One subtlety: auto-tracking records reads on the `state` proxy, *not* on the bloc instance — so reading `todo.isEmpty` alone won't wake the component. Read the getter's source through `state` in render (e.g. `state.items.length`) to stay subscribed, or depend on the getter explicitly with `select`. The full rule is in [Dependency Tracking](/react/dependency-tracking). For async work (loading flags, fetches, request guards), see [Patterns & Recipes](/guide/patterns).
 
 ## What just happened?
 
@@ -146,10 +152,19 @@ When you call `useBloc(CounterCubit)`:
 5. On re-render, only changes to those specific properties trigger an update
 6. When the component unmounts, the ref count decrements. At zero, the instance is disposed
 
+Each of these steps has a "why" worth understanding once your app grows — why a proxy beats selectors, why disposal is automatic, why updates batch on a microtask. That deep version lives in the [Mental Model](/guide/mental-model).
+
 ## What's next?
 
-- [Core Concepts](/guide/concepts) — Registry, tracking, and lifecycle
+- [Core Concepts](/guide/concepts) — A quick tour of registry, tracking, and lifecycle
+- [Mental Model](/guide/mental-model) — The deep version of "what just happened?"
 - [Patterns & Recipes](/guide/patterns) — Async patterns, cross-bloc communication, persistence
 - [Cubit](/core/cubit) — Full Cubit API
 - [useBloc](/react/use-bloc) — Hook options and tracking modes
-- [DevTools](/plugins/devtools) — Inspect state in real time
+
+## See also
+
+- [Core Concepts](/guide/concepts) — the quick conceptual tour
+- [Cubit](/core/cubit) — `emit` / `update` / `patch` in full
+- [useBloc](/react/use-bloc) — every hook option and both tracking modes
+- [DevTools](/plugins/devtools) — inspect state and re-renders in real time

@@ -1,0 +1,201 @@
+# Mental Model
+
+This is the page for understanding *why* BlaC works the way it does. If you want a fast orientation — the names of things and a one-screen tour — read [Core Concepts](/guide/concepts) first; it is the quick tour. This page is the deep version: the reactivity model end to end, the design choices behind it, honest comparisons to other libraries, and the full data-flow lifecycle from mount to unmount.
+
+Most of the surprising-at-first behavior in BlaC falls out of a single idea: **a component declares what it depends on by reading it, and BlaC wakes that component only when one of those exact reads would now produce a different value.** Everything else — proxies, path sets, ref counting, the registry — exists to make that one sentence true, cheaply, without you writing selectors.
+
+## The reactivity model
+
+### The problem auto-tracking solves
+
+Connect a component to a shared store and the default behavior of most subscription models is: *the store changed, so re-render the subscriber.* That is correct but wasteful. A container with twenty fields will wake a component that reads one of them nineteen times for nothing.
+
+The usual fixes push work onto you. Selectors (`useSelector(s => s.user.name)`) make you name your dependency by hand and keep it in sync as the component evolves. Memoized derivations (`useMemo`, `reselect`) make you declare input arrays. `React.memo` makes you reason about prop identity. All of these work; all of them are a second copy of "what this component reads" that can drift from the JSX, which is the real source of truth.
+
+BlaC's answer: **the JSX is the dependency declaration.** You read `state.name` in render; that read *is* the subscription. Nothing to keep in sync, because there is only one copy.
+
+### Read → track → intersect-on-change → re-render
+
+The mechanism is a loop with four stops. Walk it concretely with a `UserCubit` whose state is `{ name, email, address: { city } }`.
+
+**1. Read.** The `state` you get back from `useBloc` is not the raw state object — it is a recording `Proxy`. Built each render by `trackRender(rawState, bloc.interner)`, it returns a proxy plus a live `Set` of the paths read through it.
+
+```tsx
+function UserName() {
+  const [state] = useBloc(UserCubit);
+  return <span>{state.name}</span>; // reads the path "name"
+}
+```
+
+**2. Track.** Each property access on the proxy records the path it touched. The recording is **leaf-only**: reading `state.address.city` records exactly `address.city`, not `address`. Reading a deeper path drops its immediate parent from the set. This is what gives you sibling isolation — a component reading `address.city` is not woken when `address.zip` changes, even though both live under the same parent object that got replaced. After the render commits, BlaC registers the recorded set as this consumer's "interest" (in a `useLayoutEffect`, after the proxy has actually been read — never during render, when the set is still empty).
+
+**3. Intersect on change.** When something calls `emit`, `patch`, or `update`, BlaC computes a **dirty set** — the paths whose values actually changed — and asks one question per consumer: *does this consumer's recorded interest intersect the dirty set?* That is a cheap set-membership check, not a tree walk. The expensive part (figuring out what changed) happens **once per mutation**, not once per consumer.
+
+**4. Re-render.** Only consumers whose interest intersects the dirty set re-render. `UserName` re-renders when `name` changes; it stays still when `email` or `address.city` change. On that re-render, step 1 runs again — so if a conditional branch now reads a different field, the tracked set reshapes itself automatically.
+
+```text
+   emit / patch / update
+            │
+            ▼
+   ┌──────────────────┐
+   │ compute dirty set │   one diff per mutation
+   │ { "name" }        │   (not per consumer)
+   └──────────────────┘
+            │
+   ┌────────┴─────────────────────────────┐
+   │ for each consumer: interest ∩ dirty?  │   cheap set checks
+   ├───────────────────────────────────────┤
+   │ UserName     {name}        ∩ → wake    │
+   │ UserEmail    {email}       ∩ → skip    │
+   │ CityLabel    {address.city}∩ → skip    │
+   └───────────────────────────────────────┘
+```
+
+### Each useBloc call gets its own tracker
+
+There is **one proxy and one recorded path set per `useBloc` call site**, not one shared per bloc. Two components reading the same `UserCubit` get two independent trackers with two independent interest sets. That is the whole point: re-render isolation is per consumer, so `UserName` and `UserEmail` can subscribe to the same instance and wake on different changes.
+
+::: warning Per-consumer tracking, not a shared proxy
+The proxy and tracker are created per `useBloc` call and torn down with it. There is deliberately no global "proxy cache" keyed by bloc — a shared proxy would force a shared interest set and collapse the isolation. If you are reading the source: each consumer has its own `pathRef` and its own channel subscription whose interest is `() => pathRef.current`.
+:::
+
+### Why one diff, not N diffs
+
+When many components share a container, computing "what changed" separately for each one re-does the same equality checks N times — quadratic in consumer count exactly when you have the most consumers. BlaC inverts it: maintain one **skeleton** (the union of every live consumer's interest), diff the change once bounded to that skeleton, then settle each consumer with a set intersection. One walk plus N cheap intersections.
+
+This is not a BlaC-specific trick; it is the core algorithm of the [`@dirtytalk/structural`](/dirtytalk/structural/concepts) engine that BlaC's `StateContainer` extends. If you want the path-interning, skeleton, and proxy-recorder internals in full — including the exact recording rules for arrays, `Map`/`Set`/`Date`, and iteration — that page is the source of truth. The short version of the recording rules:
+
+- **Leaf-only:** `a.b.c` records `a.b.c`, not `a.b`.
+- **Iteration coarsens:** `.map`/`for..of`/`.find` over `state.items` records `items`, not per-index paths. Direct index access (`state.items[2].name`) records the leaf.
+- **Leaf collection types are not recursed:** `Map`, `Set`, `Date`, and class instances are leaves — a change is seen only as a reference change at that value's own path.
+
+### Two modes, chosen by presence of `select`
+
+There is no `autoTrack` flag. A consumer is in one of two modes, decided purely by whether you pass a `select` callback:
+
+| Mode | How interest is set | Re-renders when |
+| --- | --- | --- |
+| **Auto-track** (default, `select` omitted) | Proxy records the paths you read in render | A read path's value changes |
+| **`select` provided** | You return an array; subscription interest is `ALL_PATHS` | The returned array differs per-index (via `Object.is`) |
+
+`select` is the deliberate opt-out: you trade automatic per-path tracking for an explicit array, useful when you want to depend on a computed value or narrow a noisy read. It must be referentially stable (wrap it in `useCallback`) — a fresh function each render re-keys the subscription. See [Dependency Tracking](/react/dependency-tracking) for the decision guide and [useBloc](/react/use-bloc) for the full option list.
+
+## Why these design choices
+
+Each of BlaC's load-bearing decisions answers a specific failure mode of the alternatives.
+
+### Classes for business logic
+
+A Cubit is a class because business logic wants **encapsulation and methods**. State shape, the mutations that change it, derived values (getters), and async flows live in one cohesive unit:
+
+```ts
+class CartCubit extends Cubit<{ items: Item[] }> {
+  constructor() {
+    super({ items: [] });
+  }
+  add = (item: Item) => this.patch({ items: [...this.state.items, item] });
+  get total() {
+    return this.state.items.reduce((n, i) => n + i.price, 0);
+  }
+}
+```
+
+The payoff is testability: a Cubit has no dependency on React, the DOM, or hooks. You construct it, call methods, and assert on `state` directly. Compare this to logic spread across reducers, action creators, thunks, and selectors — three files for one concern. The class keeps the concern in one place, and `instanceof Cubit` works because `Cubit` is a real class (it extends `StateContainer`; there is **no** `Bloc` class).
+
+### No context providers — a registry instead
+
+The cost of React Context for shared state is structural: every shared value needs a provider somewhere above its consumers, providers nest, and a context change re-renders the whole subtree unless you split contexts by hand. BlaC removes the tree dependency entirely. A global **registry** maps each class (plus an optional instance key) to one instance:
+
+```tsx
+// no <CartProvider> anywhere — just import and use
+const [state, cart] = useBloc(CartCubit);
+```
+
+Two components calling `useBloc(CartCubit)` get the same instance because the registry hands back the same object, regardless of where they sit in the tree. Sharing is by *identity in a registry*, not by *position under a provider*. You can still scope an instance to a subtree when you want to — `instanceId` (or `BlocProvider` supplying a default `instanceId` to descendants) keys a distinct instance — but that is opt-in, not the price of admission.
+
+### Ref-counted lifecycle — automatic disposal
+
+If instances live in a global registry, who frees them? A naive global store leaks: instances accumulate and never die. BlaC solves this with **reference counting**. Every `useBloc` call increments a ref on mount and releases it on unmount. When the count hits zero, the instance is **automatically disposed** and dropped from the registry — and disposal cascades to `ensure`-created dependencies that now also have zero refs.
+
+This is the lifecycle most context-free stores make you manage by hand. You only override it deliberately: `@blac({ keepAlive: true })` opts an instance out of auto-disposal so it survives at refcount zero (an app-wide singleton like auth or theme). Full registry-verb table lives in [Instance Management](/core/instance-management).
+
+### The args / deps separation
+
+Inputs to a bloc come in two flavors with opposite requirements, and conflating them causes subtle bugs:
+
+- **`args`** is *serializable identity data* — the user id whose data this bloc holds. It is forwarded to `init(args)` and used to compute the instance key, so two `useBloc(UserCubit, { args: { id: 7 } })` calls share one instance and a different id gets a different instance. Because it keys identity, `args` **must be serializable** (a function in `args` throws — put it in deps).
+- **`deps`** is *non-serializable, per-consumer handles* — callbacks, API clients, refs. These must **not** affect identity (a shared instance can't have one identity per callback), so they are merged per consumer rather than baked into the key.
+
+Keeping these lanes separate is what lets a single shared instance accept per-consumer wiring without an override race (two consumers fighting over one value). The `args` lane and `instanceId` are first-class `useBloc` options; the `deps` runtime mechanism on `StateContainer` is currently internal and not exposed as a `useBloc` option in the React surface. The motivation and full mechanics live in [Inputs: args, deps, instanceId](/guide/inputs).
+
+### Immutable emit
+
+Change detection in step 3 relies on reference comparison — a path is "dirty" when its value is no longer `Object.is`-equal to before, and an *unchanged* subtree is recognized by keeping its reference. That contract only holds if state is replaced immutably. So every mutator (`emit`, `patch`, `update`) installs a **new** value; none mutates in place, and there is no primitive that does.
+
+::: warning In-place mutation is invisible
+`this.state.items.push(x)` wakes no one. The array reference did not change, so its path is not dirty. Always replace: `this.patch({ items: [...this.state.items, x] })` or `this.update(s => ({ ...s, items: [...s.items, x] }))`. This is the single most common cause of "my component isn't updating" — see [Troubleshooting](/guide/troubleshooting).
+:::
+
+A related consequence: mutations are **coalesced per microtask**. Several `emit`/`patch` calls in the same tick produce one flush — `prev` snapshotted at the first change, `next` at flush time — so consumers and plugins see one consistent transition instead of intermediate frames. This is a batching-for-consistency choice, not just performance: nobody observes a half-applied multi-field update.
+
+## Honest comparisons
+
+BlaC borrows liberally and differs deliberately. Here is where it sits relative to tools you likely know, and when one of them is the better fit.
+
+| Library | What BlaC borrows | What BlaC does differently | Reach for it instead when |
+| --- | --- | --- | --- |
+| **Redux (Toolkit)** | Single source of truth per concern; immutable updates; a devtools/time-travel story | No global reducer/action/dispatch indirection; logic is methods on a class, not reducers + action creators; auto-tracking replaces hand-written selectors | You need a strict, serializable action log as the center of your architecture, or large-team conventions built around RTK |
+| **Zustand** | No-provider, hook-first store; minimal API | State lives in a class with methods and getters (not a `create((set) => ...)` closure); re-render scope is per-read-path automatically, not a selector you pass to the hook | You want the smallest possible store with no class ceremony and are happy writing selectors per subscription |
+| **MobX** | Read-to-subscribe transparent reactivity; derived values feel free | Reactivity is render-time path recording over **immutable** snapshots, not observable mutable objects with autorun; you replace state, you don't mutate it; no decorators required for tracking | You want deep observable graphs with `computed`/`reaction` and prefer mutate-in-place ergonomics |
+| **React Context** | Tree-free *consumption* ergonomics (just call a hook) | Sharing is registry identity, not provider position; no subtree re-render on change; instances are ref-counted and disposable | The value is genuinely tree-scoped config (theme, locale, a request) that should follow the component tree, change rarely, and never needs disposal |
+| **Jotai / Recoil** | Fine-grained, atom-like subscription granularity | Granularity comes from *which paths you read in one state object*, not from composing many atoms; one cohesive class instead of a graph of atoms | You think in independent composable atoms and want bottom-up derived-atom graphs |
+
+What to take from the table: BlaC's distinctive bet is **transparent reactivity (like MobX) over immutable snapshots (like Redux), with no provider and automatic lifecycle (unlike both)**. The granularity of an atom library without managing atoms; the testability of a class without the reducer boilerplate. If your problem is genuinely a serializable event log, a tree-scoped config value, or a handful of `useState` hooks, the honest answer is that one of those tools fits better — see the "when to use BlaC" framing in the [Introduction](/guide/introduction).
+
+## The full lifecycle: mount to unmount
+
+Putting it together, here is what one `useBloc(UserCubit, { args: { id: 7 } })` call does across its life.
+
+```text
+MOUNT
+  1. resolve instance key   explicit instanceId? → context? → static key(args)
+                            → structural key from args → "default"
+  2. acquire(UserCubit, key, refId, args)
+       ├─ exists?  → return it, refs[refId]++          (share)
+       └─ new?     → new UserCubit(); initConfig(config);
+                     init(args) runs once; refs = 1     (create)
+  3. first render: trackRender wraps state → proxy + empty path set
+  4. you read state.name in JSX → path "name" recorded
+  5. useLayoutEffect: registerConsumerPaths(consumerId, { "name" })
+  6. useEffect: subscribe(() => pathRef.current) to the channel
+  7. onMount(bloc) fires
+
+LIVE
+  · a method calls emit/patch/update
+  · changes coalesce within the microtask → one flush
+  · dirty set computed once → intersected with each consumer's interest
+  · matching consumers re-render → trackRender runs again →
+    interest reshapes if reads changed
+  · stateChanged / plugin onStateChange fire per flush
+
+UNMOUNT
+  8. onUnmount(bloc) fires      (bloc still alive here)
+  9. release(UserCubit, key, refId)  → refs[refId]--
+ 10. refs.size === 0 && !keepAlive?
+       ├─ yes → dispose(): 'dispose' event, channel torn down,
+       │         registry entry removed, cascade-dispose zero-ref deps
+       └─ no  → instance stays (another consumer, or keepAlive)
+ 11. consumer's tracker + subscription torn down
+```
+
+Two details worth internalizing:
+
+- **Acquire/release agree on the key.** The same resolved instance key is used for both, so the bloc you acquired is the bloc you release. Get the key wrong (e.g. a non-serializable value in `args` producing a new key every render) and you create-and-dispose a fresh instance per render — the classic "new instance every render" symptom.
+- **`onUnmount` runs before `release`.** The bloc is still alive inside `onUnmount`, so you can read its final state there; only after does the ref drop and disposal possibly fire.
+
+## See also
+
+- [Core Concepts](/guide/concepts) — the quick tour this page goes deep on
+- [Dependency Tracking](/react/dependency-tracking) — auto-track vs `select` in practice
+- [Inputs: args, deps, instanceId](/guide/inputs) — the input lanes and identity precedence
+- [Structural: Concepts](/dirtytalk/structural/concepts) — the path-tracking engine BlaC is built on

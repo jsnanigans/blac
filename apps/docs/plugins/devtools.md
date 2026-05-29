@@ -2,6 +2,8 @@
 
 BlaC ships with a full DevTools suite: an in-app overlay, a Chrome DevTools panel, and a console API. Together they let you inspect live instances, view state diffs, browse event timelines, and time-travel to previous states.
 
+DevTools is delivered as a [plugin](/plugins/overview): once installed, it observes every state container from the outside, so there is nothing to wire up per bloc. Keep it scoped to `environment: 'development'` — it tracks state snapshots and event history, which you do not want in a production bundle.
+
 ## Packages
 
 | Package                  | What it does                                                 |
@@ -80,6 +82,10 @@ The Instances tab lists every active state container with everything you need to
 
 Click an instance to see its full state tree and a side-by-side diff history.
 
+::: info Reading `C:n` vs `R:n`
+These two numbers come straight from the registry's [ref-counting model](/core/instance-management). A bloc stays alive while either count is above zero. If an instance lingers after every component using it has unmounted, check `R:n` — a stray `acquire()` without a matching `release()` (or `keepAlive: true`) is the usual cause.
+:::
+
 ### View state diffs
 
 When you select an instance, the detail panel shows a side-by-side diff of the previous and current state. Each state change is recorded with a timestamp and the call stack that triggered it.
@@ -98,6 +104,10 @@ The Logs tab shows a timeline of all lifecycle events:
 ### Time-travel
 
 Click any snapshot in the state history to restore the instance to that point. This calls `emit` on the instance with the stored state, so your components update in real time.
+
+::: warning Time-travel bypasses your action logic
+Because time-travel calls `emit` directly with a stored snapshot, it skips the methods that normally produce that state. Anything those methods also do — network requests, writes to other blocs, external side effects — does **not** replay. The bloc's in-memory state jumps, but derived or external systems can desync. Treat time-travel as a UI-debugging aid, not a way to re-run application logic.
+:::
 
 ### Search and filter
 
@@ -122,7 +132,7 @@ class AnimationCubit extends Cubit<{ frame: number }> {
 }
 ```
 
-The DevTools plugin skips these instances entirely — no tracking overhead.
+The DevTools plugin skips these instances entirely — no tracking overhead. `excludeFromDevTools` is one of the [`blac()` configuration options](/core/configuration); this page shows it in use, but [Configuration](/core/configuration) documents the full option set.
 
 ## Console API
 
@@ -167,4 +177,9 @@ devtools.getFullState();
 devtools.getEventHistory();
 ```
 
-See also: [Plugin Overview](/plugins/overview), [Logging Plugin](/plugins/logging), [Configuration](/core/configuration)
+## See also
+
+- [Plugin Overview](/plugins/overview) — the plugin catalog and the install API
+- [Logging Plugin](/plugins/logging) — passive console/CI logging; complements DevTools
+- [Instance Management](/core/instance-management) — the ref-counting model behind `C:n` and `R:n`
+- [Configuration](/core/configuration) — `excludeFromDevTools` and the other `blac()` options

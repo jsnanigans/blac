@@ -35,6 +35,40 @@ const referenceSidebar = [
   },
 ];
 
+const dirtytalkSidebar = [
+  {
+    text: 'DirtyTalk',
+    items: [{ text: 'Overview', link: '/dirtytalk/' }],
+  },
+  {
+    text: 'Engine',
+    items: [
+      { text: 'Getting Started', link: '/dirtytalk/engine/getting-started' },
+      { text: 'Concepts', link: '/dirtytalk/engine/concepts' },
+      { text: 'API Reference', link: '/dirtytalk/engine/api-reference' },
+    ],
+  },
+  {
+    text: 'Spatial',
+    items: [
+      { text: 'Getting Started', link: '/dirtytalk/spatial/getting-started' },
+      { text: 'Concepts', link: '/dirtytalk/spatial/concepts' },
+      { text: 'API Reference', link: '/dirtytalk/spatial/api-reference' },
+    ],
+  },
+  {
+    text: 'Structural',
+    items: [
+      {
+        text: 'Getting Started',
+        link: '/dirtytalk/structural/getting-started',
+      },
+      { text: 'Concepts', link: '/dirtytalk/structural/concepts' },
+      { text: 'API Reference', link: '/dirtytalk/structural/api-reference' },
+    ],
+  },
+];
+
 export default defineConfig({
   title: 'BlaC',
   description:
@@ -46,7 +80,14 @@ export default defineConfig({
 
     nav: [
       { text: 'Guide', link: '/guide/introduction' },
-      { text: 'Reference', link: '/core/cubit' },
+      {
+        text: 'Reference',
+        items: [
+          { text: 'BlaC Core', link: '/core/cubit' },
+          { text: 'BlaC React', link: '/react/getting-started' },
+          { text: 'DirtyTalk', link: '/dirtytalk/' },
+        ],
+      },
       { text: 'Plugins', link: '/plugins/overview' },
       { text: 'Testing', link: '/testing/overview' },
       {
@@ -69,14 +110,24 @@ export default defineConfig({
             { text: 'What is BlaC?', link: '/guide/introduction' },
             { text: 'Quick Start', link: '/guide/getting-started' },
             { text: 'Core Concepts', link: '/guide/concepts' },
+            { text: 'Mental Model', link: '/guide/mental-model' },
             { text: 'Passing Inputs', link: '/guide/inputs' },
+          ],
+        },
+        {
+          text: 'Going Further',
+          items: [
             { text: 'Patterns & Recipes', link: '/guide/patterns' },
+            { text: 'Best Practices', link: '/guide/best-practices' },
+            { text: 'Troubleshooting & FAQ', link: '/guide/troubleshooting' },
+            { text: 'Glossary', link: '/guide/glossary' },
             { text: 'Migrating from v1', link: '/guide/migration-from-v1' },
           ],
         },
       ],
       '/core/': referenceSidebar,
       '/react/': referenceSidebar,
+      '/dirtytalk/': dirtytalkSidebar,
       '/plugins/': [
         {
           text: 'Plugins',
