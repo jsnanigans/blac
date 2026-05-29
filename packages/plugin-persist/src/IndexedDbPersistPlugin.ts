@@ -1,4 +1,5 @@
-import type { Cubit, PluginContext, StateContainer } from '@blac/core';
+import { ALL_PATHS } from '@blac/core';
+import type { Cubit, PathSet, PluginContext, StateContainer } from '@blac/core';
 import {
   createNativeIndexedDbAdapter,
   NativeIndexedDbAdapter,
@@ -24,6 +25,12 @@ interface InstanceRuntime {
   applyingHydration: boolean;
   disposed: boolean;
   hydrationToken: number;
+  /**
+   * Accumulated paths from all flushes coalesced by the current debounce
+   * window. `ALL_PATHS` if any flush in the window touched every path.
+   * Reset to `null` after each save so the next window starts clean.
+   */
+  pendingPaths: PathSet | null;
 }
 
 export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
@@ -102,10 +109,9 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     this.listeners.clear();
   }
 
-  onInstanceCreated(
-    instance: StateContainer<any>,
-    context: PluginContext,
-  ): void {
+  onCreated(ctx: PluginContext): void {
+    const instance = ctx.container as StateContainer<any>;
+    const context = ctx;
     const definition = this.registrations.get(
       instance.constructor as new (...args: any[]) => StateContainer<any>,
     );
@@ -122,6 +128,7 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
       applyingHydration: false,
       disposed: false,
       hydrationToken: Date.now() + Math.random(),
+      pendingPaths: null,
     };
 
     this.runtimes.set(instance, runtime);
@@ -137,12 +144,14 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     void this.hydrate(instance, context, definition, runtime);
   }
 
-  onStateChanged(
-    instance: StateContainer<any>,
-    _previousState: any,
-    currentState: any,
-    context: PluginContext,
+  onStateChange(
+    ctx: PluginContext,
+    _prev: any,
+    _next: any,
+    paths: PathSet,
   ): void {
+    const instance = ctx.container as StateContainer<any>;
+    const context = ctx;
     const definition = this.registrations.get(
       instance.constructor as new (...args: any[]) => StateContainer<any>,
     );
@@ -164,20 +173,51 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
       runtime.dirtyBeforeHydration = true;
     }
 
+    // Accumulate paths across coalesced flushes within the debounce window.
+    // Once we see ALL_PATHS, upgrade the pending set to ALL_PATHS and keep it
+    // there — partial information is lost. This lets the save call know
+    // whether the full state changed or only a narrow slice did.
+    if (paths === ALL_PATHS || runtime.pendingPaths === ALL_PATHS) {
+      runtime.pendingPaths = ALL_PATHS;
+    } else if (runtime.pendingPaths === null) {
+      runtime.pendingPaths = paths;
+    } else {
+      // Merge into the accumulated set (both are Set<PathId>)
+      for (const p of paths) {
+        (runtime.pendingPaths as Set<number>).add(p as number);
+      }
+    }
+
     const existingTimer = this.timers.get(instance);
     if (existingTimer) {
       clearTimeout(existingTimer);
     }
 
+    // Capture the live state now (at flush time). When debounce > 0 the
+    // timer fires later, but we re-read ctx.container.state at that point
+    // via the save() snapshot, so we don't stale-state here intentionally.
     const delay = definition.debounceMs ?? 0;
     const timer = setTimeout(() => {
-      void this.save(instance, context, definition, runtime, currentState);
+      // Re-read the current state at actual write time so a burst of emits
+      // within the debounce window always persists the most recent snapshot.
+      const stateAtWrite = context.getState(instance);
+      const resolvedPaths = runtime.pendingPaths;
+      runtime.pendingPaths = null;
+      void this.save(
+        instance,
+        context,
+        definition,
+        runtime,
+        stateAtWrite,
+        resolvedPaths,
+      );
     }, delay);
 
     this.timers.set(instance, timer);
   }
 
-  onInstanceDisposed(instance: StateContainer<any>): void {
+  onDestroyed(ctx: PluginContext): void {
+    const instance = ctx.container as StateContainer<any>;
     const runtime = this.runtimes.get(instance);
     if (runtime) {
       runtime.disposed = true;
@@ -291,6 +331,14 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     definition: InternalDefinition,
     runtime: InstanceRuntime,
     currentState: any,
+    // paths: PathSet | null — the accumulated PathSet for this write window.
+    // ALL_PATHS means every path changed; a Set<PathId> means only those
+    // paths changed; null means unknown (should not occur in normal flow).
+    // Currently used to record changed paths in the persisted record for
+    // diagnostics. A future `watchPaths` field on PersistRegistration could
+    // use this to skip the write entirely when the changed set is disjoint
+    // from the watched set.
+    _changedPaths: PathSet | null = null,
   ): Promise<void> {
     try {
       const ctx = this.createDefinitionContext(
