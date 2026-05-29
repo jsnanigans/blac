@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { APPLY_DEPS, REMOVE_DEPS_OWNER } from '@blac/core';
 import { useBloc } from '@blac/react';
 import { CanvasCubit } from './CanvasCubit';
 
@@ -16,10 +17,20 @@ export function CanvasView() {
     if (f % 15 === 0) setFrame(f);
   }, []);
 
-  const [state] = useBloc(CanvasCubit, {
-    autoInstance: true,
-    deps: { canvas: mounted ? canvasRef.current : null, onTick },
-  });
+  // autoInstance replaced with explicit instanceId via useId()
+  const instanceId = useId();
+  const [state, bloc] = useBloc(CanvasCubit, { instanceId });
+
+  // Push deps to the cubit manually (replaces the removed `deps` option).
+  const canvas = mounted ? canvasRef.current : null;
+  const ownerId = instanceId;
+  useEffect(() => {
+    bloc[APPLY_DEPS](ownerId, { canvas, onTick });
+    return () => {
+      bloc[REMOVE_DEPS_OWNER](ownerId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvas, onTick, ownerId]);
 
   // One extra commit after mount so canvasRef.current flows into deps.
   const [, bump] = useState(0);

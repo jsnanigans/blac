@@ -25,7 +25,9 @@ function ConsumerChip({ title, reads, value, accent }: ChipProps) {
       }}
     >
       <RenderCounter name={title} />
-      <div style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.2 }}>{title}</div>
+      <div style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.2 }}>
+        {title}
+      </div>
       <code
         style={{
           display: 'block',
@@ -77,17 +79,35 @@ export function ThemeConsumer() {
 
 export function VersionConsumer() {
   const [state] = useBloc(TrackingBloc);
-  return <ConsumerChip title="version" reads="state.version" value={`v${state.version}`} />;
+  return (
+    <ConsumerChip
+      title="version"
+      reads="state.version"
+      value={`v${state.version}`}
+    />
+  );
 }
 
 export function UserNameConsumer() {
   const [state] = useBloc(TrackingBloc);
-  return <ConsumerChip title="user.name" reads="state.user.name" value={state.user.name} />;
+  return (
+    <ConsumerChip
+      title="user.name"
+      reads="state.user.name"
+      value={state.user.name}
+    />
+  );
 }
 
 export function UserEmailConsumer() {
   const [state] = useBloc(TrackingBloc);
-  return <ConsumerChip title="user.email" reads="state.user.email" value={state.user.email} />;
+  return (
+    <ConsumerChip
+      title="user.email"
+      reads="state.user.email"
+      value={state.user.email}
+    />
+  );
 }
 
 export function CityConsumer() {
@@ -237,7 +257,9 @@ export function ActionsOnlyConsumer() {
       title="actions only"
       reads="// no state.* reads"
       accent="var(--color-warning)"
-      value={<span style={{ color: 'var(--color-text-muted)' }}>— pinned —</span>}
+      value={
+        <span style={{ color: 'var(--color-text-muted)' }}>— pinned —</span>
+      }
     />
   );
 }

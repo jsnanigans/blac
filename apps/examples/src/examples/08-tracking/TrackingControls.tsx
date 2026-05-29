@@ -2,7 +2,13 @@ import { useBloc } from '@blac/react';
 import { Button, RenderCounter } from '../../shared/components';
 import { TrackingBloc } from './TrackingBloc';
 
-function Group({ label, children }: { label: string; children: React.ReactNode }) {
+function Group({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div
       style={{
@@ -26,7 +32,9 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
       >
         {label}
       </span>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{children}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -135,9 +143,7 @@ export function TrackingControls() {
             </code>
             <Button
               size="small"
-              onClick={() =>
-                bloc.editItemTitle(item.id, item.title + '·')
-              }
+              onClick={() => bloc.editItemTitle(item.id, item.title + '·')}
             >
               title+
             </Button>
@@ -187,6 +193,5 @@ const BIOS = [
 
 const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const randName = () => `${pick(NAMES)} ${pick(NAMES)}`;
-const randEmail = () =>
-  `${pick(NAMES).toLowerCase()}@${pick(DOMAINS)}`;
+const randEmail = () => `${pick(NAMES).toLowerCase()}@${pick(DOMAINS)}`;
 const randBio = () => pick(BIOS);

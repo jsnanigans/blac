@@ -32,18 +32,20 @@ export const registryPlugin: BlacPlugin = {
   name: 'registry-example',
   version: '1.0.0',
 
-  onInstanceCreated(instance) {
+  onCreated(ctx) {
+    if (!ctx.container) return;
     push({
       type: 'created',
-      name: instance.name,
+      name: ctx.container.name,
       time: new Date().toLocaleTimeString(),
     });
   },
 
-  onInstanceDisposed(instance) {
+  onDestroyed(ctx) {
+    if (!ctx.container) return;
     push({
       type: 'disposed',
-      name: instance.name,
+      name: ctx.container.name,
       time: new Date().toLocaleTimeString(),
     });
   },

@@ -29,12 +29,19 @@ export interface TrackingState {
   unrelated: number;
 }
 
-const PALETTE = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
+const PALETTE = [
+  '#ef4444',
+  '#f59e0b',
+  '#10b981',
+  '#3b82f6',
+  '#8b5cf6',
+  '#ec4899',
+];
 const CITIES = ['Berlin', 'Lisbon', 'Tokyo', 'Austin', 'Oslo', 'Reykjavik'];
 
 const makeMatrix = (): number[][] =>
   Array.from({ length: 4 }, (_, r) =>
-    Array.from({ length: 4 }, (_, c) => r * 10 + c)
+    Array.from({ length: 4 }, (_, c) => r * 10 + c),
   );
 
 const initialState = (): TrackingState => ({
@@ -132,7 +139,7 @@ export class TrackingBloc extends Cubit<TrackingState> {
   toggleItem = (id: string) => {
     this.patch({
       items: this.state.items.map((item) =>
-        item.id === id ? { ...item, done: !item.done } : item
+        item.id === id ? { ...item, done: !item.done } : item,
       ),
     });
   };
@@ -140,7 +147,7 @@ export class TrackingBloc extends Cubit<TrackingState> {
   editItemTitle = (id: string, title: string) => {
     this.patch({
       items: this.state.items.map((item) =>
-        item.id === id ? { ...item, title } : item
+        item.id === id ? { ...item, title } : item,
       ),
     });
   };
@@ -182,7 +189,7 @@ export class TrackingBloc extends Cubit<TrackingState> {
   get matrixSum(): number {
     return this.state.matrix.reduce(
       (sum, row) => sum + row.reduce((a, b) => a + b, 0),
-      0
+      0,
     );
   }
 }

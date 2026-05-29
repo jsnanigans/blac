@@ -31,8 +31,8 @@ export function InputPatternDemo() {
           <p className="text-muted">
             Select a user below. The selected card and the pinned secondary card
             both use{' '}
-            <code>useBloc(UserCardCubit, {'{ args: { userId } }'})</code>.
-            When they share the same <code>userId</code>, they share one cubit
+            <code>useBloc(UserCardCubit, {'{ args: { userId } }'})</code>. When
+            they share the same <code>userId</code>, they share one cubit
             instance — likes and online status are reflected in both panels
             simultaneously.
           </p>
@@ -76,9 +76,11 @@ export function InputPatternDemo() {
           <h2>2 — deps + onDepsChanged</h2>
           <p className="text-muted">
             A canvas element ref is passed via{' '}
-            <code>useBloc(CanvasCubit, {'{ autoInstance: true, deps: { canvas } }'})</code>.
-            <code>onDepsChanged</code> fires when the canvas appears (starts the
-            loop) or disappears (stops it). Unmounting the canvas element is
+            <code>
+              useBloc(CanvasCubit, {'{ autoInstance: true, deps: { canvas } }'})
+            </code>
+            .<code>onDepsChanged</code> fires when the canvas appears (starts
+            the loop) or disappears (stops it). Unmounting the canvas element is
             enough to halt the RAF loop — no cleanup code needed in the
             component.
           </p>
@@ -93,11 +95,10 @@ export function InputPatternDemo() {
           <h2>3 — multi-source deps</h2>
           <p className="text-muted">
             Two components contribute partial slices to the same cubit's deps.{' '}
-            <code>CanvasProvider</code> supplies{' '}
-            <code>{'{ canvas }'}</code> and <code>TickLogger</code> supplies{' '}
-            <code>{'{ onTick }'}</code>. The core engine merges them. Removing{' '}
-            <code>TickLogger</code> withdraws only its slice; the canvas
-            animation continues unaffected.
+            <code>CanvasProvider</code> supplies <code>{'{ canvas }'}</code> and{' '}
+            <code>TickLogger</code> supplies <code>{'{ onTick }'}</code>. The
+            core engine merges them. Removing <code>TickLogger</code> withdraws
+            only its slice; the canvas animation continues unaffected.
           </p>
         </div>
 

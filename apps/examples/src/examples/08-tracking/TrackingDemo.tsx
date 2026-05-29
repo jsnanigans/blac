@@ -19,7 +19,13 @@ import {
   ZipConsumer,
 } from './TrackingConsumers';
 
-function ConsumerGroup({ label, children }: { label: string; children: React.ReactNode }) {
+function ConsumerGroup({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <span
@@ -133,10 +139,9 @@ export function TrackingDemo() {
         <h2>What this lab proves</h2>
         <div className="stack-xs text-small text-muted">
           <p>
-            • <strong>Per-consumer tracker:</strong> the two{' '}
-            <code>color</code> chips each track their own paths via separate{' '}
-            <code>useBloc</code> calls. One re-rendering doesn&rsquo;t leak the
-            other&rsquo;s state.
+            • <strong>Per-consumer tracker:</strong> the two <code>color</code>{' '}
+            chips each track their own paths via separate <code>useBloc</code>{' '}
+            calls. One re-rendering doesn&rsquo;t leak the other&rsquo;s state.
           </p>
           <p>
             • <strong>Nested path swap:</strong> &ldquo;swap entire address
@@ -147,8 +152,8 @@ export function TrackingDemo() {
           <p>
             • <strong>Array index tracking:</strong> editing{' '}
             <code>items[1].title</code> only wakes the[1] chips. Reversing the
-            list wakes every index chip because the value at each index
-            actually changed.
+            list wakes every index chip because the value at each index actually
+            changed.
           </p>
           <p>
             • <strong>Bound .map() cache:</strong> the{' '}

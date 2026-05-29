@@ -4,7 +4,7 @@ import { TodoCubit } from './TodoCubit';
 import { Button, RenderCounter } from '../../shared/components';
 
 export function QuickAdd() {
-  const [, bloc] = useBloc(TodoCubit, { autoTrack: false });
+  const [, bloc] = useBloc(TodoCubit, { select: () => [] });
   const [text, setText] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {

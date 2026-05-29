@@ -102,7 +102,7 @@ export function FeedDemo() {
   // Owns the FeedCubit instance and triggers the initial load.
   // autoTrack: false means this component never re-renders from state.
   const [, _bloc] = useBloc(FeedCubit, {
-    autoTrack: false,
+    select: () => [],
     onMount: (b) => void b.loadAuthor(AUTHORS[0].id),
   });
 

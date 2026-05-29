@@ -1,4 +1,4 @@
-import type { BlacPlugin, PluginContext, StateContainer } from '@blac/core';
+import type { BlacPlugin, PluginContext } from '@blac/core';
 
 export interface AnalyticsEntry {
   type: 'installed' | 'created' | 'stateChanged' | 'disposed';
@@ -41,16 +41,16 @@ export const analyticsPlugin: BlacPlugin = {
     addEntry('installed', 'AnalyticsPlugin');
   },
 
-  onInstanceCreated(instance: StateContainer<object>) {
-    addEntry('created', instance.name);
+  onCreated(ctx: PluginContext) {
+    if (ctx.container) addEntry('created', ctx.container.name);
   },
 
-  onStateChanged(instance) {
-    addEntry('stateChanged', instance.name);
+  onStateChange(ctx: PluginContext) {
+    if (ctx.container) addEntry('stateChanged', ctx.container.name);
   },
 
-  onInstanceDisposed(instance: StateContainer<object>) {
-    addEntry('disposed', instance.name);
+  onDestroyed(ctx: PluginContext) {
+    if (ctx.container) addEntry('disposed', ctx.container.name);
   },
 
   onUninstall() {
