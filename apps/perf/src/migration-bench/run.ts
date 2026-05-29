@@ -25,7 +25,12 @@
  */
 
 import { performance } from 'node:perf_hooks';
-import { ALL_PATHS, Cubit } from '@blac/core';
+import { ALL_PATHS, configureBlac, Cubit } from '@blac/core';
+
+// Lift the emit-rate circuit breaker — the throughput scenario intentionally
+// emits 1000 times in a tight loop. The breaker is a runtime safety net, not
+// a measurement gate.
+configureBlac({ maxEmitsPerSecond: Number.POSITIVE_INFINITY });
 
 interface ItemsState {
   items: Array<{ id: number; name: string }>;
@@ -82,18 +87,18 @@ const flush = (): Promise<void> => new Promise((r) => queueMicrotask(r));
 async function scenario1NConsumers(n: number): Promise<number> {
   const cubit = new ItemsCubit();
   let firedCount = 0;
-  let resolveAll: (() => void) | null = null;
+  let resolveAll: () => void = () => {};
   const allDone = new Promise<void>((r) => {
     resolveAll = r;
   });
 
   const unsubs: Array<() => void> = [];
   for (let i = 0; i < n; i++) {
-    const unsub = cubit.subscribe(
+    const unsub = cubit.channel.subscribe(
       () => ALL_PATHS,
       () => {
         firedCount += 1;
-        if (firedCount === n) resolveAll!();
+        if (firedCount === n) resolveAll();
       },
     );
     unsubs.push(unsub);
@@ -106,7 +111,7 @@ async function scenario1NConsumers(n: number): Promise<number> {
   firedCount = 0;
 
   const start = performance.now();
-  cubit.patch({ items: [{ id: 5, name: 'updated' }] as any });
+  cubit.patch({ items: [{ id: 5, name: 'updated' }] });
   await allDone;
   const elapsed = performance.now() - start;
 
@@ -125,7 +130,7 @@ async function scenario2Throughput(): Promise<number> {
   const unsubs: Array<() => void> = [];
   for (let i = 0; i < n; i++) {
     unsubs.push(
-      cubit.subscribe(
+      cubit.channel.subscribe(
         () => ALL_PATHS,
         () => {
           firedTotal += 1;
@@ -140,7 +145,7 @@ async function scenario2Throughput(): Promise<number> {
   // 1000 awaited emits — one flush per emit so consumers really do wake N
   // times per iteration. (Coalescing is measured separately in scenario 4.)
   for (let i = 0; i < 1000; i++) {
-    cubit.patch({ items: [{ id: i % 100, name: `n${i}` }] as any });
+    cubit.patch({ items: [{ id: i % 100, name: `n${i}` }] });
     await flush();
   }
   const elapsed = performance.now() - start;
@@ -159,7 +164,7 @@ async function scenario3Churn(): Promise<number> {
 
   const start = performance.now();
   for (let i = 0; i < 100; i++) {
-    const unsub = cubit.subscribe(
+    const unsub = cubit.channel.subscribe(
       () => ALL_PATHS,
       () => {},
     );
@@ -185,13 +190,13 @@ async function scenario4Coalescing(): Promise<{
   // regardless of consumer count. Using two consumers to keep the skeleton
   // path active.
   const unsubs = [
-    cubit.subscribe(
+    cubit.channel.subscribe(
       () => ALL_PATHS,
       () => {
         flushes += 1;
       },
     ),
-    cubit.subscribe(
+    cubit.channel.subscribe(
       () => ALL_PATHS,
       () => {},
     ),
@@ -201,7 +206,7 @@ async function scenario4Coalescing(): Promise<{
 
   const start = performance.now();
   for (let i = 0; i < 100; i++) {
-    cubit.patch({ items: [{ id: i, name: `n${i}` }] as any });
+    cubit.patch({ items: [{ id: i, name: `n${i}` }] });
   }
   // One microtask drain — the MicrotaskScheduler's request() schedules a
   // single queueMicrotask; subsequent marks during the same tick accumulate
