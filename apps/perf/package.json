@@ -15,7 +15,8 @@
     "_typecheck": "tsc --noEmit",
     "dev": "vp dev",
     "build:app": "vp build",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "benchmark": "tsx --tsconfig tsconfig.json src/migration-bench/run.ts"
   },
   "keywords": [],
   "author": "",

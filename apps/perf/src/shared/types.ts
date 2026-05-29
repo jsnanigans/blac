@@ -148,7 +148,15 @@ export interface PureStateBenchmark {
 export interface LibraryDefinition {
   name: string;
   Component: React.ComponentType<{ onReady: (api: BenchmarkAPI) => void }>;
-  pureState: PureStateBenchmark;
+  /**
+   * Optional. Blac no longer ships a pure-state suite — the previous one
+   * microbenchmarked `@blac/core/tracking` internals that were deleted in
+   * the dirtytalk migration (commit 766199db). Pure-state remains available
+   * for comparison libraries (Zustand, Redux Toolkit). See
+   * `plans/blac-core-migration/_perf-results.md` for the migration-specific
+   * benchmark that replaced it.
+   */
+  pureState?: PureStateBenchmark;
 }
 
 // ── Re-render Benchmark Types ──
