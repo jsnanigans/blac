@@ -14,11 +14,11 @@ import type {
 // ---------------------------------------------------------------------------
 
 const makeRenderer = (): Renderer2D & {
-  frames: Array<{ paintRegion: Rect }>;
+  frames: Array<{ regions: readonly Rect[] }>;
   endCount: number;
   reset(): void;
 } => {
-  const frames: Array<{ paintRegion: Rect }> = [];
+  const frames: Array<{ regions: readonly Rect[] }> = [];
   let endCount = 0;
   return {
     frames,
@@ -29,8 +29,8 @@ const makeRenderer = (): Renderer2D & {
       frames.length = 0;
       endCount = 0;
     },
-    beginFrame(paintRegion: Rect) {
-      frames.push({ paintRegion });
+    beginFrame(regions: readonly Rect[]) {
+      frames.push({ regions });
     },
     endFrame() {
       endCount++;
@@ -73,8 +73,10 @@ describe('integration: damage → renderer flow', () => {
     button.setPressed(true);
 
     expect(renderer.frames).toHaveLength(1);
-    const { paintRegion } = renderer.frames[0];
-    // The paint region must contain the button's bounds.
+    const { regions } = renderer.frames[0];
+    // Single paint damage → one region covering the button's bounds.
+    expect(regions).toHaveLength(1);
+    const paintRegion = regions[0];
     expect(paintRegion.x).toBeLessThanOrEqual(10);
     expect(paintRegion.y).toBeLessThanOrEqual(10);
     expect(paintRegion.x + paintRegion.w).toBeGreaterThanOrEqual(10 + 50);
@@ -99,7 +101,7 @@ describe('integration: render-pipeline stage ordering', () => {
 
     const callOrder: string[] = [];
     const renderer: Renderer2D = {
-      beginFrame(_r: Rect) {
+      beginFrame(_regions: readonly Rect[]) {
         callOrder.push('beginFrame');
       },
       endFrame() {
@@ -205,7 +207,7 @@ describe('integration: PointerRouter end-to-end', () => {
 // ---------------------------------------------------------------------------
 
 describe('integration: batch coalescing', () => {
-  it('two markDamaged calls inside batch produce exactly one beginFrame with the union rect', () => {
+  it('two markDamaged calls inside batch produce exactly one beginFrame with a single union region', () => {
     class BatchNode extends SceneNode {
       paint(_layer: unknown): void {}
       pubBatch(fn: () => void): void {
@@ -224,6 +226,9 @@ describe('integration: batch coalescing', () => {
 
     const r1: Rect = { x: 0, y: 0, w: 30, h: 30 };
     const r2: Rect = { x: 50, y: 50, w: 20, h: 20 };
+    // batch() coalesces same-kind damage into one union'd entry before emitting,
+    // so the renderer sees a single region (the union) — distinct from an
+    // un-batched move, which arrives as two disjoint rects.
     const expected = unionRects([r1, r2]);
 
     node.pubBatch(() => {
@@ -232,6 +237,6 @@ describe('integration: batch coalescing', () => {
     });
 
     expect(renderer.frames).toHaveLength(1);
-    expect(renderer.frames[0].paintRegion).toEqual(expected);
+    expect(renderer.frames[0].regions).toEqual([expected]);
   });
 });

@@ -2,22 +2,40 @@ import { DirtyChannel, RAFScheduler } from '@dirtytalk/engine';
 import type { Scheduler } from '@dirtytalk/engine';
 import { SceneNode } from './scene-node';
 import { RectSpace } from './rect-space';
-import { pointInRect, unionRects } from './rect';
+import { pointInRect, rectOverlaps } from './rect';
 import type { Damage, DirtyRegion, Rect } from './types';
 
 /**
  * Renderer interface: the spatial package ships this contract, not an implementation.
- * `paintRegion` is the bounding rect of the frame's paint damages (computed via
- * `unionRects`). Renderers that don't yet implement scissor/tile dispatch can ignore
- * the region; the API is stable for the v2 partial-redraw transition.
+ * `regions` is the list of the frame's individual damage rects, NOT their union — a
+ * far single-frame move arrives as two disjoint rects (erase old + fill new), so a
+ * renderer that scissors to each rect leaves the dead gap between them untouched.
+ * Renderers that don't yet implement multi-rect scissor/tile dispatch can union the
+ * list themselves (`unionRects(regions)`) and clip to the bounding box, or ignore it
+ * and clear the whole canvas.
  */
 export interface Renderer2D {
   /**
-   * Begin a frame, clipped/scissored to the given paint region.
-   * v1 implementations may ignore the region and clear the whole canvas.
+   * Begin a frame, clipped/scissored to the given damage regions.
+   * The array is never empty when called. v1 implementations may union the
+   * regions or clear the whole canvas; multi-rect renderers scissor to each.
    */
-  beginFrame(paintRegion: Rect): void;
+  beginFrame(regions: readonly Rect[]): void;
   endFrame(): void;
+}
+
+/** Per-frame wall-clock split of the render pipeline (CPU-side). */
+export interface FrameTiming {
+  /** ms spent in the data + layout stages (rebuildData + doLayout). */
+  layoutMs: number;
+  /** ms spent in the paint stage (beginFrame → paint walk → endFrame). */
+  paintMs: number;
+  /**
+   * Number of top-level nodes whose `paint()` actually ran this frame — the
+   * survivors of the damage cull (every child in full-frame mode). This is the
+   * headline cost signal: it scales with the damaged area, not the scene size.
+   */
+  paintedNodes: number;
 }
 
 export interface SceneRootOptions {
@@ -26,15 +44,31 @@ export interface SceneRootOptions {
 
   /** Bounds of the root (used as the default interest region). */
   bounds?: Rect;
+
+  /**
+   * Optional per-frame timing hook. When provided, each render frame is timed
+   * (layout stages vs paint stage) and reported here. Omit it for zero timing
+   * overhead — `performance.now()` is only called when this is set.
+   */
+  onFrameTiming?: (timing: FrameTiming) => void;
 }
 
 export class SceneRoot extends SceneNode {
   readonly channel: DirtyChannel<DirtyRegion>;
   readonly renderer: Renderer2D;
+  private readonly onFrameTiming?: (timing: FrameTiming) => void;
+
+  /**
+   * When true, damage is ignored: every frame repaints the whole bounds and the
+   * paint walk visits all children (no culling). This is the "damage tracking
+   * off" baseline used for cost comparisons — leave it false in production.
+   */
+  fullFrame = false;
 
   constructor(renderer: Renderer2D, options: SceneRootOptions = {}) {
     super({ bounds: options.bounds });
     this.renderer = renderer;
+    this.onFrameTiming = options.onFrameTiming;
     this.channel = new DirtyChannel(
       RectSpace,
       options.scheduler ?? new RAFScheduler(),
@@ -56,6 +90,26 @@ export class SceneRoot extends SceneNode {
     }
   }
 
+  /**
+   * Paint walk, culled to the frame's damage regions: a top-level child is
+   * skipped unless its bounds intersect at least one region. This is where
+   * damage tracking pays off — repaint cost scales with the damaged area, not
+   * the scene size. Adoption order (z-order) is preserved among painted nodes.
+   */
+  private _paintCulled(regions: readonly Rect[]): number {
+    let painted = 0;
+    for (const child of this.children) {
+      for (const region of regions) {
+        if (rectOverlaps(region, child.bounds)) {
+          child.paint(undefined);
+          painted++;
+          break;
+        }
+      }
+    }
+    return painted;
+  }
+
   /** Package-private — called by SceneNode.markDamaged via the structural-type contract. */
   _emitDamage(damage: Damage): void {
     this.channel.mark([damage]);
@@ -66,6 +120,8 @@ export class SceneRoot extends SceneNode {
   }
 
   private _renderFrame(dirty: DirtyRegion): void {
+    const timing = this.onFrameTiming;
+    const t0 = timing ? performance.now() : 0;
     // Stage 1 — data
     for (const d of dirty) {
       const node = d.node as SceneNode | undefined;
@@ -76,12 +132,22 @@ export class SceneRoot extends SceneNode {
       const node = d.node as SceneNode | undefined;
       if (d.kind !== 'paint' && node?.doLayout) node.doLayout();
     }
-    // Stage 3 — paint
-    const paintRegion =
-      dirty.length === 1 ? dirty[0].rect : unionRects(dirty.map((d) => d.rect));
-    this.renderer.beginFrame(paintRegion);
-    this.paint(undefined);
+    // Stage 3 — paint. In full-frame mode, damage is ignored: repaint the whole
+    // bounds and visit every child. Otherwise hand the renderer the individual
+    // damage rects (disjoint, so a multi-rect scissor skips the dead gap between
+    // a move's old/new footprints) and cull the walk to nodes touching them.
+    const regions = this.fullFrame ? [this.bounds] : dirty.map((d) => d.rect);
+    const t1 = timing ? performance.now() : 0;
+    this.renderer.beginFrame(regions);
+    const paintedNodes = this._paintCulled(regions);
     this.renderer.endFrame();
+    if (timing) {
+      timing({
+        layoutMs: t1 - t0,
+        paintMs: performance.now() - t1,
+        paintedNodes,
+      });
+    }
   }
 }
 

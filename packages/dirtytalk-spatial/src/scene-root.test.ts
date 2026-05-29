@@ -6,13 +6,13 @@ import type { Renderer2D } from './scene-root';
 import type { Rect } from './types';
 
 const makeRenderer = (): Renderer2D & {
-  calls: Array<['begin' | 'end', Rect?]>;
+  calls: Array<['begin' | 'end', ReadonlyArray<Rect>?]>;
 } => {
-  const calls: Array<['begin' | 'end', Rect?]> = [];
+  const calls: Array<['begin' | 'end', ReadonlyArray<Rect>?]> = [];
   return {
     calls,
-    beginFrame(r) {
-      calls.push(['begin', r]);
+    beginFrame(regions) {
+      calls.push(['begin', regions]);
     },
     endFrame() {
       calls.push(['end']);
@@ -86,7 +86,7 @@ describe('SceneRoot', () => {
     node.pub('paint');
     const beginCalls = renderer.calls.filter((c) => c[0] === 'begin');
     expect(beginCalls.length).toBeGreaterThan(0);
-    expect(beginCalls[0][1]).toEqual({ x: 20, y: 20, w: 30, h: 30 });
+    expect(beginCalls[0][1]).toEqual([{ x: 20, y: 20, w: 30, h: 30 }]);
   });
 
   // 3. endFrame runs after beginFrame in order.
@@ -116,8 +116,8 @@ describe('SceneRoot', () => {
     expect(renderer.calls[1][0]).toBe('end');
   });
 
-  // 4. Single damage entry's bounding region equals its rect.
-  it('single damage entry bounding region equals its rect', () => {
+  // 4. A single damage entry is passed through as a one-element region list.
+  it('single damage entry is passed as a one-element region list', () => {
     const renderer = makeRenderer();
     const root = new SceneRoot(renderer, {
       scheduler: new SyncScheduler(),
@@ -127,11 +127,13 @@ describe('SceneRoot', () => {
     root.channel.mark([{ rect: r, kind: 'paint' }]);
     const begin = renderer.calls.find((c) => c[0] === 'begin');
     expect(begin).toBeDefined();
-    expect(begin?.[1]).toEqual(r);
+    expect(begin?.[1]).toEqual([r]);
   });
 
-  // 5. Multiple damage entries' bounding region equals unionRects([...]).
-  it('multiple damage entries bounding region equals unionRects', () => {
+  // 5. Multiple damage entries stay disjoint — passed as separate rects, NOT
+  //    collapsed into their bounding union (so a multi-rect scissor can skip the
+  //    gap between them).
+  it('multiple damage entries are passed as separate rects, not their union', () => {
     const renderer = makeRenderer();
     const scheduler = new ManualScheduler();
     const root = new SceneRoot(renderer, {
@@ -147,8 +149,8 @@ describe('SceneRoot', () => {
 
     const begin = renderer.calls.find((c) => c[0] === 'begin');
     expect(begin).toBeDefined();
-    // union of (0,0,10,10) and (50,50,10,10) => (0,0,60,60)
-    expect(begin?.[1]).toEqual({ x: 0, y: 0, w: 60, h: 60 });
+    // Two disjoint rects — NOT unioned to (0,0,60,60).
+    expect(begin?.[1]).toEqual([d1.rect, d2.rect]);
   });
 
   // 6. Detached node mutation doesn't reach the renderer.
@@ -367,6 +369,28 @@ describe('SceneRoot', () => {
     const child = new TestNode({ bounds: { x: 10, y: 10, w: 20, h: 20 } });
     root.adoptChild(child);
     expect(root.hitTest(80, 80)).toBeNull();
+  });
+
+  // 16b. onFrameTiming reports a layout + paint split for each rendered frame.
+  it('onFrameTiming fires once per frame with numeric layout + paint times', () => {
+    const renderer = makeRenderer();
+    const timings: Array<{ layoutMs: number; paintMs: number }> = [];
+    const root = new SceneRoot(renderer, {
+      scheduler: new SyncScheduler(),
+      bounds: { x: 0, y: 0, w: 100, h: 100 },
+      onFrameTiming: (t) => timings.push(t),
+    });
+    const child = new TestNode({ bounds: { x: 0, y: 0, w: 10, h: 10 } });
+    root.adoptChild(child); // one frame from the adopt-time paint
+    timings.length = 0;
+
+    root.channel.mark([{ rect: { x: 0, y: 0, w: 5, h: 5 }, kind: 'paint' }]);
+
+    expect(timings).toHaveLength(1);
+    expect(typeof timings[0].layoutMs).toBe('number');
+    expect(typeof timings[0].paintMs).toBe('number');
+    expect(timings[0].layoutMs).toBeGreaterThanOrEqual(0);
+    expect(timings[0].paintMs).toBeGreaterThanOrEqual(0);
   });
 
   // 17. hitTest descends into grandchildren.

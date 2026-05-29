@@ -18,8 +18,8 @@ export interface BoxOptions {
  * events to it once it is hit-tested).
  *
  * Dragging calls `setBounds`, which the base class turns into erase(old) +
- * fill(new) paint damage — so a drag repaints exactly the union of the two
- * footprints and nothing else.
+ * fill(new) paint damage — so a drag repaints exactly those two footprints and
+ * nothing else (not their bounding union; the gap between them is left alone).
  *
  * Note: everything is drawn strictly inside `bounds`. No shadows or glows that
  * bleed past the edges — damage rects are the bounds, so painting outside them
