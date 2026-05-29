@@ -131,6 +131,7 @@ function App() {
                         },
                         event.data.callstack,
                         event.data.trigger?.name,
+                        (event.data as any).paths,
                       );
                     }
                   });
@@ -217,6 +218,7 @@ function App() {
                         current.state,
                         d.callstack,
                         d.trigger?.name,
+                        d.paths,
                       );
                     }
                     instancesBloc.updateInstanceState(d.id, d.state, d.getters);
@@ -228,6 +230,7 @@ function App() {
                       { previousState: current?.state, newState: d.state },
                       d.callstack,
                       d.trigger?.name,
+                      d.paths,
                     );
                     break;
                   }

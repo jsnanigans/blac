@@ -51,9 +51,17 @@ export interface PanelInstance {
 export type AtomicEvent =
   | { type: 'init'; timestamp: number; data: PanelInstance[] }
   | {
-      type: 'instance-created' | 'instance-updated' | 'instance-disposed';
+      type: 'instance-created' | 'instance-disposed';
       timestamp: number;
       data: PanelInstance;
+    }
+  | {
+      type: 'instance-updated';
+      timestamp: number;
+      data: PanelInstance & {
+        /** Paths that changed in this flush; 'all' means every path changed */
+        paths?: string[] | 'all';
+      };
     }
   | { type: 'performance-warning'; timestamp: number; data: any }
   | {
