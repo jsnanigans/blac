@@ -320,13 +320,69 @@ describe('SceneRoot', () => {
     expect(beginCount).toBe(3);
   });
 
-  // 13. hitTest throws "implemented in Phase 4".
-  it('hitTest throws "implemented in Phase 4"', () => {
+  // 13. hitTest returns null on empty root.
+  it('hitTest returns null on empty root', () => {
     const renderer = makeRenderer();
     const root = new SceneRoot(renderer, {
       scheduler: new SyncScheduler(),
       bounds: { x: 0, y: 0, w: 100, h: 100 },
     });
-    expect(() => root.hitTest(10, 10)).toThrow('implemented in Phase 4');
+    expect(root.hitTest(50, 50)).toBeNull();
+  });
+
+  // 14. hitTest returns the only child when (x,y) is inside.
+  it('hitTest returns the only child when point is inside', () => {
+    const renderer = makeRenderer();
+    const root = new SceneRoot(renderer, {
+      scheduler: new SyncScheduler(),
+      bounds: { x: 0, y: 0, w: 100, h: 100 },
+    });
+    const child = new TestNode({ bounds: { x: 10, y: 10, w: 50, h: 50 } });
+    root.adoptChild(child);
+    expect(root.hitTest(20, 20)).toBe(child);
+  });
+
+  // 15. hitTest returns the topmost (later-adopted) child when two overlap.
+  it('hitTest returns the later-adopted child when two overlap at the point', () => {
+    const renderer = makeRenderer();
+    const root = new SceneRoot(renderer, {
+      scheduler: new SyncScheduler(),
+      bounds: { x: 0, y: 0, w: 100, h: 100 },
+    });
+    const childA = new TestNode({ bounds: { x: 0, y: 0, w: 50, h: 50 } });
+    const childB = new TestNode({ bounds: { x: 0, y: 0, w: 50, h: 50 } });
+    root.adoptChild(childA);
+    root.adoptChild(childB);
+    // childB was adopted last — it's topmost
+    expect(root.hitTest(10, 10)).toBe(childB);
+  });
+
+  // 16. hitTest returns null when (x,y) is outside all children.
+  it('hitTest returns null when point is outside all children', () => {
+    const renderer = makeRenderer();
+    const root = new SceneRoot(renderer, {
+      scheduler: new SyncScheduler(),
+      bounds: { x: 0, y: 0, w: 100, h: 100 },
+    });
+    const child = new TestNode({ bounds: { x: 10, y: 10, w: 20, h: 20 } });
+    root.adoptChild(child);
+    expect(root.hitTest(80, 80)).toBeNull();
+  });
+
+  // 17. hitTest descends into grandchildren.
+  it('hitTest returns a grandchild for a point inside it', () => {
+    const renderer = makeRenderer();
+    const root = new SceneRoot(renderer, {
+      scheduler: new SyncScheduler(),
+      bounds: { x: 0, y: 0, w: 100, h: 100 },
+    });
+    const child = new TestNode({ bounds: { x: 0, y: 0, w: 50, h: 50 } });
+    const grandchild = new TestNode({ bounds: { x: 5, y: 5, w: 20, h: 20 } });
+    root.adoptChild(child);
+    child.adoptChild(grandchild);
+    // Point inside grandchild — deepest hit wins
+    expect(root.hitTest(10, 10)).toBe(grandchild);
+    // Point inside child but outside grandchild — child wins
+    expect(root.hitTest(40, 40)).toBe(child);
   });
 });

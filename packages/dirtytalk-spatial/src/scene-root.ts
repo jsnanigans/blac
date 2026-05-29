@@ -2,7 +2,7 @@ import { DirtyChannel, RAFScheduler } from '@dirtytalk/engine';
 import type { Scheduler } from '@dirtytalk/engine';
 import { SceneNode } from './scene-node';
 import { RectSpace } from './rect-space';
-import { unionRects } from './rect';
+import { pointInRect, unionRects } from './rect';
 import type { Damage, DirtyRegion, Rect } from './types';
 
 /**
@@ -61,8 +61,8 @@ export class SceneRoot extends SceneNode {
     this.channel.mark([damage]);
   }
 
-  hitTest(_x: number, _y: number): SceneNode | null {
-    throw new Error('SceneRoot.hitTest: implemented in Phase 4');
+  hitTest(x: number, y: number): SceneNode | null {
+    return hitTestNode(this, x, y);
   }
 
   private _renderFrame(dirty: DirtyRegion): void {
@@ -84,3 +84,24 @@ export class SceneRoot extends SceneNode {
     this.renderer.endFrame();
   }
 }
+
+/**
+ * Walk children in reverse adoption order (topmost = last adopted wins).
+ * Returns the deepest hit descendant, the child itself if it contains (x,y)
+ * but no grandchild does, or null if no child contains the point.
+ * The root is never a valid hit target.
+ */
+const hitTestNode = (
+  node: SceneNode,
+  x: number,
+  y: number,
+): SceneNode | null => {
+  for (let i = node.children.length - 1; i >= 0; i--) {
+    const child = node.children[i];
+    if (!pointInRect(x, y, child.bounds)) continue;
+    const deeper = hitTestNode(child, x, y);
+    if (deeper) return deeper;
+    return child; // child contains (x,y) but no grandchild does
+  }
+  return null; // no child contains the point
+};
