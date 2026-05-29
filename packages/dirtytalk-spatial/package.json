@@ -58,7 +58,7 @@
     "deploy": "pnpm publish --access public"
   },
   "dependencies": {
-    "@dirtytalk/engine": "workspace:*"
+    "@dirtytalk/engine": "workspace:^"
   },
   "devDependencies": {
     "typescript": "catalog:",

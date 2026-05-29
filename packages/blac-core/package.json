@@ -131,7 +131,7 @@
     "deploy": "pnpm publish --access public"
   },
   "dependencies": {
-    "@dirtytalk/structural": "workspace:*"
+    "@dirtytalk/structural": "workspace:^"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "catalog:",

@@ -77,7 +77,7 @@
     "deploy": "pnpm publish --access public"
   },
   "dependencies": {
-    "@dirtytalk/engine": "workspace:*"
+    "@dirtytalk/engine": "workspace:^"
   },
   "peerDependencies": {
     "react": ">=18"

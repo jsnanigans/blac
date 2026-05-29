@@ -19,8 +19,9 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release:check": "pnpm build && (pnpm verify & pnpm test & pnpm typecheck & wait)",
+    "release:status": "changeset status --verbose",
     "release:version": "changeset version",
-    "release:publish": "changeset publish",
+    "release:publish": "pnpm build && changeset publish",
     "release": "./scripts/release.sh",
     "release:helper": "./scripts/release.sh",
     "prepare": "vp config"

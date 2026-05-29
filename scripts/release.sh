@@ -35,10 +35,11 @@ show_menu() {
   echo "  1) Create a changeset     - Document a change for the next release"
   echo "  2) Check release          - Build, verify, test, and typecheck"
   echo "  3) Version packages       - Apply pending changesets locally"
-  echo "  4) Publish to npm         - Run checks and publish current versions"
+  echo "  4) Publish to npm         - Build and publish changed packages"
   echo "  5) Enter prerelease mode  - Start alpha/beta/rc releases"
   echo "  6) Exit prerelease mode   - Return to stable releases"
   echo "  7) Show status            - Show current version info"
+  echo "  8) Preview release        - Show which packages will bump (+ dependents)"
   echo "  q) Quit"
   echo ""
 }
@@ -120,6 +121,11 @@ case $choice in
     ;;
   7)
     show_status
+    ;;
+  8)
+    echo -e "${BLUE}Previewing release (changed packages + dependents)...${NC}"
+    echo ""
+    pnpm release:status
     ;;
   q|Q)
     echo -e "${GREEN}Bye!${NC}"
