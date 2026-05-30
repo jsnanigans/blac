@@ -11,11 +11,11 @@
     "publish:preview": "wrangler pages deploy --branch preview"
   },
   "devDependencies": {
+    "oxc-minify": "latest",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "oxc-minify": "latest",
-    "vitepress": "^2.0.0-alpha.17",
-    "wrangler": "^4",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "vitepress": "2.0.0-alpha.17",
+    "wrangler": "^4.95.0"
   }
 }

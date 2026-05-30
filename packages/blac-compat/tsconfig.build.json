@@ -8,6 +8,7 @@
     "declarationMap": false,
     "emitDeclarationOnly": true,
     "moduleResolution": "bundler",
+    "types": ["node"],
     "paths": {}
   },
   "include": ["src"],

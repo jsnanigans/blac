@@ -61,9 +61,9 @@
     "@dirtytalk/engine": "workspace:^"
   },
   "devDependencies": {
+    "publint": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "vite-plus": "0.1.22",
-    "publint": "catalog:"
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -74,9 +74,9 @@
     "deploy": "pnpm publish --access public"
   },
   "devDependencies": {
+    "publint": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
     "vite-plus": "catalog:",
-    "publint": "catalog:"
+    "vitest": "catalog:"
   }
 }

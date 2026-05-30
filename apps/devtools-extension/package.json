@@ -14,19 +14,19 @@
   },
   "dependencies": {
     "@blac/core": "workspace:*",
-    "@blac/react": "workspace:*",
     "@blac/devtools-connect": "workspace:*",
-    "@blac/devtools-ui": "workspace:*"
+    "@blac/devtools-ui": "workspace:*",
+    "@blac/react": "workspace:*"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.254",
-    "@types/node": "^20.10.0",
-    "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7",
-    "@vitejs/plugin-react": "^4.2.1",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "typescript": "^5.3.3",
+    "@types/chrome": "^0.1.42",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   }

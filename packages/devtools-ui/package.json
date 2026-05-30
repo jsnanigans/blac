@@ -58,17 +58,17 @@
   "devDependencies": {
     "@blac/core": "workspace:*",
     "@blac/react": "workspace:*",
-    "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "typescript": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@tanstack/react-virtual": "^3.13.0",
-    "@uiw/react-json-view": "2.0.0-alpha.39",
-    "json-diff-kit": "^1.0.33"
+    "@tanstack/react-virtual": "^3.13.26",
+    "@uiw/react-json-view": "2.0.0-alpha.43",
+    "json-diff-kit": "^1.0.35"
   }
 }

@@ -64,9 +64,9 @@
   },
   "devDependencies": {
     "@blac/core": "workspace:*",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
     "publint": "catalog:",
-    "vite-plus": "catalog:"
+    "typescript": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
   }
 }

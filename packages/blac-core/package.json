@@ -136,14 +136,15 @@
   "devDependencies": {
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/user-event": "catalog:",
-    "arktype": "^2.1.23",
-    "fast-check": "^4.3.0",
+    "@types/node": "catalog:",
+    "arktype": "^2.2.0",
+    "fast-check": "^4.8.0",
     "jsdom": "catalog:",
-    "typescript": "catalog:",
-    "valibot": "^1.1.0",
-    "vitest": "catalog:",
     "publint": "catalog:",
-    "zod": "^4.1.12",
-    "vite-plus": "catalog:"
+    "typescript": "catalog:",
+    "valibot": "^1.4.1",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:",
+    "zod": "^4.4.3"
   }
 }

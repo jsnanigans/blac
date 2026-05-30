@@ -33,9 +33,9 @@
     "pnpm": ">=9"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.5",
-    "@microsoft/api-documenter": "^7.28.1",
-    "@microsoft/api-extractor": "^7.52.8",
+    "@changesets/cli": "^2.31.0",
+    "@microsoft/api-documenter": "^7.30.5",
+    "@microsoft/api-extractor": "^7.58.7",
     "@types/bun": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"

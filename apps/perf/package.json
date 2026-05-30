@@ -25,17 +25,17 @@
   "dependencies": {
     "@blac/core": "workspace:*",
     "@blac/react": "workspace:*",
-    "@reduxjs/toolkit": "^2.11.2",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "react-redux": "^9.2.0",
+    "@reduxjs/toolkit": "^2.12.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-redux": "^9.3.0",
     "vite": "catalog:",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7",
-    "@vitejs/plugin-react": "^4.7.0",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }

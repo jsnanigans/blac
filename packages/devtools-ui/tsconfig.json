@@ -8,9 +8,9 @@
     "outDir": "./dist",
     "rootDir": "../..",
     "paths": {
-      "@blac/core": ["../blac-core/src/index.ts"],
-      "@blac/core/testing": ["../blac-core/src/testing.ts"],
-      "@blac/react": ["../blac-react/src/index.ts"],
+      "@blac/core": ["../blac-core/dist/index.d.ts"],
+      "@blac/core/testing": ["../blac-core/dist/testing.d.ts"],
+      "@blac/react": ["../blac-react/dist/index.d.ts"],
       "@blac/adapter": ["../blac-adapter/src/index.ts"]
     }
   },
