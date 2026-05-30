@@ -145,108 +145,101 @@ function App() {
               if (!message.payload) break;
               const event = message.payload;
 
-              flushSync(() => {
-                switch (event.type) {
-                  case 'init': {
-                    diffBloc.clearAllPreviousStates();
-                    logsBloc.clearLogs();
-                    const initInstances = (
-                      Array.isArray(event.data) ? event.data : []
-                    ).map((inst: any) => ({
-                      id: inst.id,
-                      className: inst.className,
-                      name: inst.name,
-                      isDisposed: inst.isDisposed,
-                      state: inst.state,
-                      lastStateChangeTimestamp: event.timestamp,
-                      createdAt: event.timestamp,
-                    }));
-                    instancesBloc.setAllInstances(initInstances);
+              // No flushSync: React 18 auto-batches the bloc updates below into
+              // a single render. flushSync forced a synchronous render per event
+              // and could saturate the panel under a high-frequency emitter.
+              switch (event.type) {
+                case 'init': {
+                  diffBloc.clearAllPreviousStates();
+                  logsBloc.clearLogs();
+                  const initInstances = (
+                    Array.isArray(event.data) ? event.data : []
+                  ).map((inst: any) => ({
+                    id: inst.id,
+                    className: inst.className,
+                    name: inst.name,
+                    isDisposed: inst.isDisposed,
+                    state: inst.state,
+                    lastStateChangeTimestamp: event.timestamp,
+                    createdAt: event.timestamp,
+                  }));
+                  instancesBloc.setAllInstances(initInstances);
+                  logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
+                    instanceCount: initInstances.length,
+                  });
+                  break;
+                }
+
+                case 'instance-created': {
+                  const d = event.data;
+                  instancesBloc.addInstance({
+                    id: d.id,
+                    className: d.className,
+                    name: d.name,
+                    isDisposed: d.isDisposed,
+                    state: d.state,
+                    lastStateChangeTimestamp: event.timestamp,
+                    createdAt: event.timestamp,
+                    createdFrom: d.createdFrom,
+                  });
+                  logsBloc.addLog('created', d.id, d.className, d.name, {
+                    initialState: d.state,
+                  });
+                  break;
+                }
+
+                case 'instance-disposed': {
+                  const d = event.data;
+                  const disposedInst = instancesBloc.getInstance(d.id);
+                  instancesBloc.removeInstance(d.id);
+                  diffBloc.clearPreviousState(d.id);
+                  if (disposedInst) {
                     logsBloc.addLog(
-                      'init',
-                      '__system__',
-                      'System',
-                      'DevTools',
-                      {
-                        instanceCount: initInstances.length,
-                      },
-                    );
-                    break;
-                  }
-
-                  case 'instance-created': {
-                    const d = event.data;
-                    instancesBloc.addInstance({
-                      id: d.id,
-                      className: d.className,
-                      name: d.name,
-                      isDisposed: d.isDisposed,
-                      state: d.state,
-                      lastStateChangeTimestamp: event.timestamp,
-                      createdAt: event.timestamp,
-                      consumers: d.consumers,
-                      createdFrom: d.createdFrom,
-                    });
-                    logsBloc.addLog('created', d.id, d.className, d.name, {
-                      initialState: d.state,
-                    });
-                    break;
-                  }
-
-                  case 'instance-disposed': {
-                    const d = event.data;
-                    const disposedInst = instancesBloc.getInstance(d.id);
-                    instancesBloc.removeInstance(d.id);
-                    diffBloc.clearPreviousState(d.id);
-                    if (disposedInst) {
-                      logsBloc.addLog(
-                        'disposed',
-                        d.id,
-                        disposedInst.className,
-                        disposedInst.name,
-                      );
-                    }
-                    break;
-                  }
-
-                  case 'instance-updated': {
-                    const d = event.data;
-                    const current = instancesBloc.getInstance(d.id);
-                    if (current) {
-                      diffBloc.storePreviousState(
-                        d.id,
-                        current.state,
-                        d.callstack,
-                        d.trigger?.name,
-                        d.paths,
-                      );
-                    }
-                    instancesBloc.updateInstanceState(d.id, d.state, d.getters);
-                    logsBloc.addLog(
-                      'state-changed',
+                      'disposed',
                       d.id,
-                      d.className,
-                      d.name,
-                      { previousState: current?.state, newState: d.state },
+                      disposedInst.className,
+                      disposedInst.name,
+                    );
+                  }
+                  break;
+                }
+
+                case 'instance-updated': {
+                  const d = event.data;
+                  const current = instancesBloc.getInstance(d.id);
+                  if (current) {
+                    diffBloc.storePreviousState(
+                      d.id,
+                      current.state,
                       d.callstack,
                       d.trigger?.name,
                       d.paths,
                     );
-                    break;
                   }
-
-                  case 'consumers-changed': {
-                    const d = event.data;
-                    instancesBloc.updateConsumers(
-                      d.instanceId,
-                      d.consumers,
-                      d.refIds,
-                      d.refHolders,
-                    );
-                    break;
-                  }
+                  instancesBloc.updateInstanceState(d.id, d.state, d.getters);
+                  logsBloc.addLog(
+                    'state-changed',
+                    d.id,
+                    d.className,
+                    d.name,
+                    { previousState: current?.state, newState: d.state },
+                    d.callstack,
+                    d.trigger?.name,
+                    d.paths,
+                  );
+                  break;
                 }
-              });
+
+                case 'refs-changed': {
+                  const d = event.data;
+                  instancesBloc.updateRefs(
+                    d.instanceId,
+                    d.refIds,
+                    d.refHolders,
+                  );
+                  break;
+                }
+              }
               break;
             }
           }

@@ -25,7 +25,7 @@ export function extractChanges(previous: any, current: any): any {
       }
     }
 
-    return hasChanges ? current : undefined;
+    return hasChanges ? changes : undefined;
   }
 
   const changes: Record<string, any> = {};

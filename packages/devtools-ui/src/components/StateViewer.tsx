@@ -1,12 +1,7 @@
 import React, { FC, useMemo, useState } from 'react';
 import { useBloc } from '@blac/react';
 import { DevToolsLayoutBloc, DevToolsInstancesBloc } from '../blocs';
-import type {
-  ConsumerInfo,
-  GetterInfo,
-  InstanceData,
-  RefHolderInfo,
-} from '../types';
+import type { GetterInfo, InstanceData, RefHolderInfo } from '../types';
 import { computeInsights, measureStateBytes } from './computeInsights';
 import { InsightPill } from './InstanceListItem';
 import { CurrentStateView } from './CurrentStateView';
@@ -237,133 +232,6 @@ const InitiatorSection: FC<InitiatorSectionProps> = React.memo(
 );
 
 InitiatorSection.displayName = 'InitiatorSection';
-
-// ============================================================================
-// Consumers Section
-// ============================================================================
-
-const ConsumerRow: FC<{ consumer: ConsumerInfo }> = ({ consumer }) => {
-  const [expanded, setExpanded] = useState(false);
-  const hasStack = !!consumer.stackTrace;
-
-  return (
-    <div
-      style={{
-        background: T.bg2,
-        border: `1px solid ${T.border1}`,
-        borderLeft: `3px solid ${T.textAccent}`,
-        borderRadius: T.radius,
-        overflow: 'hidden',
-      }}
-    >
-      <div
-        onClick={hasStack ? () => setExpanded((v) => !v) : undefined}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          padding: '4px 8px',
-          gap: '8px',
-          cursor: hasStack ? 'pointer' : 'default',
-        }}
-      >
-        {hasStack && (
-          <span style={{ fontSize: '9px', color: T.text3, flexShrink: 0 }}>
-            {expanded ? '\u25BE' : '\u25B8'}
-          </span>
-        )}
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <span
-            style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: T.text0,
-              fontFamily: T.fontMono,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {consumer.componentName}
-          </span>
-          <div
-            style={{
-              fontSize: '9px',
-              color: T.text3,
-              fontFamily: T.fontMono,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {consumer.id}
-          </div>
-        </div>
-        <span
-          style={{
-            fontSize: '10px',
-            color: T.text3,
-            marginLeft: 'auto',
-            flexShrink: 0,
-          }}
-        >
-          mounted {formatRelative(consumer.mountedAt)}
-        </span>
-      </div>
-      {expanded && consumer.stackTrace && (
-        <pre
-          style={{
-            margin: '0',
-            padding: '8px 10px',
-            background: '#252526',
-            borderTop: `1px solid ${T.border0}`,
-            fontSize: '9px',
-            color: '#d4d4d4',
-            fontFamily: 'Monaco, Menlo, Consolas, monospace',
-            lineHeight: '1.3',
-            overflow: 'auto',
-            maxHeight: '100px',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-all',
-          }}
-        >
-          {consumer.stackTrace}
-        </pre>
-      )}
-    </div>
-  );
-};
-
-interface ConsumersSectionProps {
-  consumers?: ConsumerInfo[];
-}
-
-const ConsumersSection: FC<ConsumersSectionProps> = React.memo(
-  ({ consumers }) => {
-    const [isExpanded, setIsExpanded] = useState(true);
-
-    if (!consumers || consumers.length === 0) return null;
-
-    const named = consumers.filter((c) => c.componentName !== 'Unknown');
-
-    return (
-      <div>
-        <SectionHeader
-          label="Consumers"
-          isExpanded={isExpanded}
-          onToggle={() => setIsExpanded((v) => !v)}
-          badge={consumers.length}
-        />
-        {isExpanded && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            {named.map((consumer) => (
-              <ConsumerRow key={consumer.id} consumer={consumer} />
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  },
-);
-
-ConsumersSection.displayName = 'ConsumersSection';
 
 // ============================================================================
 // Reference Holders Section
@@ -667,16 +535,6 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
               </span>
             </>
           )}
-          {selectedInstance.consumers &&
-            selectedInstance.consumers.length > 0 && (
-              <>
-                <span style={{ color: T.border2 }}>·</span>
-                <span>
-                  {selectedInstance.consumers.length} consumer
-                  {selectedInstance.consumers.length !== 1 ? 's' : ''}
-                </span>
-              </>
-            )}
           {(() => {
             const refCount = selectedInstance.refIds?.length ?? 0;
             if (refCount === 0) return null;
@@ -752,8 +610,6 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
           refIds={selectedInstance.refIds}
           refHolders={selectedInstance.refHolders}
         />
-
-        <ConsumersSection consumers={selectedInstance.consumers} />
       </div>
     </div>
   );

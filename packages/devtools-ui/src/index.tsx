@@ -22,10 +22,6 @@ export {
   DevToolsLogsBloc,
 } from './blocs';
 
-// Backward compatibility: export DevToolsInstancesBloc as LayoutBloc
-// @deprecated Use DevToolsInstancesBloc instead
-export { DevToolsInstancesBloc as LayoutBloc } from './blocs';
-
 // Types
 export type { DevToolsUIProps, InstanceData } from './types';
 export type { DraggableOverlayProps } from './DraggableOverlay';

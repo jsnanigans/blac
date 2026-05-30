@@ -39,63 +39,6 @@ export interface StateSnapshot {
   paths?: string[] | 'all';
 }
 
-// =============================================================================
-// Wire Format (extension bridge / postMessage protocol)
-// =============================================================================
-
-/**
- * Wire event shape for `instance-updated` messages sent over the extension
- * bridge (postMessage) and `subscribe()` callbacks.
- *
- * F3 (devtools-ui) consumes this exact shape.
- *
- * Protocol version: 2 (introduced `paths` field; `prev` was already present
- * as `previousState` inside `data`).
- *
- * Shape:
- * ```ts
- * {
- *   type: 'instance-updated';
- *   timestamp: number;
- *   data: {
- *     // … all InstanceMetadata fields …
- *     paths: string[] | 'all';  // NEW in v2
- *     trigger?: Trigger;
- *   }
- * }
- * ```
- *
- * `paths` values:
- *   - `'all'`    — the PathSet was ALL_PATHS; treat as "everything changed"
- *   - `string[]` — decoded dotted path strings resolved via PathInterner.lookup()
- */
-export interface DevToolsWireStateEvent {
-  type: 'instance-updated';
-  timestamp: number;
-  data: {
-    /** Instance unique id */
-    id: string;
-    /** Class name */
-    className: string;
-    /** Instance name */
-    name: string;
-    /** State after the flush */
-    state: unknown;
-    /** State before the flush (same shape as `state`) */
-    previousState?: unknown;
-    /** State after the flush (alias kept for compat) */
-    currentState?: unknown;
-    /**
-     * Decoded path names that changed in this flush.
-     * `'all'` when PathSet === ALL_PATHS.
-     * Array of dotted-path strings otherwise.
-     */
-    paths: string[] | 'all';
-    /** What triggered the state change (method name etc.) */
-    trigger?: Trigger;
-  };
-}
-
 /**
  * Complete state for a tracked instance
  */
@@ -136,10 +79,6 @@ export interface DevToolsBrowserPluginConfig {
   enabled?: boolean;
   maxInstances?: number;
   maxSnapshots?: number;
-  /** Updates/sec threshold that triggers a high-frequency warning (default: 30) */
-  highFrequencyThreshold?: number;
-  /** State size in bytes that triggers a large-state warning (default: 102400 = 100KB) */
-  largeStateSizeThreshold?: number;
 }
 
 export interface DevToolsStateManagerConfig {
@@ -148,45 +87,8 @@ export interface DevToolsStateManagerConfig {
 }
 
 // =============================================================================
-// Performance Metrics Types
+// Ref Holder Tracking Types
 // =============================================================================
-
-export interface PerformanceWarning {
-  type: 'high-frequency' | 'large-state';
-  message: string;
-  threshold: number;
-  actual: number;
-}
-
-export interface InstanceMetrics {
-  instanceId: string;
-  totalUpdates: number;
-  /** Rolling updates/sec (5s window) */
-  updatesPerSecond: number;
-  /** Average ms between updates */
-  avgUpdateInterval: number;
-  /** Peak updates/sec in any 1s window */
-  maxBurstRate: number;
-  /** Estimated serialized state size in bytes */
-  stateSizeBytes: number;
-  lastUpdateTimestamp: number;
-  warnings: PerformanceWarning[];
-}
-
-// =============================================================================
-// Consumer Tracking Types
-// =============================================================================
-
-export interface ConsumerInfo {
-  /** Unique consumer ID (one per useBloc call site per component mount) */
-  id: string;
-  /** React component name (from fiber or displayName) */
-  componentName: string;
-  /** Timestamp when the component mounted */
-  mountedAt: number;
-  /** Stack trace captured at consumer registration (dev mode only) */
-  stackTrace?: string;
-}
 
 export interface RefHolderInfo {
   /** Reference ID string */
@@ -206,8 +108,7 @@ export type DevToolsEventType =
   | 'instance-created'
   | 'instance-updated'
   | 'instance-disposed'
-  | 'performance-warning'
-  | 'consumers-changed'
+  | 'refs-changed'
   | 'deps-changed';
 
 export interface DevToolsEvent {

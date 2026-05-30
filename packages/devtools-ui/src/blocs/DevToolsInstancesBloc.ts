@@ -1,5 +1,5 @@
 import { Cubit, blac } from '@blac/core';
-import type { ConsumerInfo, InstanceData, RefHolderInfo } from '../types';
+import type { InstanceData, RefHolderInfo } from '../types';
 import { debug } from '../utils/debug';
 
 /** Maximum timestamps kept per instance in the update-rate ring buffer. */
@@ -137,11 +137,10 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
   };
 
   /**
-   * Update consumer list and ref IDs for an instance
+   * Update ref IDs / ref holders for an instance (R:n tracking)
    */
-  updateConsumers = (
+  updateRefs = (
     instanceId: string,
-    consumers: ConsumerInfo[],
     refIds?: string[],
     refHolders?: RefHolderInfo[],
   ) => {
@@ -149,7 +148,6 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
       if (inst.id === instanceId) {
         return {
           ...inst,
-          consumers,
           ...(refIds !== undefined ? { refIds } : {}),
           ...(refHolders !== undefined ? { refHolders } : {}),
         };

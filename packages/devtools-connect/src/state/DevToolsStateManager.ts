@@ -14,15 +14,6 @@ import type {
   GetterInfo,
 } from '../types';
 
-export interface StateManagerStats {
-  /** Total number of tracked instances */
-  totalInstances: number;
-  /** Total number of snapshots across all instances */
-  totalSnapshots: number;
-  /** Estimated memory usage in bytes */
-  estimatedMemory: number;
-}
-
 /**
  * Manages state for all BlaC instances tracked by DevTools.
  *
@@ -163,50 +154,12 @@ export class DevToolsStateManager {
   }
 
   /**
-   * Get a specific instance by ID.
-   * Useful for debugging or panel queries.
-   */
-  getInstance(instanceId: string): InstanceState | undefined {
-    return this.instances.get(instanceId);
-  }
-
-  /**
-   * Get all instance IDs.
-   */
-  getAllInstanceIds(): string[] {
-    return Array.from(this.instances.keys());
-  }
-
-  /**
    * Clear all tracked instances.
    * Useful for testing or resetting state.
    */
   clear(): void {
     this.instances.clear();
     this.insertionOrder = [];
-  }
-
-  /**
-   * Get statistics about tracked state.
-   */
-  getStats(): StateManagerStats {
-    let totalSnapshots = 0;
-    let estimatedMemory = 0;
-
-    for (const instance of this.instances.values()) {
-      totalSnapshots += instance.history.length;
-
-      // Rough memory estimate (very approximate)
-      // Each snapshot: ~5KB (state + previousState + metadata)
-      // Instance metadata: ~500 bytes
-      estimatedMemory += 500 + instance.history.length * 5000;
-    }
-
-    return {
-      totalInstances: this.instances.size,
-      totalSnapshots,
-      estimatedMemory,
-    };
   }
 
   /**

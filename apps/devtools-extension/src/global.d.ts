@@ -50,10 +50,7 @@ interface BlacDevToolsAPI {
  * Window message event types
  */
 interface DevToolsWindowMessage {
-  source:
-    | 'blac-devtools-inject'
-    | 'blac-devtools-content'
-    | 'blac-devtools-app';
+  source: 'blac-devtools-content' | 'blac-devtools-plugin';
   type?: string;
   payload?: any;
   [key: string]: any;

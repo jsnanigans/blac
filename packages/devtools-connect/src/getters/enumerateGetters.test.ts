@@ -254,8 +254,8 @@ describe('DevToolsBrowserPlugin getter integration', () => {
     plugin.subscribe(subscriber);
 
     instance.emit({ value: 100 });
-    // stateChanged notification is deferred via queueMicrotask
-    await Promise.resolve();
+    // instance-updated is coalesced and emitted on the next animation frame
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     const evt = findEvent(subscriber, 'instance-updated');
     expect(evt.data.getters).toBeDefined();
@@ -282,8 +282,8 @@ describe('DevToolsBrowserPlugin getter integration', () => {
 
     const instance = acquire(CubitWithPrimitiveGetter);
     instance.emit({ value: 50 });
-    // stateChanged notification is deferred via queueMicrotask
-    await Promise.resolve();
+    // state-manager snapshot updates on the coalesced animation-frame flush
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     const fullState = plugin.getFullState();
     const tracked = defined(

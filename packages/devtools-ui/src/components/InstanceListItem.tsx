@@ -123,15 +123,6 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
               flexShrink: 0,
             }}
           >
-            {(instance.consumers?.length ?? 0) > 0 && (
-              <StatusBadge
-                bg={`${T.textAccent}18`}
-                color={T.textAccent}
-                title={`${instance.consumers?.length ?? 0} consumer${(instance.consumers?.length ?? 0) !== 1 ? 's' : ''}`}
-              >
-                C:{instance.consumers?.length ?? 0}
-              </StatusBadge>
-            )}
             {(instance.refIds?.length ?? 0) > 0 && (
               <StatusBadge
                 bg="#2d2500"
@@ -155,22 +146,6 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
                 ERR
               </StatusBadge>
             )}
-            {instance.isDisposed && (
-              <StatusBadge bg="#3a1a1a" color={T.error}>
-                DISPOSED
-              </StatusBadge>
-            )}
-            {!instance.isDisposed &&
-              (instance.refIds?.length ?? 0) > 0 &&
-              (instance.consumers?.length ?? 0) === 0 && (
-                <StatusBadge
-                  bg="#2d2500"
-                  color="#d4a017"
-                  title={`Held by: ${instance.refIds?.join(', ') ?? ''}`}
-                >
-                  HELD
-                </StatusBadge>
-              )}
           </div>
         </div>
 

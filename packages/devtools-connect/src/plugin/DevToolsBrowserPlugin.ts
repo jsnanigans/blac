@@ -23,11 +23,34 @@ import type {
   DevToolsCallback,
   DevToolsBrowserPluginConfig,
   Trigger,
-  InstanceMetrics,
-  PerformanceWarning,
-  ConsumerInfo,
   RefHolderInfo,
 } from '../types';
+
+/**
+ * Merge two decoded path sets for a coalesced update. `'all'` is absorbing.
+ */
+function mergePaths(
+  a: string[] | 'all',
+  b: string[] | 'all',
+): string[] | 'all' {
+  if (a === 'all' || b === 'all') return 'all';
+  const set = new Set(a);
+  for (const p of b) set.add(p);
+  return Array.from(set);
+}
+
+interface PendingUpdate {
+  instance: any;
+  ctx: PluginContext;
+  /** prev state captured at the first update of the coalesced batch */
+  prev: any;
+  /** next state from the most recent update of the batch */
+  next: any;
+  callstack?: string;
+  trigger?: Trigger;
+  /** union of changed paths across the batch */
+  paths: string[] | 'all';
+}
 
 /**
  * DevTools browser plugin for BlaC
@@ -44,16 +67,15 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   private config: Required<DevToolsBrowserPluginConfig>;
   private instanceTimestamps = new Map<string, number>();
 
-  // Performance metrics tracking: instanceId -> sorted array of update timestamps
-  private updateTimestamps = new Map<string, number[]>();
-  private stateSizeCache = new Map<string, number>();
-  private totalUpdateCounts = new Map<string, number>();
-
-  // Consumer tracking: instanceId -> Map<consumerId, ConsumerInfo>
-  private consumers = new Map<string, Map<string, ConsumerInfo>>();
-
   // Ref holder tracking: instanceId -> Map<refId, RefHolderInfo>
   private refHolders = new Map<string, Map<string, RefHolderInfo>>();
+
+  // Backpressure: coalesce per-instance state updates and flush at most once
+  // per animation frame, so a high-frequency emitter cannot saturate the
+  // devtools surface (or the host thread) with serialize/postMessage/render work.
+  private pendingUpdates = new Map<string, PendingUpdate>();
+  // requestAnimationFrame / setTimeout both return a numeric handle in the browser.
+  private flushHandle: number | undefined;
 
   // Unique per plugin instance — new page load = new session ID
   private readonly sessionId: string =
@@ -100,8 +122,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       enabled: true,
       maxInstances: 2000,
       maxSnapshots: 20,
-      highFrequencyThreshold: 30,
-      largeStateSizeThreshold: 102400,
       ...config,
     };
 
@@ -122,17 +142,15 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
   onUninstall(): void {
     this.stopExtensionBridge();
+    this.cancelScheduledFlush();
+    this.pendingUpdates.clear();
     this.listeners.clear();
     this.instanceCache.clear();
     this.instanceTimestamps.clear();
     this.eventHistoryBuffer = [];
     this.eventHistoryHead = 0;
     this.eventHistoryCount = 0;
-    this.consumers.clear();
     this.refHolders.clear();
-    this.updateTimestamps.clear();
-    this.stateSizeCache.clear();
-    this.totalUpdateCounts.clear();
 
     if (typeof window !== 'undefined') {
       delete (window as any as Record<string, any>).__BLAC_DEVTOOLS__;
@@ -208,51 +226,114 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     if (!instance) return;
     if (this.shouldExcludeInstance(instance)) return;
 
-    // Decode PathSet → wire-safe representation.
-    const decodedPaths: string[] | 'all' =
-      paths === ALL_PATHS
-        ? 'all'
-        : Array.from(paths as Set<number>).map((id) =>
-            instance.interner.lookup(id),
-          );
+    const id = (instance as Record<string, any>).instanceId as string;
+    if (!id) return;
 
-    const callstack = this.captureCallstack();
+    // Decode PathSet → wire-safe representation. A foreign/out-of-range id must
+    // not throw and abort the whole update — degrade to 'all' instead.
+    let decodedPaths: string[] | 'all';
+    if (paths === ALL_PATHS) {
+      decodedPaths = 'all';
+    } else {
+      try {
+        decodedPaths = Array.from(paths as Set<number>).map((pid) =>
+          instance.interner.lookup(pid),
+        );
+      } catch {
+        decodedPaths = 'all';
+      }
+    }
+
+    // Callstack is debug-only; skip the expensive Error().stack parse entirely
+    // when nothing is observing (plugin installed but devtools not open).
+    const callstack = this.isObserved() ? this.captureCallstack() : undefined;
     const trigger = this.extractTriggerFromCallstack(callstack);
 
-    const data = this.createInstanceData(instance, ctx, prev, next, callstack);
+    // Coalesce bursts: keep the oldest `prev`, the newest `next`/callstack, and
+    // the union of changed paths. The heavy work (serialize, getter
+    // enumeration, emit/postMessage, listener fan-out) runs in the scheduled
+    // flush, at most once per animation frame per instance.
+    const existing = this.pendingUpdates.get(id);
+    if (existing) {
+      existing.next = next;
+      existing.callstack = callstack;
+      existing.trigger = trigger;
+      existing.paths = mergePaths(existing.paths, decodedPaths);
+    } else {
+      this.pendingUpdates.set(id, {
+        instance,
+        ctx,
+        prev,
+        next,
+        callstack,
+        trigger,
+        paths: decodedPaths,
+      });
+    }
+    this.scheduleFlush();
+  }
+
+  /** True when an in-app overlay or the extension is actively listening. */
+  private isObserved(): boolean {
+    return this.listeners.size > 0 || this.extensionConnected;
+  }
+
+  private scheduleFlush(): void {
+    if (this.flushHandle !== undefined) return;
+    const run = () => {
+      this.flushHandle = undefined;
+      this.flushPendingUpdates();
+    };
+    this.flushHandle =
+      typeof requestAnimationFrame === 'function'
+        ? requestAnimationFrame(run)
+        : setTimeout(run, 16);
+  }
+
+  private cancelScheduledFlush(): void {
+    if (this.flushHandle === undefined) return;
+    if (typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(this.flushHandle);
+    } else {
+      clearTimeout(this.flushHandle);
+    }
+    this.flushHandle = undefined;
+  }
+
+  private flushPendingUpdates(): void {
+    if (this.pendingUpdates.size === 0) return;
+    const updates = Array.from(this.pendingUpdates.values());
+    this.pendingUpdates.clear();
+    for (const u of updates) {
+      this.emitCoalescedUpdate(u);
+    }
+  }
+
+  private emitCoalescedUpdate(u: PendingUpdate): void {
+    const data = this.createInstanceData(
+      u.instance,
+      u.ctx,
+      u.prev,
+      u.next,
+      u.callstack,
+    );
     this.instanceCache.set(data.id, data);
 
     // Reuse already-serialized states from createInstanceData
     this.stateManager.updateState(
       data.id,
-      (data as any).previousState ?? prev,
-      (data as any).currentState ?? next,
-      callstack,
-      trigger,
+      (data as any).previousState ?? u.prev,
+      (data as any).currentState ?? u.next,
+      u.callstack,
+      u.trigger,
       (data as any).getters,
-      decodedPaths,
+      u.paths,
     );
-
-    // Update performance metrics — estimate size from current state
-    const stateStr = (data as any).currentState;
-    const estimatedSize =
-      stateStr !== undefined ? JSON.stringify(stateStr).length : 0;
-    this.recordUpdate(data.id, estimatedSize);
-
-    // Check for performance warnings and emit if needed
-    const metrics = this.computeMetrics(data.id);
-    if (metrics.warnings.length > 0) {
-      this.emit({
-        type: 'performance-warning',
-        timestamp: Date.now(),
-        data: metrics,
-      });
-    }
 
     this.emit({
       type: 'instance-updated',
       timestamp: Date.now(),
-      data: { ...data, trigger, paths: decodedPaths },
+      data: { ...data, trigger: u.trigger, paths: u.paths },
     });
   }
 
@@ -267,12 +348,12 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     this.instanceCache.delete(data.id);
     this.stateManager.removeInstance(data.id);
 
-    // Clean up consumers, ref holders, and metrics tracking
-    this.consumers.delete(data.id);
+    // Drop any coalesced update still pending for this instance, and clean up
+    // ref-holder tracking.
+    this.pendingUpdates.delete(
+      (instance as Record<string, any>).instanceId as string,
+    );
     this.refHolders.delete(data.id);
-    this.updateTimestamps.delete(data.id);
-    this.stateSizeCache.delete(data.id);
-    this.totalUpdateCounts.delete(data.id);
 
     this.emit({
       type: 'instance-disposed',
@@ -309,7 +390,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       stackTrace,
     });
 
-    this.emitConsumersChanged(instanceId);
+    this.emitRefsChanged(instanceId);
   }
 
   onDepsChanged(
@@ -360,7 +441,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     }
 
     if (this.instanceCache.has(instanceId)) {
-      this.emitConsumersChanged(instanceId);
+      this.emitRefsChanged(instanceId);
     }
   }
 
@@ -391,14 +472,10 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
   getInstances(): InstanceMetadata[] {
     return Array.from(this.instanceCache.values()).map((inst) => {
-      const consumers = this.consumers.get(inst.id);
       const refIds = this.context?.getRefIds(inst.id) ?? [];
       const refHolders = this.getRefHoldersForInstance(inst.id);
       return {
         ...inst,
-        ...(consumers && consumers.size > 0
-          ? { consumers: Array.from(consumers.values()) }
-          : {}),
         ...(refIds.length > 0 ? { refIds } : {}),
         ...(refHolders.length > 0 ? { refHolders } : {}),
       } as any;
@@ -419,17 +496,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
   getFullState(): { instances: any[]; timestamp: any } {
     return this.stateManager.getFullState();
-  }
-
-  getPerformanceMetrics(
-    instanceId?: string,
-  ): InstanceMetrics | InstanceMetrics[] {
-    if (instanceId) {
-      return this.computeMetrics(instanceId);
-    }
-    return Array.from(this.instanceCache.keys()).map((id) =>
-      this.computeMetrics(id),
-    );
   }
 
   getVersion(): string {
@@ -463,63 +529,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       }
     }
     return false;
-  }
-
-  registerConsumer(
-    instanceId: string,
-    consumerId: string,
-    componentName: string,
-  ): void {
-    if (!this.instanceCache.has(instanceId)) return;
-
-    let stackTrace: string | undefined;
-    try {
-      stackTrace = new Error().stack;
-    } catch {
-      /* ignore */
-    }
-
-    let instanceConsumers = this.consumers.get(instanceId);
-    if (!instanceConsumers) {
-      instanceConsumers = new Map();
-      this.consumers.set(instanceId, instanceConsumers);
-    }
-
-    const info: ConsumerInfo = {
-      id: consumerId,
-      componentName,
-      mountedAt: Date.now(),
-      stackTrace,
-    };
-    instanceConsumers.set(consumerId, info);
-
-    this.emitConsumersChanged(instanceId);
-  }
-
-  unregisterConsumer(instanceId: string, consumerId: string): void {
-    const instanceConsumers = this.consumers.get(instanceId);
-    if (!instanceConsumers) return;
-
-    instanceConsumers.delete(consumerId);
-    if (instanceConsumers.size === 0) {
-      this.consumers.delete(instanceId);
-    }
-
-    this.emitConsumersChanged(instanceId);
-  }
-
-  getConsumers(
-    instanceId?: string,
-  ): ConsumerInfo[] | Record<string, ConsumerInfo[]> {
-    if (instanceId) {
-      const map = this.consumers.get(instanceId);
-      return map ? Array.from(map.values()) : [];
-    }
-    const result: Record<string, ConsumerInfo[]> = {};
-    for (const [id, map] of this.consumers) {
-      result[id] = Array.from(map.values());
-    }
-    return result;
   }
 
   getRefIds(instanceId: string): string[] {
@@ -564,16 +573,12 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     return holders ? Array.from(holders.values()) : [];
   }
 
-  private emitConsumersChanged(instanceId: string): void {
-    const instanceConsumers = this.consumers.get(instanceId);
+  private emitRefsChanged(instanceId: string): void {
     this.emit({
-      type: 'consumers-changed',
+      type: 'refs-changed',
       timestamp: Date.now(),
       data: {
         instanceId,
-        consumers: instanceConsumers
-          ? Array.from(instanceConsumers.values())
-          : [],
         refIds: this.context?.getRefIds(instanceId) ?? [],
         refHolders: this.getRefHoldersForInstance(instanceId),
       },
@@ -593,7 +598,12 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         (this.eventHistoryHead + 1) % this.MAX_HISTORY_SIZE;
     }
 
-    this.broadcastToExtension({ type: 'ATOMIC_UPDATE', payload: event });
+    // Skip the postMessage entirely when no extension is connected — the
+    // in-app overlay receives events via `listeners` below, and a freshly
+    // connecting extension replays from getEventHistory() on INITIAL_STATE.
+    if (this.extensionConnected) {
+      this.broadcastToExtension({ type: 'ATOMIC_UPDATE', payload: event });
+    }
 
     if (this.listeners.size > 0) {
       this.listeners.forEach((listener) => {
@@ -754,96 +764,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     return { name };
   }
 
-  /**
-   * Record a state update for metrics tracking.
-   */
-  private recordUpdate(instanceId: string, stateSizeBytes: number): void {
-    const now = Date.now();
-
-    // Prune timestamps older than 60s
-    const timestamps = (this.updateTimestamps.get(instanceId) || []).filter(
-      (t) => now - t < 60000,
-    );
-    timestamps.push(now);
-    this.updateTimestamps.set(instanceId, timestamps);
-
-    this.stateSizeCache.set(instanceId, stateSizeBytes);
-    this.totalUpdateCounts.set(
-      instanceId,
-      (this.totalUpdateCounts.get(instanceId) ?? 0) + 1,
-    );
-  }
-
-  /**
-   * Compute rolling performance metrics for a given instance.
-   */
-  private computeMetrics(instanceId: string): InstanceMetrics {
-    const now = Date.now();
-    const allTimestamps = this.updateTimestamps.get(instanceId) || [];
-
-    // 5-second window for updates/sec
-    const window5s = allTimestamps.filter((t) => now - t < 5000);
-    const updatesPerSecond = window5s.length / 5;
-
-    // Average interval
-    let avgUpdateInterval = 0;
-    if (allTimestamps.length > 1) {
-      let totalInterval = 0;
-      for (let i = 1; i < allTimestamps.length; i++) {
-        totalInterval += allTimestamps[i] - allTimestamps[i - 1];
-      }
-      avgUpdateInterval = totalInterval / (allTimestamps.length - 1);
-    }
-
-    // Max burst rate (peak in any 1s window) — sliding window O(n)
-    let maxBurstRate = 0;
-    if (allTimestamps.length > 0) {
-      let left = 0;
-      for (let right = 0; right < allTimestamps.length; right++) {
-        while (allTimestamps[right] - allTimestamps[left] >= 1000) {
-          left++;
-        }
-        const count = right - left + 1;
-        if (count > maxBurstRate) maxBurstRate = count;
-      }
-    }
-
-    const stateSizeBytes = this.stateSizeCache.get(instanceId) ?? 0;
-    const totalUpdates = this.totalUpdateCounts.get(instanceId) ?? 0;
-    const lastUpdateTimestamp = allTimestamps[allTimestamps.length - 1] ?? 0;
-
-    const warnings: PerformanceWarning[] = [];
-
-    if (updatesPerSecond > this.config.highFrequencyThreshold) {
-      warnings.push({
-        type: 'high-frequency',
-        message: `${instanceId} is updating ${updatesPerSecond.toFixed(1)} times/sec (threshold: ${this.config.highFrequencyThreshold})`,
-        threshold: this.config.highFrequencyThreshold,
-        actual: updatesPerSecond,
-      });
-    }
-
-    if (stateSizeBytes > this.config.largeStateSizeThreshold) {
-      warnings.push({
-        type: 'large-state',
-        message: `${instanceId} state is ${(stateSizeBytes / 1024).toFixed(1)}KB (threshold: ${(this.config.largeStateSizeThreshold / 1024).toFixed(0)}KB)`,
-        threshold: this.config.largeStateSizeThreshold,
-        actual: stateSizeBytes,
-      });
-    }
-
-    return {
-      instanceId,
-      totalUpdates,
-      updatesPerSecond,
-      avgUpdateInterval,
-      maxBurstRate,
-      stateSizeBytes,
-      lastUpdateTimestamp,
-      warnings,
-    };
-  }
-
   private broadcastToExtension(data: Record<string, any>): void {
     if (typeof window === 'undefined') return;
     window.postMessage(
@@ -858,7 +778,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       const history = inst.history ?? [];
       const lastChange =
         history.length > 0 ? history[history.length - 1] : null;
-      const instanceConsumers = this.consumers.get(inst.id);
       const refIds = this.context?.getRefIds(inst.id) ?? [];
       const refHolders = this.getRefHoldersForInstance(inst.id);
       return {
@@ -873,9 +792,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         getters: inst.getters,
         history: inst.history,
         createdFrom: inst.createdFrom,
-        consumers: instanceConsumers
-          ? Array.from(instanceConsumers.values())
-          : undefined,
         refIds: refIds.length > 0 ? refIds : undefined,
         refHolders: refHolders.length > 0 ? refHolders : undefined,
       };
@@ -928,18 +844,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       isEnabled: () => this.enabled,
       timeTravel: (instanceId: string, state: any) =>
         this.timeTravel(instanceId, state),
-      getPerformanceMetrics: (instanceId?: string) => {
-        const result = this.getPerformanceMetrics(instanceId);
-        return result;
-      },
-      registerConsumer: (
-        instanceId: string,
-        consumerId: string,
-        componentName: string,
-      ) => this.registerConsumer(instanceId, consumerId, componentName),
-      unregisterConsumer: (instanceId: string, consumerId: string) =>
-        this.unregisterConsumer(instanceId, consumerId),
-      getConsumers: (instanceId?: string) => this.getConsumers(instanceId),
       getRefIds: (instanceId: string) => this.getRefIds(instanceId),
     };
   }

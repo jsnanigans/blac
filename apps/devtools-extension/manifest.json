@@ -22,11 +22,5 @@
       "all_frames": true
     }
   ],
-  "devtools_page": "dist/src/devtools/devtools.html",
-  "web_accessible_resources": [
-    {
-      "resources": ["dist/chunks/*.js"],
-      "matches": ["<all_urls>"]
-    }
-  ]
+  "devtools_page": "dist/src/devtools/devtools.html"
 }

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { acquire } from '@blac/core';
+import { acquire, release } from '@blac/core';
 import { DevToolsPanel } from './DevToolsPanel';
 import {
   DevToolsInstancesBloc,
@@ -105,13 +105,18 @@ function toInstanceData(inst: any): import('./types').InstanceData {
     hydrationStatus: inst.hydrationStatus,
     hydrationError: inst.hydrationError,
     getters: inst.getters,
-    consumers: inst.consumers,
     refIds: inst.refIds,
     refHolders: inst.refHolders,
     createdFrom: inst.createdFrom,
     args: inst.args,
   };
 }
+
+// Distinct refId per mount so concurrent overlays don't release each other's
+// ref. Acquired refs are released in the cleanup returned below — without that,
+// the Diff/Logs blocs (and their bounded-but-growing snapshot/log history) would
+// be retained for the lifetime of the page.
+let overlayMountSeq = 0;
 
 export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
   const api = (window as any as Record<string, any>).__BLAC_DEVTOOLS__;
@@ -126,8 +131,9 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
     return;
   }
 
-  const diffBloc = acquire(DevToolsDiffBloc);
-  const logsBloc = acquire(DevToolsLogsBloc);
+  const refId = `devtools-overlay-${++overlayMountSeq}`;
+  const diffBloc = acquire(DevToolsDiffBloc, undefined, refId);
+  const logsBloc = acquire(DevToolsLogsBloc, undefined, refId);
 
   const loadFullData = () => {
     const fullState = api.getFullState?.();
@@ -229,11 +235,10 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
         break;
       }
 
-      case 'consumers-changed': {
+      case 'refs-changed': {
         const d = evt.data as Record<string, any>;
-        instancesBloc.updateConsumers(
+        instancesBloc.updateRefs(
           d.instanceId as string,
-          (d.consumers as import('./types').ConsumerInfo[]) ?? [],
           (d.refIds as string[]) ?? [],
           (d.refHolders as import('./types').RefHolderInfo[]) ?? undefined,
         );
@@ -259,6 +264,8 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
 
   return () => {
     unsubscribe();
+    release(DevToolsDiffBloc, undefined, false, refId);
+    release(DevToolsLogsBloc, undefined, false, refId);
   };
 };
 
@@ -277,12 +284,25 @@ export function DraggableOverlay({ onMount }: DraggableOverlayProps = {}) {
   }, []);
 
   useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null): boolean => {
+      if (!(target instanceof HTMLElement)) return false;
+      const tag = target.tagName;
+      return (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        target.isContentEditable
+      );
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && (e.key === 'd' || e.key === 'D')) {
         e.preventDefault();
         setVisible((v) => !v);
       }
-      if (e.key === 'Escape' && visible) {
+      // Don't let Escape close the panel while the user is editing/searching —
+      // inputs handle Escape themselves (clear search, cancel edit).
+      if (e.key === 'Escape' && visible && !isEditableTarget(e.target)) {
         setVisible(false);
       }
     };

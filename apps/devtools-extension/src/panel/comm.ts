@@ -2,16 +2,6 @@ export interface Trigger {
   name: string;
 }
 
-/**
- * Panel-format instance (transformed by inject-script from backend format)
- */
-export interface ConsumerInfo {
-  id: string;
-  componentName: string;
-  mountedAt: number;
-  stackTrace?: string;
-}
-
 export interface RefHolderInfo {
   refId: string;
   acquiredAt: number;
@@ -32,7 +22,6 @@ export interface PanelInstance {
   callstack?: string;
   createdFrom?: string;
   trigger?: Trigger;
-  consumers?: ConsumerInfo[];
   refIds?: string[];
   refHolders?: RefHolderInfo[];
   getters?: Record<string, any>;
@@ -63,13 +52,11 @@ export type AtomicEvent =
         paths?: string[] | 'all';
       };
     }
-  | { type: 'performance-warning'; timestamp: number; data: any }
   | {
-      type: 'consumers-changed';
+      type: 'refs-changed';
       timestamp: number;
       data: {
         instanceId: string;
-        consumers: ConsumerInfo[];
         refIds?: string[];
         refHolders?: RefHolderInfo[];
       };

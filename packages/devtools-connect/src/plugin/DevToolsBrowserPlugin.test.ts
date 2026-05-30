@@ -203,8 +203,9 @@ describe('DevToolsBrowserPlugin paths wire field', () => {
     plugin.subscribe(subscriber);
 
     instance.emit({ count: 1 });
-    // onStateChange fires on the microtask flush
-    await Promise.resolve();
+    // onStateChange records on the microtask flush; the instance-updated event
+    // is coalesced and emitted on the next animation frame.
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     const updatedEvent = subscriber.mock.calls.find(
       (call: any[]) => call[0]?.type === 'instance-updated',
@@ -227,7 +228,7 @@ describe('DevToolsBrowserPlugin paths wire field', () => {
 
     // emit() triggers ALL_PATHS in StructuralContainer single-consumer mode
     instance.emit({ count: 42 });
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     const updatedEvent = subscriber.mock.calls.find(
       (call: any[]) => call[0]?.type === 'instance-updated',

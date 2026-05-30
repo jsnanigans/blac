@@ -27,13 +27,6 @@ export interface GetterInfo {
   dependsOn?: string[];
 }
 
-export interface ConsumerInfo {
-  id: string;
-  componentName: string;
-  mountedAt: number;
-  stackTrace?: string;
-}
-
 export interface RefHolderInfo {
   refId: string;
   acquiredAt: number;
@@ -61,8 +54,6 @@ export interface InstanceData {
   hydrationError?: string;
   /** Computed getter values */
   getters?: Record<string, GetterInfo>;
-  /** React components consuming this instance via useBloc */
-  consumers?: ConsumerInfo[];
   /** All active reference IDs holding this instance (from named ref tracking) */
   refIds?: string[];
   /** Enriched reference holder info with stack traces (dev mode only) */

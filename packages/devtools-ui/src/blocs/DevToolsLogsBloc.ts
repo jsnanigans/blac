@@ -78,20 +78,6 @@ export class DevToolsLogsBloc extends Cubit<LogsState> {
   };
 
   /**
-   * Get logs for a specific instance
-   */
-  getLogsForInstance = (instanceId: string): LogEntry[] => {
-    return this.state.logs.filter((log) => log.instanceId === instanceId);
-  };
-
-  /**
-   * Get logs by event type
-   */
-  getLogsByType = (eventType: LogEventType): LogEntry[] => {
-    return this.state.logs.filter((log) => log.eventType === eventType);
-  };
-
-  /**
    * Set event type filters (empty array = show all)
    */
   setEventTypeFilters = (eventTypes: LogEventType[]) => {
