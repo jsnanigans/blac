@@ -1,5 +1,13 @@
 # @blac/logging-plugin
 
+## 2.0.16
+
+### Patch Changes
+
+- Add dts
+- Updated dependencies
+  - @blac/core@2.0.15
+
 ## 2.0.15
 
 ### Patch Changes

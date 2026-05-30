@@ -1,5 +1,14 @@
 # @blac/devtools-ui
 
+## 2.0.18
+
+### Patch Changes
+
+- Add dts
+- Updated dependencies
+  - @blac/core@2.0.15
+  - @blac/react@2.0.15
+
 ## 2.0.17
 
 ### Patch Changes

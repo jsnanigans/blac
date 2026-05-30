@@ -1,5 +1,13 @@
 # @blac/plugin-persist
 
+## 0.0.12
+
+### Patch Changes
+
+- Add dts
+- Updated dependencies
+  - @blac/core@2.0.15
+
 ## 0.0.11
 
 ### Patch Changes
