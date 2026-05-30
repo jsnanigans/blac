@@ -10,7 +10,7 @@ React bindings for BlaC — `useBloc` hook with proxy-based automatic re-render 
 pnpm add @blac/react @blac/core
 ```
 
-Requires React 18+ (`useSyncExternalStore`).
+Requires React 18+.
 
 ## Quick Start
 
@@ -54,11 +54,11 @@ const [state, bloc, ref] = useBloc(MyBloc, options?);
 
 BlaC blocs receive external data through three distinct channels:
 
-| Lane | Purpose | Keying | Lifetime | Example |
-|---|---|---|---|---|
-| **`args`** | Typed creation data; derives instance identity | **Yes** (structural hash or `static key`) | Once at `init()` | `userId`, `endpoint` |
-| **`deps`** | Non-serializable refs, callbacks, handles | **Never** | Live, per-consumer merged | `ref`, `onComplete` callback, `emblaApi` |
-| **events** | Values that change over time or are late-bound | N/A | Called from effects | `cubit.slidesChanged(v)` from `useEffect` |
+| Lane       | Purpose                                        | Keying                                    | Lifetime                  | Example                                   |
+| ---------- | ---------------------------------------------- | ----------------------------------------- | ------------------------- | ----------------------------------------- |
+| **`args`** | Typed creation data; derives instance identity | **Yes** (structural hash or `static key`) | Once at `init()`          | `userId`, `endpoint`                      |
+| **`deps`** | Non-serializable refs, callbacks, handles      | **Never**                                 | Live, per-consumer merged | `ref`, `onComplete` callback, `emblaApi`  |
+| **events** | Values that change over time or are late-bound | N/A                                       | Called from effects       | `cubit.slidesChanged(v)` from `useEffect` |
 
 ### `args`: Typed Construction Data
 
@@ -84,40 +84,54 @@ function UserCard({ userId }: { userId: string }) {
 ```
 
 **Key properties:**
+
 - **Required when declared** — omitting `args` or passing the wrong shape is a type error.
 - **Drives identity** — different `args` ⇒ different instance. Same `args` ⇒ same instance (dev-warn if args mismatch on same-keyed second call).
 - **Serializable only** — non-serializable values (refs, callbacks) belong in the `deps` lane (below).
-- **Per-component private instances** — use with `autoInstance: true` to give each mount its own instance, disposed on unmount:
+- **Per-component private instances** — pass a per-mount `instanceId` (keyed by React's `useId()`) to give each mount its own instance, disposed on unmount:
 
 ```tsx
-const [state, cubit] = useBloc(FormCubit, { args: options, autoInstance: true });
+const instanceId = useId();
+const [state, cubit] = useBloc(FormCubit, { args: options, instanceId });
 ```
 
 ### `deps`: Non-Serializable Refs and Callbacks
 
 Use `deps` to inject refs, stable callbacks, and long-lived controller handles. Unlike `args`, `deps` are:
+
 - **Never keying** — different refs don't fork the instance
 - **Per-consumer merged** — each component contributes its own slice
 - **Read lazily** — accessed via `this.deps.x` when needed, may be undefined
 - **Live** — can change over time
 
-```tsx
-const inputRef = useRef<HTMLInputElement>(null);
-const onComplete = useCallback(() => { /* ... */ }, []);
+`deps` is **not** a `useBloc` option. A component contributes its slice from a **mount effect**, using `APPLY_DEPS` / `REMOVE_DEPS_OWNER` from `@blac/core` (marked `@internal` today; a friendlier wrapper may land later):
 
-const [state, cubit] = useBloc(FileUploadCubit, {
-  args: { endpoint },
-  deps: { inputRef, onComplete },
-});
+```tsx
+import { useEffect, useId, useRef } from 'react';
+import { APPLY_DEPS, REMOVE_DEPS_OWNER } from '@blac/core';
+import { useBloc } from '@blac/react';
+
+const inputRef = useRef<HTMLInputElement>(null);
+const ownerId = useId();
+const [state, cubit] = useBloc(FileUploadCubit, { args: { endpoint } });
+
+useEffect(() => {
+  cubit[APPLY_DEPS](ownerId, { inputRef });
+  return () => cubit[REMOVE_DEPS_OWNER](ownerId);
+}, [cubit, inputRef, ownerId]);
 ```
 
 The bloc reads them lazily and guards for absence:
 
 ```ts
-class FileUploadCubit extends Cubit<UploadState, { endpoint: string }, {
-  inputRef?: RefObject<HTMLInputElement>;
-  onComplete?: () => void;
-}> {
+class FileUploadCubit extends Cubit<
+  UploadState,
+  { endpoint: string },
+  {
+    inputRef?: RefObject<HTMLInputElement>;
+    onComplete?: () => void;
+  }
+> {
   async upload() {
     this.deps.inputRef?.current?.click?.();
     // ... perform upload ...
@@ -129,16 +143,17 @@ class FileUploadCubit extends Cubit<UploadState, { endpoint: string }, {
 **Multi-consumer merge:** when multiple components provide the same cubit with different `deps`, their keys are shallow-merged:
 
 ```tsx
-// Component A provides inputRef
-useBloc(FormCubit, { args: { formId }, deps: { inputRef } });
+// Component A owns inputRef
+cubitA[APPLY_DEPS](ownerIdA, { inputRef });
 
-// Component B provides onSubmit
-useBloc(FormCubit, { args: { formId }, deps: { onSubmit } });
+// Component B owns onSubmit
+cubitB[APPLY_DEPS](ownerIdB, { onSubmit });
 
-// cubit.deps === { inputRef, onSubmit } (merged from both)
+// cubit.deps === { inputRef, onSubmit } (merged from both consumers)
 ```
 
 **Avoid raw callbacks** — the callback staleness gotcha. Prefer:
+
 1. **Don't inject callbacks — invert** (best): expose state and let React call the fresh callback in its own effect.
 2. **Stabilize at source** — wrap in `useCallback`.
 3. **As an event** — push the callback via a bloc method called from your effect.
@@ -168,7 +183,7 @@ function Carousel({ slides }: { slides: Slide[] }) {
 }
 ```
 
-**Convention:** *one component owns syncing any given live value.* Two components calling the same event from both their effects on the same shared instance is a design smell (and rare, because keyed `args` usually route multi-consumer cases to distinct instances).
+**Convention:** _one component owns syncing any given live value._ Two components calling the same event from both their effects on the same shared instance is a design smell (and rare, because keyed `args` usually route multi-consumer cases to distinct instances).
 
 ### Tracking Modes
 
@@ -187,39 +202,34 @@ const [state] = useBloc(CounterCubit, {
 });
 ```
 
-**No tracking:** Re-renders on every state change.
-
-```tsx
-const [state] = useBloc(MyBloc, { autoTrack: false });
-```
-
 ### Options
 
-| Option         | Type                         | Description                                          |
-| -------------- | ---------------------------- | ---------------------------------------------------- |
-| `args`         | `Args` type                  | Required when bloc declares `Args != void`; forbidden when `void` |
-| `deps`         | `{ [key]: value }`           | Per-consumer slice of non-serializable handles |
-| `autoTrack`    | `boolean`                    | Enable proxy-based auto-tracking (default: `true`)   |
-| `select`       | `(state, bloc) => unknown[]` | Manual dependency selector (renamed from `dependencies`) |
-| `autoInstance` | `boolean`                    | Per-mount instance keyed by `useId()` instead of shared (default: `false`) |
-| `instanceId`   | `string \| number`           | Explicit identity key (overrides args-derived keying) |
-| `onMount`      | `(bloc) => void`             | Called when component mounts                         |
-| `onUnmount`    | `(bloc) => void`             | Called when component unmounts                       |
+| Option       | Type                         | Description                                                                      |
+| ------------ | ---------------------------- | -------------------------------------------------------------------------------- |
+| `args`       | `Args` type                  | Required when bloc declares `Args != void`; forbidden when `void`                |
+| `select`     | `(state, bloc) => unknown[]` | Manual dependency selector (renamed from `dependencies`); disables auto-tracking |
+| `instanceId` | `string \| number`           | Explicit identity key; pass `useId()` for a per-mount instance                   |
+| `onMount`    | `(bloc) => void`             | Called when component mounts                                                     |
+| `onUnmount`  | `(bloc) => void`             | Called when component unmounts                                                   |
+
+> Auto-tracking is always on when `select` is omitted — it is **not** a configurable option. `deps` and `autoInstance` are not `useBloc` options either: wire deps from a mount effect (`APPLY_DEPS` / `REMOVE_DEPS_OWNER`), and use `instanceId: useId()` for per-mount instances.
 
 ### Identity and Keying
 
 Instance identity is resolved in precedence order:
 
-1. **Explicit `instanceId`** — hard override if provided
-2. **`autoInstance: true`** — per-mount instance keyed by `useId()`
-3. **`static key(args)` → structural hash of `args`** — default when bloc declares `Args` (if `static key` is defined on the class, it takes precedence; otherwise a stable hash of all `args`)
-4. **`<BlocProvider>` context id** — inherited from parent provider
-5. **`'default'`** — singleton fallback
+1. **Explicit `instanceId`** — hard override (pass `useId()` for a per-mount private instance)
+2. **`<BlocProvider>` context id** — inherited from an ancestor provider
+3. **`static key(args)` → structural hash of `args`** — default when the bloc declares `Args` (`static key` wins if defined; otherwise a stable hash of all `args`)
+4. **`'default'`** — singleton fallback
 
 Blocs declare explicit identity via a static class property:
 
 ```ts
-class DocumentCubit extends Cubit<DocState, { docId: string; readonly: boolean }> {
+class DocumentCubit extends Cubit<
+  DocState,
+  { docId: string; readonly: boolean }
+> {
   static key = (args) => args.docId;
   // Identity is docId; readonly config rides along but doesn't fork instances
 }
@@ -227,14 +237,15 @@ class DocumentCubit extends Cubit<DocState, { docId: string; readonly: boolean }
 
 ### Instance Sharing and Lifecycle
 
-By default, all components using `useBloc(MyBloc)` with the same identity share one instance. Use `autoInstance` for per-component private instances:
+By default, all components using `useBloc(MyBloc)` with the same identity share one instance. Pass a per-mount `instanceId` (via `useId()`) for per-component private instances:
 
 ```tsx
 // All users with userId=123 share one instance
 useBloc(UserCardCubit, { args: { userId: 123 } });
 
 // Each component mount gets its own instance, disposed on unmount
-useBloc(FormCubit, { args: options, autoInstance: true });
+const instanceId = useId();
+useBloc(FormCubit, { args: options, instanceId });
 
 // Explicit id (escape hatch for non-derivable identity)
 useBloc(EditorCubit, { instanceId: 'editor-1' });
@@ -242,7 +253,8 @@ useBloc(EditorCubit, { instanceId: 'editor-1' });
 
 ### Breaking Changes (v2)
 
-- **`dependencies` option renamed to `select`** — avoids confusion with the new `deps` (non-serializable handles) lane.
+- **`dependencies` option renamed to `select`** — avoids confusion with the `deps` (non-serializable handles) lane.
+- **`autoTrack`, `autoInstance`, and `deps` are no longer `useBloc` options** — auto-tracking is always on (opt out per-consumer with `select`); per-mount instances use `instanceId: useId()`; deps are wired from a mount effect via `APPLY_DEPS` / `REMOVE_DEPS_OWNER`.
 - **Zero-arg constructor + `init(args)` lifecycle** — all blocs now use `new Type()` with no constructor args. Blocs that declare `Args` receive them via `init(args)` called by the framework before the first state snapshot.
 - **`args` is required when declared, forbidden when void** — enforced by the type system; no runtime guard needed.
 
@@ -251,7 +263,8 @@ useBloc(EditorCubit, { instanceId: 'editor-1' });
 ```tsx
 import { configureBlacReact } from '@blac/react';
 
-configureBlacReact({ autoTrack: true });
+// Configuration is currently empty; the tracking model is fixed and not configurable.
+configureBlacReact({});
 ```
 
 ## Testing

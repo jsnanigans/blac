@@ -119,7 +119,7 @@ If you only mean to change some fields, use `patch({ filter: 'done' })`, or read
 
 Getters are how you model **derived state** — values computed from other state rather than stored. Prefer a getter over storing a computed field: a stored `total` can drift out of sync with `items`, but a `get total()` is recomputed on every read and can never be stale.
 
-Getters are tracked automatically by the proxy system: a getter reads `this.state.items`, and a component that reads `bloc.total` is treated as if it read `items`. So the component only re-renders when the data the getter actually touched changes — not on every state change.
+Note that reading a getter **off the bloc instance** (`bloc.total`) does **not** subscribe a component to the state it derives from — auto-tracking only records reads on the `state` proxy, never on the bloc. To re-render when a getter's inputs change, read those inputs through `state` in the render body (e.g. `state.items`), or name the getter in a `select`: `useBloc(CartCubit, { select: (state, bloc) => [bloc.total] })`. See [Dependency Tracking](/react/dependency-tracking#what-does-not-register-a-dependency).
 
 ```ts
 class CartCubit extends Cubit<{ items: CartItem[] }> {
@@ -168,7 +168,7 @@ Declare an `Args` type as the second generic parameter to let the bloc receive e
 ```ts
 class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
   // Constructor stays zero-arg. The framework calls init(args) before first snapshot.
-  init(args: { userId: string }) {
+  protected init(args: { userId: string }) {
     void this.loadUser(args.userId);
   }
 }
@@ -206,7 +206,7 @@ class FileUploadCubit extends Cubit<
   { endpoint: string },                       // Args
   { inputRef?: RefObject<HTMLInputElement> }  // Deps
 > {
-  init(args: { endpoint: string }) {
+  protected init(args: { endpoint: string }) {
     this.endpoint = args.endpoint;
   }
 

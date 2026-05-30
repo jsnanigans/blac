@@ -11,6 +11,8 @@
     "publish:preview": "wrangler pages deploy --branch preview"
   },
   "devDependencies": {
+    "@blac/core": "workspace:*",
+    "@shikijs/vitepress-twoslash": "^3.23.0",
     "oxc-minify": "latest",
     "typescript": "catalog:",
     "vite": "catalog:",

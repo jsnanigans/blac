@@ -8,6 +8,9 @@ hero:
   actions:
     - theme: brand
       text: Get Started
+      link: /guide/introduction
+    - theme: alt
+      text: Quick Start
       link: /guide/getting-started
     - theme: alt
       text: Reference
@@ -35,8 +38,8 @@ features:
     details: Official plugins for DevTools integration, console logging, and IndexedDB persistence. Or build your own.
 
   - icon: ⚛️
-    title: Concurrent-Safe
-    details: 'Built on useSyncExternalStore for React 18+ concurrent mode, Suspense, and transitions.'
+    title: Batched Updates
+    details: 'Changes coalesce on the microtask queue and dispatch through React''s normal update path, so a burst of updates in one tick re-renders a component once.'
 ---
 
 ## Quick Example

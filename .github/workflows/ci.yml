@@ -64,3 +64,31 @@ jobs:
           node-version: lts
           cache: true
       - run: pnpm run test
+
+  docs:
+    name: Docs build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: lts
+          cache: true
+      # VitePress fails the build on dead internal links, so this doubles as
+      # the internal link checker. External links are checked on a schedule
+      # in link-check.yml.
+      - run: pnpm docs:build
+
+  size:
+    name: Bundle size
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: lts
+          cache: true
+      - run: pnpm run build
+      - run: pnpm -F @blac/core -F @blac/react size

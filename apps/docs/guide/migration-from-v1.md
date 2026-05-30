@@ -91,7 +91,7 @@ v2 replaces this with the three explicit [input lanes](/guide/inputs):
 ```tsx
 // v2 — args key identity and seed init()
 class UserCubit extends Cubit<UserState, { userId: string }> {
-  init(args: { userId: string }) { this.load(args.userId); }
+  protected init(args: { userId: string }) { this.load(args.userId); }
 }
 useBloc(UserCubit, { args: { userId } });
 ```

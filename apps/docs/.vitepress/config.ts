@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress';
+import { transformerTwoslash } from '@shikijs/vitepress-twoslash';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -15,12 +16,13 @@ const referenceSidebar = [
     text: 'Core',
     items: [
       { text: 'Cubit', link: '/core/cubit' },
+      { text: 'Tracking', link: '/core/tracked' },
       { text: 'Configuration', link: '/core/configuration' },
       { text: 'Instance Management', link: '/core/instance-management' },
       { text: 'System Events', link: '/core/system-events' },
       { text: 'Bloc Communication', link: '/core/bloc-communication' },
       { text: 'watch', link: '/core/watch' },
-      { text: 'Plugin Authoring', link: '/core/plugins' },
+      { text: 'Authoring Plugins', link: '/core/plugins' },
     ],
   },
   {
@@ -74,9 +76,33 @@ export default defineConfig({
   description:
     'Type-safe state management for React with automatic re-render optimization',
   base: process.env.BASE_URL || '/',
+  lastUpdated: true,
+  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }]],
+
+  // Type-checks every ```ts twoslash` fence against the real @blac/* types at
+  // build time and renders type-on-hover. A broken snippet fails the build.
+  markdown: {
+    codeTransformers: [transformerTwoslash()],
+  },
 
   themeConfig: {
     logo: '/logo.svg',
+
+    editLink: {
+      pattern: 'https://github.com/jsnanigans/blac/edit/main/apps/docs/:path',
+      text: 'Edit this page on GitHub',
+    },
+    lastUpdated: {
+      text: 'Last updated',
+    },
+    docFooter: {
+      prev: true,
+      next: true,
+    },
+    outline: {
+      level: [2, 3],
+      label: 'On this page',
+    },
 
     nav: [
       { text: 'Guide', link: '/guide/introduction' },
@@ -85,11 +111,11 @@ export default defineConfig({
         items: [
           { text: 'BlaC Core', link: '/core/cubit' },
           { text: 'BlaC React', link: '/react/getting-started' },
-          { text: 'DirtyTalk', link: '/dirtytalk/' },
         ],
       },
       { text: 'Plugins', link: '/plugins/overview' },
       { text: 'Testing', link: '/testing/overview' },
+      { text: 'DirtyTalk', link: '/dirtytalk/' },
       {
         text: `v${version}`,
         items: [

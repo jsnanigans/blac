@@ -30,7 +30,7 @@ When a bloc declares an `Args` type, `useBloc` requires you to pass `args`. They
 
 ```ts
 class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
-  init(args: { userId: string }) {
+  protected init(args: { userId: string }) {
     // called once by the framework at creation, before the first snapshot
     void this.loadUser(args.userId);
   }
@@ -110,7 +110,7 @@ class FileUploadCubit extends Cubit<
   { endpoint: string },                       // args → keys identity
   { inputRef?: RefObject<HTMLInputElement> }  // deps → never keyed, read lazily
 > {
-  init(args: { endpoint: string }) {
+  protected init(args: { endpoint: string }) {
     this.endpoint = args.endpoint;
   }
 

@@ -114,6 +114,13 @@
     "bloc",
     "bloc-pattern"
   ],
+  "size-limit": [
+    {
+      "name": "@blac/core (ESM, brotli)",
+      "path": "dist/index.js",
+      "limit": "8 kB"
+    }
+  ],
   "scripts": {
     "dev": "vp pack --watch",
     "build": "vp pack && tsc -p tsconfig.build.json && for f in dist/*.d.ts; do cp \"$f\" \"${f%.d.ts}.d.cts\"; done",
@@ -127,6 +134,7 @@
     "coverage": "vp test run --coverage",
     "verify": "node ../../scripts/run-workspace-bin.mjs publint",
     "typecheck": "tsc --noEmit",
+    "size": "size-limit",
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
     "deploy": "pnpm publish --access public"
   },
@@ -134,6 +142,8 @@
     "@dirtytalk/structural": "workspace:^"
   },
   "devDependencies": {
+    "@size-limit/preset-small-lib": "^11.1.6",
+    "size-limit": "^11.1.6",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",

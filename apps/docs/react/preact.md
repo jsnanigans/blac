@@ -86,7 +86,7 @@ configureBlacPreact({
 
 ## Differences from React
 
-- The hook subscribes through Preact's `useSyncExternalStore` rather than React's.
+- The hook is built against Preact's hook implementations rather than React's; the subscription and tracking model is otherwise identical.
 - Everything else — `@blac/core`, the registry, ref-counting, plugins, and the tracking engine in `@dirtytalk/structural` — is shared between the two bindings. State containers themselves are framework-agnostic: the *same* Cubit class works under React, Preact, or no framework at all (via [watch](/core/watch)).
 
 ## See also

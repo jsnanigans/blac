@@ -76,14 +76,14 @@ The Instances tab lists every active state container with everything you need to
 
 - **Class name + instance ID** with a state preview.
 - **`args`** that keyed the instance — surfaced inline so two instances of the same class with different `args` are easy to tell apart.
-- **Consumer count** (`C:n`) — React components currently subscribed via `useBloc`.
-- **Ref count** (`R:n`) — manual ref holders (e.g. from `acquire()`).
-- **Insight pills** — inline warnings: large state size, high update rate, hydration status.
+- **Ref holders** (`R:n`) — every active holder of the instance: each `useBloc` mount (which acquires a ref) plus any manual [`acquire()`](/core/instance-management).
+- **Hydration badge** — `HYDRATING` while state is being restored by the persistence plugin, or `ERR` if hydration failed.
+- **Insight pills** — inline warnings when a threshold trips: large state size (≥ 50 KB) or a high update rate (≥ 30 updates / 10 s).
 
 Click an instance to see its full state tree and a side-by-side diff history.
 
-::: info Reading `C:n` vs `R:n`
-These two numbers come straight from the registry's [ref-counting model](/core/instance-management). A bloc stays alive while either count is above zero. If an instance lingers after every component using it has unmounted, check `R:n` — a stray `acquire()` without a matching `release()` (or `keepAlive: true`) is the usual cause.
+::: info Reading `R:n`
+`R:n` comes straight from the registry's [ref-counting model](/core/instance-management). Every `useBloc` mount acquires a ref, and every manual `acquire()` adds one; the bloc stays alive while the count is above zero. If an instance lingers after all its components have unmounted, a stray `acquire()` without a matching `release()` (or `keepAlive: true`) is the usual cause.
 :::
 
 ### View state diffs
@@ -99,7 +99,8 @@ The Logs tab shows a timeline of all lifecycle events:
 | `instance-created`  | A state container is created                                      |
 | `instance-updated`  | State changes                                                     |
 | `instance-disposed` | A state container is disposed                                     |
-| `deps-changed`      | The merged `deps` view changes — entries include `prev` and `next` |
+| `refs-changed`      | The set of ref holders changes (a `useBloc` mount/unmount or `acquire`/`release`) |
+| `deps-changed`      | The merged `deps` view changes — payload carries `previousDeps` and `currentDeps` |
 
 ### Time-travel
 
@@ -181,5 +182,5 @@ devtools.getEventHistory();
 
 - [Plugin Overview](/plugins/overview) — the plugin catalog and the install API
 - [Logging Plugin](/plugins/logging) — passive console/CI logging; complements DevTools
-- [Instance Management](/core/instance-management) — the ref-counting model behind `C:n` and `R:n`
+- [Instance Management](/core/instance-management) — the ref-counting model behind `R:n`
 - [Configuration](/core/configuration) — `excludeFromDevTools` and the other `blac()` options

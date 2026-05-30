@@ -20,11 +20,27 @@ yarn add @blac/core @blac/react
 
 BlaC requires React 18+ and TypeScript is strongly recommended.
 
+::: details Recommended `tsconfig.json`
+BlaC works with a standard strict React setup. The `@blac()` decorator (used for `keepAlive`, `static key`, and other options) works as either a legacy (`experimentalDecorators`) or a TC39/stage-3 decorator — enable decorator support in your tsconfig to use the `@blac(...)` syntax. Or skip decorators entirely with the functional form — `blac({ ... })(class extends Cubit { ... })` — which needs no extra compiler flags.
+
+```jsonc
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "jsx": "react-jsx",
+    "strict": true,
+    "useDefineForClassFields": true,
+    "experimentalDecorators": true // only if you use @blac(...) decorator syntax
+  }
+}
+```
+:::
+
 ## Step 1: Define a Cubit
 
 A Cubit is a class that holds state and exposes methods to change it.
 
-```ts
+```ts twoslash
 import { Cubit } from '@blac/core';
 
 class CounterCubit extends Cubit<{ count: number }> {
@@ -140,6 +156,15 @@ class TodoCubit extends Cubit<{ items: string[]; input: string }> {
 Notice the two write styles: `addTodo` uses `update` and lists *both* keys (replacing the whole state), while `removeTodo` uses `patch` and mentions *only* `items` (merging into the rest). Both are correct — the difference is exactly the replace-vs-merge rule from Step 1.
 
 Getters like `isEmpty` derive a value on every read, so they can never drift from `items`. One subtlety: auto-tracking records reads on the `state` proxy, *not* on the bloc instance — so reading `todo.isEmpty` alone won't wake the component. Read the getter's source through `state` in render (e.g. `state.items.length`) to stay subscribed, or depend on the getter explicitly with `select`. The full rule is in [Dependency Tracking](/react/dependency-tracking). For async work (loading flags, fetches, request guards), see [Patterns & Recipes](/guide/patterns).
+
+::: warning Component not re-rendering?
+The two most common first-time causes:
+
+1. **Reading state off the bloc instead of the `state` proxy.** Auto-tracking only records reads on the destructured `state` value — `counter.state.count`, or a getter read directly on the instance, won't subscribe you. Read through `state` in render.
+2. **Expecting `emit`/`update` to merge.** They *replace* the whole state, so any key you omit is dropped. Use `patch` to merge, or spread the previous state.
+
+The full symptom list is in [Troubleshooting & FAQ](/guide/troubleshooting).
+:::
 
 ## What just happened?
 

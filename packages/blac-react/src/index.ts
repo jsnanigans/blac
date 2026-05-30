@@ -3,7 +3,7 @@
  *
  * Clean integration between React and StateContainer architecture.
  * Constructor-based API with automatic type inference.
- * Supports concurrent (useSyncExternalStore) mode for optimal performance.
+ * Re-renders are driven by per-consumer, path-scoped channel subscriptions.
  */
 
 export { useBloc } from './useBloc';

@@ -52,14 +52,16 @@ this.update((s) => ({ ...s, tags: new Set([...s.tags, 'new']) }));
 ```
 :::
 
-## Getters fold into tracking
+## Getters do not auto-track
 
-A getter on the bloc is **derived state**: it reads other state and computes a value. Because the getter reads through the same proxy, its reads are recorded against the *reading consumer*. So a component that reads `bloc.total` is tracked exactly as if it read whatever `total` touched.
+A getter on the bloc is **derived state**: it reads other state and computes a value. Getters are the right way to model a value derived from state — a `get total()` is recomputed on every read and can never drift from `items`.
+
+But a getter does **not** participate in auto-tracking. The recording proxy wraps only the `state` value that `useBloc` returns — never the bloc instance. When a getter runs it reads `this.state`, the *raw* state, so reading `bloc.total` in a component records **nothing**:
 
 ```ts
 class CartCubit extends Cubit<{ items: CartItem[]; coupon: string | null }> {
   get total() {
-    // reads state.items — that becomes the consumer's interest
+    // reads this.state.items — the RAW state, not the consumer's proxy
     return this.state.items.reduce((sum, i) => sum + i.price, 0);
   }
 }
@@ -67,14 +69,32 @@ class CartCubit extends Cubit<{ items: CartItem[]; coupon: string | null }> {
 
 ```tsx
 function Total() {
-  const [, cart] = useBloc(CartCubit);
+  const [state, cart] = useBloc(CartCubit);
   return <span>{cart.total}</span>;
-  // recorded interest: { "items" } — re-renders when items change,
-  // but NOT when coupon changes, because total never read coupon
+  // ⚠️ recorded interest: {} — reading `cart.total` tracks nothing,
+  // so this will NOT re-render when `items` changes.
 }
 ```
 
-This is why getters are the recommended way to expose computed values: you get fine-grained re-rendering for free, with no selector or memo wiring. See [Getters](/core/cubit#getters-derived-state).
+To make a derived value reactive, either read its **source paths through `state`**, or name the getter in a `select`:
+
+```tsx
+// A — touch the source path through `state`, so it joins the tracked set
+function Total() {
+  const [state, cart] = useBloc(CartCubit);
+  void state.items;
+  return <span>{cart.total}</span>;
+}
+
+// B — depend on the getter explicitly; `select` gates re-renders and you
+//     still read the value off the bloc
+function Total() {
+  const [, cart] = useBloc(CartCubit, { select: (state, cart) => [cart.total] });
+  return <span>{cart.total}</span>;
+}
+```
+
+See [Dependency Tracking](/react/dependency-tracking#what-does-not-register-a-dependency) for the full list of what does and doesn't register.
 
 ## When tracking matters (and when it doesn't)
 
@@ -82,7 +102,6 @@ Tracking exists to make re-renders precise. It matters most when:
 
 - A single container holds many fields and different components read different subsets.
 - A container updates frequently (typing, dragging, streaming) but each tick changes only a slice.
-- You expose derived values via getters and want consumers to update only when the inputs to *that* getter change.
 
 It matters less for a tiny container where every consumer reads everything — there the diff is cheap and the wake set is "everyone" regardless.
 
@@ -100,7 +119,7 @@ Putting it together, one update flows like this:
 4. Consumers with a non-empty intersection re-render (React) or have their callback invoked. The rest stay asleep.
 5. On the next render, the proxy re-records the interest from scratch — so if a component conditionally reads different fields, the tracked set adapts automatically.
 
-The practical takeaway: read exactly the state you render, expose computed values as getters, keep state immutable, and BlaC will re-render the minimum. To opt out of auto-tracking for a specific consumer — for example to derive a value array and re-render only on shallow changes — use the `select` option on `useBloc` (see [Dependency Tracking](/react/dependency-tracking#the-select-escape-hatch)).
+The practical takeaway: read exactly the state you render, keep state immutable, and BlaC will re-render the minimum. To opt out of auto-tracking for a specific consumer — for example to derive a value array and re-render only on shallow changes — use the `select` option on `useBloc` (see [Dependency Tracking](/react/dependency-tracking#the-select-escape-hatch)).
 
 ## See also
 

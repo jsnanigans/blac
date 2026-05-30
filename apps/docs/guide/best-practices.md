@@ -128,7 +128,7 @@ class FileUploadCubit extends Cubit<UploadState, { endpoint: string }> {
   constructor() {
     super({ status: 'idle', progress: 0 });
   }
-  init(args: { endpoint: string }) {
+  protected init(args: { endpoint: string }) {
     this.endpoint = args.endpoint;
   }
 }
@@ -200,7 +200,7 @@ class FeedCubit extends Cubit<FeedState> {
 ```ts
 // Good — init seeds sync state and starts the load; it does not await
 class UserCubit extends Cubit<UserState, { userId: string }> {
-  init(args: { userId: string }) {
+  protected init(args: { userId: string }) {
     void this.load(args.userId); // returns immediately; status shows 'loading'
   }
 }
@@ -210,7 +210,7 @@ class UserCubit extends Cubit<UserState, { userId: string }> {
 // Bad — init cannot be awaited by the framework; consumers render before
 // this resolves, and an unawaited rejection is swallowed
 class UserCubit extends Cubit<UserState, { userId: string }> {
-  async init(args: { userId: string }) {
+  protected async init(args: { userId: string }) {
     this.emit(await api.fetchUser(args.userId)); // blocks nothing useful
   }
 }

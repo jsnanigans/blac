@@ -135,10 +135,14 @@ await persist.clearAll(); // clear everything
 Implement the `IndexedDbPersistAdapter` interface to use a different storage backend:
 
 ```ts
-import type {
-  IndexedDbPersistAdapter,
-  PersistedRecord,
+import {
+  createIndexedDbPersistPlugin,
+  type IndexedDbPersistAdapter,
+  type PersistedRecord,
 } from '@blac/plugin-persist';
+
+// A simple in-memory backend (handy for tests or non-IndexedDB environments).
+const store = new Map<string, PersistedRecord>();
 
 const memoryAdapter: IndexedDbPersistAdapter = {
   isAvailable: () => true,

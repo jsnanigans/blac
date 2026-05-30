@@ -1,0 +1,8 @@
+# Internal/site-relative links and anchors are validated by the VitePress
+# build (the `docs` CI job), not by lychee.
+^/
+^#
+# Local / placeholder hosts that should never be checked.
+localhost
+127\.0\.0\.1
+example\.com

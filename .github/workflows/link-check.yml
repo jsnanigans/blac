@@ -1,0 +1,29 @@
+name: Link check
+
+# Internal links are validated on every PR by the `docs` job in ci.yml
+# (VitePress fails its build on dead relative links). This workflow checks
+# *external* URLs on a schedule, where transient failures won't block PRs.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  links:
+    name: External links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check external links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # 429 (rate limited) is accepted to reduce flakiness on busy hosts.
+          args: >-
+            --no-progress
+            --max-retries 3
+            --accept 200,206,429
+            'apps/docs/**/*.md'
+            'README.md'
+            'packages/*/README.md'
+          fail: true

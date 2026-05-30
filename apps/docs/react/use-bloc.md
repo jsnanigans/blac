@@ -63,7 +63,7 @@ Pass typed construction data to the bloc. Args are forwarded to the bloc's `init
 
 ```tsx
 class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
-  init(args: { userId: string }) {
+  protected init(args: { userId: string }) {
     void this.loadUser(args.userId);
   }
 }
@@ -226,9 +226,9 @@ See [Passing Inputs](/guide/inputs) for the full decision matrix.
 
 For the registry mechanics behind acquire/release and ref counting, see [Instance Management](/core/instance-management).
 
-## Concurrent mode
+## How re-renders are scheduled
 
-`useBloc` subscribes to the bloc's path-scoped channel and forces re-renders through React's own scheduler, making it safe for concurrent features like Suspense and transitions. State reads are consistent within a single render.
+`useBloc` subscribes to the bloc's path-scoped channel and triggers a re-render through a `useReducer` dispatch — React's normal update path — whenever a tracked path (or `select` value) changes. State is read directly from the bloc during render, so reads are consistent within a single render. The hook does not use `useSyncExternalStore`.
 
 ## See also
 
