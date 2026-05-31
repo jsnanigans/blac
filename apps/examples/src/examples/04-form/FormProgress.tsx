@@ -2,9 +2,9 @@ import { useBloc } from '@blac/react';
 import { FormCubit } from './FormCubit';
 import { RenderCounter } from '../../shared/components';
 
-export function FormProgress({ instanceId }: { instanceId: string }) {
+export function FormProgress({ formId }: { formId: string }) {
   const [, bloc] = useBloc(FormCubit, {
-    args: { id: instanceId },
+    args: { id: formId },
     select: (_state, b) => [b.completionPercent],
   });
 

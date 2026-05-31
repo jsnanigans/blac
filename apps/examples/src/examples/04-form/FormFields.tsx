@@ -2,8 +2,8 @@ import { useBloc } from '@blac/react';
 import { FormCubit } from './FormCubit';
 import { Input, Textarea, RenderCounter } from '../../shared/components';
 
-export function FormFields({ instanceId }: { instanceId: string }) {
-  const [state, bloc] = useBloc(FormCubit, { args: { id: instanceId } });
+export function FormFields({ formId }: { formId: string }) {
+  const [state, bloc] = useBloc(FormCubit, { args: { id: formId } });
 
   const fieldError = (
     field: 'name' | 'email' | 'password' | 'confirmPassword' | 'bio',

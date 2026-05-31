@@ -4,20 +4,14 @@ import { FormFields } from './FormFields';
 import { FormProgress } from './FormProgress';
 import { FormSummary } from './FormSummary';
 
-function SingleForm({
-  label,
-  instanceId,
-}: {
-  label: string;
-  instanceId: string;
-}) {
+function SingleForm({ label, formId }: { label: string; formId: string }) {
   return (
     <Card>
       <div className="stack-md">
         <h3>{label}</h3>
-        <FormProgress instanceId={instanceId} />
-        <FormFields instanceId={instanceId} />
-        <FormSummary instanceId={instanceId} />
+        <FormProgress formId={formId} />
+        <FormFields formId={formId} />
+        <FormSummary formId={formId} />
       </div>
     </Card>
   );
@@ -27,9 +21,9 @@ export function FormDemo() {
   return (
     <ExampleLayout
       title="Form Validation"
-      description="Two independent forms side by side using instanceId to create separate state per form. Getter-based tracking ensures components only re-render when computed values actually change."
+      description="Two independent forms side by side, each keyed by a distinct formId in args to create separate state per form. Getter-based tracking ensures components only re-render when computed values actually change."
       features={[
-        'instanceId — each form gets its own independent Cubit instance',
+        'args-keyed identity — each form gets its own independent Cubit instance',
         'Getter tracking: completionPercent, isValid, errors',
         'FormProgress only re-renders when percentage changes',
         'FormSummary only re-renders when validation result changes',
@@ -37,8 +31,8 @@ export function FormDemo() {
     >
       <section className="stack-lg">
         <div className="form-pair">
-          <SingleForm label="Form A" instanceId="form-a" />
-          <SingleForm label="Form B" instanceId="form-b" />
+          <SingleForm label="Form A" formId="form-a" />
+          <SingleForm label="Form B" formId="form-b" />
         </div>
       </section>
 
@@ -47,11 +41,11 @@ export function FormDemo() {
           <h4>Key Concepts</h4>
           <div className="stack-xs text-small text-muted">
             <p>
-              <strong>Instance isolation via instanceId:</strong> Each form
-              passes a unique <code>instanceId</code> to{' '}
-              <code>useBloc(FormCubit)</code>, so Form A and Form B get
-              completely independent state. All components within the same form
-              share one instance.
+              <strong>Instance isolation via args:</strong> Each form passes a
+              unique <code>id</code> in{' '}
+              <code>useBloc(FormCubit, {'{ args: { id } }'})</code>, so Form A
+              and Form B get completely independent state. All components within
+              the same form share one instance.
             </p>
             <p>
               <strong>Getter tracking:</strong> Getters like{' '}

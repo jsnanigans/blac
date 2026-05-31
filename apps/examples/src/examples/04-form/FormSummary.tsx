@@ -2,9 +2,9 @@ import { useBloc } from '@blac/react';
 import { FormCubit } from './FormCubit';
 import { Button, RenderCounter } from '../../shared/components';
 
-export function FormSummary({ instanceId }: { instanceId: string }) {
+export function FormSummary({ formId }: { formId: string }) {
   const [, bloc] = useBloc(FormCubit, {
-    args: { id: instanceId },
+    args: { id: formId },
     select: (_state, b) => [b.isValid, b.errors],
   });
 
