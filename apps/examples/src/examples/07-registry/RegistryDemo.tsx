@@ -35,7 +35,7 @@ function PerComponentCounter({
   onRemove: () => void;
 }) {
   const [state, bloc] = useBloc(SharedCounterCubit, {
-    instanceId: String(id),
+    args: { id: String(id) },
   });
   return (
     <Card>
@@ -78,7 +78,9 @@ function SharedCounterRow({
   instanceId: string;
   label: string;
 }) {
-  const [state, bloc] = useBloc(SharedCounterCubit, { instanceId });
+  const [state, bloc] = useBloc(SharedCounterCubit, {
+    args: { id: instanceId },
+  });
   return (
     <div className="shared-counter-row">
       <span className="text-small text-muted" style={{ flex: 1 }}>

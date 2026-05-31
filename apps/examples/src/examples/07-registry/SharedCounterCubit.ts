@@ -4,7 +4,14 @@ interface SharedCounterState {
   count: number;
 }
 
-export class SharedCounterCubit extends Cubit<SharedCounterState> {
+export type SharedCounterArgs = { id?: string };
+
+export class SharedCounterCubit extends Cubit<
+  SharedCounterState,
+  SharedCounterArgs
+> {
+  static key = (a?: SharedCounterArgs) => a?.id ?? 'default';
+
   constructor() {
     super({ count: 0 });
   }
