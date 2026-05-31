@@ -12,8 +12,10 @@
   },
   "devDependencies": {
     "@blac/core": "workspace:*",
+    "@blac/react": "workspace:*",
     "@shikijs/vitepress-twoslash": "^3.23.0",
     "oxc-minify": "latest",
+    "sandpack-vue3": "3.1.12",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",
