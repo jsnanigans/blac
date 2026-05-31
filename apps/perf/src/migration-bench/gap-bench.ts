@@ -67,7 +67,9 @@ function fmt(ms: number): string {
 }
 
 function main(): void {
-  console.log(`Node ${process.version} — ${SAMPLES} samples/op (top 5% trimmed)\n`);
+  console.log(
+    `Node ${process.version} — ${SAMPLES} samples/op (top 5% trimmed)\n`,
+  );
   console.log(
     `| operation | Blac median | Blac mean | Zustand median | Zustand mean | mean ratio |`,
   );

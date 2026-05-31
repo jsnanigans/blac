@@ -105,7 +105,9 @@ function main(): void {
   console.log(`  new Proxy alone:        ${fmt(proxyOnly)}`);
   console.log(`  new Set + new WeakMap:  ${fmt(setWmOnly)}\n`);
 
-  console.log(`| fields | trackRender (fresh) | reuse (live-read) | recording-only est. | max reuse saving |`);
+  console.log(
+    `| fields | trackRender (fresh) | reuse (live-read) | recording-only est. | max reuse saving |`,
+  );
   console.log(`|---|---|---|---|---|`);
   for (const w of [1, 4, 20]) {
     const fresh = bench(() => {

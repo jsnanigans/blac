@@ -162,7 +162,9 @@ function zustandSelectorTax(widthsRead: number): number {
 }
 
 async function main(): Promise<void> {
-  console.log(`Node ${process.version} — N=${N} consumers, ${UPDATES} updates/sample\n`);
+  console.log(
+    `Node ${process.version} — N=${N} consumers, ${UPDATES} updates/sample\n`,
+  );
 
   // A — notify path
   const blacN: number[] = [];
@@ -181,12 +183,16 @@ async function main(): Promise<void> {
 
   // B — trackRender tax
   console.log(`\n## B. Per-render tracking tax (wrap + read W fields)`);
-  console.log(`| fields read | Blac trackRender | Zustand selector read | ratio |`);
+  console.log(
+    `| fields read | Blac trackRender | Zustand selector read | ratio |`,
+  );
   console.log(`|---|---|---|---|`);
   for (const w of [1, 4, 20]) {
     const bt = blacTrackRenderTax(w);
     const zt = zustandSelectorTax(w);
-    console.log(`| ${w} | ${fmt(bt)} | ${fmt(zt)} | ${(bt / zt).toFixed(2)}x |`);
+    console.log(
+      `| ${w} | ${fmt(bt)} | ${fmt(zt)} | ${(bt / zt).toFixed(2)}x |`,
+    );
   }
 }
 

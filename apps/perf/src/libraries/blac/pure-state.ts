@@ -38,7 +38,13 @@ class NestedBloc extends Cubit<NestedState> {
   }
 }
 
-class CounterBloc extends Cubit<CounterState> {
+interface CounterArgs {
+  id: string;
+}
+
+class CounterBloc extends Cubit<CounterState, CounterArgs> {
+  static key = (a: CounterArgs) => a.id;
+
   constructor() {
     super({ count: 0 });
   }
@@ -421,16 +427,22 @@ export const blacPureState: PureStateBenchmark = {
 
     'acquire/release cycle': () => {
       for (let i = 0; i < 1000; i++) {
-        const inst = acquire(CounterBloc, undefined, `bench-${i}`);
-        release(CounterBloc, `bench-${i}`, false, `bench-${i}`);
+        const inst = acquire(CounterBloc, {
+          args: { id: `bench-${i}` },
+          refId: `bench-${i}`,
+        });
+        release(CounterBloc, {
+          args: { id: `bench-${i}` },
+          refId: `bench-${i}`,
+        });
         void inst;
       }
     },
     'acquire shared instance': () => {
-      const key = 'shared-bench';
+      const args = { id: 'shared-bench' };
       for (let i = 0; i < 1000; i++) {
-        const inst = acquire(CounterBloc, key, `ref-${i}`);
-        release(CounterBloc, key, false, `ref-${i}`);
+        const inst = acquire(CounterBloc, { args, refId: `ref-${i}` });
+        release(CounterBloc, { args, refId: `ref-${i}` });
         void inst;
       }
     },
