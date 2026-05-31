@@ -53,6 +53,8 @@ export {
   getStats,
 } from './registry';
 
+export type { BorrowTarget } from './registry';
+
 export {
   globalRegistry,
   StateContainerRegistry,

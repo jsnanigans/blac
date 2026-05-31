@@ -1,5 +1,6 @@
 export { acquire, resolveInstanceKey } from './acquire';
 export { borrow, borrowSafe } from './borrow';
+export type { BorrowTarget } from './borrow';
 export { ensure } from './ensure';
 export { release } from './release';
 export {
