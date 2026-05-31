@@ -4,11 +4,7 @@ import { perConsumerTrackingFiles } from '../demos/per-consumer-tracking';
 
 # useBloc
 
-The `useBloc` hook connects a React component to a state container with optimized re-renders.
-
-```tsx
-const [state, bloc] = useBloc(CounterCubit);
-```
+The `useBloc` hook connects a React component to a state container. It acquires (or creates) a bloc instance, subscribes to state changes, and returns the current state, the bloc instance, and an internal ref.
 
 ## Signature
 
@@ -23,7 +19,12 @@ function useBloc<T extends StateContainerConstructor>(
 ];
 ```
 
-## Return values
+| Parameter   | Type                                  | Required | Description                                            |
+| ----------- | ------------------------------------- | -------- | ------------------------------------------------------ |
+| `BlocClass` | `T extends StateContainerConstructor` | yes      | The state-container class to acquire.                  |
+| `options`   | `UseBlocOptions<T>`                   | no       | Optional configuration: see [Options](#options) below. |
+
+**Returns:** a `[state, bloc, ref]` tuple.
 
 | Index | Name    | Description                                                                                                                                                                                                                                |
 | ----- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -37,25 +38,25 @@ Typically you destructure just the first two:
 const [state, counter] = useBloc(CounterCubit);
 ```
 
-## Tracking Modes
+## Tracking modes
 
-By default, `useBloc` uses auto-tracking to keep re-renders scoped: the hook wraps `state` in a tracking proxy that records which paths you actually read, and the component re-renders only when one of those paths changes. This means two components consuming the same state can read different slices—one re-renders when `left` changes, the other only when `right` changes.
+By default, `useBloc` uses auto-tracking to keep re-renders scoped: the hook wraps `state` in a tracking proxy that records which paths you actually read, and the component re-renders only when one of those paths changes. This means two components consuming the same state can read different slices — one re-renders when `left` changes, the other only when `right` changes.
 
 See it in action:
 
 <BlacSandpack :files="perConsumerTrackingFiles" active-file="/App.tsx" :editor-height="500" />
 
-## Choosing an option
+## Options
 
-`useBloc` takes one optional options object. Every key is independent — reach for the one that matches your need:
+`useBloc` accepts one optional options object. `UseBlocOptions` has exactly five keys — reach for the one that matches your need:
 
-| Option       | Type                                            | Reach for it when                                                                                      |
-| ------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `args`       | the bloc's `Args` type (required if non-`void`) | The bloc needs typed input _and_ that input identifies the instance (one instance per `userId`, etc.). |
-| `instanceId` | `string \| number`                              | You need a named instance whose key can't be derived from `args`.                                      |
-| `select`     | `(state, bloc) => unknown[]`                    | You want to opt out of auto-tracking and re-render only on specific values.                            |
-| `onMount`    | `(bloc) => void`                                | You need to kick off work once after the bloc is acquired (e.g. fetch).                                |
-| `onUnmount`  | `(bloc) => void`                                | You need to clean up while the bloc is still alive (e.g. disconnect).                                  |
+| Option       | Type                               | Required            | Description                                                                                        |
+| ------------ | ---------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------- |
+| `args`       | the bloc's `Args` type             | when `Args != void` | Typed construction data; derives instance identity. Required when declared, forbidden when `void`. |
+| `instanceId` | `string \| number`                 | no                  | Explicit instance key. Pass `useId()` for a per-mount private instance.                            |
+| `select`     | `(state: S, bloc: T) => unknown[]` | no                  | Explicit dependency selector; disables auto-tracking.                                              |
+| `onMount`    | `(bloc: InstanceType<T>) => void`  | no                  | Called once when the component mounts with the bloc instance.                                      |
+| `onUnmount`  | `(bloc: InstanceType<T>) => void`  | no                  | Called when the component unmounts (bloc still alive at this point).                               |
 
 ::: tip These five are the entire option surface
 `UseBlocOptions` has exactly these keys. Two things people expect that are **not** options here:
@@ -66,13 +67,17 @@ See it in action:
 There is no `autoTrack` flag — auto-tracking is the default and you opt out with `select`.
 :::
 
-## Options
-
 ### `args`
 
-**Type:** `Args` (the bloc's declared Args type) — **Required when the bloc declares `Args != void`; forbidden when `void`**
+```ts
+args: ExtractArgs<T>;
+```
 
-Pass typed construction data to the bloc. Args are forwarded to the bloc's `init(args)` method before the first state snapshot, and they derive the instance identity by default (different args ⇒ different instance).
+**Required when the bloc declares `Args != void`; forbidden (type `never`) when `void`.**
+
+**Returns:** `void` (the option feeds the bloc's `init(args)` before the first snapshot).
+
+**Behavior.** Pass typed construction data to the bloc. Args are forwarded to the bloc's `init(args)` method before the first state snapshot, and they derive the instance identity by default — different args ⇒ different instance. Only serializable values are permitted; non-serializable handles (refs, callbacks, DOM elements) must go in the bloc's `Deps` instead.
 
 ```tsx
 class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
@@ -86,7 +91,7 @@ const [state] = useBloc(UserCardCubit, { args: { userId } });
 ```
 
 - **Identity:** different `args` values produce different instances. By default identity is the structural hash of all args. Override with `static key` on the class.
-- **Serializable only** — refs, callbacks, and DOM elements must not go in `args` (they'd produce a new instance every render, and `args` must be JSON-serializable). Put them in the bloc's `Deps` instead — see [Injecting handles (`deps`)](#injecting-handles-deps).
+- **Serializable only** — refs, callbacks, and DOM elements must not go in `args` (they'd produce a new instance every render). Put them in the bloc's `Deps` instead — see [Injecting handles (`deps`)](#injecting-handles-deps).
 - **Per-component private instances** — to give each mount its own instance (disposed on unmount), pass a per-mount `instanceId` keyed by React's `useId()`:
 
 ```tsx
@@ -99,7 +104,89 @@ const [state, cubit] = useBloc(FormCubit, { args: options, instanceId });
 
 See [Passing Inputs](/guide/inputs) for the full identity model.
 
-### Injecting handles (`deps`)
+### `instanceId`
+
+```ts
+instanceId?: string | number
+```
+
+**Returns:** `void` (the option overrides the instance key used for resolution).
+
+**Behavior.** Use a named instance instead of the default shared one. Components with the same `instanceId` share the same instance. This is the escape hatch for identities that can't be derived from `args`. Pass `useId()` for a per-mount private instance that is disposed when the component unmounts.
+
+```tsx
+const [state] = useBloc(EditorCubit, { instanceId: 'doc-42' });
+```
+
+When a bloc declares `Args`, prefer using `args` for identity — the meaningful value keys the instance and feeds the bloc in one step. Reserve `instanceId` for cases where the key genuinely can't be derived from args.
+
+::: tip Need a fresh instance per component mount?
+Pass `instanceId: useId()`. `useId()` returns a stable-per-mount value, so every call site gets its own private instance, disposed on unmount. Useful for per-form or per-item cubits. See [Passing Inputs](/guide/inputs).
+:::
+
+### `select`
+
+```ts
+select?: (state: ExtractState<T>, bloc: InstanceReadonlyState<T>) => unknown[]
+```
+
+**Returns:** `void` (the hook uses the returned array to decide whether to re-render).
+
+**Behavior.** Provide an explicit dependency array. The component re-renders only when the shallow-compared values change (per-index `Object.is`). Setting this disables auto-tracking for that call.
+
+```tsx
+const [state] = useBloc(UserCubit, {
+  select: (state) => [state.name, state.email],
+});
+```
+
+The function receives both state and the bloc instance, so you can depend on getters:
+
+```tsx
+const [state, cart] = useBloc(CartCubit, {
+  select: (state, bloc) => [bloc.total, state.items.length],
+});
+```
+
+::: warning Breaking change (v1 → v2)
+This option was called `dependencies` in v1. It was renamed to `select` to avoid confusion with the `deps` (non-serializable handles) lane. See [Migration from v1](/guide/migration-from-v1) for the full change list.
+
+Keep the selector referentially stable across renders — wrap it in `useCallback` or define it at module scope. A new function identity each render re-keys the subscription, which the underlying channel treats as a new consumer.
+:::
+
+### `onMount`
+
+```ts
+onMount?: (bloc: InstanceType<T>) => void
+```
+
+**Returns:** `void`.
+
+**Behavior.** Called once in a mount effect after the bloc is acquired. Use it to kick off work tied to this component's lifecycle (e.g. fetch on mount).
+
+```tsx
+const [state] = useBloc(DataCubit, {
+  onMount: (bloc) => bloc.fetchData(),
+});
+```
+
+### `onUnmount`
+
+```ts
+onUnmount?: (bloc: InstanceType<T>) => void
+```
+
+**Returns:** `void`.
+
+**Behavior.** Called when the component unmounts, _before_ the registry releases its ref — so the bloc is still alive when this runs. Use it to clean up subscriptions or cancel pending work.
+
+```tsx
+const [state] = useBloc(StreamCubit, {
+  onUnmount: (bloc) => bloc.disconnect(),
+});
+```
+
+## Injecting handles (`deps`)
 
 Non-serializable handles (refs, stable callbacks, controller instances) are **not** a `useBloc` option. They are a bloc-level concept: the bloc declares a `Deps` type and reads from `this.deps.x` (which may be `undefined` — always guard).
 
@@ -126,70 +213,6 @@ An inline callback (`onComplete={() => …}`) gets a new identity every render, 
 2. **Stabilize with `useCallback`** before passing.
 3. **Push via an event** — call a bloc method from an effect.
    :::
-
-### `select`
-
-**Type:** `(state: S, bloc: T) => unknown[]`
-
-Provide an explicit dependency array. The component re-renders only when the shallow-compared values change. Setting this disables auto-tracking.
-
-```tsx
-const [state] = useBloc(UserCubit, {
-  select: (state) => [state.name, state.email],
-});
-```
-
-The function receives both state and the bloc instance, so you can depend on getters:
-
-```tsx
-const [state, cart] = useBloc(CartCubit, {
-  select: (state, bloc) => [bloc.total, state.items.length],
-});
-```
-
-::: warning Breaking change (v1 → v2)
-This option was called `dependencies` in v1. It was renamed to `select` to avoid confusion with the `deps` (non-serializable handles) lane. See [Migration from v1](/guide/migration-from-v1) for the full change list, including the alias-shim approach for incremental migrations.
-:::
-
-### `instanceId`
-
-**Type:** `string | number`
-
-Use a named instance instead of the default shared one. Components with the same `instanceId` share the same instance. This is the escape hatch for identities that can't be derived from `args`.
-
-```tsx
-const [state] = useBloc(EditorCubit, { instanceId: 'doc-42' });
-```
-
-When a bloc declares `Args`, prefer using `args` for identity — the meaningful value keys the instance and feeds the bloc in one step. Reserve `instanceId` for cases where the key genuinely can't be derived from args.
-
-::: tip Need a fresh instance per component mount?
-Pass `instanceId: useId()`. `useId()` returns a stable-per-mount value, so every call site gets its own private instance, disposed on unmount. Useful for per-form or per-item cubits. See [Passing Inputs](/guide/inputs).
-:::
-
-### `onMount`
-
-**Type:** `(bloc: T) => void`
-
-Called once when the component mounts with the bloc instance.
-
-```tsx
-const [state] = useBloc(DataCubit, {
-  onMount: (bloc) => bloc.fetchData(),
-});
-```
-
-### `onUnmount`
-
-**Type:** `(bloc: T) => void`
-
-Called when the component unmounts.
-
-```tsx
-const [state] = useBloc(StreamCubit, {
-  onUnmount: (bloc) => bloc.disconnect(),
-});
-```
 
 ## Identity and keying
 

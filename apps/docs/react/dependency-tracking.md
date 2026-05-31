@@ -1,22 +1,41 @@
-# Dependency Tracking
+# Dependency tracking
 
 When a component subscribes to a state container, the naive contract is "re-render whenever the state changes." That contract is wasteful: a `UserCubit` holding `name`, `email`, and `avatarUrl` would re-render your avatar component every time the email changes, even though the avatar never reads it.
 
-BlaC fixes this with **auto-tracking**: it records which state properties each component actually reads during render, and re-renders that component only when one of *those* properties changes. You write plain property access; the re-render scope is inferred for you — no selectors, no `useMemo`, no manual dependency arrays.
+BlaC fixes this with **auto-tracking**: it records which state properties each component actually reads during render, and re-renders that component only when one of _those_ properties changes. You write plain property access; the re-render scope is inferred for you — no selectors, no `useMemo`, no manual dependency arrays.
 
 ::: info Mental model
 Auto-tracking, dependency tracking, and "proxy tracking" all name the same mechanism. The feature is **dependency tracking**; the default mode is **auto-tracking**; the implementation is a render-time recording **Proxy**. For the design rationale (why a proxy beats hand-written selectors), see [Mental Model](/guide/mental-model).
 :::
 
-## The re-render problem
-
-Without per-property tracking, a component subscribed to a container re-renders on **every** state change — even changes to properties it doesn't use. For containers with many fields, or lists of components reading one field each, this is a lot of wasted render work and a common source of jank.
-
-BlaC offers two tracking modes. **Auto-tracking** is the default and the right answer for almost everything. **`select`** is an explicit escape hatch for the rare cases where you want to drive re-renders from a computed value or narrow tracking by hand.
-
 ## Auto-tracking (default)
 
 The `state` value returned by `useBloc` is a `Proxy` that records every property your component reads during render. The recorded set becomes the component's re-render scope.
+
+### Signature
+
+```ts
+// useBloc with no `select` option — auto-tracking is active
+function useBloc<T extends StateContainerConstructor>(
+  BlocClass: T,
+  options?: Omit<UseBlocOptions<T>, 'select'>,
+): [
+  state: ExtractState<T>,
+  bloc: InstanceReadonlyState<T>,
+  ref: RefObject<ComponentRef>,
+];
+```
+
+**Returns:** `[state, bloc, ref]` where `state` is a tracking Proxy. Any property accessed through `state` during render is recorded as a dependency. The component re-renders only when a recorded path changes.
+
+**Behavior.**
+
+1. During render, the Proxy records each property access as a **path** (`state.avatarUrl` → `avatarUrl`).
+2. After the render commits, BlaC registers that path set with the container as this consumer's interest.
+3. On a state change, the container diffs which paths actually changed and wakes only the consumers whose recorded paths intersect the change.
+4. Tracking is recomputed on **every** render — if your component conditionally reads different properties next time, the tracked set adapts to match.
+
+Each `useBloc` call gets its own proxy and its own recorded path set, so two components reading the same container are isolated from each other's re-renders.
 
 ```tsx
 function UserAvatar() {
@@ -27,29 +46,20 @@ function UserAvatar() {
 }
 ```
 
-### How it works
-
-1. During render, the Proxy records each property access as a **path** (`state.avatarUrl` → `avatarUrl`).
-2. After the render commits, BlaC registers that path set with the container as this consumer's interest.
-3. On a state change, the container diffs which paths actually changed and wakes only the consumers whose recorded paths intersect the change.
-4. Tracking is recomputed on **every** render — if your component conditionally reads different properties next time, the tracked set adapts to match.
-
-Each `useBloc` call gets its own proxy and its own recorded path set, so two components reading the same container are isolated from each other's re-renders.
-
 ### What DOES register a dependency
 
-| Read pattern | Records | Notes |
-| --- | --- | --- |
-| `state.name` | `name` | Direct property access. |
-| `state.user.profile.name` | `user.profile.name` | Nested reads record the **leaf** path only. |
-| `state.items[0]` | `items.0` | Indexed access on an array. |
-| `state.items.length` | `items.length` | `.length` is an own property read. |
-| Reading the whole object: `const u = state.user` (no deeper key) | `user` | Wakes on **any** change to `user`. |
+| Read pattern                                                     | Records             | Notes                                       |
+| ---------------------------------------------------------------- | ------------------- | ------------------------------------------- |
+| `state.name`                                                     | `name`              | Direct property access.                     |
+| `state.user.profile.name`                                        | `user.profile.name` | Nested reads record the **leaf** path only. |
+| `state.items[0]`                                                 | `items.0`           | Indexed access on an array.                 |
+| `state.items.length`                                             | `items.length`      | `.length` is an own property read.          |
+| Reading the whole object: `const u = state.user` (no deeper key) | `user`              | Wakes on **any** change to `user`.          |
 
 Tracking is recorded by the **`state` proxy only**. Reading a getter on the `bloc` instance (`bloc.total`) does **not** register a dependency — see the warning below.
 
 ::: tip Sibling-leaf isolation
-Recording is **leaf-only**: reading `state.user.name` records `user.name`, not `user`. So when an immutable update replaces the `user` object because a *sibling* (`user.address`) changed, a component that only read `user.name` does **not** re-render — its observed leaf still resolves to the same value. Read the whole `user` object (with no deeper key) and you opt back into waking on any change beneath it.
+Recording is **leaf-only**: reading `state.user.name` records `user.name`, not `user`. So when an immutable update replaces the `user` object because a _sibling_ (`user.address`) changed, a component that only read `user.name` does **not** re-render — its observed leaf still resolves to the same value. Read the whole `user` object (with no deeper key) and you opt back into waking on any change beneath it.
 :::
 
 ### What does NOT register a dependency
@@ -57,14 +67,15 @@ Recording is **leaf-only**: reading `state.user.name` records `user.name`, not `
 These are the patterns newcomers expect to track but don't — or that track more or less than intended.
 
 ::: warning Common mistakes
-- **Destructuring is just reading** — `const { name } = state` records `name` (good). But `const { user } = state; return user.name` records only `user` (the deeper `.name` read happens off the *raw* destructured value, not the proxy), so you wake on every `user` change. Read through the proxy chain (`state.user.name`) to get leaf isolation.
+
+- **Destructuring is just reading** — `const { name } = state` records `name` (good). But `const { user } = state; return user.name` records only `user` (the deeper `.name` read happens off the _raw_ destructured value, not the proxy), so you wake on every `user` change. Read through the proxy chain (`state.user.name`) to get leaf isolation.
 - **Spreading reads everything** — `<Card {...state} />` or `{ ...state }` enumerates every own key, so the component tracks the **entire** state object and re-renders on any change. Pass only the fields you need.
-- **Reading inside an effect does not track** — the proxy records during *render*. Anything you read inside `useEffect`, an event handler, or an async callback runs after the render proxy is gone and records nothing. Read the value in the render body (or capture it from `state` there) if it should drive re-renders.
+- **Reading inside an effect does not track** — the proxy records during _render_. Anything you read inside `useEffect`, an event handler, or an async callback runs after the render proxy is gone and records nothing. Read the value in the render body (or capture it from `state` there) if it should drive re-renders.
 - **Iteration coarsens to the entry path** — `.map`, `.find`, `.reduce`, `for..of` record the array path (`items`) but **not** per-index paths, and their callbacks receive raw (un-proxied) values. A list re-renders when the array changes, not per item. See [Performance](/react/performance#list-rendering-patterns) for the per-item isolation pattern.
-- **Non-plain values are leaves, not deeply tracked** — only plain objects `{}` and arrays `[]` are proxied. A `Map`, `Set`, `Date`, or class instance in your state is treated as a single leaf: BlaC detects a *reference* change at that value's own path, but reading *into* it (`state.cache.get(id)`) records nothing finer. Replace the whole value on update, or model that data as plain objects/arrays.
+- **Non-plain values are leaves, not deeply tracked** — only plain objects `{}` and arrays `[]` are proxied. A `Map`, `Set`, `Date`, or class instance in your state is treated as a single leaf: BlaC detects a _reference_ change at that value's own path, but reading _into_ it (`state.cache.get(id)`) records nothing finer. Replace the whole value on update, or model that data as plain objects/arrays.
 - **Methods read off the prototype don't record** — reading `bloc.increment` without calling it records nothing (methods live on the prototype, not as own properties). This is fine: action handlers shouldn't drive re-renders.
 - **Getters on the `bloc` instance do not auto-track** — only the `state` proxy records paths. Reading `bloc.total` (a getter) does **not** register the state it computes from. To wake on the getter's inputs, read the source path through `state` in the render body (e.g. `state.items.length`), which keeps the getter result current; or depend on the getter explicitly with `select: (state, bloc) => [bloc.total]`.
-:::
+  :::
 
 ### Conditional reads
 
@@ -90,7 +101,20 @@ The hazard is reading a property behind a condition that is **never re-evaluated
 
 ## The `select` escape hatch
 
-Providing a `select` function **opts out of auto-tracking** for that call. Instead, the component subscribes to all changes, runs `select` on each, and re-renders only when the returned array changes per-index (`Object.is` per element).
+### Signature
+
+```ts
+select?: (state: ExtractState<T>, bloc: InstanceReadonlyState<T>) => unknown[]
+```
+
+| Parameter | Type                       | Required | Description                                                           |
+| --------- | -------------------------- | -------- | --------------------------------------------------------------------- |
+| `state`   | `ExtractState<T>`          | yes      | The current raw state (not a proxy when `select` is active).          |
+| `bloc`    | `InstanceReadonlyState<T>` | yes      | The bloc instance; use it to include getters in the dependency array. |
+
+**Returns:** `unknown[]` — a tuple compared per-index via `Object.is`. The component re-renders only when an element changes.
+
+**Behavior.** Providing a `select` function **opts out of auto-tracking** for that call. Instead, the component subscribes to all changes, runs `select` on each, and re-renders only when the returned array changes per-index (`Object.is` per element). In `select` mode the returned `state` is the raw state object, not a tracking proxy.
 
 ```tsx
 function CountOnly() {
@@ -110,14 +134,14 @@ const [state, cart] = useBloc(CartCubit, {
 ```
 
 ::: warning Keep `select` referentially stable
-`select` must be stable across renders — wrap it in `useCallback` or define it at module scope. A fresh function each render re-keys the subscription, which the underlying channel treats as a brand-new consumer (and defeats the optimization you reached for `select` to get). In `select` mode the returned `state` is the raw state object, not a tracking proxy.
+`select` must be stable across renders — wrap it in `useCallback` or define it at module scope. A fresh function each render re-keys the subscription, which the underlying channel treats as a brand-new consumer (and defeats the optimization you reached for `select` to get).
 :::
 
 ### When to reach for `select`
 
 - You want re-renders driven by a **computed value** (a getter combining several fields) rather than the raw fields auto-tracking would pick up.
 - Auto-tracking records more paths than you want and you want to pin the dependency set explicitly, the way you would a `useMemo` dependency array.
-- You want a value that is intentionally *coarser* or *derived* (e.g. `[bloc.isEmpty]` re-renders on the empty/non-empty boundary, not on every item added).
+- You want a value that is intentionally _coarser_ or _derived_ (e.g. `[bloc.isEmpty]` re-renders on the empty/non-empty boundary, not on every item added).
 
 For the inverse case — a component that should never re-render because it only triggers actions — you don't need any option at all: a component that reads no state property records an empty path set and is never woken. See [Performance: split readers and writers](/react/performance#pattern-split-readers-and-writers).
 
@@ -136,11 +160,11 @@ Start with auto-tracking (the default — no option)
     └─ Otherwise: auto-tracking is correct.
 ```
 
-| Mode | Re-renders when | Best for |
-| --- | --- | --- |
-| Auto-tracking (default) | A tracked path changes | Almost everything |
+| Mode                    | Re-renders when                                | Best for                                    |
+| ----------------------- | ---------------------------------------------- | ------------------------------------------- |
+| Auto-tracking (default) | A tracked path changes                         | Almost everything                           |
 | `select` (escape hatch) | A selected array element changes (`Object.is`) | Computed/derived values, explicit narrowing |
-| No reads | Never (empty path set) | Action-only components |
+| No reads                | Never (empty path set)                         | Action-only components                      |
 
 ## See also
 

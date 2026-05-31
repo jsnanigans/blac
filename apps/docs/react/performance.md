@@ -86,6 +86,19 @@ function CountButtons() {
 
 When you want re-renders driven by a **computed value** rather than the raw fields auto-tracking would pick up, reach for `select`. It opts out of auto-tracking and re-renders only when the returned array changes per-index.
 
+```ts
+select?: (state: S, bloc: T) => unknown[]
+```
+
+| Parameter | Type | Required | Description                                                        |
+| --------- | ---- | -------- | ------------------------------------------------------------------ |
+| `state`   | `S`  | yes      | Current raw state (not a proxy in `select` mode).                  |
+| `bloc`    | `T`  | yes      | The bloc instance; use to include getters in the dependency array. |
+
+**Returns:** `unknown[]` — compared per-index via `Object.is`. The component re-renders only when an element changes.
+
+**Behavior.** Disables auto-tracking for that `useBloc` call. The selector runs on every state change and the component re-renders only when the returned array changes. Keep it referentially stable (module-scope or `useCallback`).
+
 ```tsx
 function CartBadge() {
   const [, cart] = useBloc(CartCubit, {
