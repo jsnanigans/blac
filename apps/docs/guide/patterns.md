@@ -3,7 +3,7 @@
 Common patterns for structuring BlaC applications. Each pattern is drawn from real examples in the codebase.
 
 ::: info Recipes vs. principles
-This page is a **cookbook**: concrete, copy-pasteable solutions to recurring problems. For the *principles* behind these choices — when to reach for one approach over another, and the smells to avoid — see [Best Practices](/guide/best-practices). Rule of thumb: come here when you know *what* you want to build; go there when you're deciding *whether* an approach is sound.
+This page is a **cookbook**: concrete, copy-pasteable solutions to recurring problems. For the _principles_ behind these choices — when to reach for one approach over another, and the smells to avoid — see [Best Practices](/guide/best-practices). Rule of thumb: come here when you know _what_ you want to build; go there when you're deciding _whether_ an approach is sound.
 :::
 
 ## Async operations
@@ -82,7 +82,7 @@ function QuickAdd() {
 This component renders once and never re-renders, regardless of state changes.
 
 ::: tip Keep `select` referentially stable
-Define the selector outside the component (or wrap it in `useCallback`). A fresh function every render re-keys the subscription. There is no `autoTrack` option — passing `select` *is* how you opt out. See [Performance](/react/performance) for the full reader/writer split rationale and [useBloc](/react/use-bloc) for `select` semantics.
+Define the selector outside the component (or wrap it in `useCallback`). A fresh function every render re-keys the subscription. There is no `autoTrack` option — passing `select` _is_ how you opt out. See [Performance](/react/performance) for the full reader/writer split rationale and [useBloc](/react/use-bloc) for `select` semantics.
 :::
 
 ## Named instances
@@ -113,7 +113,7 @@ function FormSection({ instanceId }: { instanceId: string }) {
 
 Named instances are ref-counted independently. When all components using `"billing"` unmount, that instance is disposed while `"shipping"` stays alive.
 
-When the distinguishing key is *meaningful data* (a `userId`, a `docId`) rather than an arbitrary label, prefer keying by `args` instead — see [Passing Inputs](/guide/inputs). Reach for an explicit `instanceId` when the key is anonymous or externally managed.
+When the distinguishing key is _meaningful data_ (a `userId`, a `docId`) rather than an arbitrary label, prefer keying by `args` instead — see [Passing Inputs](/guide/inputs). Reach for an explicit `instanceId` when the key is anonymous or externally managed.
 
 ## Persisting state outside React
 
@@ -260,11 +260,11 @@ class ThemeCubit extends Cubit<{ mode: 'light' | 'dark' }> {
 }
 ```
 
-The instance is created on first use and stays alive for the entire app session, even if all components using it unmount. `keepAlive` only disables the *auto-dispose at refcount zero*; the instance is still disposable via `clear()` or a forced release. See [Configuration](/core/configuration) for the option and [Instance Management](/core/instance-management) for how ref-counting and auto-dispose interact.
+The instance is created on first use and stays alive for the entire app session, even if all components using it unmount. `keepAlive` only disables the _auto-dispose at refcount zero_; the instance is still disposable via `clear()` or a forced release. See [Configuration](/core/configuration) for the option and [Instance Management](/core/instance-management) for how ref-counting and auto-dispose interact.
 
 ## Per-component private instances
 
-When a component needs its *own* instance — never shared with siblings, disposed when it unmounts — give it a per-mount `instanceId`. `useId()` is the idiomatic source of a stable-per-mount key:
+When a component needs its _own_ instance — never shared with siblings, disposed when it unmounts — give it a per-mount `instanceId`. `useId()` is the idiomatic source of a stable-per-mount key:
 
 ```tsx
 import { useId } from 'react';
@@ -328,8 +328,22 @@ function TodoStatsSelected() {
 ```
 
 ::: tip Derive, don't duplicate
-Storing `activeCount` *in state* alongside `items` means every mutation has to remember to update both — they drift. A getter computes on read and can never go stale. Best Practices treats "derive with getters, don't store computed values" as a core principle.
+Storing `activeCount` _in state_ alongside `items` means every mutation has to remember to update both — they drift. A getter computes on read and can never go stale. Best Practices treats "derive with getters, don't store computed values" as a core principle.
 :::
+
+## More recipes
+
+The patterns above cover the core primitives. The recipes below handle common
+higher-level scenarios — each is a self-contained page with a twoslash-checked
+Cubit block and a plain TSX component example:
+
+- [Optimistic Update](/guide/recipes/optimistic-update) — apply a mutation immediately, roll back on error
+- [Debounce](/guide/recipes/debounce) — collapse rapid input into a single deferred action
+- [Undo / Redo](/guide/recipes/undo-redo) — past/future state stacks with a history cap
+- [Pagination](/guide/recipes/pagination) — offset/page and cursor-based infinite scroll
+- [WebSocket Subscription](/guide/recipes/websocket) — persistent server-pushed connections
+- [Form Validation](/guide/recipes/form-validation) — touched map, getter-derived errors, async submit
+- [Reset to Initial State](/guide/recipes/reset-to-initial) — one-call full or partial reset
 
 ## See also
 
