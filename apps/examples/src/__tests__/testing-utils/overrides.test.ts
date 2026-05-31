@@ -63,11 +63,15 @@ describe('registerOverride', () => {
     const instance2 = new CounterCubit();
     instance2.addAmount(20);
 
-    registerOverride(CounterCubit, instance1, 'first');
-    registerOverride(CounterCubit, instance2, 'second');
+    registerOverride(CounterCubit, instance1, { id: 'first' });
+    registerOverride(CounterCubit, instance2, { id: 'second' });
 
-    expect(ensure(CounterCubit, 'first').state.count).toBe(10);
-    expect(ensure(CounterCubit, 'second').state.count).toBe(20);
+    expect(ensure(CounterCubit, { args: { id: 'first' } }).state.count).toBe(
+      10,
+    );
+    expect(ensure(CounterCubit, { args: { id: 'second' } }).state.count).toBe(
+      20,
+    );
   });
 
   it('works with createCubitStub', () => {

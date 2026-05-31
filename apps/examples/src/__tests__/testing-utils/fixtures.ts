@@ -2,7 +2,13 @@ import { Cubit } from '@blac/core';
 
 // ─── Simple counter ──────────────────────────────────────────────
 
-export class CounterCubit extends Cubit<{ count: number }> {
+export interface CounterArgs {
+  id?: string;
+}
+
+export class CounterCubit extends Cubit<{ count: number }, CounterArgs> {
+  static key = (args: CounterArgs | undefined) => args?.id ?? 'default';
+
   constructor() {
     super({ count: 0 });
   }

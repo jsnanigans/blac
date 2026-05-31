@@ -62,11 +62,11 @@ describe('withBlocState', () => {
   });
 
   it('supports keyed instances', () => {
-    withBlocState(CounterCubit, { count: 10 }, 'a');
-    withBlocState(CounterCubit, { count: 20 }, 'b');
+    withBlocState(CounterCubit, { count: 10 }, { id: 'a' });
+    withBlocState(CounterCubit, { count: 20 }, { id: 'b' });
 
-    expect(ensure(CounterCubit, 'a').state.count).toBe(10);
-    expect(ensure(CounterCubit, 'b').state.count).toBe(20);
+    expect(ensure(CounterCubit, { args: { id: 'a' } }).state.count).toBe(10);
+    expect(ensure(CounterCubit, { args: { id: 'b' } }).state.count).toBe(20);
   });
 });
 
