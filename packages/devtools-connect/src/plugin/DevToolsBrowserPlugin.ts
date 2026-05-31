@@ -89,7 +89,10 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   private eventHistoryCount = 0;
   private readonly MAX_HISTORY_SIZE = 10000;
 
-  private readonly FULL_SYNC_INTERVAL = 3000;
+  // Backstop only: atomic events (broadcast unconditionally from emit()) are the
+  // primary real-time channel, so the full re-sync just reconciles anything
+  // missed. Kept infrequent because it re-serializes every instance.
+  private readonly FULL_SYNC_INTERVAL = 10000;
   private fullSyncTimer: ReturnType<typeof setInterval> | undefined;
   private extensionConnected = false;
   private handleExtensionMessage = (event: MessageEvent): void => {
@@ -287,7 +290,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     this.flushHandle =
       typeof requestAnimationFrame === 'function'
         ? requestAnimationFrame(run)
-        : setTimeout(run, 16);
+        : (setTimeout(run, 16) as unknown as number);
   }
 
   private cancelScheduledFlush(): void {
@@ -598,12 +601,13 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         (this.eventHistoryHead + 1) % this.MAX_HISTORY_SIZE;
     }
 
-    // Skip the postMessage entirely when no extension is connected — the
-    // in-app overlay receives events via `listeners` below, and a freshly
-    // connecting extension replays from getEventHistory() on INITIAL_STATE.
-    if (this.extensionConnected) {
-      this.broadcastToExtension({ type: 'ATOMIC_UPDATE', payload: event });
-    }
+    // Always broadcast atomic events to the extension. This is a bare
+    // window.postMessage — a no-op when no content script is listening — so the
+    // cost when devtools is closed is negligible, and it removes the dependency
+    // on the `extensionConnected` handshake flipping in time. Gating this was
+    // the reason real-time updates (and the logs feed, which is built purely
+    // from these events) only appeared via the periodic full-sync.
+    this.broadcastToExtension({ type: 'ATOMIC_UPDATE', payload: event });
 
     if (this.listeners.size > 0) {
       this.listeners.forEach((listener) => {

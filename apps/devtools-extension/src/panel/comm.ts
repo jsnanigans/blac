@@ -85,6 +85,13 @@ type MessageOut =
 
 const HEARTBEAT_INTERVAL = 5_000;
 const HEARTBEAT_TIMEOUT = 3_000;
+/**
+ * Consecutive missed heartbeats before the connection is declared lost. A
+ * single late PONG is expected during update bursts (e.g. SPA navigation in the
+ * inspected page floods the message channel), so one miss must not blank the
+ * panel — only a sustained silence does.
+ */
+const MAX_MISSED_BEATS = 3;
 
 class Comm {
   private _port: chrome.runtime.Port | null = null;
@@ -97,6 +104,7 @@ class Comm {
   private _heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private _heartbeatTimeout: ReturnType<typeof setTimeout> | null = null;
   private _alive = false;
+  private _missedBeats = 0;
   private _reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   get tabId() {
@@ -175,38 +183,43 @@ class Comm {
       return;
     }
 
-    // If no PONG within timeout, consider connection dead
+    // If no PONG within timeout, try to recover; only declare the connection
+    // lost after several consecutive misses so a transient stall doesn't blank
+    // the panel.
     if (this._heartbeatTimeout) clearTimeout(this._heartbeatTimeout);
     this._heartbeatTimeout = setTimeout(() => {
       this._heartbeatTimeout = null;
-      this._handleLostConnection();
-      // Try to recover by re-requesting state
+      this._missedBeats += 1;
+      // Try to recover by re-requesting state on every miss.
       try {
         this.sendMessage({ type: 'GET_INSTANCES' });
       } catch {
         // Port is truly dead, onDisconnect will handle reconnect
       }
+      if (this._missedBeats >= MAX_MISSED_BEATS) {
+        this._handleLostConnection();
+      }
     }, HEARTBEAT_TIMEOUT);
+  }
+
+  /** Any inbound traffic proves the connection is alive — clear the miss counter. */
+  private _markAlive() {
+    if (this._heartbeatTimeout) {
+      clearTimeout(this._heartbeatTimeout);
+      this._heartbeatTimeout = null;
+    }
+    this._missedBeats = 0;
+    this._alive = true;
   }
 
   /** Called when a PONG is received — clears the timeout and marks alive */
   receivedPong() {
-    if (this._heartbeatTimeout) {
-      clearTimeout(this._heartbeatTimeout);
-      this._heartbeatTimeout = null;
-    }
-    if (!this._alive) {
-      this._alive = true;
-    }
+    this._markAlive();
   }
 
-  /** Called when an INITIAL_STATE is received — the connection is proven alive */
+  /** Called when an INITIAL_STATE / ATOMIC_UPDATE is received — proven alive */
   receivedData() {
-    if (this._heartbeatTimeout) {
-      clearTimeout(this._heartbeatTimeout);
-      this._heartbeatTimeout = null;
-    }
-    this._alive = true;
+    this._markAlive();
   }
 
   sendMessage = (message: MessageOut) => {

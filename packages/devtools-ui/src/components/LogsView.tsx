@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react';
+import React, { FC } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useBloc } from '@blac/react';
 import { DevToolsLogsBloc } from '../blocs';
@@ -100,7 +100,7 @@ const ChangedPathsChips: FC<{ paths: string[] | 'all' }> = ({ paths }) => {
 };
 
 // Grid column definition shared between header and every row
-const GRID_COLS = '16px 92px 64px minmax(0, 1.4fr) minmax(0, 1fr) 140px';
+const GRID_COLS = '92px 64px minmax(0, 1.4fr) minmax(0, 1fr) 140px';
 
 const LogsTableHeader: FC = () => (
   <div
@@ -118,7 +118,6 @@ const LogsTableHeader: FC = () => (
       flexShrink: 0,
     }}
   >
-    <span />
     <span>TIME</span>
     <span>EVENT</span>
     <span>CLASS</span>
@@ -128,18 +127,15 @@ const LogsTableHeader: FC = () => (
 );
 
 const LogEntryRow: FC<{ entry: LogEntry }> = React.memo(({ entry }) => {
-  const [expanded, setExpanded] = useState(false);
   const color = getEventTypeColor(entry.eventType);
   const label = getEventTypeLabel(entry.eventType);
   const displayInstanceId = extractInstanceId(entry.instanceId);
-  const hasCallstack = entry.eventType === 'state-changed' && !!entry.callstack;
   const hasPaths =
     entry.eventType === 'state-changed' && entry.paths !== undefined;
 
   return (
     <div style={{ borderBottom: `1px solid ${T.border0}` }}>
       <div
-        onClick={hasCallstack ? () => setExpanded((v) => !v) : undefined}
         style={{
           display: 'grid',
           gridTemplateColumns: GRID_COLS,
@@ -149,30 +145,9 @@ const LogEntryRow: FC<{ entry: LogEntry }> = React.memo(({ entry }) => {
           fontSize: '11px',
           fontFamily: T.fontMono,
           lineHeight: '1.3',
-          cursor: hasCallstack ? 'pointer' : 'default',
-          background: expanded ? T.bg4 : 'transparent',
           minHeight: '28px',
         }}
-        onMouseEnter={
-          hasCallstack
-            ? (e) => {
-                if (!expanded) e.currentTarget.style.background = T.bgHover;
-              }
-            : undefined
-        }
-        onMouseLeave={
-          hasCallstack
-            ? (e) => {
-                if (!expanded) e.currentTarget.style.background = 'transparent';
-              }
-            : undefined
-        }
       >
-        {/* Toggle */}
-        <span style={{ color: T.text2, fontSize: '8px', userSelect: 'none' }}>
-          {hasCallstack ? (expanded ? '▼' : '▶') : ''}
-        </span>
-
         {/* Time */}
         <span style={{ color: T.text2, fontSize: '10px' }}>
           {formatAbsoluteTime(entry.timestamp)}
@@ -249,27 +224,6 @@ const LogEntryRow: FC<{ entry: LogEntry }> = React.memo(({ entry }) => {
             )}
         </span>
       </div>
-
-      {expanded && entry.callstack && (
-        <pre
-          style={{
-            margin: '0',
-            padding: '8px 10px',
-            background: '#252526',
-            borderBottom: `1px solid ${T.border0}`,
-            fontSize: '9px',
-            color: '#d4d4d4',
-            fontFamily: 'Monaco, Menlo, Consolas, monospace',
-            lineHeight: '1.3',
-            overflow: 'auto',
-            maxHeight: '100px',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-all',
-          }}
-        >
-          {entry.callstack}
-        </pre>
-      )}
 
       {hasPaths && entry.paths !== undefined && (
         <div

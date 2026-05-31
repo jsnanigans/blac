@@ -11,7 +11,7 @@ import {
   DevToolsDiffBloc,
   DevToolsLogsBloc,
 } from '@blac/devtools-ui';
-import comm from './comm';
+import comm, { type AtomicEvent } from './comm';
 
 function App() {
   return (
@@ -31,8 +31,126 @@ function App() {
           });
         };
 
+        // Apply a single atomic event to the panel blocs. Called from inside a
+        // coalesced flushSync (see below).
+        const applyAtomicEvent = (event: AtomicEvent) => {
+          switch (event.type) {
+            case 'init': {
+              diffBloc.clearAllPreviousStates();
+              logsBloc.clearLogs();
+              const initInstances = (
+                Array.isArray(event.data) ? event.data : []
+              ).map((inst: any) => ({
+                id: inst.id,
+                className: inst.className,
+                name: inst.name,
+                isDisposed: inst.isDisposed,
+                state: inst.state,
+                lastStateChangeTimestamp: event.timestamp,
+                createdAt: event.timestamp,
+              }));
+              instancesBloc.setAllInstances(initInstances);
+              logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
+                instanceCount: initInstances.length,
+              });
+              break;
+            }
+
+            case 'instance-created': {
+              const d = event.data;
+              instancesBloc.addInstance({
+                id: d.id,
+                className: d.className,
+                name: d.name,
+                isDisposed: d.isDisposed,
+                state: d.state,
+                lastStateChangeTimestamp: event.timestamp,
+                createdAt: event.timestamp,
+                createdFrom: d.createdFrom,
+              });
+              logsBloc.addLog('created', d.id, d.className, d.name, {
+                initialState: d.state,
+              });
+              break;
+            }
+
+            case 'instance-disposed': {
+              const d = event.data;
+              const disposedInst = instancesBloc.getInstance(d.id);
+              instancesBloc.removeInstance(d.id);
+              diffBloc.clearPreviousState(d.id);
+              if (disposedInst) {
+                logsBloc.addLog(
+                  'disposed',
+                  d.id,
+                  disposedInst.className,
+                  disposedInst.name,
+                );
+              }
+              break;
+            }
+
+            case 'instance-updated': {
+              const d = event.data;
+              const current = instancesBloc.getInstance(d.id);
+              if (current) {
+                diffBloc.storePreviousState(
+                  d.id,
+                  current.state,
+                  d.callstack,
+                  d.trigger?.name,
+                  d.paths,
+                );
+              }
+              instancesBloc.updateInstanceState(d.id, d.state, d.getters);
+              logsBloc.addLog(
+                'state-changed',
+                d.id,
+                d.className,
+                d.name,
+                { previousState: current?.state, newState: d.state },
+                d.callstack,
+                d.trigger?.name,
+                d.paths,
+              );
+              break;
+            }
+
+            case 'refs-changed': {
+              const d = event.data;
+              instancesBloc.updateRefs(d.instanceId, d.refIds, d.refHolders);
+              break;
+            }
+          }
+        };
+
+        // Coalesce atomic events into one synchronous flush per microtask.
+        // flushSync forces the panel to repaint immediately even when the
+        // devtools document is backgrounded — where React's normal scheduler is
+        // throttled, which is what made updates appear only every few seconds.
+        // The producer already rAF-coalesces upstream, so batching per microtask
+        // keeps this to one render per burst.
+        let atomicQueue: AtomicEvent[] = [];
+        let atomicFlushScheduled = false;
+
+        const flushAtomicQueue = () => {
+          atomicFlushScheduled = false;
+          if (atomicQueue.length === 0) return;
+          const batch = atomicQueue;
+          atomicQueue = [];
+          flushSync(() => {
+            for (const event of batch) applyAtomicEvent(event);
+          });
+        };
+
         comm.onDisconnect(() => {
-          resetAll();
+          // Soft disconnect: surface the "Waiting for page" banner but keep the
+          // last-known instances/logs so a transient stall doesn't blank the
+          // panel. A real page reload arrives with a new sessionId on the next
+          // INITIAL_STATE and triggers resetAll() there.
+          flushSync(() => {
+            instancesBloc.setConnected(false);
+          });
         });
 
         comm.connect();
@@ -143,102 +261,10 @@ function App() {
             case 'ATOMIC_UPDATE': {
               comm.receivedData();
               if (!message.payload) break;
-              const event = message.payload;
-
-              // No flushSync: React 18 auto-batches the bloc updates below into
-              // a single render. flushSync forced a synchronous render per event
-              // and could saturate the panel under a high-frequency emitter.
-              switch (event.type) {
-                case 'init': {
-                  diffBloc.clearAllPreviousStates();
-                  logsBloc.clearLogs();
-                  const initInstances = (
-                    Array.isArray(event.data) ? event.data : []
-                  ).map((inst: any) => ({
-                    id: inst.id,
-                    className: inst.className,
-                    name: inst.name,
-                    isDisposed: inst.isDisposed,
-                    state: inst.state,
-                    lastStateChangeTimestamp: event.timestamp,
-                    createdAt: event.timestamp,
-                  }));
-                  instancesBloc.setAllInstances(initInstances);
-                  logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
-                    instanceCount: initInstances.length,
-                  });
-                  break;
-                }
-
-                case 'instance-created': {
-                  const d = event.data;
-                  instancesBloc.addInstance({
-                    id: d.id,
-                    className: d.className,
-                    name: d.name,
-                    isDisposed: d.isDisposed,
-                    state: d.state,
-                    lastStateChangeTimestamp: event.timestamp,
-                    createdAt: event.timestamp,
-                    createdFrom: d.createdFrom,
-                  });
-                  logsBloc.addLog('created', d.id, d.className, d.name, {
-                    initialState: d.state,
-                  });
-                  break;
-                }
-
-                case 'instance-disposed': {
-                  const d = event.data;
-                  const disposedInst = instancesBloc.getInstance(d.id);
-                  instancesBloc.removeInstance(d.id);
-                  diffBloc.clearPreviousState(d.id);
-                  if (disposedInst) {
-                    logsBloc.addLog(
-                      'disposed',
-                      d.id,
-                      disposedInst.className,
-                      disposedInst.name,
-                    );
-                  }
-                  break;
-                }
-
-                case 'instance-updated': {
-                  const d = event.data;
-                  const current = instancesBloc.getInstance(d.id);
-                  if (current) {
-                    diffBloc.storePreviousState(
-                      d.id,
-                      current.state,
-                      d.callstack,
-                      d.trigger?.name,
-                      d.paths,
-                    );
-                  }
-                  instancesBloc.updateInstanceState(d.id, d.state, d.getters);
-                  logsBloc.addLog(
-                    'state-changed',
-                    d.id,
-                    d.className,
-                    d.name,
-                    { previousState: current?.state, newState: d.state },
-                    d.callstack,
-                    d.trigger?.name,
-                    d.paths,
-                  );
-                  break;
-                }
-
-                case 'refs-changed': {
-                  const d = event.data;
-                  instancesBloc.updateRefs(
-                    d.instanceId,
-                    d.refIds,
-                    d.refHolders,
-                  );
-                  break;
-                }
+              atomicQueue.push(message.payload);
+              if (!atomicFlushScheduled) {
+                atomicFlushScheduled = true;
+                queueMicrotask(flushAtomicQueue);
               }
               break;
             }

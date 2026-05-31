@@ -113,15 +113,19 @@ export default defineConfig({
         items: [
           { text: 'BlaC Core', link: '/core/cubit' },
           { text: 'BlaC React', link: '/react/getting-started' },
+          { text: 'Plugins', link: '/plugins/overview' },
+          { text: 'Testing', link: '/testing/overview' },
+          { text: 'Integrations', link: '/integrations/ssr' },
         ],
       },
-      { text: 'Plugins', link: '/plugins/overview' },
-      { text: 'Testing', link: '/testing/overview' },
-      { text: 'Integrations', link: '/integrations/ssr' },
+      {
+        text: 'Examples',
+        items: [
+          { text: 'Playground', link: '/playground' },
+          { text: 'Showcase', link: '/showcase' },
+        ],
+      },
       { text: 'DirtyTalk', link: '/dirtytalk/' },
-      { text: 'Playground', link: '/playground' },
-      { text: 'Showcase', link: '/showcase' },
-      { text: 'Comparison', link: '/guide/comparison' },
       {
         text: `v${version}`,
         items: [

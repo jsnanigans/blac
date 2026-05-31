@@ -90,7 +90,6 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
         snapshot: {
           state: currentState,
           timestamp: Date.now(),
-          callstack: mostRecent.callstack,
           trigger: mostRecent.trigger,
           paths: mostRecent.paths,
         },
@@ -270,28 +269,6 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                           )}
                         </div>
                       </div>
-
-                      {/* Callstack */}
-                      {entry.snapshot.callstack && (
-                        <pre
-                          style={{
-                            margin: '0',
-                            padding: '8px 10px',
-                            background: '#252526',
-                            borderBottom: `1px solid ${T.border1}`,
-                            fontSize: '9px',
-                            color: '#d4d4d4',
-                            fontFamily: 'Monaco, Menlo, Consolas, monospace',
-                            lineHeight: '1.3',
-                            overflow: 'auto',
-                            maxHeight: '100px',
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-all',
-                          }}
-                        >
-                          {entry.snapshot.callstack}
-                        </pre>
-                      )}
 
                       {/* Content */}
                       <div style={{ padding: '10px' }}>

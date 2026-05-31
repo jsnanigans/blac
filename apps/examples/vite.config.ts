@@ -39,6 +39,14 @@ export default defineConfig({
         replacement: src('plugin-persist/src/index.ts'),
       },
       {
+        find: /^@blac\/devtools-connect$/,
+        replacement: src('devtools-connect/src/index.ts'),
+      },
+      {
+        find: /^@blac\/devtools-ui$/,
+        replacement: src('devtools-ui/src/index.tsx'),
+      },
+      {
         find: /^@dirtytalk\/spatial$/,
         replacement: src('dirtytalk-spatial/src/index.ts'),
       },
