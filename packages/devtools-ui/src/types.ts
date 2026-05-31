@@ -33,6 +33,16 @@ export interface RefHolderInfo {
   stackTrace?: string;
 }
 
+/**
+ * A consumer (e.g. one `useBloc` call) and the state paths whose change will
+ * re-render it. `paths === 'all'` means it tracks everything (select-mode / raw
+ * subscriber) and wakes on any change.
+ */
+export interface ConsumerInfo {
+  consumerId: string;
+  paths: string[] | 'all';
+}
+
 export interface InstanceData {
   /** Unique instance ID */
   id: string;
@@ -58,6 +68,13 @@ export interface InstanceData {
   refIds?: string[];
   /** Enriched reference holder info with stack traces (dev mode only) */
   refHolders?: RefHolderInfo[];
+  /** Per-consumer watched paths — which state paths re-render each consumer */
+  consumers?: ConsumerInfo[];
+  /**
+   * Paths that changed on the most recent update. Used to attribute which
+   * consumers actually re-rendered. `'all'` = everything changed.
+   */
+  lastPaths?: string[] | 'all';
   /** Stack trace showing where the instance was first created */
   createdFrom?: string;
   /** Args passed at acquire time; keys instance identity (serialized) */

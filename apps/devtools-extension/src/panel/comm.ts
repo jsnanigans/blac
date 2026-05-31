@@ -8,6 +8,11 @@ export interface RefHolderInfo {
   stackTrace?: string;
 }
 
+export interface ConsumerInfo {
+  consumerId: string;
+  paths: string[] | 'all';
+}
+
 export interface PanelInstance {
   id: string;
   className: string;
@@ -24,6 +29,7 @@ export interface PanelInstance {
   trigger?: Trigger;
   refIds?: string[];
   refHolders?: RefHolderInfo[];
+  consumers?: ConsumerInfo[];
   getters?: Record<string, any>;
   history?: Array<{
     state: any;
@@ -59,6 +65,7 @@ export type AtomicEvent =
         instanceId: string;
         refIds?: string[];
         refHolders?: RefHolderInfo[];
+        consumers?: ConsumerInfo[];
       };
     };
 

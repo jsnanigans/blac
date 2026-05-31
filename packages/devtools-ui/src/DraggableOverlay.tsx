@@ -107,6 +107,7 @@ function toInstanceData(inst: any): import('./types').InstanceData {
     getters: inst.getters,
     refIds: inst.refIds,
     refHolders: inst.refHolders,
+    consumers: inst.consumers,
     createdFrom: inst.createdFrom,
     args: inst.args,
   };
@@ -221,6 +222,8 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
           d.id as string,
           updatedState,
           d.getters,
+          d.consumers as import('./types').ConsumerInfo[] | undefined,
+          paths,
         );
         logsBloc.addLog(
           'state-changed',
@@ -241,6 +244,7 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
           d.instanceId as string,
           (d.refIds as string[]) ?? [],
           (d.refHolders as import('./types').RefHolderInfo[]) ?? undefined,
+          d.consumers as import('./types').ConsumerInfo[] | undefined,
         );
         break;
       }

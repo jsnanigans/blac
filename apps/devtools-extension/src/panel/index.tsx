@@ -48,6 +48,7 @@ function App() {
                 state: inst.state,
                 lastStateChangeTimestamp: event.timestamp,
                 createdAt: event.timestamp,
+                consumers: inst.consumers,
               }));
               instancesBloc.setAllInstances(initInstances);
               logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
@@ -67,6 +68,7 @@ function App() {
                 lastStateChangeTimestamp: event.timestamp,
                 createdAt: event.timestamp,
                 createdFrom: d.createdFrom,
+                consumers: d.consumers,
               });
               logsBloc.addLog('created', d.id, d.className, d.name, {
                 initialState: d.state,
@@ -102,7 +104,13 @@ function App() {
                   d.paths,
                 );
               }
-              instancesBloc.updateInstanceState(d.id, d.state, d.getters);
+              instancesBloc.updateInstanceState(
+                d.id,
+                d.state,
+                d.getters,
+                d.consumers,
+                d.paths,
+              );
               logsBloc.addLog(
                 'state-changed',
                 d.id,
@@ -118,7 +126,12 @@ function App() {
 
             case 'refs-changed': {
               const d = event.data;
-              instancesBloc.updateRefs(d.instanceId, d.refIds, d.refHolders);
+              instancesBloc.updateRefs(
+                d.instanceId,
+                d.refIds,
+                d.refHolders,
+                d.consumers,
+              );
               break;
             }
           }

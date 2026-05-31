@@ -1,5 +1,5 @@
 import { Cubit, blac } from '@blac/core';
-import type { InstanceData, RefHolderInfo } from '../types';
+import type { ConsumerInfo, InstanceData, RefHolderInfo } from '../types';
 import { debug } from '../utils/debug';
 
 /** Maximum timestamps kept per instance in the update-rate ring buffer. */
@@ -96,6 +96,8 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
     instanceId: string,
     currentState: any,
     getters?: InstanceData['getters'],
+    consumers?: ConsumerInfo[],
+    lastPaths?: string[] | 'all',
   ) => {
     debug.log(`updateInstanceState: ${instanceId}`);
 
@@ -106,6 +108,8 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
           state: currentState,
           lastStateChangeTimestamp: Date.now(),
           ...(getters !== undefined ? { getters } : {}),
+          ...(consumers !== undefined ? { consumers } : {}),
+          ...(lastPaths !== undefined ? { lastPaths } : {}),
         };
       }
       return inst;
@@ -143,6 +147,7 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
     instanceId: string,
     refIds?: string[],
     refHolders?: RefHolderInfo[],
+    consumers?: ConsumerInfo[],
   ) => {
     const instances = this.state.instances.map((inst) => {
       if (inst.id === instanceId) {
@@ -150,6 +155,7 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
           ...inst,
           ...(refIds !== undefined ? { refIds } : {}),
           ...(refHolders !== undefined ? { refHolders } : {}),
+          ...(consumers !== undefined ? { consumers } : {}),
         };
       }
       return inst;

@@ -1,13 +1,15 @@
 import React, { FC, useMemo } from 'react';
 import { useBloc } from '@blac/react';
 import { DevToolsLayoutBloc, DevToolsInstancesBloc } from '../blocs';
-import type { GetterInfo, InstanceData } from '../types';
+import type { ConsumerInfo, GetterInfo, InstanceData } from '../types';
 import { computeInsights, measureStateBytes } from './computeInsights';
 import { InsightPill } from './InstanceListItem';
 import { CurrentStateView } from './CurrentStateView';
 import { StateHistoryView } from './StateHistoryView';
 import { StateDiffView } from './StateDiffView';
 import { SectionHeader } from './SectionHeader';
+import { PathChips } from './PathChips';
+import { consumerWoke, matchedPaths } from '../utils/pathMatch';
 import { T } from '../theme';
 import { stringToColor } from '../utils/stringToColor';
 import { instanceKey } from '../utils/instanceKey';
@@ -186,6 +188,106 @@ const ComputedGettersSection: FC<ComputedGettersSectionProps> = React.memo(
 ComputedGettersSection.displayName = 'ComputedGettersSection';
 
 // ============================================================================
+// Consumers Section
+// ============================================================================
+
+const ConsumerRow: FC<{
+  consumer: ConsumerInfo;
+  lastPaths?: string[] | 'all';
+}> = ({ consumer, lastPaths }) => {
+  const woke = consumerWoke(consumer.paths, lastPaths);
+  const matched = matchedPaths(consumer.paths, lastPaths);
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'baseline',
+        gap: '8px',
+        padding: '3px 0',
+        fontSize: '12px',
+        fontFamily: T.fontMono,
+        lineHeight: '18px',
+      }}
+    >
+      <span
+        title={
+          woke ? 're-rendered on the last change' : 'idle on the last change'
+        }
+        style={{
+          flexShrink: 0,
+          width: '6px',
+          height: '6px',
+          borderRadius: '50%',
+          alignSelf: 'center',
+          background: woke ? T.success : T.border2,
+        }}
+      />
+      <span style={{ color: T.text2, flexShrink: 0 }}>
+        {consumer.consumerId}
+      </span>
+      <span style={{ color: T.border2, flexShrink: 0 }}>:</span>
+      <PathChips paths={consumer.paths} highlight={matched} />
+    </div>
+  );
+};
+
+interface ConsumersSectionProps {
+  consumers?: ConsumerInfo[];
+  lastPaths?: string[] | 'all';
+  isExpanded: boolean;
+  onToggle: () => void;
+}
+
+const ConsumersSection: FC<ConsumersSectionProps> = React.memo(
+  ({ consumers, lastPaths, isExpanded, onToggle }) => {
+    if (!consumers || consumers.length === 0) return null;
+
+    const wokeCount = consumers.filter((c) =>
+      consumerWoke(c.paths, lastPaths),
+    ).length;
+
+    return (
+      <div>
+        <SectionHeader
+          label="Consumers"
+          isExpanded={isExpanded}
+          onToggle={onToggle}
+          badge={consumers.length}
+          trailing={
+            lastPaths !== undefined ? (
+              <span style={{ fontSize: '10px', color: T.text2 }}>
+                {wokeCount}/{consumers.length} re-rendered last change
+              </span>
+            ) : undefined
+          }
+        />
+        {isExpanded && (
+          <div
+            style={{
+              background: T.bg3,
+              border: `1px solid ${T.border1}`,
+              borderRadius: T.radius,
+              padding: '6px 10px',
+            }}
+          >
+            {consumers.map((consumer) => (
+              <ConsumerRow
+                key={consumer.consumerId}
+                consumer={consumer}
+                lastPaths={lastPaths}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  },
+);
+
+ConsumersSection.displayName = 'ConsumersSection';
+
+// ============================================================================
 // State Viewer (main component)
 // ============================================================================
 
@@ -195,6 +297,7 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
       selectedId,
       isCurrentStateExpanded,
       isGettersExpanded,
+      isConsumersExpanded,
       isHistoryExpanded,
       isDiffExpanded,
     },
@@ -385,6 +488,13 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
           onToggle={layoutBloc.toggleGettersExpanded}
           instances={instances}
           onNavigate={(id) => layoutBloc.setSelectedId(id)}
+        />
+
+        <ConsumersSection
+          consumers={selectedInstance.consumers}
+          lastPaths={selectedInstance.lastPaths}
+          isExpanded={isConsumersExpanded}
+          onToggle={layoutBloc.toggleConsumersExpanded}
         />
 
         <StateDiffView

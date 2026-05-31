@@ -24,6 +24,7 @@ import type {
   DevToolsBrowserPluginConfig,
   Trigger,
   RefHolderInfo,
+  ConsumerInfo,
 } from '../types';
 
 /**
@@ -69,6 +70,12 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
   // Ref holder tracking: instanceId -> Map<refId, RefHolderInfo>
   private refHolders = new Map<string, Map<string, RefHolderInfo>>();
+
+  // Live container references, keyed by instanceId. Kept so the periodic full
+  // sync and refs-changed emits can read each container's current consumer
+  // watched-paths without a state change. Lifecycle mirrors instanceCache:
+  // set on create/scan/update, deleted on destroy, cleared on dispose.
+  private liveContainers = new Map<string, any>();
 
   // Backpressure: coalesce per-instance state updates and flush at most once
   // per animation frame, so a high-frequency emitter cannot saturate the
@@ -154,6 +161,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     this.eventHistoryHead = 0;
     this.eventHistoryCount = 0;
     this.refHolders.clear();
+    this.liveContainers.clear();
 
     if (typeof window !== 'undefined') {
       delete (window as any as Record<string, any>).__BLAC_DEVTOOLS__;
@@ -170,6 +178,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     const createdFrom = this.captureCallstack();
     const data = this.createInstanceData(instance, ctx);
     this.instanceCache.set(data.id, data);
+    this.liveContainers.set(data.id, instance);
 
     this.instanceTimestamps.set(data.id, now);
     this.stateManager.addInstance({
@@ -208,6 +217,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
    *     currentState: unknown;   // next alias (serialized)
    *     paths: string[] | 'all'; // decoded path names; 'all' = ALL_PATHS
    *     trigger?: Trigger;
+   *     consumers?: ConsumerInfo[]; // per-consumer watched paths (if any)
    *   }
    * }
    * ```
@@ -321,6 +331,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       u.callstack,
     );
     this.instanceCache.set(data.id, data);
+    this.liveContainers.set(data.id, u.instance);
 
     // Reuse already-serialized states from createInstanceData
     this.stateManager.updateState(
@@ -349,6 +360,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     const data = this.createInstanceData(instance, ctx);
     data.isDisposed = true;
     this.instanceCache.delete(data.id);
+    this.liveContainers.delete(data.id);
     this.stateManager.removeInstance(data.id);
 
     // Drop any coalesced update still pending for this instance, and clean up
@@ -549,6 +561,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
         const data = this.createInstanceData(instance, this.context);
         this.instanceCache.set(data.id, data);
+        this.liveContainers.set(data.id, instance);
 
         const createdAt = Date.now();
         this.instanceTimestamps.set(data.id, createdAt);
@@ -576,7 +589,60 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     return holders ? Array.from(holders.values()) : [];
   }
 
+  /**
+   * Read a container's per-consumer watched paths and decode them to wire-safe
+   * dotted strings. Returns `undefined` when the container doesn't expose the
+   * registry (non-structural container) or has no registered consumers — so
+   * the field is omitted rather than sent empty.
+   *
+   * Mirrors the PathSet → string[] decode used by `onStateChange`: a foreign
+   * or out-of-range path id degrades that consumer to `'all'` instead of
+   * throwing.
+   */
+  private decodeConsumers(instance: any): ConsumerInfo[] | undefined {
+    const getPaths = instance?.getConsumerPaths;
+    if (typeof getPaths !== 'function') return undefined;
+
+    let map: Map<unknown, PathSet>;
+    try {
+      map = getPaths.call(instance);
+    } catch {
+      return undefined;
+    }
+    if (!map || typeof map.forEach !== 'function' || map.size === 0) {
+      return undefined;
+    }
+
+    const consumers: ConsumerInfo[] = [];
+    map.forEach((pathSet, rawId) => {
+      const consumerId =
+        typeof rawId === 'string' ? rawId : String(rawId as any);
+      let paths: string[] | 'all';
+      if (pathSet === ALL_PATHS) {
+        paths = 'all';
+      } else {
+        try {
+          paths = Array.from(pathSet as Set<number>).map((pid) =>
+            instance.interner.lookup(pid),
+          );
+        } catch {
+          paths = 'all';
+        }
+      }
+      consumers.push({ consumerId, paths });
+    });
+    return consumers.length > 0 ? consumers : undefined;
+  }
+
+  private getConsumersForInstance(
+    instanceId: string,
+  ): ConsumerInfo[] | undefined {
+    const container = this.liveContainers.get(instanceId);
+    return container ? this.decodeConsumers(container) : undefined;
+  }
+
   private emitRefsChanged(instanceId: string): void {
+    const consumers = this.getConsumersForInstance(instanceId);
     this.emit({
       type: 'refs-changed',
       timestamp: Date.now(),
@@ -584,6 +650,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         instanceId,
         refIds: this.context?.getRefIds(instanceId) ?? [],
         refHolders: this.getRefHoldersForInstance(instanceId),
+        ...(consumers ? { consumers } : {}),
       },
     });
   }
@@ -645,9 +712,11 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       metadata.args !== undefined ? safeSerialize(metadata.args) : undefined;
 
     const getters = enumerateGetters(instance);
+    const consumers = this.decodeConsumers(instance);
 
     return {
       ...metadata,
+      ...(consumers ? { consumers } : {}),
       state: serializedState.success ? serializedState.data : state,
       callstack,
       previousState: serializedPrevious
@@ -784,6 +853,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         history.length > 0 ? history[history.length - 1] : null;
       const refIds = this.context?.getRefIds(inst.id) ?? [];
       const refHolders = this.getRefHoldersForInstance(inst.id);
+      const consumers = this.getConsumersForInstance(inst.id);
       return {
         id: inst.id,
         className: inst.className,
@@ -798,6 +868,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         createdFrom: inst.createdFrom,
         refIds: refIds.length > 0 ? refIds : undefined,
         refHolders: refHolders.length > 0 ? refHolders : undefined,
+        consumers,
       };
     });
   }

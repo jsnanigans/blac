@@ -117,6 +117,17 @@ export abstract class StructuralContainer<S> {
     return this._consumerPaths.size;
   }
 
+  /**
+   * Read-only snapshot of every registered consumer's watched path set, keyed
+   * by consumer id. For inspection/devtools only — these are the live interest
+   * sets that feed the diff skeleton, *not* a copy. `ALL_PATHS` means the
+   * consumer opted out of path tracking (e.g. React select-mode) and wakes on
+   * any change. Select-mode consumers don't register here at all.
+   */
+  getConsumerPaths(): ReadonlyMap<ConsumerId, PathSet> {
+    return this._consumerPaths;
+  }
+
   // ---------------------------------------------------------------------------
   // Mutations
   // ---------------------------------------------------------------------------

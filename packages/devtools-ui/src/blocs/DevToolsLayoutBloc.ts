@@ -14,6 +14,7 @@ type LayoutState = {
   selectedId: string | null;
   isCurrentStateExpanded: boolean;
   isGettersExpanded: boolean;
+  isConsumersExpanded: boolean;
   isHistoryExpanded: boolean;
   isDiffExpanded: boolean;
   leftPanelWidth: number;
@@ -34,6 +35,7 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
       selectedId: null,
       isCurrentStateExpanded: true,
       isGettersExpanded: false,
+      isConsumersExpanded: false,
       isHistoryExpanded: false,
       isDiffExpanded: false,
       leftPanelWidth: 300,
@@ -63,6 +65,10 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
 
   toggleGettersExpanded = () => {
     this.patch({ isGettersExpanded: !this.state.isGettersExpanded });
+  };
+
+  toggleConsumersExpanded = () => {
+    this.patch({ isConsumersExpanded: !this.state.isConsumersExpanded });
   };
 
   toggleHistoryExpanded = () => {

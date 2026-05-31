@@ -100,6 +100,25 @@ export interface RefHolderInfo {
 }
 
 // =============================================================================
+// Consumer Path Tracking Types
+// =============================================================================
+
+/**
+ * A single consumer (e.g. one `useBloc` call) and the state paths it watches —
+ * the paths whose change will re-render it.
+ */
+export interface ConsumerInfo {
+  /** Consumer id from the container's registry (e.g. `'useBloc-3'`). */
+  consumerId: string;
+  /**
+   * Decoded dotted paths this consumer watches. `'all'` when the consumer
+   * tracks everything (ALL_PATHS) — e.g. a React select-mode consumer or a
+   * raw subscriber — meaning any change wakes it.
+   */
+  paths: string[] | 'all';
+}
+
+// =============================================================================
 // Event Types (for DevToolsBrowserPlugin)
 // =============================================================================
 
