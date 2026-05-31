@@ -11,22 +11,22 @@ through a full side-by-side port.
 
 ## Concept mapping
 
-| Redux / RTK term                | BlaC term                                        | Notes                                                                       |
-| ------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------- |
-| `createSlice({ name, ... })`    | `class MyCubit extends Cubit<S>`                 | The class is the slice: state type, initial state, and mutations in one     |
-| `initialState`                  | `super(initialState)` in the constructor         | Passed to the parent class                                                  |
-| `reducers: { action: fn }`      | Method on the class                              | `action(payload)` is the combined action-creator + reducer                  |
-| `createAsyncThunk`              | `async` method on the class                      | No thunk factory; just `async method = async () => { ... }`                 |
-| `extraReducers` / `builder`     | Additional methods or `onSystemEvent`            | No separate builder step; add more methods to the class                     |
-| `dispatch(action())`            | `cubit.method(args)` / `bloc.method(args)`       | Call the method directly; no dispatcher                                     |
-| `useSelector((s) => s.slice.x)` | `useBloc(MyCubit)` reading `state.x`             | No selector written; the read during render _is_ the subscription           |
-| `useDispatch()`                 | Second element of `useBloc` tuple                | `const [state, cubit] = useBloc(MyCubit); cubit.method()`                   |
-| `configureStore({ reducer })`   | Registry (automatic)                             | No store setup; instances live in the global ref-counted registry           |
-| `Provider` wrapping the app     | Nothing — registry is implicit                   | No provider needed                                                          |
-| `createEntityAdapter`           | Class with typed state + methods                 | Model a collection as `items: Record<id, T>` in the state object            |
-| `RTK Query`                     | Async method + status union                      | BlaC does not ship a query layer; see [Async](/guide/async) for the pattern |
-| Redux DevTools                  | `@blac/devtools-connect` plugin                  | First-party; inspects every Cubit, time-travel, state diff                  |
-| Middleware                      | Plugins (`@blac/devtools-connect`, `@blac/plugin-persist`, ...) | Installed once globally; observe all Cubits                    |
+| Redux / RTK term                | BlaC term                                                       | Notes                                                                       |
+| ------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `createSlice({ name, ... })`    | `class MyCubit extends Cubit<S>`                                | The class is the slice: state type, initial state, and mutations in one     |
+| `initialState`                  | `super(initialState)` in the constructor                        | Passed to the parent class                                                  |
+| `reducers: { action: fn }`      | Method on the class                                             | `action(payload)` is the combined action-creator + reducer                  |
+| `createAsyncThunk`              | `async` method on the class                                     | No thunk factory; just `async method = async () => { ... }`                 |
+| `extraReducers` / `builder`     | Additional methods or `onSystemEvent`                           | No separate builder step; add more methods to the class                     |
+| `dispatch(action())`            | `cubit.method(args)` / `bloc.method(args)`                      | Call the method directly; no dispatcher                                     |
+| `useSelector((s) => s.slice.x)` | `useBloc(MyCubit)` reading `state.x`                            | No selector written; the read during render _is_ the subscription           |
+| `useDispatch()`                 | Second element of `useBloc` tuple                               | `const [state, cubit] = useBloc(MyCubit); cubit.method()`                   |
+| `configureStore({ reducer })`   | Registry (automatic)                                            | No store setup; instances live in the global ref-counted registry           |
+| `Provider` wrapping the app     | Nothing — registry is implicit                                  | No provider needed                                                          |
+| `createEntityAdapter`           | Class with typed state + methods                                | Model a collection as `items: Record<id, T>` in the state object            |
+| `RTK Query`                     | Async method + status union                                     | BlaC does not ship a query layer; see [Async](/guide/async) for the pattern |
+| Redux DevTools                  | `@blac/devtools-connect` plugin                                 | First-party; inspects every Cubit, time-travel, state diff                  |
+| Middleware                      | Plugins (`@blac/devtools-connect`, `@blac/plugin-persist`, ...) | Installed once globally; observe all Cubits                                 |
 
 ## The dispatch/reducer indirection does not exist in BlaC
 
@@ -353,7 +353,9 @@ as a first-party plugin:
 import { getPluginManager } from '@blac/core';
 import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 
-getPluginManager().install(createDevToolsBrowserPlugin(), { environment: 'development' });
+getPluginManager().install(createDevToolsBrowserPlugin(), {
+  environment: 'development',
+});
 ```
 
 The plugin shows every Cubit's state changes, diffs, and method calls in the same Redux DevTools panel.

@@ -10,18 +10,18 @@ components, or struggling to test state mutations, BlaC is a natural next step.
 
 ## Concept mapping
 
-| Zustand term                       | BlaC term                                               | Notes                                                               |
-| ---------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------- |
-| `create((set, get) => ...)`        | `class MyCubit extends Cubit<S>`                        | Logic lives in the class body instead of a closure                  |
-| `set(partial)`                     | `this.patch(partial)` / `this.emit(next)`               | `patch` deep-merges; `emit` replaces                                |
-| `get()`                            | `this.state`                                            | Read current state from the instance property                       |
-| `useStore(selector)`               | `useBloc(MyCubit)` + auto-tracked `state`               | No selector needed; tracking is inferred from what the render reads |
-| `useStore((s) => s.count)`         | `useBloc(MyCubit)` reading `state.count`                | Reading `state.count` in render _is_ the subscription               |
-| Middleware (`devtools`, `persist`) | First-party plugins (`@blac/devtools-connect`, `@blac/plugin-persist`) | Plugin API is explicit; installed once globally              |
-| `subscribeWithSelector`            | `watch(MyCubit, cb)`                                    | Outside React; no middleware needed                                 |
-| `createWithEqualityFn`             | `select` option on `useBloc`                            | `select: (s, b) => [s.derived]` — re-render only when array changes |
-| Slices pattern (`combine`)         | Separate `Cubit` per concern                            | Each Cubit is already a self-contained slice                        |
-| Immer middleware                   | `patch(partial)` (built-in deep-merge)                  | Or use spread in `update` — no middleware required                  |
+| Zustand term                       | BlaC term                                                              | Notes                                                               |
+| ---------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `create((set, get) => ...)`        | `class MyCubit extends Cubit<S>`                                       | Logic lives in the class body instead of a closure                  |
+| `set(partial)`                     | `this.patch(partial)` / `this.emit(next)`                              | `patch` deep-merges; `emit` replaces                                |
+| `get()`                            | `this.state`                                                           | Read current state from the instance property                       |
+| `useStore(selector)`               | `useBloc(MyCubit)` + auto-tracked `state`                              | No selector needed; tracking is inferred from what the render reads |
+| `useStore((s) => s.count)`         | `useBloc(MyCubit)` reading `state.count`                               | Reading `state.count` in render _is_ the subscription               |
+| Middleware (`devtools`, `persist`) | First-party plugins (`@blac/devtools-connect`, `@blac/plugin-persist`) | Plugin API is explicit; installed once globally                     |
+| `subscribeWithSelector`            | `watch(MyCubit, cb)`                                                   | Outside React; no middleware needed                                 |
+| `createWithEqualityFn`             | `select` option on `useBloc`                                           | `select: (s, b) => [s.derived]` — re-render only when array changes |
+| Slices pattern (`combine`)         | Separate `Cubit` per concern                                           | Each Cubit is already a self-contained slice                        |
+| Immer middleware                   | `patch(partial)` (built-in deep-merge)                                 | Or use spread in `update` — no middleware required                  |
 
 ## The key model difference
 
@@ -211,9 +211,13 @@ import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 import { createIndexedDbPersistPlugin } from '@blac/plugin-persist';
 import { LoggingPlugin } from '@blac/logging-plugin';
 
-getPluginManager().install(createDevToolsBrowserPlugin(), { environment: 'development' });
+getPluginManager().install(createDevToolsBrowserPlugin(), {
+  environment: 'development',
+});
 getPluginManager().install(createIndexedDbPersistPlugin());
-getPluginManager().install(new LoggingPlugin({ level: 'info' }), { environment: 'development' });
+getPluginManager().install(new LoggingPlugin({ level: 'info' }), {
+  environment: 'development',
+});
 ```
 
 No middleware composition, no `devtools(persist(immer(...)))` nesting. Plugins observe all Cubits
