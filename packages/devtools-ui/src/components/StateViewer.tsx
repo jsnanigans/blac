@@ -192,6 +192,7 @@ ComputedGettersSection.displayName = 'ComputedGettersSection';
 export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
   const [
     {
+      selectedId,
       isCurrentStateExpanded,
       isGettersExpanded,
       isHistoryExpanded,
@@ -201,6 +202,11 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
   ] = useBloc(DevToolsLayoutBloc);
   const [{ instances }, instancesBloc] = useBloc(DevToolsInstancesBloc);
 
+  // `selectedInstance`/`selectedHistory`/`selectedDiff` are getters read off
+  // the bloc instance, not through the tracked state proxy — so reading them
+  // records no path. Destructuring `selectedId` above is what subscribes this
+  // component to selection changes; without it, clicking a different instance
+  // never re-renders the detail panel. It also keys the insights memo below.
   const selectedInstance = layoutBloc.selectedInstance;
   const history = layoutBloc.selectedHistory;
   const diff = layoutBloc.selectedDiff;
@@ -221,6 +227,7 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
+      selectedId,
       selectedInstance?.id,
       selectedInstance?.lastStateChangeTimestamp,
       updatesIn10s,
