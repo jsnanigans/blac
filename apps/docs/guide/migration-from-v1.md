@@ -149,7 +149,7 @@ v1's static `Blac` facade (`Blac.getBloc(C, { id })`, `Blac.getAllBlocs(C)`) is 
 
 | v1                                | v2                                                                            |
 | --------------------------------- | ----------------------------------------------------------------------------- |
-| `Blac.getBloc(C, { id })`         | `ensure(C, id)` (create if missing, no ref) or `acquire(C, id)` (ref-counted) |
+| `Blac.getBloc(C, { id })`         | `ensure(C, { args })` (create if missing, no ref) or `acquire(C, { args })` (ref-counted) |
 | `Blac.getAllBlocs(C)`             | `getAll(C)`                                                                   |
 | `Blac.clearAll()` (test teardown) | `clearAll()`                                                                  |
 

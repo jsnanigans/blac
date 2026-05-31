@@ -76,7 +76,7 @@ import { watch, instance } from '@blac/core';
 import { Cubit } from '@blac/core';
 
 class UserCubit extends Cubit<{ name: string }, { userId: string }> {
-  static key = (a: UserCubit['args']) => a.userId;
+  static key = (a: { userId: string }) => a.userId;
   constructor() {
     super({ name: '' });
   }

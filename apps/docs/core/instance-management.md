@@ -222,7 +222,7 @@ import { acquire, release } from '@blac/core';
 import { Cubit } from '@blac/core';
 
 class SessionCubit extends Cubit<{ token: string | null }, { scope: string }> {
-  static key = (a: SessionCubit['args']) => a.scope;
+  static key = (a: { scope: string }) => a.scope;
   constructor() {
     super({ token: null });
   }
@@ -242,7 +242,7 @@ import { acquire, release } from '@blac/core';
 import { Cubit } from '@blac/core';
 
 class EditorCubit extends Cubit<{ content: string }, { docId: string }> {
-  static key = (a: EditorCubit['args']) => a.docId;
+  static key = (a: { docId: string }) => a.docId;
   constructor() {
     super({ content: '' });
   }

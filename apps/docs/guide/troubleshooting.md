@@ -228,13 +228,13 @@ class SessionCubit extends Cubit<SessionState> { /* … */ }
 **Never disposed.** Outside React you manage refs yourself: every `acquire` must be paired with a `release`. A missing `release` leaks the instance forever.
 
 ```ts
-const ref = 'job-42';
-const job = acquire(JobCubit, undefined, ref);
+const refId = 'job-42';
+const job = acquire(JobCubit, { refId });
 // … later, always:
-release(JobCubit, undefined, false, ref);
+release(JobCubit, { refId });
 ```
 
-`keepAlive` instances are never auto-disposed at refcount 0; tear them down explicitly with `release(..., /* forceDispose */ true)` or `clear(Class)` (a test/teardown utility — see [testing core](/testing/core)). Owner page: [Instance management](/core/instance-management); see also [Configuration](/core/configuration#keepalive-true).
+`keepAlive` instances are never auto-disposed at refcount 0; tear them down explicitly with `release(C, { forceDispose: true })` or `clear(Class)` (a test/teardown utility — see [testing core](/testing/core)). Owner page: [Instance management](/core/instance-management); see also [Configuration](/core/configuration#keepalive-true).
 :::
 
 ---

@@ -76,7 +76,7 @@ By default, `depend(Type)` targets the `'default'` instance key. To depend on a 
 import { Cubit } from '@blac/core';
 
 class EditorCubit extends Cubit<{ content: string }, { docId: string }> {
-  static key = (a: EditorCubit['args']) => a.docId;
+  static key = (a: { docId: string }) => a.docId;
   constructor() {
     super({ content: '' });
   }
@@ -267,9 +267,14 @@ Sometimes a dependency doesn't exist yet and needs to be created conditionally. 
 ```ts twoslash
 import { Cubit, borrowSafe, acquire } from '@blac/core';
 
-class UserCubit extends Cubit<{ userId: string }> {
+class UserCubit extends Cubit<{ userId: string }, { userId: string }> {
+  static key = (a: { userId: string }) => a.userId;
   constructor() {
     super({ userId: '' });
+  }
+
+  protected init(args: { userId: string }) {
+    this.patch({ userId: args.userId });
   }
 
   setUserId = (id: string) => this.patch({ userId: id });
@@ -290,11 +295,11 @@ class ChannelCubit extends Cubit<ChannelState> {
   }
 
   private ensureUserCubit(userId: string) {
-    const result = borrowSafe(UserCubit, userId);
+    const result = borrowSafe(UserCubit, { args: { userId } });
     if (!result.error) return; // already exists
 
-    // Create on demand with a named instance
-    acquire(UserCubit, userId).setUserId(userId);
+    // Create on demand, keyed by userId (init seeds the state)
+    acquire(UserCubit, { args: { userId } });
   }
 
   receiveMessage = (message: MessageData) => {

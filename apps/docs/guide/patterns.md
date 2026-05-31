@@ -187,9 +187,9 @@ import { borrowSafe, acquire } from '@blac/core';
 
 class ChannelCubit extends Cubit<ChannelState> {
   private ensureUserCubit(userId: string) {
-    const { error } = borrowSafe(UserCubit, userId);
+    const { error } = borrowSafe(UserCubit, { args: { userId } });
     if (!error) return;
-    acquire(UserCubit, userId).setUserId(userId);
+    acquire(UserCubit, { args: { userId } }); // keyed by userId; init seeds state
   }
 
   receiveMessage = (message: Message) => {
