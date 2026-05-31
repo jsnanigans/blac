@@ -11,10 +11,11 @@ import {
 } from '../registry';
 import { StateContainer } from './StateContainer';
 
-class RefCountBloc extends StateContainer<{ n: number }> {
+class RefCountBloc extends StateContainer<{ n: number }, { id?: string }> {
   constructor() {
     super({ n: 0 });
   }
+  static key = (a?: { id?: string }) => a?.id ?? 'default';
 }
 
 class KeepAliveBloc extends StateContainer<{ n: number }> {
@@ -103,11 +104,11 @@ describe('StateContainerRegistry ref counting', () => {
     expect(result).toBe(instance);
   });
 
-  it('release(Type, key, true) force-disposes at refCount 2', () => {
+  it('release(Type, { forceDispose: true }) force-disposes at refCount 2', () => {
     const instance = acquire(RefCountBloc);
     acquire(RefCountBloc);
     expect(getRefCount(RefCountBloc)).toBe(2);
-    release(RefCountBloc, 'default', true);
+    release(RefCountBloc, { forceDispose: true });
     expect(instance.isDisposed).toBe(true);
     expect(hasInstance(RefCountBloc)).toBe(false);
   });
@@ -120,11 +121,11 @@ describe('StateContainerRegistry ref counting', () => {
     expect(second.isDisposed).toBe(false);
   });
 
-  it('acquire() with custom instanceKey tracks separately from default', () => {
+  it('acquire() with distinct args tracks separately from default', () => {
     const defaultInstance = acquire(RefCountBloc);
-    const customInstance = acquire(RefCountBloc, 'custom');
+    const customInstance = acquire(RefCountBloc, { args: { id: 'custom' } });
     expect(defaultInstance).not.toBe(customInstance);
-    expect(getRefCount(RefCountBloc, 'default')).toBe(1);
-    expect(getRefCount(RefCountBloc, 'custom')).toBe(1);
+    expect(getRefCount(RefCountBloc)).toBe(1);
+    expect(getRefCount(RefCountBloc, { args: { id: 'custom' } })).toBe(1);
   });
 });

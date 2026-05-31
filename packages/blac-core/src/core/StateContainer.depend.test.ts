@@ -19,10 +19,12 @@ class AuthBloc extends Cubit<{ loggedIn: boolean; userId: string }> {
   }
 }
 
-class SettingsBloc extends Cubit<{ theme: string }> {
+class SettingsBloc extends Cubit<{ theme: string }, { id?: string }> {
   constructor() {
     super({ theme: 'light' });
   }
+
+  static key = (a?: { id?: string }) => a?.id ?? 'default';
 
   setTheme(theme: string) {
     this.emit({ theme });
@@ -263,8 +265,8 @@ describe('StateContainer.depend()', () => {
 
   describe('instance key variations', () => {
     class MultiKeyBloc extends Cubit<{ n: number }> {
-      getPrimary = this.depend(SettingsBloc, 'primary');
-      getSecondary = this.depend(SettingsBloc, 'secondary');
+      getPrimary = this.depend(SettingsBloc, { id: 'primary' });
+      getSecondary = this.depend(SettingsBloc, { id: 'secondary' });
 
       constructor() {
         super({ n: 0 });

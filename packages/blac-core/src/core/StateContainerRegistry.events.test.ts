@@ -11,10 +11,11 @@ import { acquire, clearAll } from '../registry';
 import { StateContainer } from './StateContainer';
 import { EMIT } from './symbols';
 
-class EventBloc extends StateContainer<{ n: number }> {
+class EventBloc extends StateContainer<{ n: number }, { id?: string }> {
   constructor() {
     super({ n: 0 });
   }
+  static key = (a?: { id?: string }) => a?.id ?? 'default';
   doEmit(state: { n: number }) {
     this[EMIT](state);
   }
@@ -75,7 +76,7 @@ describe('StateContainerRegistry lifecycle events', () => {
     const listener = vi.fn();
     globalRegistry.on('disposed', listener);
     acquire(EventBloc);
-    acquire(EventBloc, 'second');
+    acquire(EventBloc, { args: { id: 'second' } });
     clearAll();
     expect(listener).toHaveBeenCalledTimes(2);
   });

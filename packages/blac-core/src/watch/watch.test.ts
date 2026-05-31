@@ -8,10 +8,12 @@ interface CounterState {
   count: number;
 }
 
-class CounterCubit extends Cubit<CounterState> {
+class CounterCubit extends Cubit<CounterState, { id?: string }> {
   constructor() {
     super({ count: 0 });
   }
+
+  static key = (a?: { id?: string }) => a?.id ?? 'default';
 
   increment = () => this.emit({ count: this.state.count + 1 });
   set = (count: number) => this.emit({ count });
@@ -225,23 +227,23 @@ describe('watch', () => {
   });
 
   describe('instance() utility', () => {
-    it('should create a BlocRef with class and instanceId', () => {
-      const ref = instance(CounterCubit, 'custom-id');
+    it('should create a BlocRef with class and resolved key', () => {
+      const ref = instance(CounterCubit, { id: 'custom-id' });
 
       expect(ref.blocClass).toBe(CounterCubit);
       expect(ref.instanceId).toBe('custom-id');
     });
 
-    it('should watch specific instance by ID', async () => {
-      const main = acquire(CounterCubit, 'main');
-      const sidebar = acquire(CounterCubit, 'sidebar');
+    it('should watch specific instance by args', async () => {
+      const main = acquire(CounterCubit, { args: { id: 'main' } });
+      const sidebar = acquire(CounterCubit, { args: { id: 'sidebar' } });
 
       main.set(10);
       sidebar.set(20);
       await flush(); // drain pre-watch emit flushes
 
       const values: number[] = [];
-      watch(instance(CounterCubit, 'main'), (bloc) => {
+      watch(instance(CounterCubit, { id: 'main' }), (bloc) => {
         values.push(bloc.state.count);
       });
 
@@ -257,8 +259,8 @@ describe('watch', () => {
     });
 
     it('should watch multiple instances with different IDs', async () => {
-      const main = acquire(CounterCubit, 'main');
-      const sidebar = acquire(CounterCubit, 'sidebar');
+      const main = acquire(CounterCubit, { args: { id: 'main' } });
+      const sidebar = acquire(CounterCubit, { args: { id: 'sidebar' } });
 
       main.set(1);
       sidebar.set(2);
@@ -267,8 +269,8 @@ describe('watch', () => {
       const states: Array<[number, number]> = [];
       watch(
         [
-          instance(CounterCubit, 'main'),
-          instance(CounterCubit, 'sidebar'),
+          instance(CounterCubit, { id: 'main' }),
+          instance(CounterCubit, { id: 'sidebar' }),
         ] as const,
         ([m, s]) => {
           states.push([m.state.count, s.state.count]);

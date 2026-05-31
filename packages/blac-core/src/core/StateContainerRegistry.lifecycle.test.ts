@@ -17,10 +17,12 @@ import { EMIT } from './symbols';
 
 // ============ Test Implementations ============
 
-class TestCubit extends StateContainer<{ value: number }> {
+class TestCubit extends StateContainer<{ value: number }, { id?: string }> {
   constructor(initialState = 0) {
     super({ value: initialState });
   }
+
+  static key = (a?: { id?: string }) => a?.id ?? 'default';
 
   increment = () => {
     this[EMIT]({ value: this.state.value + 1 });
@@ -449,7 +451,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     it('should check if instance exists with hasInstance()', () => {
       expect(globalRegistry.hasInstance(TestCubit, 'test')).toBe(false);
 
-      acquire(TestCubit, 'test');
+      acquire(TestCubit, { args: { id: 'test' } });
 
       expect(globalRegistry.hasInstance(TestCubit, 'test')).toBe(true);
     });
@@ -457,28 +459,28 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     it('should get ref count with getRefCount()', () => {
       expect(globalRegistry.getRefCount(TestCubit, 'test')).toBe(0);
 
-      const instance1 = acquire(TestCubit, 'test');
+      const instance1 = acquire(TestCubit, { args: { id: 'test' } });
       expect(globalRegistry.getRefCount(TestCubit, 'test')).toBe(1);
 
-      const instance2 = acquire(TestCubit, 'test');
+      const instance2 = acquire(TestCubit, { args: { id: 'test' } });
       expect(instance1).toBe(instance2);
       expect(globalRegistry.getRefCount(TestCubit, 'test')).toBe(2);
 
-      release(TestCubit, 'test');
+      release(TestCubit, { args: { id: 'test' } });
       expect(globalRegistry.getRefCount(TestCubit, 'test')).toBe(1);
 
-      release(TestCubit, 'test');
+      release(TestCubit, { args: { id: 'test' } });
       expect(globalRegistry.getRefCount(TestCubit, 'test')).toBe(0);
     });
 
     it('should force dispose with release(forceDispose=true)', () => {
-      const instance1 = acquire(TestCubit, 'test');
-      const _instance2 = acquire(TestCubit, 'test');
+      const instance1 = acquire(TestCubit, { args: { id: 'test' } });
+      const _instance2 = acquire(TestCubit, { args: { id: 'test' } });
 
       expect(globalRegistry.getRefCount(TestCubit, 'test')).toBe(2);
       expect(instance1.isDisposed).toBe(false);
 
-      release(TestCubit, 'test', true);
+      release(TestCubit, { args: { id: 'test' }, forceDispose: true });
 
       expect(instance1.isDisposed).toBe(true);
       expect(globalRegistry.hasInstance(TestCubit, 'test')).toBe(false);
@@ -487,15 +489,15 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
     it('should handle release() on non-existent instance gracefully', () => {
       expect(() => {
-        release(TestCubit, 'nonexistent');
+        release(TestCubit, { args: { id: 'nonexistent' } });
       }).not.toThrow();
     });
 
     it('should emit disposed event on force dispose', () => {
       const { listener } = withDisposedListener();
 
-      const instance = acquire(TestCubit, 'test');
-      release(TestCubit, 'test', true);
+      const instance = acquire(TestCubit, { args: { id: 'test' } });
+      release(TestCubit, { args: { id: 'test' }, forceDispose: true });
 
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(instance);

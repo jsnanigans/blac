@@ -1,7 +1,8 @@
 import { ALL_PATHS } from '@dirtytalk/structural';
-import { ensure } from '../registry';
-import { BLAC_DEFAULTS } from '../constants';
+import { getRegistry } from '../registry';
+import { resolveInstanceKey } from '../registry/acquire';
 import type {
+  ExtractArgs,
   StateContainerConstructor,
   StateContainerInstance,
 } from '../types/utilities';
@@ -12,32 +13,35 @@ type StopSymbol = typeof STOP;
 const BLOC_REF_MARKER = Symbol('BlocRef');
 
 /**
- * Reference to a specific bloc instance by class and instance ID.
+ * Reference to a specific bloc instance, identified by class + the resolved
+ * key derived from its `args`.
  */
 export interface BlocRef<T extends StateContainerConstructor> {
   [BLOC_REF_MARKER]: true;
   blocClass: T;
+  /** @internal The resolved instance key (derived from `args`). */
   instanceId: string;
 }
 
 /**
- * Create a reference to a specific bloc instance.
+ * Create a reference to a specific bloc instance, identified by its `args`.
+ * The key is derived the same way `useBloc`/`acquire` derive it.
  *
  * @example
  * ```ts
- * watch(instance(UserBloc, 'user-123'), (userBloc) => {
+ * watch(instance(UserBloc, { userId: 'user-123' }), (userBloc) => {
  *   console.log(userBloc.state.name);
  * });
  * ```
  */
 export function instance<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceId: string,
+  args?: ExtractArgs<T>,
 ): BlocRef<T> {
   return {
     [BLOC_REF_MARKER]: true,
     blocClass: BlocClass,
-    instanceId,
+    instanceId: resolveInstanceKey(BlocClass, args),
   };
 }
 
@@ -97,10 +101,14 @@ export interface WatchFn extends WatchSingleFn {
 }
 
 function resolveBloc(input: BlocInput): StateContainerInstance {
+  const registry = getRegistry();
   if (isBlocRef(input)) {
-    return ensure(input.blocClass, input.instanceId);
+    return registry.ensure(input.blocClass, input.instanceId);
   }
-  return ensure(input, BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY);
+  return registry.ensure(
+    input,
+    registry.resolveKey(input, undefined, undefined),
+  );
 }
 
 function isArray(input: unknown): input is readonly BlocInput[] {
@@ -138,7 +146,7 @@ function isArray(input: unknown): input is readonly BlocInput[] {
  * @example With specific instance
  * ```ts
  * const unwatch = watch(
- *   instance(UserBloc, 'user-123'),
+ *   instance(UserBloc, { userId: 'user-123' }),
  *   (userBloc) => {
  *     console.log(userBloc.state.name);
  *   }

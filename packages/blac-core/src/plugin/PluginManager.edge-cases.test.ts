@@ -9,10 +9,11 @@ import { Cubit } from '../core/Cubit';
 import { acquire, release } from '../registry';
 import type { BlacPlugin } from './BlacPlugin';
 
-class SimpleBloc extends Cubit<{ n: number }> {
+class SimpleBloc extends Cubit<{ n: number }, { id?: string }> {
   constructor() {
     super({ n: 0 });
   }
+  static key = (a?: { id?: string }) => a?.id ?? 'default';
 }
 
 let manager: PluginManager;
@@ -48,7 +49,7 @@ describe('PluginManager edge cases', () => {
       onStateChange: onStateChange2,
     });
 
-    const bloc = acquire(SimpleBloc, 'default');
+    const bloc = acquire(SimpleBloc, { args: { id: 'default' } });
     bloc.emit({ n: 99 });
 
     await new Promise<void>((r) => queueMicrotask(r));
@@ -72,9 +73,9 @@ describe('PluginManager edge cases', () => {
       { enabled: false },
     );
 
-    const bloc = acquire(SimpleBloc, 'default');
+    const bloc = acquire(SimpleBloc, { args: { id: 'default' } });
     bloc.emit({ n: 1 });
-    release(SimpleBloc, 'default');
+    release(SimpleBloc, { args: { id: 'default' } });
 
     expect(onCreated).not.toHaveBeenCalled();
     expect(onStateChange).not.toHaveBeenCalled();
@@ -114,8 +115,8 @@ describe('PluginManager edge cases', () => {
     const statsBefore = ctx.getStats();
     const instancesBefore = statsBefore.totalInstances;
 
-    acquire(SimpleBloc, 'stats-a');
-    acquire(SimpleBloc, 'stats-b');
+    acquire(SimpleBloc, { args: { id: 'stats-a' } });
+    acquire(SimpleBloc, { args: { id: 'stats-b' } });
 
     const statsAfter = ctx.getStats();
     expect(statsAfter.totalInstances).toBe(instancesBefore + 2);
@@ -148,7 +149,7 @@ describe('PluginManager edge cases', () => {
   });
 
   it('plugin installed after instance creation does NOT receive retroactive onCreated', () => {
-    acquire(SimpleBloc, 'pre-existing');
+    acquire(SimpleBloc, { args: { id: 'pre-existing' } });
 
     const onCreated = vi.fn();
     manager.install({ name: 'late', version: '1.0.0', onCreated });
@@ -165,8 +166,8 @@ describe('PluginManager edge cases', () => {
     const onDestroyed = vi.fn();
     manager.install({ name: 'watcher', version: '1.0.0', onDestroyed });
 
-    const bloc = acquire(SimpleBloc, 'default');
-    release(SimpleBloc, 'default');
+    const bloc = acquire(SimpleBloc, { args: { id: 'default' } });
+    release(SimpleBloc, { args: { id: 'default' } });
 
     expect(onDestroyed).toHaveBeenCalledOnce();
     expect(onDestroyed).toHaveBeenCalledWith(

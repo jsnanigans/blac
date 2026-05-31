@@ -18,14 +18,14 @@ class R extends Cubit<Record<string, never>, void, Deps> {
 afterEach(() => clearAll());
 
 it('merges disjoint slices from two owners', () => {
-  const r = acquire(R, 'k', 'x');
+  const r = acquire(R);
   (r as any)[APPLY_DEPS]('o1', { a: 1 });
   (r as any)[APPLY_DEPS]('o2', { b: 2 });
   expect(r.deps).toEqual({ a: 1, b: 2 });
 });
 
 it("withdraws only the unmounting owner's keys", () => {
-  const r = acquire(R, 'k2', 'x');
+  const r = acquire(R);
   (r as any)[APPLY_DEPS]('o1', { a: 1 });
   (r as any)[APPLY_DEPS]('o2', { b: 2 });
   (r as any)[REMOVE_DEPS_OWNER]('o1');
@@ -33,7 +33,7 @@ it("withdraws only the unmounting owner's keys", () => {
 });
 
 it('fires onDepsChanged only on real change (idempotent re-apply)', () => {
-  const r = acquire(R, 'k3', 'x');
+  const r = acquire(R);
   (r as any)[APPLY_DEPS]('o1', { a: 1 });
   (r as any)[APPLY_DEPS]('o1', { a: 1 }); // no-op
   expect(r.changes.length).toBe(1);
@@ -42,7 +42,7 @@ it('fires onDepsChanged only on real change (idempotent re-apply)', () => {
 
 it('warns on cross-owner collision (last write wins)', () => {
   const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-  const r = acquire(R, 'k4', 'x');
+  const r = acquire(R);
   (r as any)[APPLY_DEPS]('o1', { a: 1 });
   (r as any)[APPLY_DEPS]('o2', { a: 9 });
   expect(spy).toHaveBeenCalled();
@@ -52,7 +52,7 @@ it('warns on cross-owner collision (last write wins)', () => {
 
 it('does not warn when the same owner re-applies a changed value', () => {
   const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-  const r = acquire(R, 'k5', 'x');
+  const r = acquire(R);
   (r as any)[APPLY_DEPS]('o1', { a: 1 });
   (r as any)[APPLY_DEPS]('o1', { a: 2 });
   expect(spy).not.toHaveBeenCalled();
@@ -61,7 +61,7 @@ it('does not warn when the same owner re-applies a changed value', () => {
 });
 
 it('drops a key to undefined when its last owner is removed, firing onDepsChanged', () => {
-  const r = acquire(R, 'k6', 'x');
+  const r = acquire(R);
   (r as any)[APPLY_DEPS]('o1', { a: 1 });
   expect(r.changes.length).toBe(1);
   (r as any)[REMOVE_DEPS_OWNER]('o1');
@@ -71,7 +71,7 @@ it('drops a key to undefined when its last owner is removed, firing onDepsChange
 });
 
 it('removing an unknown owner is a no-op (no onDepsChanged)', () => {
-  const r = acquire(R, 'k7', 'x');
+  const r = acquire(R);
   (r as any)[APPLY_DEPS]('o1', { a: 1 });
   const before = r.changes.length;
   (r as any)[REMOVE_DEPS_OWNER]('ghost');
@@ -79,14 +79,14 @@ it('removing an unknown owner is a no-op (no onDepsChanged)', () => {
 });
 
 it('reconciles when an owner drops a key it previously declared', () => {
-  const r = acquire(R, 'k8', 'x');
+  const r = acquire(R);
   (r as any)[APPLY_DEPS]('o1', { a: 1, b: 2 });
   (r as any)[APPLY_DEPS]('o1', { a: 1 }); // dropped b
   expect(r.deps).toEqual({ a: 1, b: undefined });
 });
 
 it('fires a final onDepsChanged with absent keys and rejects post-dispose applies', () => {
-  const r = acquire(R, 'k9', 'x');
+  const r = acquire(R);
   (r as any)[APPLY_DEPS]('o1', { a: 1 });
   const before = r.changes.length;
   r.dispose();

@@ -12,10 +12,12 @@ import { Cubit } from '../core/Cubit';
 import type { BlacPlugin } from './BlacPlugin';
 import { acquire, release } from '../registry';
 
-class CounterCubit extends Cubit<{ count: number }> {
+class CounterCubit extends Cubit<{ count: number }, { id?: string }> {
   constructor() {
     super({ count: 0 });
   }
+
+  static key = (a?: { id?: string }) => a?.id ?? 'default';
 
   increment = () => {
     this.emit({ count: this.state.count + 1 });
@@ -292,7 +294,7 @@ describe('PluginManager', () => {
 
         manager.install(plugin);
 
-        const counter = acquire(CounterCubit, 'main');
+        const counter = acquire(CounterCubit, { args: { id: 'main' } });
 
         expect(onCreated).toHaveBeenCalledOnce();
         expect(onCreated).toHaveBeenCalledWith(
@@ -311,7 +313,9 @@ describe('PluginManager', () => {
 
         manager.install(plugin);
 
-        expect(() => acquire(CounterCubit, 'main')).not.toThrow();
+        expect(() =>
+          acquire(CounterCubit, { args: { id: 'main' } }),
+        ).not.toThrow();
       });
     });
 
@@ -326,7 +330,7 @@ describe('PluginManager', () => {
 
         manager.install(plugin);
 
-        const counter = acquire(CounterCubit, 'main');
+        const counter = acquire(CounterCubit, { args: { id: 'main' } });
         counter.increment();
 
         await new Promise<void>((r) => queueMicrotask(r));
@@ -353,7 +357,7 @@ describe('PluginManager', () => {
 
         manager.install(plugin);
 
-        const counter = acquire(CounterCubit, 'main');
+        const counter = acquire(CounterCubit, { args: { id: 'main' } });
         counter.increment();
         await new Promise<void>((r) => queueMicrotask(r));
         counter.increment();
@@ -371,7 +375,7 @@ describe('PluginManager', () => {
         manager.install({ name: 'p1', version: '1.0.0', onStateChange: p1 });
         manager.install({ name: 'p2', version: '1.0.0', onStateChange: p2 });
 
-        const counter = acquire(CounterCubit, 'main');
+        const counter = acquire(CounterCubit, { args: { id: 'main' } });
         counter.increment();
         await new Promise<void>((r) => queueMicrotask(r));
 
@@ -395,8 +399,8 @@ describe('PluginManager', () => {
 
         manager.install(plugin);
 
-        const counter = acquire(CounterCubit, 'main');
-        release(CounterCubit, 'main');
+        const counter = acquire(CounterCubit, { args: { id: 'main' } });
+        release(CounterCubit, { args: { id: 'main' } });
 
         expect(onDestroyed).toHaveBeenCalledWith(
           expect.objectContaining({ container: counter }),
@@ -414,7 +418,7 @@ describe('PluginManager', () => {
 
       manager.install(plugin, { enabled: false });
 
-      const counter = acquire(CounterCubit, 'main');
+      const counter = acquire(CounterCubit, { args: { id: 'main' } });
       counter.increment();
 
       expect(onStateChange).not.toHaveBeenCalled();
@@ -434,7 +438,7 @@ describe('PluginManager', () => {
 
       manager.install(plugin);
 
-      const counter = acquire(CounterCubit, 'main');
+      const counter = acquire(CounterCubit, { args: { id: 'main' } });
       const metadata = capturedContext.getInstanceMetadata(counter);
 
       expect(metadata).toMatchObject({
@@ -462,7 +466,7 @@ describe('PluginManager', () => {
 
       manager.install(plugin);
 
-      const counter = acquire(CounterCubit, 'test-state');
+      const counter = acquire(CounterCubit, { args: { id: 'test-state' } });
       counter.increment();
 
       const state = capturedContext.getState(counter);
@@ -481,8 +485,8 @@ describe('PluginManager', () => {
 
       manager.install(plugin);
 
-      const counter1 = acquire(CounterCubit, 'query-test-1');
-      const counter2 = acquire(CounterCubit, 'query-test-2');
+      const counter1 = acquire(CounterCubit, { args: { id: 'query-test-1' } });
+      const counter2 = acquire(CounterCubit, { args: { id: 'query-test-2' } });
 
       const instances = capturedContext.queryInstances(CounterCubit);
       expect(instances).toHaveLength(2);
@@ -502,8 +506,8 @@ describe('PluginManager', () => {
 
       manager.install(plugin);
 
-      acquire(CounterCubit, 'types-test-1');
-      acquire(CounterCubit, 'types-test-2');
+      acquire(CounterCubit, { args: { id: 'types-test-1' } });
+      acquire(CounterCubit, { args: { id: 'types-test-2' } });
 
       const types = capturedContext.getAllTypes();
       expect(types.length).toBeGreaterThanOrEqual(1);
@@ -522,8 +526,8 @@ describe('PluginManager', () => {
 
       manager.install(plugin);
 
-      acquire(CounterCubit, 'stats-test-1');
-      acquire(CounterCubit, 'stats-test-2');
+      acquire(CounterCubit, { args: { id: 'stats-test-1' } });
+      acquire(CounterCubit, { args: { id: 'stats-test-2' } });
 
       const stats = capturedContext.getStats();
       expect(stats.registeredTypes).toBeGreaterThanOrEqual(1);
@@ -543,7 +547,7 @@ describe('PluginManager', () => {
 
       manager.install(plugin);
 
-      const counter = acquire(CounterCubit, 'hydrate-test');
+      const counter = acquire(CounterCubit, { args: { id: 'hydrate-test' } });
 
       capturedContext.startHydration(counter);
       expect(capturedContext.getHydrationStatus(counter)).toBe('hydrating');
@@ -575,7 +579,9 @@ describe('PluginManager', () => {
 
       manager.install(plugin);
 
-      const counter = acquire(CounterCubit, 'dirty-hydration-test');
+      const counter = acquire(CounterCubit, {
+        args: { id: 'dirty-hydration-test' },
+      });
 
       capturedContext.startHydration(counter);
       counter.increment();

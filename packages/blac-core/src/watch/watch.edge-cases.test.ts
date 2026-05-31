@@ -4,10 +4,11 @@ import { watch, instance } from './watch';
 import { Cubit } from '../core/Cubit';
 import { acquire, release, clearAll } from '../registry';
 
-class CounterCubit extends Cubit<{ count: number }> {
+class CounterCubit extends Cubit<{ count: number }, { id?: string }> {
   constructor() {
     super({ count: 0 });
   }
+  static key = (a?: { id?: string }) => a?.id ?? 'default';
 }
 
 class NameCubit extends Cubit<{ name: string }> {
@@ -75,10 +76,10 @@ describe('watch edge cases', () => {
     expect(callCount).toBe(initialCount);
   });
 
-  it('instance(BlocClass, id) targets specific instance', async () => {
-    const cubit = acquire(CounterCubit, 'specific');
+  it('instance(BlocClass, args) targets specific instance', async () => {
+    const cubit = acquire(CounterCubit, { args: { id: 'specific' } });
     const states: number[] = [];
-    watch(instance(CounterCubit, 'specific'), (bloc) => {
+    watch(instance(CounterCubit, { id: 'specific' }), (bloc) => {
       states.push(bloc.state.count);
     });
     cubit.emit({ count: 99 });

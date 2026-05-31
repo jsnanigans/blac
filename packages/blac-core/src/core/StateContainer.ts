@@ -5,9 +5,11 @@ import {
   type StructuralContainerOptions,
 } from '@dirtytalk/structural';
 import { generateSimpleId } from '../utils/idGenerator';
-import { BLAC_DEFAULTS } from '../constants';
 import { getRegistry } from '../registry/config';
-import type { StateContainerConstructor } from '../types/utilities';
+import type {
+  ExtractArgs,
+  StateContainerConstructor,
+} from '../types/utilities';
 import { APPLY_DEPS, EMIT, REMOVE_DEPS_OWNER } from './symbols';
 import { type EqualityFn, getBlacConfig } from '../config';
 import { getClassEquality } from '../utils/static-props';
@@ -264,16 +266,14 @@ export abstract class StateContainer<
    */
   protected depend<T extends StateContainerConstructor>(
     Type: T,
-    instanceKey?: string,
+    args?: ExtractArgs<T>,
   ): () => InstanceType<T> {
     if (!this._dependencies) {
       this._dependencies = new Map();
     }
-    this._dependencies.set(
-      Type,
-      instanceKey ?? BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
-    );
-    return () => this._registry.ensure(Type, instanceKey);
+    const key = this._registry.resolveKey(Type, undefined, args);
+    this._dependencies.set(Type, key);
+    return () => this._registry.ensure(Type, key, args);
   }
 
   constructor(initialState: S, options?: StructuralContainerOptions) {

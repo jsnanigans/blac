@@ -3,10 +3,12 @@ import { blacTestSetup } from '@blac/core/testing';
 import { Cubit } from './Cubit';
 import { acquire, getRefCount, hasInstance } from '../registry';
 
-class DepTarget extends Cubit<{ val: number }> {
+class DepTarget extends Cubit<{ val: number }, { id?: string }> {
   constructor() {
     super({ val: 0 });
   }
+
+  static key = (a?: { id?: string }) => a?.id ?? 'default';
 }
 
 class _DepTargetB extends Cubit<{ val: number }> {
@@ -46,30 +48,30 @@ describe('StateContainer depend() edge cases', () => {
     expect(getRefCount(DepTarget)).toBe(countAfterFirst);
   });
 
-  it('depend() with no instanceKey uses default key', () => {
+  it('depend() with no args uses default key', () => {
     const owner = new DepOwner();
     const depInstance = owner.getTarget();
-    expect(hasInstance(DepTarget, 'default')).toBe(true);
+    expect(hasInstance(DepTarget)).toBe(true);
     expect(depInstance).toBe(owner.getTarget());
   });
 
-  it('depend() with specific instanceKey targets correct instance', () => {
+  it('depend() with specific args targets correct instance', () => {
     class OwnerWithKey extends Cubit<{ x: number }> {
-      getTarget = this.depend(DepTarget, 'myKey');
+      getTarget = this.depend(DepTarget, { id: 'myKey' });
       constructor() {
         super({ x: 0 });
       }
     }
     const owner = new OwnerWithKey();
     owner.getTarget();
-    expect(hasInstance(DepTarget, 'myKey')).toBe(true);
-    expect(hasInstance(DepTarget, 'default')).toBe(false);
+    expect(hasInstance(DepTarget, { args: { id: 'myKey' } })).toBe(true);
+    expect(hasInstance(DepTarget)).toBe(false);
   });
 
-  it('two depend() calls for different keys both callable', () => {
+  it('two depend() calls for different args both callable', () => {
     class MultiKeyOwner extends Cubit<{ x: number }> {
-      getA = this.depend(DepTarget, 'a');
-      getB = this.depend(DepTarget, 'b');
+      getA = this.depend(DepTarget, { id: 'a' });
+      getB = this.depend(DepTarget, { id: 'b' });
       constructor() {
         super({ x: 0 });
       }
@@ -78,8 +80,8 @@ describe('StateContainer depend() edge cases', () => {
     const a = owner.getA();
     const b = owner.getB();
     expect(a).not.toBe(b);
-    expect(hasInstance(DepTarget, 'a')).toBe(true);
-    expect(hasInstance(DepTarget, 'b')).toBe(true);
+    expect(hasInstance(DepTarget, { args: { id: 'a' } })).toBe(true);
+    expect(hasInstance(DepTarget, { args: { id: 'b' } })).toBe(true);
   });
 
   it('depend() for already-acquired instance returns that instance without incrementing refCount', () => {

@@ -254,8 +254,11 @@ export class StateContainerRegistry {
    * Acquire an instance with ref tracking (ownership semantics).
    * Creates a new instance if one doesn't exist, or returns existing and adds a ref.
    * You must call `release()` with the same refId when done.
+   *
+   * @internal Internal key tier. Public callers use the args-based `acquire`
+   *   wrapper; `useBloc`/`compat`/`watch` address a pre-resolved key here.
    * @param Type - The StateContainer class constructor
-   * @param instanceKey - Instance key (defaults to 'default')
+   * @param instanceKey - Pre-resolved instance key (defaults to 'default')
    * @param options - Acquisition options
    * @param options.canCreate - Whether to create new instance if not found (default: true)
    * @param options.countRef - Whether to add a reference (default: true)
@@ -354,8 +357,10 @@ export class StateContainerRegistry {
   /**
    * Borrow an existing instance without adding a ref (borrowing semantics).
    * Tracks cross-bloc dependency for reactive updates.
+   *
+   * @internal Internal key tier; public callers use the args-based `borrow`.
    * @param Type - The StateContainer class constructor
-   * @param instanceKey - Instance key (defaults to 'default')
+   * @param instanceKey - Pre-resolved instance key (defaults to 'default')
    * @returns The state container instance
    * @throws Error if instance doesn't exist
    */
@@ -372,8 +377,10 @@ export class StateContainerRegistry {
   /**
    * Safely borrow an existing instance (borrowing semantics with error handling).
    * Returns discriminated union for type-safe conditional access.
+   *
+   * @internal Internal key tier; public callers use the args-based `borrowSafe`.
    * @param Type - The StateContainer class constructor
-   * @param instanceKey - Instance key (defaults to 'default')
+   * @param instanceKey - Pre-resolved instance key (defaults to 'default')
    * @returns Discriminated union with either the instance or an error
    */
   borrowSafe<T extends StateContainerConstructor = StateContainerConstructor>(
@@ -397,8 +404,10 @@ export class StateContainerRegistry {
    *
    * Use this in bloc-to-bloc communication when you need to ensure an instance exists
    * but don't want to claim ownership (no ref added).
+   *
+   * @internal Internal key tier; public callers use the args-based `ensure`.
    * @param Type - The StateContainer class constructor
-   * @param instanceKey - Explicit instance key, or undefined to derive from `args`
+   * @param instanceKey - Pre-resolved instance key, or undefined to derive from `args`
    *   (`static key(args)` / structural hash), matching `acquire`.
    * @param args - Construction args; used for keying when no explicit key is given
    * @returns The state container instance
@@ -419,8 +428,10 @@ export class StateContainerRegistry {
    * Release a reference to an instance.
    * Removes the ref and disposes when refs is empty (unless keepAlive).
    * Releasing an already-removed refId is a no-op (idempotent).
+   *
+   * @internal Internal key tier; public callers use the args-based `release`.
    * @param Type - The StateContainer class constructor
-   * @param instanceKey - Instance key (defaults to 'default')
+   * @param instanceKey - Pre-resolved instance key (defaults to 'default')
    * @param forceDispose - Force immediate disposal regardless of refs
    * @param refId - The specific ref to remove; removes one arbitrary ref if omitted
    */
@@ -561,8 +572,10 @@ export class StateContainerRegistry {
 
   /**
    * Get reference count for an instance (number of active refs).
+   *
+   * @internal Internal key tier; public callers use the args-based `getRefCount`.
    * @param Type - The StateContainer class constructor
-   * @param instanceKey - Instance key (defaults to 'default')
+   * @param instanceKey - Pre-resolved instance key (defaults to 'default')
    * @returns Current ref count (0 if instance doesn't exist)
    */
   getRefCount<T extends StateContainerConstructor>(
@@ -576,8 +589,10 @@ export class StateContainerRegistry {
 
   /**
    * Get all active reference IDs for an instance.
+   *
+   * @internal Internal key tier; public callers use the args-based `getRefIds`.
    * @param Type - The StateContainer class constructor
-   * @param instanceKey - Instance key (defaults to 'default')
+   * @param instanceKey - Pre-resolved instance key (defaults to 'default')
    * @returns Array of ref ID strings (empty if instance doesn't exist)
    */
   getRefIds<T extends StateContainerConstructor>(
@@ -592,8 +607,10 @@ export class StateContainerRegistry {
 
   /**
    * Check if an instance exists.
+   *
+   * @internal Internal key tier; public callers use the args-based `hasInstance`.
    * @param Type - The StateContainer class constructor
-   * @param instanceKey - Instance key (defaults to 'default')
+   * @param instanceKey - Pre-resolved instance key (defaults to 'default')
    * @returns true if instance exists
    */
   hasInstance<T extends StateContainerConstructor>(

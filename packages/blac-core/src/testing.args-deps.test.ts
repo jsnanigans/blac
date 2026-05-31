@@ -135,7 +135,9 @@ describe('registerOverride + withTestRegistry with args', () => {
   it('registers an args-seeded stub so the registry serves it', () => {
     withTestRegistry((registry) => {
       const stub = createCubitStub(UserBloc, { args: { userId: 'test-user' } });
-      registerOverride(UserBloc, stub, 'default');
+      // No args → resolves to the default sentinel key, which the internal
+      // tier below addresses directly.
+      registerOverride(UserBloc, stub);
 
       const retrieved = registry.acquire(UserBloc, 'default', {
         canCreate: false,

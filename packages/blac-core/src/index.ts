@@ -69,11 +69,7 @@ export type {
 export { blac, type BlacOptions } from './decorators';
 
 // Static-property feature flags (read by framework adapters)
-export {
-  isKeepAliveClass,
-  isExcludedFromDevTools,
-  isIsolatedClass,
-} from './utils/static-props';
+export { isKeepAliveClass, isExcludedFromDevTools } from './utils/static-props';
 
 // Plugin System
 export { getPluginManager } from './core/StateContainerRegistry';

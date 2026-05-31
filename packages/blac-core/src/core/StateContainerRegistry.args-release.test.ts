@@ -1,12 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { blacTestSetup } from '@blac/core/testing';
-import {
-  acquire,
-  ensure,
-  release,
-  resolveInstanceKey,
-  getRegistry,
-} from '../registry';
+import { ensure, resolveInstanceKey, getRegistry } from '../registry';
 import { Cubit } from './Cubit';
 
 type UserCardState = Record<string, never>;
@@ -23,9 +17,15 @@ class UserCard extends Cubit<UserCardState, { userId: string }> {
 // key to release, which resolved to 'default', never dropped the ref, and leaked
 // every args-keyed instance.
 function mountThenUnmount(args: { userId: string }, refId: string) {
-  const key = resolveInstanceKey(UserCard, undefined, args);
-  const instance = acquire(UserCard, key, refId, args);
-  release(UserCard, key, false, refId);
+  const registry = getRegistry();
+  const key = resolveInstanceKey(UserCard, args);
+  const instance = registry.acquire(UserCard, key, {
+    canCreate: true,
+    countRef: true,
+    refId,
+    args,
+  });
+  registry.release(UserCard, key, false, refId);
   return instance;
 }
 
@@ -45,24 +45,24 @@ describe('StateContainerRegistry args-based release', () => {
     expect(map.size).toBe(0);
   });
 
-  it('ensure keys by args when no explicit key is given', () => {
-    const a = ensure(UserCard, undefined, { userId: 'a' });
-    const b = ensure(UserCard, undefined, { userId: 'b' });
+  it('ensure keys by args', () => {
+    const a = ensure(UserCard, { args: { userId: 'a' } });
+    const b = ensure(UserCard, { args: { userId: 'b' } });
     expect(a).not.toBe(b);
 
     // Same args resolve to the same instance.
-    const a2 = ensure(UserCard, undefined, { userId: 'a' });
+    const a2 = ensure(UserCard, { args: { userId: 'a' } });
     expect(a).toBe(a2);
   });
 
   it('resolveInstanceKey folds args into the key (not the default sentinel)', () => {
-    const keyA = resolveInstanceKey(UserCard, undefined, { userId: 'a' });
-    const keyB = resolveInstanceKey(UserCard, undefined, { userId: 'b' });
+    const keyA = resolveInstanceKey(UserCard, { userId: 'a' });
+    const keyB = resolveInstanceKey(UserCard, { userId: 'b' });
     expect(keyA).not.toBe('default');
     expect(keyA).not.toBe(keyB);
-    // explicit key always wins over args
-    expect(resolveInstanceKey(UserCard, 'explicit', { userId: 'a' })).toBe(
-      'explicit',
-    );
+    // The internal tier still honours an explicit key.
+    expect(
+      getRegistry().resolveKey(UserCard, 'explicit', { userId: 'a' }),
+    ).toBe('explicit');
   });
 });

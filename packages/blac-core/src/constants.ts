@@ -35,12 +35,6 @@ export const BLAC_STATIC_PROPS = {
   EXCLUDE_FROM_DEVTOOLS: '__excludeFromDevTools',
 
   /**
-   * Mark a bloc so each `useBloc` call site gets its own per-mount instance.
-   * The React adapter auto-keys via `useId()` when this is set.
-   */
-  ISOLATED: 'isolated',
-
-  /**
    * Per-class equality function used to short-circuit `emit`/`patch` when the
    * new state is structurally equal to the previous state. Falls back to the
    * global `configureBlac({ equality })` value when unset.

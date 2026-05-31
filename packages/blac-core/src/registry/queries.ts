@@ -1,28 +1,35 @@
 import { getRegistry } from './config';
 import type {
+  ExtractArgs,
   StateContainerConstructor,
   InstanceReadonlyState,
 } from '../types/utilities';
 
 export function hasInstance<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceKey?: string,
+  opts?: { args?: ExtractArgs<T> },
 ): boolean {
-  return getRegistry().hasInstance(BlocClass, instanceKey);
+  const registry = getRegistry();
+  const key = registry.resolveKey(BlocClass, undefined, opts?.args);
+  return registry.hasInstance(BlocClass, key);
 }
 
 export function getRefCount<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceKey?: string,
+  opts?: { args?: ExtractArgs<T> },
 ): number {
-  return getRegistry().getRefCount(BlocClass, instanceKey);
+  const registry = getRegistry();
+  const key = registry.resolveKey(BlocClass, undefined, opts?.args);
+  return registry.getRefCount(BlocClass, key);
 }
 
 export function getRefIds<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceKey?: string,
+  opts?: { args?: ExtractArgs<T> },
 ): string[] {
-  return getRegistry().getRefIds(BlocClass, instanceKey);
+  const registry = getRegistry();
+  const key = registry.resolveKey(BlocClass, undefined, opts?.args);
+  return registry.getRefIds(BlocClass, key);
 }
 
 export function getAll<T extends StateContainerConstructor>(

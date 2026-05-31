@@ -17,10 +17,12 @@ import { Cubit } from './Cubit';
 import { EMIT } from './symbols';
 
 // Test implementation of StateContainer
-class TestContainer extends StateContainer<{ value: number }> {
+class TestContainer extends StateContainer<{ value: number }, { id?: string }> {
   constructor(initialState: number = 0) {
     super({ value: initialState });
   }
+
+  static key = (a?: { id?: string }) => a?.id ?? 'default';
 
   public testEmit(state: { value: number }): void {
     this[EMIT](state);
@@ -132,14 +134,14 @@ describe('StateContainer', () => {
       });
 
       it('should handle custom instance keys', () => {
-        const instance1 = acquire(TestContainer, 'key1');
-        const instance2 = acquire(TestContainer, 'key2');
-        const instance3 = acquire(TestContainer, 'key1');
+        const instance1 = acquire(TestContainer, { args: { id: 'key1' } });
+        const instance2 = acquire(TestContainer, { args: { id: 'key2' } });
+        const instance3 = acquire(TestContainer, { args: { id: 'key1' } });
 
         expect(instance1).not.toBe(instance2);
         expect(instance1).toBe(instance3);
-        expect(getRefCount(TestContainer, 'key1')).toBe(2);
-        expect(getRefCount(TestContainer, 'key2')).toBe(1);
+        expect(getRefCount(TestContainer, { args: { id: 'key1' } })).toBe(2);
+        expect(getRefCount(TestContainer, { args: { id: 'key2' } })).toBe(1);
       });
     });
 
@@ -180,7 +182,7 @@ describe('StateContainer', () => {
         acquire(TestContainer);
         expect(getRefCount(TestContainer)).toBe(2);
 
-        release(TestContainer, undefined, true);
+        release(TestContainer, { forceDispose: true });
 
         expect(hasInstance(TestContainer)).toBe(false);
         expect(getRefCount(TestContainer)).toBe(0);
@@ -207,7 +209,9 @@ describe('StateContainer', () => {
       });
 
       it('should return 0 for non-existent instance', () => {
-        expect(getRefCount(TestContainer, 'nonexistent')).toBe(0);
+        expect(
+          getRefCount(TestContainer, { args: { id: 'nonexistent' } }),
+        ).toBe(0);
       });
     });
 
@@ -223,17 +227,19 @@ describe('StateContainer', () => {
       });
 
       it('should work with custom instance keys', () => {
-        acquire(TestContainer, 'key1');
+        acquire(TestContainer, { args: { id: 'key1' } });
 
-        expect(hasInstance(TestContainer, 'key1')).toBe(true);
-        expect(hasInstance(TestContainer, 'key2')).toBe(false);
+        expect(hasInstance(TestContainer, { args: { id: 'key1' } })).toBe(true);
+        expect(hasInstance(TestContainer, { args: { id: 'key2' } })).toBe(
+          false,
+        );
       });
     });
 
     describe('clearAll()', () => {
       it('should dispose all instances and clear registry', () => {
-        const instance1 = acquire(TestContainer, 'key1');
-        const instance2 = acquire(TestContainer, 'key2');
+        const instance1 = acquire(TestContainer, { args: { id: 'key1' } });
+        const instance2 = acquire(TestContainer, { args: { id: 'key2' } });
         const instance3 = acquire(ObjectStateContainer);
 
         const spy1 = vi.spyOn(instance1, 'dispose');
@@ -245,8 +251,12 @@ describe('StateContainer', () => {
         expect(spy1).toHaveBeenCalledOnce();
         expect(spy2).toHaveBeenCalledOnce();
         expect(spy3).toHaveBeenCalledOnce();
-        expect(hasInstance(TestContainer, 'key1')).toBe(false);
-        expect(hasInstance(TestContainer, 'key2')).toBe(false);
+        expect(hasInstance(TestContainer, { args: { id: 'key1' } })).toBe(
+          false,
+        );
+        expect(hasInstance(TestContainer, { args: { id: 'key2' } })).toBe(
+          false,
+        );
         expect(hasInstance(ObjectStateContainer)).toBe(false);
       });
     });
@@ -404,10 +414,15 @@ describe('StateContainer', () => {
       });
 
       it('should cancel hydration when disposed', async () => {
-        const container = acquire(TestContainer, 'hydration-dispose');
+        const container = acquire(TestContainer, {
+          args: { id: 'hydration-dispose' },
+        });
         container.beginHydration();
 
-        release(TestContainer, 'hydration-dispose', true);
+        release(TestContainer, {
+          args: { id: 'hydration-dispose' },
+          forceDispose: true,
+        });
 
         await expect(container.waitForHydration()).rejects.toThrow(
           'Hydration cancelled',
@@ -720,22 +735,24 @@ describe('StateContainer', () => {
     });
 
     it('should work with attach lifecycle', async () => {
-      const instance1 = acquire(TestContainer, 'shared');
+      const instance1 = acquire(TestContainer, { args: { id: 'shared' } });
       const listener = vi.fn();
       instance1.subscribe(listener);
 
-      const instance2 = acquire(TestContainer, 'shared');
+      const instance2 = acquire(TestContainer, { args: { id: 'shared' } });
       expect(instance1).toBe(instance2);
 
       instance2.testEmit({ value: 42 });
       await flush();
       expect(listener).toHaveBeenCalledWith({ value: 42 });
 
-      release(TestContainer, 'shared');
-      expect(getRefCount(TestContainer, 'shared')).toBe(1);
+      release(TestContainer, { args: { id: 'shared' } });
+      expect(getRefCount(TestContainer, { args: { id: 'shared' } })).toBe(1);
 
-      release(TestContainer, 'shared');
-      expect(hasInstance(TestContainer, 'shared')).toBe(false);
+      release(TestContainer, { args: { id: 'shared' } });
+      expect(hasInstance(TestContainer, { args: { id: 'shared' } })).toBe(
+        false,
+      );
     });
   });
 
@@ -751,10 +768,12 @@ describe('StateContainer', () => {
   });
 
   describe('depend()', () => {
-    class DepTarget extends StateContainer<{ value: number }> {
+    class DepTarget extends StateContainer<{ value: number }, { id?: string }> {
       constructor() {
         super({ value: 0 });
       }
+
+      static key = (a?: { id?: string }) => a?.id ?? 'default';
     }
 
     class DepOwner extends StateContainer<{ x: number }> {
@@ -801,9 +820,9 @@ describe('StateContainer', () => {
       expect(owner.dependencies.get(DepTarget)).toBe('default');
     });
 
-    it('supports custom instance key', () => {
+    it('supports custom instance key via args', () => {
       class CustomKeyOwner extends StateContainer<{ x: number }> {
-        getTarget = this.depend(DepTarget, 'custom');
+        getTarget = this.depend(DepTarget, { id: 'custom' });
         constructor() {
           super({ x: 1 });
         }

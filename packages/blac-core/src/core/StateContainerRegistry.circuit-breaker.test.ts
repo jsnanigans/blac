@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { blacTestSetup } from '@blac/core/testing';
-import { acquire, resolveInstanceKey } from '../registry';
+import { acquire } from '../registry';
 import { configureBlac, resetBlacConfig } from '../config';
 import { Cubit } from './Cubit';
 
@@ -26,36 +26,31 @@ describe('StateContainerRegistry circuit breaker', () => {
 
     // 3 distinct args-derived keys are fine.
     for (const id of ['a', 'b', 'c']) {
-      acquire(Item, resolveInstanceKey(Item, undefined, { id }), `r-${id}`, {
-        id,
-      });
+      acquire(Item, { args: { id }, refId: `r-${id}` });
     }
 
     // The 4th distinct key trips the breaker.
-    expect(() =>
-      acquire(Item, resolveInstanceKey(Item, undefined, { id: 'd' }), 'r-d', {
-        id: 'd',
-      }),
-    ).toThrow(/maximum of 3 live instances/);
+    expect(() => acquire(Item, { args: { id: 'd' }, refId: 'r-d' })).toThrow(
+      /maximum of 3 live instances/,
+    );
   });
 
   it('throws when refs-per-instance exceeds the cap', () => {
     configureBlac({ maxRefsPerInstance: 2 });
-    const key = resolveInstanceKey(Item, undefined, { id: 'shared' });
 
-    acquire(Item, key, 'consumer-1', { id: 'shared' });
-    acquire(Item, key, 'consumer-2', { id: 'shared' });
+    acquire(Item, { args: { id: 'shared' }, refId: 'consumer-1' });
+    acquire(Item, { args: { id: 'shared' }, refId: 'consumer-2' });
 
     // A 3rd distinct consumer ref on the same instance trips the breaker.
-    expect(() => acquire(Item, key, 'consumer-3', { id: 'shared' })).toThrow(
-      /maximum of 2 live references/,
-    );
+    expect(() =>
+      acquire(Item, { args: { id: 'shared' }, refId: 'consumer-3' }),
+    ).toThrow(/maximum of 2 live references/);
   });
 
   it('warns once when emit rate exceeds maxEmitsPerSecond', () => {
     configureBlac({ maxEmitsPerSecond: 5 });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const counter = acquire(Counter, undefined, 'r');
+    const counter = acquire(Counter, { refId: 'r' });
 
     // 5 is the cap; the 6th emit within the window trips the warning.
     for (let i = 0; i < 20; i++) counter.bump();
@@ -70,7 +65,7 @@ describe('StateContainerRegistry circuit breaker', () => {
   it('does not warn on emit rate when disabled (Infinity)', () => {
     configureBlac({ maxEmitsPerSecond: Infinity });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const counter = acquire(Counter, undefined, 'r');
+    const counter = acquire(Counter, { refId: 'r' });
 
     for (let i = 0; i < 500; i++) counter.bump();
 
@@ -84,20 +79,12 @@ describe('StateContainerRegistry circuit breaker', () => {
   it('is disabled when the cap is non-positive / Infinity', () => {
     configureBlac({ maxInstancesPerType: 0, maxRefsPerInstance: Infinity });
 
-    const key = resolveInstanceKey(Item, undefined, { id: 'x' });
     expect(() => {
       for (let i = 0; i < 50; i++) {
-        acquire(Item, key, `ref-${i}`, { id: 'x' });
+        acquire(Item, { args: { id: 'x' }, refId: `ref-${i}` });
       }
       for (let i = 0; i < 50; i++) {
-        acquire(
-          Item,
-          resolveInstanceKey(Item, undefined, { id: `k${i}` }),
-          'r',
-          {
-            id: `k${i}`,
-          },
-        );
+        acquire(Item, { args: { id: `k${i}` }, refId: 'r' });
       }
     }).not.toThrow();
   });

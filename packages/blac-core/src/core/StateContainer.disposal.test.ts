@@ -60,10 +60,10 @@ describe('StateContainer disposal', () => {
     expect(instance.isDisposed).toBe(true);
   });
 
-  it('release(Type, key, true) force-disposes regardless of refCount', () => {
+  it('release(Type, { forceDispose: true }) force-disposes regardless of refCount', () => {
     acquire(DisposableContainer);
     const instance = acquire(DisposableContainer);
-    release(DisposableContainer, 'default', true);
+    release(DisposableContainer, { forceDispose: true });
     expect(instance.isDisposed).toBe(true);
   });
 });

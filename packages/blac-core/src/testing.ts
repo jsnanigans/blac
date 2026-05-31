@@ -2,6 +2,7 @@ import { Cubit } from './core/Cubit';
 import { StateContainerRegistry } from './core/StateContainerRegistry';
 import { APPLY_DEPS } from './core/symbols';
 import { ensure, getRegistry, setRegistry } from './registry';
+import { resolveInstanceKey } from './registry/acquire';
 import type {
   ExtractArgs,
   ExtractDeps,
@@ -64,15 +65,13 @@ export function blacTestSetup(): void {
 
 // --- registerOverride + overrideEnsure ---
 
-const DEFAULT_KEY = 'default';
-
 export function registerOverride<T extends StateContainerConstructor>(
   BlocClass: T,
   instance: InstanceType<T>,
-  instanceKey?: string,
+  args?: ExtractArgs<T>,
 ): void {
-  const key = instanceKey ?? DEFAULT_KEY;
   const registry = getRegistry();
+  const key = resolveInstanceKey(BlocClass, args);
   registry.insertInstance(
     BlocClass,
     key,
@@ -85,10 +84,10 @@ export function overrideEnsure<T extends StateContainerConstructor, R>(
   BlocClass: T,
   instance: InstanceType<T>,
   fn: () => R,
-  instanceKey: string = DEFAULT_KEY,
+  args?: ExtractArgs<T>,
 ): R {
   return withTestRegistry(() => {
-    registerOverride(BlocClass, instance, instanceKey);
+    registerOverride(BlocClass, instance, args);
     return fn();
   });
 }
@@ -168,9 +167,9 @@ export function withBlocState<T extends StateContainerConstructor>(
   state: ExtractState<T> extends Record<string, any>
     ? Partial<ExtractState<T>>
     : ExtractState<T>,
-  instanceKey?: string,
+  args?: ExtractArgs<T>,
 ): InstanceType<T> {
-  const instance = ensure(BlocClass, instanceKey);
+  const instance = ensure(BlocClass, { args });
   if (instance instanceof Cubit) {
     const currentState = instance.state;
     if (
@@ -193,9 +192,9 @@ export function withBlocMethod<T extends StateContainerConstructor>(
   BlocClass: T,
   methodName: keyof InstanceType<T>,
   impl: (...args: any[]) => any,
-  instanceKey?: string,
+  args?: ExtractArgs<T>,
 ): InstanceType<T> {
-  const instance = ensure(BlocClass, instanceKey);
+  const instance = ensure(BlocClass, { args });
   (instance as any)[methodName] = impl;
   return instance;
 }

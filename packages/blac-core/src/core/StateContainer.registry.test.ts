@@ -20,21 +20,31 @@ import {
 } from '../registry';
 import { EMIT } from './symbols';
 
-// Test implementations
-class CounterBloc extends StateContainer<{ count: number }> {
+// Test implementations.
+// Args carry an optional `id`; `static key` derives the instance key from it
+// (falling back to the default sentinel when absent), so distinct ids produce
+// distinct instances — the args-based equivalent of the old explicit keys.
+class CounterBloc extends StateContainer<{ count: number }, { id?: string }> {
   constructor() {
     super({ count: 0 });
   }
+
+  static key = (a?: { id?: string }) => a?.id ?? 'default';
 
   increment = () => {
     this[EMIT]({ count: this.state.count + 1 });
   };
 }
 
-class UserBloc extends StateContainer<{ name: string; age: number }> {
+class UserBloc extends StateContainer<
+  { name: string; age: number },
+  { id?: string }
+> {
   constructor() {
     super({ name: '', age: 0 });
   }
+
+  static key = (a?: { id?: string }) => a?.id ?? 'default';
 
   setName = (name: string) => {
     this[EMIT]({ ...this.state, name });
@@ -87,15 +97,15 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should create different instances for different keys', () => {
-      const instance1 = acquire(CounterBloc, 'counter-1');
-      const instance2 = acquire(CounterBloc, 'counter-2');
+      const instance1 = acquire(CounterBloc, { args: { id: 'counter-1' } });
+      const instance2 = acquire(CounterBloc, { args: { id: 'counter-2' } });
 
       expect(instance1).not.toBe(instance2);
     });
 
     it('should return same instance for same custom key', () => {
-      const instance1 = acquire(CounterBloc, 'shared');
-      const instance2 = acquire(CounterBloc, 'shared');
+      const instance1 = acquire(CounterBloc, { args: { id: 'shared' } });
+      const instance2 = acquire(CounterBloc, { args: { id: 'shared' } });
 
       expect(instance1).toBe(instance2);
     });
@@ -112,9 +122,9 @@ describe('StateContainer - Registry Features', () => {
 
   describe('Query Operations', () => {
     it('should return all shared instances of a type', () => {
-      acquire(CounterBloc, 'c1');
-      acquire(CounterBloc, 'c2');
-      acquire(CounterBloc, 'c3');
+      acquire(CounterBloc, { args: { id: 'c1' } });
+      acquire(CounterBloc, { args: { id: 'c2' } });
+      acquire(CounterBloc, { args: { id: 'c3' } });
 
       const instances = getAll(CounterBloc);
       expect(instances).toHaveLength(3);
@@ -132,9 +142,9 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should get stats for all types', () => {
-      acquire(CounterBloc, 'c1');
-      acquire(CounterBloc, 'c2');
-      acquire(UserBloc, 'u1');
+      acquire(CounterBloc, { args: { id: 'c1' } });
+      acquire(CounterBloc, { args: { id: 'c2' } });
+      acquire(UserBloc, { args: { id: 'u1' } });
 
       const stats = getStats();
       expect(stats.registeredTypes).toBe(2);
@@ -148,9 +158,9 @@ describe('StateContainer - Registry Features', () => {
 
   describe('forEach Operations', () => {
     it('should iterate over all shared instances', () => {
-      const c1 = acquire(CounterBloc, 'c1');
-      const c2 = acquire(CounterBloc, 'c2');
-      const c3 = acquire(CounterBloc, 'c3');
+      const c1 = acquire(CounterBloc, { args: { id: 'c1' } });
+      const c2 = acquire(CounterBloc, { args: { id: 'c2' } });
+      const c3 = acquire(CounterBloc, { args: { id: 'c3' } });
 
       // Increment each instance to different values
       c1.increment(); // 1
@@ -170,9 +180,9 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should skip disposed instances during iteration', () => {
-      const c1 = acquire(CounterBloc, 'c1');
-      const c2 = acquire(CounterBloc, 'c2');
-      const c3 = acquire(CounterBloc, 'c3');
+      const c1 = acquire(CounterBloc, { args: { id: 'c1' } });
+      const c2 = acquire(CounterBloc, { args: { id: 'c2' } });
+      const c3 = acquire(CounterBloc, { args: { id: 'c3' } });
 
       // Mark different values
       c1.increment();
@@ -188,7 +198,7 @@ describe('StateContainer - Registry Features', () => {
 
         // Dispose middle instance during iteration
         if (instance.state.count === 2) {
-          release(CounterBloc, 'c2');
+          release(CounterBloc, { args: { id: 'c2' } });
         }
       });
 
@@ -208,9 +218,9 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should not throw when callback throws', () => {
-      acquire(CounterBloc, 'c1');
-      acquire(CounterBloc, 'c2');
-      acquire(CounterBloc, 'c3');
+      acquire(CounterBloc, { args: { id: 'c1' } });
+      acquire(CounterBloc, { args: { id: 'c2' } });
+      acquire(CounterBloc, { args: { id: 'c3' } });
 
       const visitedKeys: string[] = [];
 
@@ -238,7 +248,7 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should work with single instance', () => {
-      const instance = acquire(CounterBloc, 'single');
+      const instance = acquire(CounterBloc, { args: { id: 'single' } });
       instance.increment();
 
       let state: number | null = null;
@@ -250,9 +260,9 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should allow state mutation during iteration', () => {
-      acquire(CounterBloc, 'c1');
-      acquire(CounterBloc, 'c2');
-      acquire(CounterBloc, 'c3');
+      acquire(CounterBloc, { args: { id: 'c1' } });
+      acquire(CounterBloc, { args: { id: 'c2' } });
+      acquire(CounterBloc, { args: { id: 'c3' } });
 
       // Increment all instances
       forEach(CounterBloc, (instance) => {
@@ -269,9 +279,9 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should support collecting statistics', () => {
-      const c1 = acquire(CounterBloc, 'c1');
-      const c2 = acquire(CounterBloc, 'c2');
-      const c3 = acquire(CounterBloc, 'c3');
+      const c1 = acquire(CounterBloc, { args: { id: 'c1' } });
+      const c2 = acquire(CounterBloc, { args: { id: 'c2' } });
+      const c3 = acquire(CounterBloc, { args: { id: 'c3' } });
 
       c1.increment();
       c1.increment(); // 2
@@ -292,9 +302,9 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should support conditional release during iteration', () => {
-      const c1 = acquire(CounterBloc, 'c1');
-      const c2 = acquire(CounterBloc, 'c2');
-      const c3 = acquire(CounterBloc, 'c3');
+      const c1 = acquire(CounterBloc, { args: { id: 'c1' } });
+      const c2 = acquire(CounterBloc, { args: { id: 'c2' } });
+      const c3 = acquire(CounterBloc, { args: { id: 'c3' } });
 
       c1.increment(); // Keep (state: 1)
       c2.increment();
@@ -303,18 +313,18 @@ describe('StateContainer - Registry Features', () => {
       c3.increment();
       c3.increment(); // Release (state: 3)
 
-      // Track which keys to release
-      const keysToRelease: string[] = [];
+      // Track which ids to release
+      const idsToRelease: string[] = [];
       forEach(CounterBloc, (instance) => {
         if (instance.state.count > 1) {
-          // Determine key based on state value
-          if (instance.state.count === 2) keysToRelease.push('c2');
-          if (instance.state.count === 3) keysToRelease.push('c3');
+          // Determine id based on state value
+          if (instance.state.count === 2) idsToRelease.push('c2');
+          if (instance.state.count === 3) idsToRelease.push('c3');
         }
       });
 
       // Release after iteration
-      keysToRelease.forEach((key) => release(CounterBloc, key));
+      idsToRelease.forEach((id) => release(CounterBloc, { args: { id } }));
 
       // Only c1 should remain
       const remaining = getAll(CounterBloc);
@@ -325,9 +335,9 @@ describe('StateContainer - Registry Features', () => {
 
   describe('Clear Operations', () => {
     it('should clear all instances of a type', () => {
-      acquire(CounterBloc, 'c1');
-      acquire(CounterBloc, 'c2');
-      acquire(UserBloc, 'u1');
+      acquire(CounterBloc, { args: { id: 'c1' } });
+      acquire(CounterBloc, { args: { id: 'c2' } });
+      acquire(UserBloc, { args: { id: 'u1' } });
 
       clear(CounterBloc);
 
@@ -342,9 +352,9 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should clear all instances from all types', () => {
-      acquire(CounterBloc, 'c1');
-      acquire(CounterBloc, 'c2');
-      acquire(UserBloc, 'u1');
+      acquire(CounterBloc, { args: { id: 'c1' } });
+      acquire(CounterBloc, { args: { id: 'c2' } });
+      acquire(UserBloc, { args: { id: 'u1' } });
 
       clearAll();
 
@@ -397,71 +407,79 @@ describe('StateContainer - Registry Features', () => {
 
   describe('Reference Counting', () => {
     it('should increment ref count on attach', () => {
-      const instance1 = acquire(CounterBloc, 'test');
-      const instance2 = acquire(CounterBloc, 'test');
+      const instance1 = acquire(CounterBloc, { args: { id: 'test' } });
+      const instance2 = acquire(CounterBloc, { args: { id: 'test' } });
 
       expect(instance1).toBe(instance2);
       expect(getAll(CounterBloc)).toHaveLength(1);
     });
 
     it('should dispose instance when ref count reaches zero', () => {
-      const instance = acquire(CounterBloc, 'test');
+      const instance = acquire(CounterBloc, { args: { id: 'test' } });
 
       expect(instance.isDisposed).toBe(false);
 
-      release(CounterBloc, 'test');
+      release(CounterBloc, { args: { id: 'test' } });
 
       expect(instance.isDisposed).toBe(true);
       expect(getAll(CounterBloc)).toHaveLength(0);
     });
 
     it('should respect static keepAlive property', () => {
-      class KeepAliveBloc extends StateContainer<{ value: number }> {
+      class KeepAliveBloc extends StateContainer<
+        { value: number },
+        { id?: string }
+      > {
         static keepAlive = true;
+        static key = (a?: { id?: string }) => a?.id ?? 'default';
 
         constructor() {
           super({ value: 0 });
         }
       }
 
-      const instance = acquire(KeepAliveBloc, 'test');
-      release(KeepAliveBloc, 'test');
+      const instance = acquire(KeepAliveBloc, { args: { id: 'test' } });
+      release(KeepAliveBloc, { args: { id: 'test' } });
 
       expect(instance.isDisposed).toBe(false);
       expect(getAll(KeepAliveBloc)).toHaveLength(1);
     });
 
     it('borrow does not increment refCount', () => {
-      acquire(CounterBloc, 'test');
-      const before = getRefCount(CounterBloc, 'test');
+      acquire(CounterBloc, { args: { id: 'test' } });
+      const before = getRefCount(CounterBloc, { args: { id: 'test' } });
 
-      borrow(CounterBloc, 'test');
-      const after = getRefCount(CounterBloc, 'test');
+      borrow(CounterBloc, { args: { id: 'test' } });
+      const after = getRefCount(CounterBloc, { args: { id: 'test' } });
 
       expect(after).toBe(before);
     });
 
     it('ensure does not increment keepAlive at refCount 0', () => {
-      class KeepAliveBloc extends StateContainer<{ value: number }> {
+      class KeepAliveBloc extends StateContainer<
+        { value: number },
+        { id?: string }
+      > {
         static keepAlive = true;
+        static key = (a?: { id?: string }) => a?.id ?? 'default';
         constructor() {
           super({ value: 0 });
         }
       }
 
-      acquire(KeepAliveBloc, 'test');
-      release(KeepAliveBloc, 'test');
-      expect(getRefCount(KeepAliveBloc, 'test')).toBe(0);
+      acquire(KeepAliveBloc, { args: { id: 'test' } });
+      release(KeepAliveBloc, { args: { id: 'test' } });
+      expect(getRefCount(KeepAliveBloc, { args: { id: 'test' } })).toBe(0);
 
-      ensure(KeepAliveBloc, 'test');
-      expect(getRefCount(KeepAliveBloc, 'test')).toBe(0);
+      ensure(KeepAliveBloc, { args: { id: 'test' } });
+      expect(getRefCount(KeepAliveBloc, { args: { id: 'test' } })).toBe(0);
     });
 
     it('acquire replaces disposed entry', () => {
-      const instance1 = acquire(CounterBloc, 'test');
+      const instance1 = acquire(CounterBloc, { args: { id: 'test' } });
       instance1.dispose();
 
-      const instance2 = acquire(CounterBloc, 'test');
+      const instance2 = acquire(CounterBloc, { args: { id: 'test' } });
       expect(instance2).not.toBe(instance1);
       expect(instance2.isDisposed).toBe(false);
     });
