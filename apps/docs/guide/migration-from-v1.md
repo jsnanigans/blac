@@ -18,10 +18,26 @@ useBloc(MyCubit, { dependencies: (s) => [s.count] });
 useBloc(MyCubit, { select: (s) => [s.count] });
 ```
 
-There is no compatibility shim. Rename the option key at every call site. The selector's contract is unchanged: return an array; the component re-renders when any element changes by `Object.is`. Keep the function referentially stable (define it outside the component or wrap in `useCallback`).
+Rename the option key at every call site. The selector's contract is unchanged: return an array; the component re-renders when any element changes by `Object.is`. Keep the function referentially stable (define it outside the component or wrap in `useCallback`).
 
 ::: details Find call sites
 `grep -rn "dependencies:" src/` — then rename the key to `select:`. The return value needs no changes.
+:::
+
+::: info Alias-shim approach (internal reference)
+An internal `@9amhealth/blac-compat` package exists that backs the old v1 API surface with v2 internals. It is **private and not published for general use**. If you need a similar bridge for a large codebase, the approach is: create a local package that re-exports v2 types under the old names, then configure your bundler (Vite `resolve.alias`, webpack `resolve.alias`, or TypeScript `paths`) to point the old import specifiers at it. For example:
+
+```ts
+// vite.config.ts
+resolve: {
+  alias: {
+    'blac-next': '/packages/my-compat/src/index.ts',
+    '@blac/react': '/packages/my-compat/src/index.ts',
+  },
+}
+```
+
+This lets you migrate incrementally — existing call sites keep compiling while you rename them one file at a time. Do not take a dependency on `@9amhealth/blac-compat` directly; it is an internal migration aid tied to a specific codebase.
 :::
 
 ## `tracked()` standalone API removed
@@ -77,21 +93,25 @@ The single largest behavioral change. In v1 a Cubit took a second generic for `p
 ```tsx
 // v1 — props generic + props option (removed)
 class UserCubit extends Cubit<UserState, { userId: string }> {
-  load() { fetch(`/users/${this.props.userId}`); }
+  load() {
+    fetch(`/users/${this.props.userId}`);
+  }
 }
 useBloc(UserCubit, { props: { userId } });
 ```
 
 v2 replaces this with the three explicit [input lanes](/guide/inputs):
 
-- **`args`** — serializable creation data that also *keys instance identity*. Forwarded to `init(args)`. This is the direct successor to most `props` usage.
+- **`args`** — serializable creation data that also _keys instance identity_. Forwarded to `init(args)`. This is the direct successor to most `props` usage.
 - **`deps`** — non-serializable handles (refs, callbacks), merged per consumer.
 - **method calls** — for values that change over the instance's life.
 
 ```tsx
 // v2 — args key identity and seed init()
 class UserCubit extends Cubit<UserState, { userId: string }> {
-  protected init(args: { userId: string }) { this.load(args.userId); }
+  protected init(args: { userId: string }) {
+    this.load(args.userId);
+  }
 }
 useBloc(UserCubit, { args: { userId } });
 ```
@@ -124,11 +144,11 @@ There is also no `autoInstance` option in v2 (it never shipped in the public sur
 
 v1's static `Blac` facade (`Blac.getBloc(C, { id })`, `Blac.getAllBlocs(C)`) is replaced by tree-shakeable functions from `@blac/core`:
 
-| v1 | v2 |
-| --- | --- |
-| `Blac.getBloc(C, { id })` | `ensure(C, id)` (create if missing, no ref) or `acquire(C, id)` (ref-counted) |
-| `Blac.getAllBlocs(C)` | `getAll(C)` |
-| `Blac.clearAll()` (test teardown) | `clearAll()` |
+| v1                                | v2                                                                            |
+| --------------------------------- | ----------------------------------------------------------------------------- |
+| `Blac.getBloc(C, { id })`         | `ensure(C, id)` (create if missing, no ref) or `acquire(C, id)` (ref-counted) |
+| `Blac.getAllBlocs(C)`             | `getAll(C)`                                                                   |
+| `Blac.clearAll()` (test teardown) | `clearAll()`                                                                  |
 
 See [Instance Management](/core/instance-management) for the full registry surface and how `acquire`/`ensure`/`borrow` differ in ref-counting.
 
@@ -140,12 +160,12 @@ See [Instance Management](/core/instance-management) for the full registry surfa
 
 All plugin lifecycle hooks are renamed, and the `ctx` (context) parameter is now **first** on every hook. The bloc the event is about is no longer a separate parameter — read it from `ctx.container`.
 
-| v1                    | v2                | Notes                              |
-| --------------------- | ----------------- | ---------------------------------- |
-| `onInstanceCreated(instance, ctx)` | `onCreated(ctx)` | instance dropped; use `ctx.container` |
-| `onInstanceDisposed(instance, ctx)` | `onDestroyed(ctx)` | instance dropped; use `ctx.container` |
-| `onStateChanged(instance, prev, next, ctx)` | `onStateChange(ctx, prev, next, paths)` | ctx first; new `paths` param; `prev`/`next` are state objects |
-| _(not present)_       | `onHydrationChange(ctx, status, previousStatus)` | New hook for hydration status transitions |
+| v1                                          | v2                                               | Notes                                                         |
+| ------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------- |
+| `onInstanceCreated(instance, ctx)`          | `onCreated(ctx)`                                 | instance dropped; use `ctx.container`                         |
+| `onInstanceDisposed(instance, ctx)`         | `onDestroyed(ctx)`                               | instance dropped; use `ctx.container`                         |
+| `onStateChanged(instance, prev, next, ctx)` | `onStateChange(ctx, prev, next, paths)`          | ctx first; new `paths` param; `prev`/`next` are state objects |
+| _(not present)_                             | `onHydrationChange(ctx, status, previousStatus)` | New hook for hydration status transitions                     |
 
 ::: warning Update both the parameter order and the parameter set
 This is more than a rename: `onCreated`/`onDestroyed` no longer receive an `instance` argument at all. Code like `onCreated(ctx, instance) { use(instance.name) }` must become `onCreated(ctx) { use(ctx.container?.name) }`. Search your plugins for the old hook names and rewrite each call.

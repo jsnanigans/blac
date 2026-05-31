@@ -148,7 +148,7 @@ const [state, cart] = useBloc(CartCubit, {
 ```
 
 ::: warning Breaking change (v1 → v2)
-This option was called `dependencies` in v1. It was renamed to `select` to avoid confusion with the `deps` (non-serializable handles) lane. There is no compatibility shim. See [Migration from v1](/guide/migration-from-v1) for the full change list.
+This option was called `dependencies` in v1. It was renamed to `select` to avoid confusion with the `deps` (non-serializable handles) lane. See [Migration from v1](/guide/migration-from-v1) for the full change list, including the alias-shim approach for incremental migrations.
 :::
 
 ### `instanceId`
