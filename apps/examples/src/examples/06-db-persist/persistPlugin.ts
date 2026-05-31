@@ -10,7 +10,10 @@ export const draftPersistPlugin = createIndexedDbPersistPlugin({
   storeName: 'plugin-persist',
   pluginName: 'draft-persist-plugin',
 }).persist<PersistedDraftState, { title: string; body: string; tags: string }>(
-  PersistedDraftCubit,
+  // Cast needed: plugin-persist's persist() types Cubit<S> (no args),
+  // but PersistedDraftCubit is Cubit<S, PersistedDraftArgs>. The runtime
+  // behaviour is unchanged; only identity-key derivation differs.
+  PersistedDraftCubit as any,
   {
     key: ({ instanceId }) => `examples:draft:${instanceId}`,
     debounceMs: 120,
@@ -49,5 +52,5 @@ export const draftPersistPlugin = createIndexedDbPersistPlugin({
 );
 
 export const DRAFT_INSTANCE_ID = 'demo-draft';
-export const DRAFT_FULL_INSTANCE_ID = `${PersistedDraftCubit.name}:${DRAFT_INSTANCE_ID}`;
-export const DRAFT_PERSIST_KEY = `examples:draft:${DRAFT_FULL_INSTANCE_ID}`;
+// After args-identity migration, resolved key = static key(args) = args.id
+export const DRAFT_PERSIST_KEY = `examples:draft:${DRAFT_INSTANCE_ID}`;

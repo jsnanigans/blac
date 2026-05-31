@@ -12,10 +12,10 @@ import { PersistedDraftCubit } from './PersistedDraftCubit';
 
 function DraftEditor() {
   const [state, bloc] = useBloc(PersistedDraftCubit, {
-    instanceId: DRAFT_INSTANCE_ID,
+    args: { id: DRAFT_INSTANCE_ID },
   });
   const actualBloc = useMemo(
-    () => ensure(PersistedDraftCubit, DRAFT_INSTANCE_ID),
+    () => ensure(PersistedDraftCubit, { args: { id: DRAFT_INSTANCE_ID } }),
     [],
   );
   const [persistStatus, setPersistStatus] = useState('hydrating');
@@ -25,7 +25,7 @@ function DraftEditor() {
 
   useEffect(() => {
     const unsubscribe = draftPersistPlugin.subscribe((event) => {
-      if (event.instance !== actualBloc) return;
+      if ((event.instance as unknown) !== actualBloc) return;
 
       setPersistStatus(event.status.phase);
       setSavedAt(

@@ -7,6 +7,8 @@ export interface PersistedDraftState {
   localEditCount: number;
 }
 
+export type PersistedDraftArgs = { id: string };
+
 export const persistedDraftInitialState: PersistedDraftState = {
   title: 'IndexedDB Draft',
   body: '',
@@ -14,7 +16,12 @@ export const persistedDraftInitialState: PersistedDraftState = {
   localEditCount: 0,
 };
 
-export class PersistedDraftCubit extends Cubit<PersistedDraftState> {
+export class PersistedDraftCubit extends Cubit<
+  PersistedDraftState,
+  PersistedDraftArgs
+> {
+  static key = (a: PersistedDraftArgs) => a.id;
+
   constructor() {
     super(persistedDraftInitialState);
   }
