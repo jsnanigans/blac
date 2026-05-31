@@ -73,7 +73,7 @@ export type BlocInstanceType<T extends abstract new (...args: any) => any> =
   T extends abstract new (...args: any) => infer R ? R : any;
 
 /**
- * Constructor type for StateContainer classes with static registry methods.
+ * Constructor type for StateContainer classes.
  * Used for type-safe hook parameters.
  * @template TBloc - The StateContainer instance type
  */
@@ -83,15 +83,5 @@ export type BlocConstructor<
     ...args: any[]
   ) => StateContainer<S, any, any>,
 > = (new (...args: any[]) => InstanceType<T>) & {
-  acquire(instanceKey?: string, ...args: any[]): InstanceType<T>;
-  borrow(instanceKey?: string, ...args: any[]): InstanceType<T> | null;
-  borrowSafe(
-    instanceKey?: string,
-    ...args: any[]
-  ):
-    | { error: Error; instance: null }
-    | { error: null; instance: InstanceType<T> };
-  ensure(instanceKey?: string): InstanceType<T>;
-  release(instanceKey?: string): void;
   keepAlive?: boolean;
 };
