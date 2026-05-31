@@ -1,4 +1,4 @@
-# Bloc Communication
+# Bloc communication
 
 Real apps are made of several focused blocs — a cart, a shipping calculator, an auth session — that need to read each other's state or trigger each other's behavior. The naive fix is to merge them into one giant Cubit, but that destroys the very separation that makes each piece testable and reusable.
 
@@ -8,17 +8,43 @@ Real apps are made of several focused blocs — a cart, a shipping calculator, a
 Think of `depend()` as "I need to know about that bloc, but I don't own it." It records an intent ("CartCubit depends on ShippingCubit") and hands you a getter that fetches the live instance on demand. Ownership and lifetime still flow through the registry's [ref counting](/core/instance-management) — see [Lifecycle: who keeps the dependency alive?](#lifecycle-who-keeps-the-dependency-alive) below for the gotcha this creates.
 :::
 
-## Using `depend()`
+## `depend(Type)`
 
-Call `this.depend(OtherClass)` inside your Cubit to get a lazy getter function that resolves the other instance from the registry.
+Declare a cross-bloc dependency from inside a Cubit. Returns a lazy getter that resolves the other instance from the registry on each call.
 
 ```ts
+protected depend<T extends StateContainerConstructor>(
+  Type: T,
+  instanceKey?: string,
+): () => InstanceType<T>
+```
+
+| Parameter     | Type                                  | Required | Description                                                            |
+| ------------- | ------------------------------------- | -------- | ---------------------------------------------------------------------- |
+| `Type`        | `T extends StateContainerConstructor` | yes      | The state-container class to depend on.                                |
+| `instanceKey` | `string`                              | no       | Which keyed instance to resolve. Defaults to the default instance key. |
+
+**Returns:** a getter `() => InstanceType<T>` — call it (`this.getShipping()`) to resolve the dep against the registry lazily, on each call. The getter is returned immediately at declaration time; resolution happens each time you invoke it.
+
+**Behavior.** `depend()` records the dependency (the `Type` → `instanceKey` pair is stored on the instance), then returns a closure that calls `this._registry.ensure(Type, instanceKey)` on each invocation. Resolution is **lazy per call**, which keeps the surface immune to dep-instance churn — if the depended-on instance is disposed and recreated, the next getter call simply returns the new one. `depend()` does **not** wire a reactive subscription between the two blocs: `this.getShipping().state.rate` is a plain read inside the bloc. Reactivity comes from the consumer (a React component's auto-tracking proxy, or an explicit `watch()`) — a naive auto-bridge would loop on mutual deps.
+
+::: warning `depend()` does not auto-subscribe
+`depend()` only records the dependency and resolves the instance — it does **not** wire up a reactive subscription between the two blocs. Inside the bloc, `this.getShipping().state.rate` is a plain read; it returns the current value but does not cause `CartCubit` to re-emit when shipping changes.
+
+Reactivity is supplied by the consumer that reads the derived value: a React component via the [auto-tracking proxy](/react/dependency-tracking), or non-React code via [`watch()`](/core/watch). If you need a bloc itself to react to a dependency's changes, subscribe explicitly (e.g. `watch(...)`) and tear it down in [`dispose`](/core/system-events). This is deliberate — a naive auto-bridge would loop forever on mutual dependencies.
+:::
+
+```ts twoslash
 import { Cubit } from '@blac/core';
 
 class ShippingCubit extends Cubit<{ rate: number }> {
   constructor() {
     super({ rate: 5.99 });
   }
+}
+
+interface CartItem {
+  price: number;
 }
 
 class CartCubit extends Cubit<{ items: CartItem[] }> {
@@ -35,28 +61,36 @@ class CartCubit extends Cubit<{ items: CartItem[] }> {
 }
 ```
 
-### How it works
+### How `depend()` works
 
 1. `this.depend(ShippingCubit)` records the dependency (`ShippingCubit` → instance key) and returns a getter `() => ShippingCubit`.
 2. Calling that getter resolves the instance via [`ensure()`](/core/instance-management) from the registry — creating it if it does not exist yet.
 3. The dependency is resolved **lazily on every call**, not when you declare it. This keeps `CartCubit` immune to dep-instance churn: if the depended-on instance is disposed and recreated, the next `getShipping()` call simply returns the new one.
-4. When a React component reads `cart.total`, the [auto-tracking](/react/dependency-tracking) proxy follows the getter into `ShippingCubit.state.rate` and subscribes the component to *that* path. So `cart.total` re-renders when shipping rate changes — but this reactivity comes from the render-time tracker, not from `depend()` itself.
-
-::: warning `depend()` does not auto-subscribe
-`depend()` only records the dependency and resolves the instance — it does **not** wire up a reactive subscription between the two blocs. Inside the bloc, `this.getShipping().state.rate` is a plain read; it returns the current value but does not cause `CartCubit` to re-emit when shipping changes.
-
-Reactivity is supplied by the consumer that reads the derived value: a React component via the [auto-tracking proxy](/react/dependency-tracking), or non-React code via [`watch()`](/core/watch). If you need a bloc itself to react to a dependency's changes, subscribe explicitly (e.g. `this.getShipping().subscribe(...)` or `watch(...)`) and tear it down in [`dispose`](/core/system-events). This is deliberate — a naive auto-bridge would loop forever on mutual dependencies.
-:::
+4. When a React component reads `cart.total`, the [auto-tracking](/react/dependency-tracking) proxy follows the getter into `ShippingCubit.state.rate` and subscribes the component to _that_ path. So `cart.total` re-renders when shipping rate changes — but this reactivity comes from the render-time tracker, not from `depend()` itself.
 
 ### Named instance dependencies
 
 By default, `depend(Type)` targets the `'default'` instance key. To depend on a specific [named instance](/core/instance-management):
 
-```ts
-private getEditor = this.depend(EditorCubit, 'doc-42');
+```ts twoslash
+import { Cubit } from '@blac/core';
+
+class EditorCubit extends Cubit<{ content: string }> {
+  constructor() {
+    super({ content: '' });
+  }
+}
+
+class ReviewCubit extends Cubit<{ approved: boolean }> {
+  private getEditor = this.depend(EditorCubit, 'doc-42');
+
+  constructor() {
+    super({ approved: false });
+  }
+}
 ```
 
-The instance key passed here must match the key the target instance is acquired under (via `args`, an explicit `instanceId`, or a [`static key`](/core/configuration)). A mismatched key resolves a *different* instance — see [Inputs and identity](/guide/inputs) for how keys are derived.
+The instance key passed here must match the key the target instance is acquired under (via `args`, an explicit `instanceId`, or a [`static key`](/core/configuration)). A mismatched key resolves a _different_ instance — see [Inputs and identity](/guide/inputs) for how keys are derived.
 
 ## Alternatives
 
@@ -64,11 +98,24 @@ The instance key passed here must match the key the target instance is acquired 
 
 For one-off access outside the class constructor, use registry functions directly:
 
-```ts
-import { ensure, borrow } from '@blac/core';
+```ts twoslash
+import { Cubit, borrow } from '@blac/core';
 
-// Inside a method
+interface NotificationState {
+  message: string;
+}
+
+class UserCubit extends Cubit<{ name: string }> {
+  constructor() {
+    super({ name: '' });
+  }
+}
+
 class NotificationCubit extends Cubit<NotificationState> {
+  constructor() {
+    super({ message: '' });
+  }
+
   showUserError = () => {
     const user = borrow(UserCubit); // must already exist
     this.patch({ message: `Error for ${user.state.name}` });
@@ -88,17 +135,17 @@ class NotificationCubit extends Cubit<NotificationState> {
 
 `depend()` resolves through `ensure()`, and **`ensure()` does not take a reference** — it creates the instance if needed but does not increment the dependency's ref count. This has a concrete consequence worth internalizing:
 
-> A bloc you `depend()` on is not kept alive *by you*. If nothing else holds a reference to it, the registry may dispose it the moment its own ref count hits zero.
+> A bloc you `depend()` on is not kept alive _by you_. If nothing else holds a reference to it, the registry may dispose it the moment its own ref count hits zero.
 
 In practice this is usually fine, because the depended-on bloc is also mounted somewhere (a component holds a ref via [`useBloc`](/react/use-bloc)). But it is a real gotcha when the dependency is a "pure derived" service that no component renders directly.
 
 There are two clean ways to guarantee a dependency stays alive:
 
 - **`keepAlive`** — mark the dependency class with `@blac({ keepAlive: true })` so the registry never auto-disposes it. See [Configuration](/core/configuration).
-- **The cascade does the right thing on teardown.** When a bloc that *created* its dependencies (via `ensure`) is itself disposed and reaches zero refs, the registry cascades disposal to those deps if they too have zero refs and are not `keepAlive`. So a `depend()`-only dependency graph tears itself down cleanly without leaking.
+- **The cascade does the right thing on teardown.** When a bloc that _created_ its dependencies (via `ensure`) is itself disposed and reaches zero refs, the registry cascades disposal to those deps if they too have zero refs and are not `keepAlive`. So a `depend()`-only dependency graph tears itself down cleanly without leaking.
 
 ::: details Why lazy resolution matters here
-Because the getter re-resolves on every call, a dependency that *was* disposed out from under you is not a dangling pointer — the next `getShipping()` simply re-creates a fresh instance via `ensure()`. The cost is that any state the old instance held is gone. If that state must survive, use `keepAlive` rather than relying on re-creation.
+Because the getter re-resolves on every call, a dependency that _was_ disposed out from under you is not a dangling pointer — the next `getShipping()` simply re-creates a fresh instance via `ensure()`. The cost is that any state the old instance held is gone. If that state must survive, use `keepAlive` rather than relying on re-creation.
 :::
 
 ## Avoiding cycles and constructor-time reads
@@ -107,18 +154,6 @@ Two cross-bloc patterns reliably cause bugs. Both are easy to avoid once you kno
 
 ::: warning Common mistakes
 **Reading a dependency's state in the constructor.** The dependency may not be initialized yet — its `init()` may not have run, so its state is still the raw initial value. Read deps inside getters or methods (or `init`), never in the constructor.
-
-```ts
-class CartCubit extends Cubit<CartState> {
-  private getShipping = this.depend(ShippingCubit);
-
-  constructor() {
-    super({ items: [] });
-    // BAD: ShippingCubit may not be initialized; this reads a stale value.
-    const rate = this.getShipping().state.rate;
-  }
-}
-```
 
 **Mutual `depend()` between two blocs.** `A` depends on `B` and `B` depends on `A`. Declaration alone is safe (resolution is lazy), but if you also wire explicit subscriptions both ways, a change in one re-emits the other forever. The channel's same-tick coalescing limits the blast radius, but a true mutual reactive cycle is a design smell — extract the shared concern into a third bloc that both depend on, with the dependency arrows pointing one way.
 :::
@@ -129,15 +164,45 @@ When you find yourself wanting a cycle, it usually signals that two blocs are re
 
 Dependencies aren't just for reading state — you can call methods on them to trigger side effects in other blocs.
 
-```ts
+```ts twoslash
+import { Cubit } from '@blac/core';
+
+interface Message {
+  userId: string;
+  text: string;
+}
+
+interface ChannelState {
+  channelId: string;
+  messages: Message[];
+}
+
+class NotificationCubit extends Cubit<{ unread: number }> {
+  constructor() {
+    super({ unread: 0 });
+  }
+
+  incrementUnread = (_channelId: string) => {
+    this.update((s) => ({ unread: s.unread + 1 }));
+  };
+
+  clearUnread = (_channelId: string) => {
+    this.emit({ unread: 0 });
+  };
+}
+
 class ChannelCubit extends Cubit<ChannelState> {
   private getNotifications = this.depend(NotificationCubit);
 
+  constructor() {
+    super({ channelId: '', messages: [] });
+  }
+
   receiveMessage = (message: Message) => {
-    this.emit({
-      ...this.state,
-      messages: [...this.state.messages, message],
-    });
+    this.update((s) => ({
+      ...s,
+      messages: [...s.messages, message],
+    }));
 
     // Trigger a side effect in another bloc
     this.getNotifications().incrementUnread(this.state.channelId);
@@ -159,8 +224,22 @@ These behave differently with respect to re-renders. **Reading** a dependency's 
 
 Getters that read from multiple blocs are tracked through the proxy: a component reading `dashboard.summary` subscribes to every dependency path the getter touches (`auth.user.name`, `cart.items`), and re-renders only when one of those changes.
 
-```ts
-class DashboardCubit extends Cubit<{}> {
+```ts twoslash
+import { Cubit } from '@blac/core';
+
+class AuthCubit extends Cubit<{ user: { name: string } | null }> {
+  constructor() {
+    super({ user: null });
+  }
+}
+
+class CartCubit extends Cubit<{ items: string[] }> {
+  constructor() {
+    super({ items: [] });
+  }
+}
+
+class DashboardCubit extends Cubit<Record<string, never>> {
   private getAuth = this.depend(AuthCubit);
   private getCart = this.depend(CartCubit);
 
@@ -184,10 +263,31 @@ class DashboardCubit extends Cubit<{}> {
 
 Sometimes a dependency doesn't exist yet and needs to be created conditionally. Use `borrowSafe` to check and `acquire` to create on demand:
 
-```ts
+```ts twoslash
 import { Cubit, borrowSafe, acquire } from '@blac/core';
 
+class UserCubit extends Cubit<{ userId: string }> {
+  constructor() {
+    super({ userId: '' });
+  }
+
+  setUserId = (id: string) => this.patch({ userId: id });
+}
+
+interface ChannelState {
+  messages: string[];
+}
+
+interface MessageData {
+  userId: string;
+  text: string;
+}
+
 class ChannelCubit extends Cubit<ChannelState> {
+  constructor() {
+    super({ messages: [] });
+  }
+
   private ensureUserCubit(userId: string) {
     const result = borrowSafe(UserCubit, userId);
     if (!result.error) return; // already exists
@@ -196,9 +296,9 @@ class ChannelCubit extends Cubit<ChannelState> {
     acquire(UserCubit, userId).setUserId(userId);
   }
 
-  receiveMessage = (message: Message) => {
+  receiveMessage = (message: MessageData) => {
     this.ensureUserCubit(message.userId);
-    // ...
+    this.update((s) => ({ messages: [...s.messages, message.text] }));
   };
 }
 ```
@@ -206,49 +306,6 @@ class ChannelCubit extends Cubit<ChannelState> {
 ::: tip
 Use `borrowSafe` over `borrow` when the instance may not exist yet. `borrow` throws, while `borrowSafe` returns `{ error, instance }` so you can handle the missing case gracefully.
 :::
-
-## Combining patterns
-
-A real-world bloc often combines multiple dependency patterns: declared dependencies via `depend()`, method calls on those dependencies, and on-demand instance creation.
-
-```ts
-class ChannelCubit extends Cubit<ChannelState> {
-  // Declared dependencies — lazy getters
-  private getContacts = this.depend(ContactsCubit);
-  private getNotifications = this.depend(NotificationCubit);
-
-  constructor() {
-    super({ channel: null, messages: [], unreadCount: 0 });
-  }
-
-  // Read state from a dependency during init.
-  // `init(args)` runs once after construction, before any consumer reads
-  // the first snapshot — see /core/cubit.
-  protected init({ channelId }: { channelId: string }) {
-    const channel = this.getContacts().state.channels.find(
-      (c) => c.id === channelId,
-    );
-    if (channel) this.emit({ ...this.state, channel });
-  }
-
-  // Call methods on dependencies for side effects
-  receiveMessage = (message: Message) => {
-    this.ensureUserCubit(message.userId);
-    this.emit({
-      ...this.state,
-      messages: [...this.state.messages, message],
-    });
-    this.getNotifications().incrementUnread(this.state.channel!.id);
-  };
-
-  // On-demand instance creation with borrowSafe + acquire
-  private ensureUserCubit(userId: string) {
-    const { error } = borrowSafe(UserCubit, userId);
-    if (!error) return;
-    acquire(UserCubit, userId).setUserId(userId);
-  }
-}
-```
 
 ## See also
 

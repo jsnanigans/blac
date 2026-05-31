@@ -18,18 +18,22 @@ The clever part is that you never write the interest set by hand. BlaC observes 
 
 ## The read-recording proxy
 
-In React's auto-tracking mode, the `state` returned by `useBloc` is not the raw state object — it is a `Proxy` that records every property read. Each time your component reads `state.user.name`, the proxy adds the path `user.name` to a set. After render commits, that set becomes the consumer's interest.
+### `trackRender(state, interner)`
 
-```tsx
-function UserAvatar() {
-  const [state] = useBloc(UserCubit);
-  return <img src={state.avatarUrl} />;
-  // recorded interest: { "avatarUrl" }
-  // a change to state.name or state.email will not re-render this component
-}
+The internal function that wraps state in a recording `Proxy` for each consumer render.
+
+```ts
+function trackRender<S>(state: S, interner: PathInterner): TrackResult<S>;
 ```
 
-The recording follows a few rules that are worth knowing because they explain otherwise-surprising behavior:
+| Parameter  | Type           | Required | Description                                                                                                    |
+| ---------- | -------------- | -------- | -------------------------------------------------------------------------------------------------------------- |
+| `state`    | `S`            | yes      | The raw state value to wrap. Non-object values (primitives, `null`) are returned as-is with an empty path set. |
+| `interner` | `PathInterner` | yes      | The path interner for the container — interns dotted path strings into compact `PathId` values.                |
+
+**Returns:** a `TrackResult<S>` — an object `{ value: S, paths: Set<PathId> }` where `value` is the recording proxy and `paths` is the live set that grows as properties are read.
+
+**Behavior.** This is an internal API, not exported from `@blac/core`. It is called automatically by the React adapter (`useBloc`) on every render. The proxy records according to these rules:
 
 | Rule                                                    | Effect                                                                                                                                                                                                                  |
 | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -43,12 +47,23 @@ The recording follows a few rules that are worth knowing because they explain ot
 ::: danger Common mistake: non-plain values are not deeply tracked
 Only plain object literals and arrays are proxied. If you store a `Map`, `Set`, `Date`, or a class instance in state and mutate it in place, no path is marked and nothing re-renders. Replace the value with a new instance instead:
 
-```ts
-// Won't re-render — same reference, no path marked
-this.state.tags.add('new'); // never do this anyway; state is immutable
+```ts twoslash
+import { Cubit } from '@blac/core';
 
-// Will re-render — new reference at the `tags` path
-this.update((s) => ({ ...s, tags: new Set([...s.tags, 'new']) }));
+class TagCubit extends Cubit<{ tags: Set<string> }> {
+  constructor() {
+    super({ tags: new Set() });
+  }
+
+  // Won't re-render — same reference, no path marked
+  // (never mutate state directly anyway — state is immutable)
+  // this.state.tags.add('new'); ← wrong
+
+  // Will re-render — new reference at the `tags` path
+  addTag = (tag: string) => {
+    this.update((s) => ({ tags: new Set([...s.tags, tag]) }));
+  };
+}
 ```
 
 :::
@@ -59,21 +74,18 @@ A getter on the bloc is **derived state**: it reads other state and computes a v
 
 But a getter does **not** participate in auto-tracking. The recording proxy wraps only the `state` value that `useBloc` returns — never the bloc instance. When a getter runs it reads `this.state`, the _raw_ state, so reading `bloc.total` in a component records **nothing**:
 
-```ts
+```ts twoslash
+import { Cubit } from '@blac/core';
+
+interface CartItem {
+  price: number;
+}
+
 class CartCubit extends Cubit<{ items: CartItem[]; coupon: string | null }> {
   get total() {
     // reads this.state.items — the RAW state, not the consumer's proxy
     return this.state.items.reduce((sum, i) => sum + i.price, 0);
   }
-}
-```
-
-```tsx
-function Total() {
-  const [state, cart] = useBloc(CartCubit);
-  return <span>{cart.total}</span>;
-  // ⚠️ recorded interest: {} — reading `cart.total` tracks nothing,
-  // so this will NOT re-render when `items` changes.
 }
 ```
 
@@ -143,12 +155,22 @@ For the full FAQ see [Troubleshooting](/guide/troubleshooting). Below are tracki
 
 **Fix:** Replace the whole value with a new instance so the reference changes:
 
-```ts
-// No-op — same Map reference, nothing tracked
-this.state.tags.add('new'); // never mutate state directly anyway
+```ts twoslash
+import { Cubit } from '@blac/core';
 
-// Correct — new Set reference, change detected at the `tags` path
-this.update((s) => ({ ...s, tags: new Set([...s.tags, 'new']) }));
+class TagCubit extends Cubit<{ tags: Set<string> }> {
+  constructor() {
+    super({ tags: new Set() });
+  }
+
+  // No-op — same Set reference, nothing tracked
+  // this.state.tags.add('new'); ← never mutate state directly anyway
+
+  // Correct — new Set reference, change detected at the `tags` path
+  addTag = (tag: string) => {
+    this.update((s) => ({ tags: new Set([...s.tags, tag]) }));
+  };
+}
 ```
 
 ### Getter on `bloc` never wakes the component
