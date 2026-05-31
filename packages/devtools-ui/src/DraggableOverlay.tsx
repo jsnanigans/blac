@@ -132,8 +132,8 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
   }
 
   const refId = `devtools-overlay-${++overlayMountSeq}`;
-  const diffBloc = acquire(DevToolsDiffBloc, undefined, refId);
-  const logsBloc = acquire(DevToolsLogsBloc, undefined, refId);
+  const diffBloc = acquire(DevToolsDiffBloc, { refId });
+  const logsBloc = acquire(DevToolsLogsBloc, { refId });
 
   const loadFullData = () => {
     const fullState = api.getFullState?.();
@@ -264,8 +264,8 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
 
   return () => {
     unsubscribe();
-    release(DevToolsDiffBloc, undefined, false, refId);
-    release(DevToolsLogsBloc, undefined, false, refId);
+    release(DevToolsDiffBloc, { refId });
+    release(DevToolsLogsBloc, { refId });
   };
 };
 

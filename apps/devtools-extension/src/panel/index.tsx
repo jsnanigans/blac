@@ -17,8 +17,8 @@ function App() {
   return (
     <DevToolsPanel
       onMount={(instancesBloc: DevToolsInstancesBloc) => {
-        const diffBloc = acquire(DevToolsDiffBloc);
-        const logsBloc = acquire(DevToolsLogsBloc);
+        const diffBloc = acquire(DevToolsDiffBloc, {});
+        const logsBloc = acquire(DevToolsLogsBloc, {});
 
         let currentSessionId: string | null = null;
 
