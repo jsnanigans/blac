@@ -20,6 +20,7 @@ import {
   ALL_PATHS,
   emptyPathSet,
   trackRender,
+  PathInterner,
   type PathSet,
 } from '@dirtytalk/structural';
 import { useProvidedArgs } from './BlocProvider';
@@ -164,6 +165,11 @@ export function useBloc<
   // ---------------------------------------------------------------------------
   const [, force] = useReducer((x: number) => x + 1, 0);
   const pathRef = useRef<PathSet>(emptyPathSet());
+  // Expanded interest: leaf paths PLUS their ancestor paths, so that when
+  // `patch` marks a parent (e.g. 'items') and the consumer tracked a child
+  // (e.g. 'items.length'), the intersection still fires. Updated in
+  // useLayoutEffect after each render once pathRef.current is populated.
+  const expandedInterestRef = useRef<PathSet>(emptyPathSet());
   // For select-mode: cache the last selected array so we can compare against
   // the next one before forcing a re-render.
   const lastSelectionRef = useRef<unknown[] | null>(null);
@@ -197,14 +203,18 @@ export function useBloc<
       return unsub;
     }
 
-    // Auto-track mode: wake on any change that intersects the recorded paths.
-    // `() => pathRef.current` is called by the channel on every flush, so we
-    // always see the latest interest without re-subscribing.
+    // Auto-track mode: subscribe with the expanded interest (leaf paths + their
+    // ancestors). This ensures that when `patch` marks a parent path (e.g.
+    // 'items') and the consumer tracked a child (e.g. 'items.length'), the
+    // channel intersection still fires a re-render.
+    //
+    // `expandedInterestRef.current` is updated by the useLayoutEffect below
+    // after each render, so the interest is always fresh at flush time.
     const unsub = channel.subscribe(
-      () => pathRef.current,
+      () => expandedInterestRef.current,
       () => force(),
     );
-    // Also register the consumer paths with the container for skeleton
+    // Register the consumer's leaf paths with the container for skeleton
     // recomputation, so the source-side diff can skip us when our paths don't
     // intersect the change.
     (bloc as unknown as StateContainer).registerConsumerPaths(
@@ -269,17 +279,26 @@ export function useBloc<
     // useLayoutEffect below registers the populated set after render.
   }
 
-  // After the render commits the proxy has been touched and pathRef.current
-  // is the consumer's actual interest. Re-register with the container so the
-  // skeleton reflects the latest paths. useLayoutEffect runs before the
-  // browser paints (and before any emit triggered by another effect), so the
-  // skeleton is fresh by the time the next emit fires.
+  // After the render commits, pathRef.current is the consumer's actual leaf
+  // interest (populated by the proxy during JSX evaluation). Re-register with
+  // the container so the skeleton reflects the latest paths, and expand the
+  // interest to include ancestor paths for the channel subscription.
+  //
+  // useLayoutEffect runs before the browser paints (and before any emit
+  // triggered by another effect), so the skeleton is fresh by the time the
+  // next emit fires.
   // oxlint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
     if (selectRef.current !== undefined) return;
-    (bloc as unknown as StateContainer).registerConsumerPaths(
-      consumerId,
-      pathRef.current,
+    const container = bloc as unknown as StateContainer;
+    const paths = pathRef.current;
+    container.registerConsumerPaths(consumerId, paths);
+    // Expand interest to include ancestor paths so that `patch`-marked parent
+    // paths (e.g. 'items') wake a consumer that tracked a child (e.g.
+    // 'items.length').
+    expandedInterestRef.current = expandWithAncestors(
+      paths,
+      container.interner,
     );
   });
 
@@ -298,3 +317,37 @@ const shallowArrayEqual = (a: unknown[], b: unknown[]): boolean => {
   }
   return true;
 };
+
+/**
+ * Expand a PathSet to include all ancestor paths of every tracked path.
+ *
+ * The auto-tracker records leaf paths (e.g. `'items.length'`), but
+ * `StructuralContainer.patch` marks parent paths (e.g. `'items'`) since it
+ * only walks the patch shape — not individual array elements or nested
+ * descendants. Without ancestor expansion, a channel subscriber with interest
+ * `{'items.length'}` would miss a `patch`-triggered `dirty={'items'}` because
+ * `intersects({'items.length'}, {'items'}) = false`.
+ *
+ * Example: for leaf path `'a.b.c'`, adds `'a.b'` and `'a'` (but NOT `''`
+ * root, since a root change would be captured by ALL_PATHS from the source
+ * when there are ≤1 consumers, and adding `''` would make every field change
+ * wake this consumer regardless of what it actually reads).
+ */
+function expandWithAncestors(paths: PathSet, interner: PathInterner): PathSet {
+  if (paths === ALL_PATHS) return ALL_PATHS;
+  const leafPaths = paths as Set<number>;
+  if (leafPaths.size === 0) return paths;
+
+  const expanded = new Set<number>(leafPaths);
+  for (const id of leafPaths) {
+    const str = interner.lookup(id);
+    // Add all non-root ancestor segments: 'a.b.c' → add 'a.b', 'a'
+    let idx = str.lastIndexOf('.');
+    while (idx > 0) {
+      const ancestor = str.slice(0, idx);
+      expanded.add(interner.intern(ancestor));
+      idx = ancestor.lastIndexOf('.');
+    }
+  }
+  return expanded;
+}
