@@ -8,7 +8,10 @@ interface CounterViewProps {
 }
 
 export function CounterView({ label, instanceKey }: CounterViewProps) {
-  const [state, counter] = useBloc(CounterBloc, { instanceId: instanceKey });
+  const [state, counter] = useBloc(
+    CounterBloc,
+    instanceKey ? { args: { id: instanceKey } } : {},
+  );
 
   return (
     <Card>

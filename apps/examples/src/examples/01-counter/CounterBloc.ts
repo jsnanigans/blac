@@ -7,7 +7,11 @@ export interface CounterState {
   lastAction: string;
 }
 
-export class CounterBloc extends Cubit<CounterState> {
+export type CounterArgs = { id?: string };
+
+export class CounterBloc extends Cubit<CounterState, CounterArgs> {
+  static key = (a?: CounterArgs) => a?.id ?? 'default';
+
   constructor(initialCount: number = 0) {
     super({
       count: initialCount,

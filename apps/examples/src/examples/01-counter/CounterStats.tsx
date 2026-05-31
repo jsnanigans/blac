@@ -7,7 +7,10 @@ interface CounterStatsProps {
 }
 
 export function CounterStats({ instanceKey }: CounterStatsProps) {
-  const [state] = useBloc(CounterBloc, { instanceId: instanceKey });
+  const [state] = useBloc(
+    CounterBloc,
+    instanceKey ? { args: { id: instanceKey } } : {},
+  );
 
   return (
     <Card>
