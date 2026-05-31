@@ -1,0 +1,85 @@
+# BlaC Documentation
+
+Type-safe state management for React with automatic re-render optimization. Comprehensive guide covering core concepts, React integration, plugins, testing, and framework integrations.
+
+## Guide
+
+- [What is BlaC?](/guide/introduction): Overview of BlaC architecture and philosophy.
+- [Quick Start](/guide/getting-started): Set up your first BlaC project in minutes.
+- [Core Concepts](/guide/concepts): Understand Cubits, state, emissions, and reactivity.
+- [Mental Model](/guide/mental-model): Visual and conceptual foundations of BlaC.
+- [Passing Inputs](/guide/inputs): Constructor args, external data, and decoupled inputs.
+- [Async](/guide/async): Handling promises, side effects, and async state transitions.
+- [TypeScript](/guide/typescript): Type inference, generic Cubits, and utility types.
+- [Patterns & Recipes](/guide/patterns): Common patterns, composition, and advanced techniques.
+- [Best Practices](/guide/best-practices): Guidelines for maintainability and performance.
+- [Debounce](/guide/recipes/debounce): Debounced state updates with cancelation.
+- [Form Validation](/guide/recipes/form-validation): Async validation, error display, and submission.
+- [Optimistic Update](/guide/recipes/optimistic-update): Immediate feedback with server reconciliation.
+- [Pagination](/guide/recipes/pagination): Cursor-based and offset-based pagination patterns.
+- [Reset to Initial State](/guide/recipes/reset-to-initial): Clearing and resetting state.
+- [Undo / Redo](/guide/recipes/undo-redo): History stack and time-travel debugging.
+- [WebSocket Subscription](/guide/recipes/websocket): Real-time updates and message handling.
+- [Comparison](/guide/comparison): BlaC vs Redux, Zustand, Flutter Bloc, and MobX.
+- [Troubleshooting & FAQ](/guide/troubleshooting): Solutions to common issues and gotchas.
+- [Glossary](/guide/glossary): Term definitions and jargon reference.
+- [Migrating from v1](/guide/migration-from-v1): Upgrade guide from BlaC v1 to v2.
+- [Versioning & Stability](/guide/versioning): Semantic versioning and stability guarantees.
+- [Changelog](/guide/changelog): Release notes and feature history.
+- [End-to-end Tutorial](/guide/tutorial): Comprehensive walkthrough building a complete app.
+- [How BlaC works internally](/guide/internals): Reactivity engine, tracking, and staged rebuild.
+
+## Core
+
+- [Cubit](/core/cubit): The core state container class — emit, state, and lifecycle.
+- [Tracking](/core/tracked): Fine-grained reactivity, tracked properties, and computed selectors.
+- [Configuration](/core/configuration): Instance config, keepAlive, excludeFromDevTools, circuit breakers.
+- [Instance Management](/core/instance-management): Singletons, per-component instances, and the InstanceManager.
+- [System Events](/core/system-events): onSystemEvent lifecycle hooks — stateChanged, dispose.
+- [Bloc Communication](/core/bloc-communication): Cross-bloc dependencies via this.depend().
+- [watch](/core/watch): Observing Cubit state outside React.
+- [Low-level subscribe](/core/subscribe): Raw subscription API for advanced use cases.
+- [Authoring Plugins](/core/plugins): Plugin hook system, configuration, and composable extensions.
+- [Types](/core/types): Complete TypeScript API reference — types and interfaces.
+
+## React
+
+- [Getting Started](/react/getting-started): useBloc hook setup and basic usage patterns.
+- [useBloc](/react/use-bloc): Hook signature, options (args, select, onMount, onUnmount), and re-render control.
+- [Dependency Tracking](/react/dependency-tracking): Per-consumer proxies, re-render isolation, and dependency injection.
+- [Performance](/react/performance): Profiling, optimization strategies, and avoiding re-renders.
+- [Preact](/react/preact): Using BlaC with Preact for lightweight apps.
+
+## Plugins
+
+- [Overview](/plugins/overview): Plugin architecture, load order, and lifecycle.
+- [Logging](/plugins/logging): Debug logging plugin with structured output.
+- [DevTools](/plugins/devtools): Time-travel debugging and state inspector for Chrome DevTools.
+- [Persistence](/plugins/persistence): LocalStorage and IndexedDB adapters.
+
+## Testing
+
+- [Overview](/testing/overview): Testing strategy, setup, and best practices.
+- [Core Testing API](/testing/core): Testing Cubits in isolation — state, emissions, and async.
+- [React Testing](/testing/react): Testing hooks, component integration, and user interactions.
+
+## Integrations
+
+- [SSR & per-request isolation](/integrations/ssr): Server-side rendering, request-scoped instances, and hydration.
+- [Next.js](/integrations/nextjs): App Router, Pages Router, RSC considerations, and store placement.
+- [Remix](/integrations/remix): Loader data seeding, server/client snapshot matching, and transitions.
+- [React Native](/integrations/react-native): AsyncStorage adapter, mobile considerations, and patterns.
+- [Outside React](/integrations/outside-react): watch, vanilla JS, Node.js, and non-React contexts.
+
+## DirtyTalk
+
+- [DirtyTalk Overview](/dirtytalk/): Structured reactivity engine and semantic dependency analysis.
+- [Engine Getting Started](/dirtytalk/engine/getting-started): Core concepts and basic usage.
+- [Engine Concepts](/dirtytalk/engine/concepts): Paths, skeleton, subscribers, and propagation.
+- [Engine API Reference](/dirtytalk/engine/api-reference): Complete API for the engine subsystem.
+- [Spatial Getting Started](/dirtytalk/spatial/getting-started): Geospatial data handling.
+- [Spatial Concepts](/dirtytalk/spatial/concepts): Spatial data structures and operations.
+- [Spatial API Reference](/dirtytalk/spatial/api-reference): Spatial API reference.
+- [Structural Getting Started](/dirtytalk/structural/getting-started): Structural dependency analysis.
+- [Structural Concepts](/dirtytalk/structural/concepts): AST traversal and semantic analysis.
+- [Structural API Reference](/dirtytalk/structural/api-reference): Structural API reference.
