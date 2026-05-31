@@ -23,6 +23,7 @@ const referenceSidebar = [
       { text: 'Bloc Communication', link: '/core/bloc-communication' },
       { text: 'watch', link: '/core/watch' },
       { text: 'Authoring Plugins', link: '/core/plugins' },
+      { text: 'Types', link: '/core/types' },
     ],
   },
   {
@@ -115,7 +116,9 @@ export default defineConfig({
       },
       { text: 'Plugins', link: '/plugins/overview' },
       { text: 'Testing', link: '/testing/overview' },
+      { text: 'Integrations', link: '/integrations/ssr' },
       { text: 'DirtyTalk', link: '/dirtytalk/' },
+      { text: 'Comparison', link: '/guide/comparison' },
       {
         text: `v${version}`,
         items: [
@@ -141,10 +144,18 @@ export default defineConfig({
           ],
         },
         {
-          text: 'Going Further',
+          text: 'Going Deeper',
           items: [
+            { text: 'Async', link: '/guide/async' },
+            { text: 'TypeScript', link: '/guide/typescript' },
             { text: 'Patterns & Recipes', link: '/guide/patterns' },
             { text: 'Best Practices', link: '/guide/best-practices' },
+          ],
+        },
+        {
+          text: 'Reference Aids',
+          items: [
+            { text: 'Comparison', link: '/guide/comparison' },
             { text: 'Troubleshooting & FAQ', link: '/guide/troubleshooting' },
             { text: 'Glossary', link: '/guide/glossary' },
             { text: 'Migrating from v1', link: '/guide/migration-from-v1' },
@@ -172,6 +183,17 @@ export default defineConfig({
             { text: 'Overview', link: '/testing/overview' },
             { text: 'Core Testing API', link: '/testing/core' },
             { text: 'React Testing', link: '/testing/react' },
+          ],
+        },
+      ],
+      '/integrations/': [
+        {
+          text: 'Integrations',
+          items: [
+            {
+              text: 'SSR & per-request isolation',
+              link: '/integrations/ssr',
+            },
           ],
         },
       ],

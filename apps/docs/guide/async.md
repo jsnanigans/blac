@@ -1,0 +1,377 @@
+# Async
+
+Most real blocs eventually have to fetch something. BlaC has no special async primitive — an async action is just a method that `await`s and emits as it goes. The work is in **modelling the loading lifecycle as state** so the UI can render it, and in guarding against races when requests overlap.
+
+This page covers the canonical loading flow, derived loading flags, a reusable "loadable" surface, cancellation, and — importantly — what BlaC does _not_ do with React Suspense.
+
+## Async actions on a Cubit
+
+The core pattern: an async method moves state through `loading` -> `success`/`error`, with a request-id guard so a stale response can never overwrite a newer one.
+
+Model the lifecycle as a **discriminated union** keyed on `status`. This makes illegal states unrepresentable — you can't have `data` and an `error` at the same time, and TypeScript narrows each branch for you in the view.
+
+```ts twoslash
+import { Cubit } from '@blac/core';
+
+interface User {
+  id: string;
+  name: string;
+}
+
+declare const api: {
+  fetchUser(id: string): Promise<User>;
+};
+// ---cut---
+type UserState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; user: User }
+  | { status: 'error'; message: string };
+
+class UserCubit extends Cubit<UserState> {
+  // Monotonic counter: every call gets a higher id than the last.
+  private requestId = 0;
+
+  constructor() {
+    super({ status: 'idle' });
+  }
+
+  load = async (id: string) => {
+    const reqId = ++this.requestId;
+    this.emit({ status: 'loading' });
+
+    try {
+      const user = await api.fetchUser(id);
+      // Latest-wins: a slower earlier request must not clobber a newer one.
+      if (reqId !== this.requestId) return;
+      this.emit({ status: 'success', user });
+    } catch (e) {
+      if (reqId !== this.requestId) return;
+      this.emit({ status: 'error', message: String(e) });
+    }
+  };
+}
+```
+
+Why `emit` and not `patch` here? Because the union has no shared shape — `loading` has no `user` key, `error` has no `user` key. `patch` deep-merges, which would leave a stale `user` lingering under an `error` status. `emit` replaces wholesale, so each branch is exactly the keys that branch declares. (See [Cubit](/core/cubit) for the replace-vs-merge rule.)
+
+### The request-id guard
+
+Two calls to `load('a')` then `load('b')` can resolve in either order — the network doesn't promise FIFO. Without the guard, a slow `'a'` response landing after `'b'` would overwrite the correct result with stale data.
+
+The guard is three lines:
+
+```ts twoslash
+import { Cubit } from '@blac/core';
+declare const api: { fetch(id: string): Promise<unknown> };
+type S = { status: 'idle' | 'loading' };
+class Demo extends Cubit<S> {
+  private requestId = 0;
+  // ---cut---
+  load = async (id: string) => {
+    const reqId = ++this.requestId; // claim the latest slot
+    // ... await the request ...
+    if (reqId !== this.requestId) return; // a newer call has started; bail
+    // ... emit the result ...
+  };
+  // ---cut-after---
+}
+```
+
+`++this.requestId` claims a fresh id and records it as the current one. Any in-flight call whose `reqId` no longer equals `this.requestId` knows a newer call has superseded it and silently returns before emitting. This is cheaper than wiring an `AbortController` and is enough whenever you only care about the _result_ of the newest request. When you also need to stop the actual network work, reach for [cancellation](#cancellation-and-cleanup).
+
+::: tip One counter per logical operation
+`requestId` guards a single operation. If a bloc has several independent async actions (`loadUser`, `loadOrders`), give each its own counter — a shared one would make a `loadOrders` call cancel an in-flight `loadUser`.
+:::
+
+## Reading async state in the view
+
+Because the state is a discriminated union, the consumer switches on `status` and TypeScript narrows each branch. Auto-tracking records the read of `state.status` (and whatever else each branch touches), so the component re-renders exactly when those paths change.
+
+```tsx
+function UserCard({ id }: { id: string }) {
+  const [state, user] = useBloc(UserCubit);
+
+  switch (state.status) {
+    case 'idle':
+      return <button onClick={() => user.load(id)}>Load user</button>;
+    case 'loading':
+      return <p>Loading…</p>;
+    case 'error':
+      // `state` is narrowed: `state.message` is available here.
+      return <p>Failed: {state.message}</p>;
+    case 'success':
+      // narrowed to the success branch: `state.user` exists.
+      return <p>{state.user.name}</p>;
+  }
+}
+```
+
+## Derived loading flags with getters
+
+A union `status` is the source of truth, but views often want a boolean like `isLoading` or a "can I retry?" flag. Derive these with getters rather than storing them — a stored boolean has to be kept in sync with `status` by hand and will eventually drift.
+
+```ts twoslash
+import { Cubit } from '@blac/core';
+interface User {
+  id: string;
+  name: string;
+}
+type UserState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; user: User }
+  | { status: 'error'; message: string };
+// ---cut---
+class UserCubit extends Cubit<UserState> {
+  constructor() {
+    super({ status: 'idle' });
+  }
+
+  get isLoading() {
+    return this.state.status === 'loading';
+  }
+
+  get canRetry() {
+    return this.state.status === 'idle' || this.state.status === 'error';
+  }
+
+  get user() {
+    return this.state.status === 'success' ? this.state.user : null;
+  }
+}
+```
+
+::: warning Getters don't auto-subscribe by themselves
+Auto-tracking records reads on the `state` proxy, **not** on the bloc instance. Reading `user.isLoading` directly off the bloc in render does _not_ register a dependency, so the component won't wake when `status` changes. Read the getter's source through `state` (e.g. `void state.status`) in render, or depend on the getter via `select: (_, bloc) => [bloc.isLoading]`. Full rule: [Dependency Tracking](/react/dependency-tracking) and [Performance](/react/performance#pattern-getters-as-computed-properties).
+:::
+
+## A reusable loadable surface
+
+When several blocs each carry one async resource, the same four-branch union repeats. Factor it into a generic `Loadable<T>` type and a couple of helpers so each bloc stays terse and every consumer narrows the same way.
+
+```ts twoslash
+export type Loadable<T> =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: T }
+  | { status: 'error'; message: string };
+
+export const loading = (): Loadable<never> => ({ status: 'loading' });
+export const success = <T>(data: T): Loadable<T> => ({
+  status: 'success',
+  data,
+});
+export const failure = (message: string): Loadable<never> => ({
+  status: 'error',
+  message,
+});
+```
+
+A bloc whose entire state _is_ one loadable resource can extend `Cubit<Loadable<T>>` directly:
+
+```ts twoslash
+export type Loadable<T> =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: T }
+  | { status: 'error'; message: string };
+declare const loading: () => Loadable<never>;
+declare const success: <T>(data: T) => Loadable<T>;
+declare const failure: (message: string) => Loadable<never>;
+declare const api: { fetchReport(): Promise<Report> };
+interface Report {
+  id: string;
+}
+// ---cut---
+import { Cubit } from '@blac/core';
+
+class ReportCubit extends Cubit<Loadable<Report>> {
+  private requestId = 0;
+
+  constructor() {
+    super({ status: 'idle' });
+  }
+
+  load = async () => {
+    const reqId = ++this.requestId;
+    this.emit(loading());
+    try {
+      const data = await api.fetchReport();
+      if (reqId !== this.requestId) return;
+      this.emit(success(data));
+    } catch (e) {
+      if (reqId !== this.requestId) return;
+      this.emit(failure(String(e)));
+    }
+  };
+}
+```
+
+When the resource is one field among several (a list page with filters, say), nest the loadable on a key instead of making it the whole state, and use `patch` to update that one field — `patch` deep-merges, so the surrounding fields survive:
+
+```ts twoslash
+export type Loadable<T> =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: T }
+  | { status: 'error'; message: string };
+declare const loading: () => Loadable<never>;
+declare const success: <T>(data: T) => Loadable<T>;
+declare const api: { fetchItems(filter: string): Promise<Item[]> };
+interface Item {
+  id: string;
+}
+// ---cut---
+import { Cubit } from '@blac/core';
+
+interface ListState {
+  filter: string;
+  items: Loadable<Item[]>;
+}
+
+class ListCubit extends Cubit<ListState> {
+  private requestId = 0;
+
+  constructor() {
+    super({ filter: 'all', items: { status: 'idle' } });
+  }
+
+  load = async () => {
+    const reqId = ++this.requestId;
+    // patch only the `items` field; `filter` is untouched.
+    this.patch({ items: loading() });
+    try {
+      const data = await api.fetchItems(this.state.filter);
+      if (reqId !== this.requestId) return;
+      this.patch({ items: success(data) });
+    } catch (e) {
+      if (reqId !== this.requestId) return;
+      this.patch({ items: { status: 'error', message: String(e) } });
+    }
+  };
+}
+```
+
+## Suspense
+
+BlaC does **not** integrate with React Suspense, and `useBloc` does **not** work with the `use()` hook for data fetching. This is by design, and it's worth being precise about why.
+
+`useBloc` subscribes to the bloc's path-scoped channel and re-renders through a `useReducer` dispatch — React's ordinary update path. It does **not** use `useSyncExternalStore`, and it never throws a promise to a Suspense boundary or unwraps one via `use()`. There is no code path in `useBloc` that suspends a component. (Verified in [useBloc](/react/use-bloc); the hook reads state directly during render and forces an update on change.)
+
+So you don't get a `<Suspense fallback={…}>` boundary catching a BlaC load for free. Instead, **model the loading state explicitly** — which is exactly what the `status` union and the loadable surface above are for. The "fallback" is just the `loading` branch of your switch:
+
+```tsx
+function ReportView() {
+  const [state, report] = useBloc(ReportCubit, {
+    onMount: (bloc) => bloc.load(), // kick off the fetch when the view appears
+  });
+
+  // This switch *is* your Suspense boundary, written out by hand.
+  if (state.status === 'loading' || state.status === 'idle') {
+    return <p>Loading…</p>;
+  }
+  if (state.status === 'error') {
+    return (
+      <div role="alert">
+        {state.message} <button onClick={report.load}>Retry</button>
+      </div>
+    );
+  }
+  // narrowed to success: `state.data` is the Report.
+  return <h1>{state.data.title}</h1>;
+}
+```
+
+The upside of explicit modelling: error and retry are first-class states, not exceptions you have to catch at a boundary, and the loading UI lives next to the data it's loading. The cost is the `if` ladder — but with a discriminated union it's a few lines and fully type-checked.
+
+::: info Kicking off the load
+`onMount` fires after the bloc is acquired, so it's the natural place to start a fetch when the consuming component appears — see [useBloc](/react/use-bloc). For a load that should run once per _instance_ regardless of which component mounts first, start it from the bloc's `init` hook instead; see [Cubit](/core/cubit).
+:::
+
+## Cancellation and cleanup
+
+The request-id guard stops a stale _result_ from being applied, but the underlying request keeps running. When you also want to abort the in-flight network work — to save bandwidth, or because the bloc is being torn down — pair the guard with an `AbortController`.
+
+Pass the controller's `signal` to `fetch`, and abort the previous controller before starting a new request:
+
+```ts twoslash
+import { Cubit } from '@blac/core';
+interface Results {
+  hits: string[];
+}
+type SearchState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; results: Results }
+  | { status: 'error'; message: string };
+// ---cut---
+class SearchCubit extends Cubit<SearchState> {
+  private requestId = 0;
+  private controller: AbortController | null = null;
+
+  constructor() {
+    super({ status: 'idle' });
+  }
+
+  search = async (query: string) => {
+    const reqId = ++this.requestId;
+    // Abort the previous in-flight request, if any.
+    this.controller?.abort();
+    const controller = new AbortController();
+    this.controller = controller;
+
+    this.emit({ status: 'loading' });
+
+    try {
+      const res = await fetch(`/api/search?q=${query}`, {
+        signal: controller.signal,
+      });
+      const results = (await res.json()) as Results;
+      if (reqId !== this.requestId) return;
+      this.emit({ status: 'success', results });
+    } catch (e) {
+      // An abort surfaces as an AbortError; it isn't a real failure.
+      if (e instanceof DOMException && e.name === 'AbortError') return;
+      if (reqId !== this.requestId) return;
+      this.emit({ status: 'error', message: String(e) });
+    }
+  };
+}
+```
+
+Two guards now run together: `AbortController` stops the request (and makes `fetch` reject with an `AbortError` you ignore), while the `requestId` check still protects the emit in case a response was already in transit when the new call started.
+
+### Aborting on disposal
+
+A request in flight when the bloc is disposed will try to `emit` on a dead container, which throws. Wire `onSystemEvent('dispose', …)` to abort the controller so the request unwinds cleanly:
+
+```ts twoslash
+import { Cubit } from '@blac/core';
+type SearchState = { status: 'idle' | 'loading' };
+// ---cut---
+class SearchCubit extends Cubit<SearchState> {
+  private controller: AbortController | null = null;
+
+  constructor() {
+    super({ status: 'idle' });
+    this.onSystemEvent('dispose', () => {
+      this.controller?.abort();
+    });
+  }
+}
+```
+
+`onSystemEvent('dispose', …)` fires when the instance is being torn down (its ref count hit zero, or it was cleared). Aborting there cancels the request, and the `AbortError` branch swallows the rejection — no emit reaches the disposed container. See [System Events](/core/system-events) for the full lifecycle.
+
+::: tip Guard `isDisposed` if you skip the abort
+If you don't use an `AbortController`, an async action that resumes after disposal can still hit a disposed bloc. Either check `this.isDisposed` before emitting, or — cleaner — abort on `dispose` as above so the request never resolves into an emit at all.
+:::
+
+## See also
+
+- [Patterns & Recipes](/guide/patterns) — the request-id recipe in context, plus hydration-aware loading
+- [Cubit](/core/cubit) — `emit` / `patch` / `update`, getters, and the `init` hook
+- [useBloc](/react/use-bloc) — `onMount`, `select`, and why there's no `useSyncExternalStore`
+- [System Events](/core/system-events) — the `dispose` and `hydrationChanged` lifecycle hooks
+- [Best Practices](/guide/best-practices) — why an explicit `status` union beats scattered booleans

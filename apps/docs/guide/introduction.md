@@ -36,7 +36,7 @@ BlaC takes a different approach:
 - **Built for TypeScript.** State types flow from your class definition through the hook return value with zero type annotations needed.
 
 ::: info How does this compare to Redux / Zustand / Jotai / MobX?
-The short version: BlaC keeps logic in classes (like flutter_bloc), shares instances through a ref-counted registry (no providers), and tracks re-renders with a render-time proxy (no selectors or `useMemo`). The honest, side-by-side comparison — including where those other libraries are the better fit — lives in the [Mental Model](/guide/mental-model#honest-comparisons).
+The short version: BlaC keeps logic in classes (like flutter_bloc), shares instances through a ref-counted registry (no providers), and tracks re-renders with a render-time proxy (no selectors or `useMemo`). The honest, side-by-side comparison — including where those other libraries are the better fit — lives on the [Comparison](/guide/comparison) page.
 :::
 
 ## Architecture
@@ -72,7 +72,7 @@ BlaC works best when:
 - You value **TypeScript inference** and want the compiler to catch state errors
 
 ::: tip When you probably don't need BlaC
-If a piece of state lives in exactly one component and never travels, `useState` is the right tool — reach for BlaC when state is *shared*, *complex*, or *worth testing without React*. BlaC adds value as state complexity grows, not at the first `useState`.
+If a piece of state lives in exactly one component and never travels, `useState` is the right tool — reach for BlaC when state is _shared_, _complex_, or _worth testing without React_. BlaC adds value as state complexity grows, not at the first `useState`.
 :::
 
 ## What's next?

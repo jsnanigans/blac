@@ -30,10 +30,11 @@ BlaC works with a standard strict React setup. The `@blac()` decorator (used for
     "jsx": "react-jsx",
     "strict": true,
     "useDefineForClassFields": true,
-    "experimentalDecorators": true // only if you use @blac(...) decorator syntax
-  }
+    "experimentalDecorators": true, // only if you use @blac(...) decorator syntax
+  },
 }
 ```
+
 :::
 
 ## Step 1: Define a Cubit
@@ -56,14 +57,14 @@ class CounterCubit extends Cubit<{ count: number }> {
 
 Three ways to change state:
 
-| Method           | What it does                       | When to use                          |
-| ---------------- | ---------------------------------- | ------------------------------------ |
-| `emit(newState)` | Replace the entire state           | You have the full new state ready    |
-| `update(fn)`     | Derive new state from current      | You need to read current state first |
+| Method           | What it does                                  | When to use                                      |
+| ---------------- | --------------------------------------------- | ------------------------------------------------ |
+| `emit(newState)` | Replace the entire state                      | You have the full new state ready                |
+| `update(fn)`     | Derive new state from current                 | You need to read current state first             |
 | `patch(partial)` | Deep-merge partial changes (`DeepPartial<S>`) | You want to update some fields and keep the rest |
 
 ::: warning `emit` and `update` replace; only `patch` merges
-`emit(next)` and `update(fn)` set state to *exactly* what you return — any key you forget to include is dropped. `patch(partial)` deep-merges, so the keys you omit survive. The `increment` above is fine because `count` is the only key; for multi-field state, either spread the previous state (`update((s) => ({ ...s, count: s.count + 1 }))`) or use `patch`.
+`emit(next)` and `update(fn)` set state to _exactly_ what you return — any key you forget to include is dropped. `patch(partial)` deep-merges, so the keys you omit survive. The `increment` above is fine because `count` is the only key; for multi-field state, either spread the previous state (`update((s) => ({ ...s, count: s.count + 1 }))`) or use `patch`.
 :::
 
 ::: tip Define methods as arrow-function fields
@@ -153,18 +154,61 @@ class TodoCubit extends Cubit<{ items: string[]; input: string }> {
 }
 ```
 
-Notice the two write styles: `addTodo` uses `update` and lists *both* keys (replacing the whole state), while `removeTodo` uses `patch` and mentions *only* `items` (merging into the rest). Both are correct — the difference is exactly the replace-vs-merge rule from Step 1.
+Notice the two write styles: `addTodo` uses `update` and lists _both_ keys (replacing the whole state), while `removeTodo` uses `patch` and mentions _only_ `items` (merging into the rest). Both are correct — the difference is exactly the replace-vs-merge rule from Step 1.
 
-Getters like `isEmpty` derive a value on every read, so they can never drift from `items`. One subtlety: auto-tracking records reads on the `state` proxy, *not* on the bloc instance — so reading `todo.isEmpty` alone won't wake the component. Read the getter's source through `state` in render (e.g. `state.items.length`) to stay subscribed, or depend on the getter explicitly with `select`. The full rule is in [Dependency Tracking](/react/dependency-tracking). For async work (loading flags, fetches, request guards), see [Patterns & Recipes](/guide/patterns).
+Getters like `isEmpty` derive a value on every read, so they can never drift from `items`. One subtlety: auto-tracking records reads on the `state` proxy, _not_ on the bloc instance — so reading `todo.isEmpty` alone won't wake the component. Read the getter's source through `state` in render (e.g. `state.items.length`) to stay subscribed, or depend on the getter explicitly with `select`. The full rule is in [Dependency Tracking](/react/dependency-tracking). For async work (loading flags, fetches, request guards), see [Patterns & Recipes](/guide/patterns).
 
 ::: warning Component not re-rendering?
 The two most common first-time causes:
 
 1. **Reading state off the bloc instead of the `state` proxy.** Auto-tracking only records reads on the destructured `state` value — `counter.state.count`, or a getter read directly on the instance, won't subscribe you. Read through `state` in render.
-2. **Expecting `emit`/`update` to merge.** They *replace* the whole state, so any key you omit is dropped. Use `patch` to merge, or spread the previous state.
+2. **Expecting `emit`/`update` to merge.** They _replace_ the whole state, so any key you omit is dropped. Use `patch` to merge, or spread the previous state.
 
 The full symptom list is in [Troubleshooting & FAQ](/guide/troubleshooting).
 :::
+
+## Step 5: Fetch something
+
+An async action is just a method that `await`s and emits as it goes. Model the lifecycle as a `status` union so the view can render loading and error states, and use a request-id guard so a slow response can never overwrite a newer one.
+
+```ts twoslash
+import { Cubit } from '@blac/core';
+
+interface User {
+  id: string;
+  name: string;
+}
+declare const api: { fetchUser(id: string): Promise<User> };
+// ---cut---
+type UserState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; user: User }
+  | { status: 'error'; message: string };
+
+class UserCubit extends Cubit<UserState> {
+  private requestId = 0;
+
+  constructor() {
+    super({ status: 'idle' });
+  }
+
+  load = async (id: string) => {
+    const reqId = ++this.requestId; // claim the latest slot
+    this.emit({ status: 'loading' });
+    try {
+      const user = await api.fetchUser(id);
+      if (reqId !== this.requestId) return; // a newer call won; bail
+      this.emit({ status: 'success', user });
+    } catch (e) {
+      if (reqId !== this.requestId) return;
+      this.emit({ status: 'error', message: String(e) });
+    }
+  };
+}
+```
+
+The view switches on `state.status` and TypeScript narrows each branch. Derived loading flags, the loadable surface, cancellation with `AbortController`, and why BlaC does _not_ use React Suspense are all in the [Async guide](/guide/async).
 
 ## What just happened?
 
