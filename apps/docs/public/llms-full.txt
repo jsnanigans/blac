@@ -34,7 +34,7 @@ BlaC takes a different approach:
 - **State logic lives in classes, not components.** Define your state shape and mutations in a `Cubit` class. Components just read state and call methods.
 - **No providers or context wrappers.** Import your class, call `useBloc(MyClass)`, and you're connected. The registry handles instance creation and sharing automatically.
 - **Re-renders are precise by default.** Auto-tracking proxies detect which state properties your component reads during render. Only changes to those properties trigger re-renders.
-- **Lifecycle is declarative.** Instances are shared by default. Use `instanceId` for named per-component instances or `@blac({ keepAlive: true })` for persistent singletons.
+- **Lifecycle is declarative.** Instances are shared by default. Pass distinct `args` (keyed by `static key`) for named per-component instances or `@blac({ keepAlive: true })` for persistent singletons.
 - **Built for TypeScript.** State types flow from your class definition through the hook return value with zero type annotations needed.
 
 ::: info How does this compare to Redux / Zustand / Jotai / MobX?
@@ -58,7 +58,7 @@ BlaC has two layers:
 
 **Core** (`@blac/core`) provides state containers, a global registry with ref counting, a plugin system, and utilities like `watch`. Proxy-based dependency tracking is built in — no separate adapter package is needed.
 
-**React** (`@blac/react`) provides the `useBloc` hook. It subscribes each component to the bloc's path-scoped channel and re-renders through React's normal update path when a tracked read path changes. The optional `BlocProvider` shown above scopes a default `instanceId` to a subtree — most apps never need it (see [useBloc](/react/use-bloc) for when it helps).
+**React** (`@blac/react`) provides the `useBloc` hook. It subscribes each component to the bloc's path-scoped channel and re-renders through React's normal update path when a tracked read path changes. The optional `BlocProvider` shown above scopes default `args` to a subtree — most apps never need it (see [useBloc](/react/use-bloc) for when it helps).
 
 ::: details Under the hood: the DirtyTalk engine family
 The "what changed, who cares, when do we tell them" machinery — path-based dirty tracking, the render-time proxy, microtask-batched flushing — lives in a lower-level, framework-agnostic family of packages called [DirtyTalk](/dirtytalk/). BlaC's `StateContainer` extends `@dirtytalk/structural`'s container; you never need to touch it directly, but it's there if you want to understand the foundation.
@@ -409,23 +409,23 @@ All calls to `useBloc(CounterCubit)` return the same instance. This is the commo
 
 ### Named
 
-Pass `instanceId` to share an instance within a specific key. Different keys get different instances.
+Pass distinct `args` (keyed by `static key`) to share an instance within a specific key. Different keys get different instances.
 
 ```tsx
-useBloc(EditorCubit, { instanceId: 'doc-42' });
+// EditorCubit has `static key = (a: { docId: string }) => a.docId`
+useBloc(EditorCubit, { args: { docId: 'doc-42' } });
 ```
 
 ### Keep alive
 
 With `@blac({ keepAlive: true })`, the instance survives even when all components using it unmount. It persists for the lifetime of the app.
 
-## Inputs: args, deps, instanceId
+## Inputs: args, deps
 
-Components rarely need a blank container — they need one seeded with data. BlaC keeps that data in three separate lanes so a shared instance with many consumers never races:
+Components rarely need a blank container — they need one seeded with data. BlaC keeps that data in two separate lanes so a shared instance with many consumers never races:
 
-- **`args`** — serializable data that *identifies* an instance (e.g. a document id). Same args resolve to the same instance.
+- **`args`** — serializable data that *identifies* an instance (e.g. a document id). Same args resolve to the same instance; identity derives from `args` via `static key` or the structural hash.
 - **`deps`** — non-serializable handles (callbacks, services) injected per consumer, never used for identity.
-- **`instanceId`** — an explicit key when you want a distinct instance regardless of args.
 
 This is just the teaser; the full model, the precedence rules, and the failure modes live in [Inputs](/guide/inputs).
 
@@ -609,7 +609,7 @@ The cost of React Context for shared state is structural: every shared value nee
 const [state, cart] = useBloc(CartCubit);
 ```
 
-Two components calling `useBloc(CartCubit)` get the same instance because the registry hands back the same object, regardless of where they sit in the tree. Sharing is by _identity in a registry_, not by _position under a provider_. You can still scope an instance to a subtree when you want to — `instanceId` (or `BlocProvider` supplying a default `instanceId` to descendants) keys a distinct instance — but that is opt-in, not the price of admission.
+Two components calling `useBloc(CartCubit)` get the same instance because the registry hands back the same object, regardless of where they sit in the tree. Sharing is by _identity in a registry_, not by _position under a provider_. You can still scope an instance to a subtree when you want to — distinct `args` (or a `BlocProvider` supplying default `args` to descendants) keys a distinct instance — but that is opt-in, not the price of admission.
 
 ### Ref-counted lifecycle — automatic disposal
 
@@ -624,7 +624,7 @@ Inputs to a bloc come in two flavors with opposite requirements, and conflating 
 - **`args`** is _serializable identity data_ — the user id whose data this bloc holds. It is forwarded to `init(args)` and used to compute the instance key, so two `useBloc(UserCubit, { args: { id: 7 } })` calls share one instance and a different id gets a different instance. Because it keys identity, `args` **must be serializable** (a function in `args` throws — put it in deps).
 - **`deps`** is _non-serializable, per-consumer handles_ — callbacks, API clients, refs. These must **not** affect identity (a shared instance can't have one identity per callback), so they are merged per consumer rather than baked into the key.
 
-Keeping these lanes separate is what lets a single shared instance accept per-consumer wiring without an override race (two consumers fighting over one value). The `args` lane and `instanceId` are first-class `useBloc` options; the `deps` runtime mechanism on `StateContainer` is currently internal and not exposed as a `useBloc` option in the React surface. The motivation and full mechanics live in [Inputs: args, deps, instanceId](/guide/inputs).
+Keeping these lanes separate is what lets a single shared instance accept per-consumer wiring without an override race (two consumers fighting over one value). The `args` lane is the first-class `useBloc` option and the source of instance identity (via `static key` or the structural hash); the `deps` runtime mechanism on `StateContainer` is currently internal and not exposed as a `useBloc` option in the React surface. The motivation and full mechanics live in [Inputs](/guide/inputs).
 
 ### Immutable emit
 
@@ -648,8 +648,8 @@ Putting it together, here is what one `useBloc(UserCubit, { args: { id: 7 } })` 
 
 ```text
 MOUNT
-  1. resolve instance key   explicit instanceId? → context? → static key(args)
-                            → structural key from args → "default"
+  1. resolve instance key   static key(args) → structural key from args
+                            → BlocProvider context args → "default"
   2. acquire(UserCubit, key, refId, args)
        ├─ exists?  → return it, refs[refId]++          (share)
        └─ new?     → new UserCubit(); initConfig(config);
@@ -687,7 +687,7 @@ Two details worth internalizing:
 
 - [Core Concepts](/guide/concepts) — the quick tour this page goes deep on
 - [Dependency Tracking](/react/dependency-tracking) — auto-track vs `select` in practice
-- [Inputs: args, deps, instanceId](/guide/inputs) — the input lanes and identity precedence
+- [Inputs: args, deps](/guide/inputs) — the input lanes and identity precedence
 - [Structural: Concepts](/dirtytalk/structural/concepts) — the path-tracking engine BlaC is built on
 
 
@@ -766,18 +766,22 @@ See [Configuration](/core/configuration) for the rest of the `blac()` options (`
 
 ### Per-component private instances
 
-To give each mount its own instance — disposed on unmount, never shared — pass a unique `instanceId`. The idiomatic source of a stable-per-mount key is React's `useId()`:
+To give each mount its own instance — disposed on unmount, never shared — include a **per-mount unique value in `args`** and declare a `static key` that uses it. The idiomatic source of a stable-per-mount value is React's `useId()`:
 
 ```tsx
 // private instance, own lifecycle, seeded with args
-const instanceId = useId();
-const [state, cubit] = useBloc(FileUploadCubit, { args: options, instanceId });
+class FileUploadCubit extends Cubit<UploadState, { endpoint: string; _id: string }> {
+  static key = (a: FileUploadCubit['args']) => a._id;
+}
+
+const _id = useId();
+const [state, cubit] = useBloc(FileUploadCubit, { args: { ...options, _id } });
 ```
 
-Because `useId()` returns a different value per component instance (and the same value across that component's re-renders), each mount gets a private bloc that lives and dies with it. The `instanceId` you pass always wins over an inherited [`<BlocProvider>`](/react/use-bloc) context and over any args-derived key.
+Because `useId()` returns a different value per component instance (and the same value across that component's re-renders), the derived key is unique per mount, so each mount gets a private bloc that lives and dies with it. The other args (`endpoint`) still seed `init(args)` — they ride along without forking instances because only `_id` keys identity.
 
-::: warning No `autoInstance` option
-Earlier drafts (and some example UI text) mention `useBloc(C, { args, autoInstance: true })`. **That option does not exist** in v2 — `useBloc` accepts only `args`, `instanceId`, `select`, `onMount`, and `onUnmount`. The per-mount idiom is the explicit `instanceId: useId()` shown above. See [useBloc](/react/use-bloc) for the complete option list.
+::: warning No `instanceId` or `autoInstance` option
+Earlier drafts (and some example UI text) mention `useBloc(C, { args, instanceId })` or `useBloc(C, { args, autoInstance: true })`. **Neither option exists** in v2 — `useBloc` accepts only `args`, `select`, `onMount`, and `onUnmount`. The per-mount idiom is the synthetic-args `static key` shown above. See [useBloc](/react/use-bloc) for the complete option list.
 :::
 
 ### Args must be serializable
@@ -914,7 +918,7 @@ Prefer these patterns, best first:
 - **Non-serializable value in `args`** — a ref, callback, DOM node, or class instance makes the structural hash unstable, so you get a *new instance every render*. Put it in deps instead. (The structural-key hasher throws in dev if it sees a function in `args`.)
 - **Capturing an inline callback in deps** — `{ onComplete: () => doThing() }` freezes the first render's closure. Stabilize with `useCallback`, or invert the callback (option 1 above).
 - **Two consumers writing the same deps key** — last write wins and the value flickers. Give each shared value exactly one owning component.
-- **Reaching for `deps:` or `autoInstance:` as `useBloc` options** — neither exists. Wire deps from an effect; key per-mount instances with `instanceId: useId()`.
+- **Reaching for `deps:`, `instanceId:`, or `autoInstance:` as `useBloc` options** — none exist. Wire deps from an effect; key per-mount instances with a synthetic `args` value + `static key` (e.g. `args: { _id: useId() }`).
 :::
 
 ---
@@ -954,13 +958,11 @@ When `useBloc` resolves which instance to connect to, it consults sources in thi
 
 | Priority | Source | Resolved key |
 |---|---|---|
-| 1 | explicit `instanceId` option | The literal value you pass (escape hatch / per-mount via `useId()`) |
-| 2 | `<BlocProvider>` context id | Inherited from a parent provider when no explicit `instanceId` |
-| 3 | `static key(args)` | Return value of the class's key function |
-| 4 | Structural hash of `args` | Default when `args` are declared and no `static key` |
-| 5 | `'default'` | Singleton fallback (no `args`, no key, no context) |
+| 1 | own `args` on the `useBloc` call | `static key(args)` if declared, else the structural hash of `args` |
+| 2 | `<BlocProvider>` context `args` | same resolution applied to inherited args, when the call passes no own `args` |
+| 3 | `'default'` | singleton fallback — no `args`, no `static key`, no provider |
 
-`args`-derived identity (rows 3–4) is the **primary idiom** for meaningful per-value instances. `instanceId` (row 1) is the escape hatch for identities that can't be derived from args — anonymous, opaque, externally managed, or deliberately per-mount via `useId()`.
+`args`-derived identity is the **only** idiom for per-value instances. For an identity that can't be derived from real data — anonymous, opaque, externally managed, or deliberately per-mount — synthesize one by adding a value to `args` (e.g. `_id: useId()`) and keying on it with `static key`.
 
 ### Decision matrix
 
@@ -968,7 +970,7 @@ Two questions decide everything: **is this input identity (set once) or live (ch
 
 | | Input defines identity / set once | Input is live and changing |
 |---|---|---|
-| **Private to one component** | `useBloc(C, { args, instanceId: useId() })` — own instance, seeded from args | per-mount `instanceId` + call `cubit.xChanged(v)` from that component's effect |
+| **Private to one component** | `useBloc(C, { args: { ...args, _id: useId() } })` (with matching `static key`) — own instance, seeded from args | per-mount `useId()` in `args` + call `cubit.xChanged(v)` from that component's effect |
 | **Shared across consumers** | `useBloc(C, { args })` — args key the instance; override race impossible | call `cubit.xChanged(v)` from the **one owning component's** effect |
 
 Non-serializable handles (refs, callbacks, controllers) sit *outside* this matrix entirely — they go through the [deps lane](#deps-non-serializable-handles) and never touch identity.
@@ -2062,20 +2064,21 @@ Define the selector outside the component (or wrap it in `useCallback`). A fresh
 
 ## Named instances
 
-Use `instanceId` when you need multiple independent instances of the same Cubit class. Each key gets its own instance with its own state and lifecycle.
+Pass distinct `args` (keyed by a `static key`) when you need multiple independent instances of the same Cubit class. Each resolved key gets its own instance with its own state and lifecycle.
 
 ```tsx
+// FormCubit has `static key = (a: { section: string }) => a.section`
 function FormPage() {
   return (
     <>
-      <FormSection instanceId="billing" />
-      <FormSection instanceId="shipping" />
+      <FormSection section="billing" />
+      <FormSection section="shipping" />
     </>
   );
 }
 
-function FormSection({ instanceId }: { instanceId: string }) {
-  const [state, form] = useBloc(FormCubit, { instanceId });
+function FormSection({ section }: { section: string }) {
+  const [state, form] = useBloc(FormCubit, { args: { section } });
   // Each section has independent state
   return (
     <input
@@ -2088,7 +2091,7 @@ function FormSection({ instanceId }: { instanceId: string }) {
 
 Named instances are ref-counted independently. When all components using `"billing"` unmount, that instance is disposed while `"shipping"` stays alive.
 
-When the distinguishing key is _meaningful data_ (a `userId`, a `docId`) rather than an arbitrary label, prefer keying by `args` instead — see [Passing Inputs](/guide/inputs). Reach for an explicit `instanceId` when the key is anonymous or externally managed.
+When the distinguishing key is _meaningful data_ (a `userId`, a `docId`), key by those `args` directly — see [Passing Inputs](/guide/inputs). When the key is anonymous or externally managed, put it in `args` (e.g. a `section` or synthetic `_id`) with a matching `static key`.
 
 ## Persisting state outside React
 
@@ -2158,9 +2161,9 @@ import { borrowSafe, acquire } from '@blac/core';
 
 class ChannelCubit extends Cubit<ChannelState> {
   private ensureUserCubit(userId: string) {
-    const { error } = borrowSafe(UserCubit, userId);
+    const { error } = borrowSafe(UserCubit, { args: { userId } });
     if (!error) return;
-    acquire(UserCubit, userId).setUserId(userId);
+    acquire(UserCubit, { args: { userId } }).setUserId(userId);
   }
 
   receiveMessage = (message: Message) => {
@@ -2239,20 +2242,24 @@ The instance is created on first use and stays alive for the entire app session,
 
 ## Per-component private instances
 
-When a component needs its _own_ instance — never shared with siblings, disposed when it unmounts — give it a per-mount `instanceId`. `useId()` is the idiomatic source of a stable-per-mount key:
+When a component needs its _own_ instance — never shared with siblings, disposed when it unmounts — include a per-mount unique value in `args` and key on it with `static key`. `useId()` is the idiomatic source of a stable-per-mount value:
 
 ```tsx
 import { useId } from 'react';
 
+class UploadCubit extends Cubit<UploadState, { _id: string }> {
+  static key = (a: { _id: string }) => a._id;
+}
+
 function UploadWidget() {
-  const instanceId = useId(); // unique per mount, stable across this mount's renders
-  const [state, upload] = useBloc(UploadCubit, { instanceId });
+  const _id = useId(); // unique per mount, stable across this mount's renders
+  const [state, upload] = useBloc(UploadCubit, { args: { _id } });
 
   return <progress value={state.progress} max={100} />;
 }
 ```
 
-Two `<UploadWidget />` siblings get two independent instances; each is disposed on its own unmount. This is the supported replacement for the removed `autoInstance` option. To seed the instance with identity data, combine it with `args` — see [Passing Inputs](/guide/inputs).
+Two `<UploadWidget />` siblings get two independent instances; each is disposed on its own unmount. This is the supported replacement for the removed `autoInstance` option. The synthetic `_id` keys identity while any other args still seed `init(args)` — see [Passing Inputs](/guide/inputs).
 
 ## Getter-based computed values
 
@@ -2408,9 +2415,9 @@ interface CartState {
 Auto-tracking records the *leaf paths* a render reads. A getter that reads `this.state.items` is recorded as a dependency on `items`; when `items` changes the getter is re-evaluated and consumers re-render. A getter that no consumer reads costs nothing. See [Patterns & Recipes](/guide/patterns#getter-based-computed-values) for the recipe.
 :::
 
-## `args` vs `deps` vs `instanceId`: the decision rule
+## `args` vs `deps`: the decision rule
 
-**Principle:** put **serializable identity in `args`**, **non-serializable handles in `deps`**, and reach for **`instanceId` only when identity cannot be derived from data**.
+**Principle:** put **serializable identity in `args`** and **non-serializable handles in `deps`**. When identity can't be derived from real data, synthesize a value into `args` (e.g. `_id: useId()`) and key on it with `static key`.
 
 This is the single most common source of confusion, so commit the rule to memory:
 
@@ -2418,7 +2425,7 @@ This is the single most common source of confusion, so commit the rule to memory
 |---|---|---|
 | Serializable data that defines *which* instance (a `userId`, an `endpoint`, a filter set) | **`args`** | Args are hashed into the instance key — same args share one instance, different args fork. |
 | A non-serializable handle (a `useRef`, a stable `useCallback`, an external API object) | **`deps`** | Deps never key identity and are merged per-consumer; the bloc reads them lazily. |
-| An opaque, externally-managed key that isn't derivable from data | **`instanceId`** | The literal escape hatch when no `args`-derived key fits. |
+| An opaque, externally-managed key that isn't derivable from data | **synthetic `args` + `static key`** | Add the opaque key to `args` (e.g. `_id`) and key on it — no separate `instanceId` option. |
 
 The mechanics of all three live in [Passing Inputs to Blocs](/guide/inputs); this is just the judgment. Note that `deps` is **not** a `useBloc` option in v2 — a consumer contributes its slice from a mount effect via the `APPLY_DEPS` / `REMOVE_DEPS_OWNER` handles from `@blac/core` (the examples below import them); see [Wiring deps from a component](/guide/inputs#wiring-deps-from-a-component).
 
@@ -2454,15 +2461,16 @@ See the full treatment in [Passing Inputs to Blocs](/guide/inputs#the-callback-s
 
 ### Per-component private instances
 
-When a component needs its *own* instance with its own lifecycle (disposed on unmount), pass a per-mount `instanceId` keyed by React's `useId()` — each mount gets a fresh private instance.
+When a component needs its *own* instance with its own lifecycle (disposed on unmount), include a per-mount unique value in `args` and key on it with `static key` — each mount gets a fresh private instance.
 
 ```ts
-// Good — a plain Cubit; identity is decided at the call site
-class FileUploadCubit extends Cubit<UploadState, { endpoint: string }> {
+// Good — identity is keyed by a synthetic per-mount arg
+class FileUploadCubit extends Cubit<UploadState, { endpoint: string; _id: string }> {
+  static key = (a: FileUploadCubit['args']) => a._id;
   constructor() {
     super({ status: 'idle', progress: 0 });
   }
-  protected init(args: { endpoint: string }) {
+  protected init(args: { endpoint: string; _id: string }) {
     this.endpoint = args.endpoint;
   }
 }
@@ -2470,12 +2478,12 @@ class FileUploadCubit extends Cubit<UploadState, { endpoint: string }> {
 
 ```tsx
 // Each FileUpload mount owns a private instance
-const instanceId = useId();
-const [state, upload] = useBloc(FileUploadCubit, { args: { endpoint }, instanceId });
+const _id = useId();
+const [state, upload] = useBloc(FileUploadCubit, { args: { endpoint, _id } });
 ```
 
 ::: tip One source of per-mount identity
-`useId()` returns a stable-per-mount value, so passing it as `instanceId` gives each mount a private instance that lives and dies with it — and always wins over an inherited [`<BlocProvider>`](/react/use-bloc) context. Reserve a hand-written `instanceId` for keys you genuinely manage yourself (e.g. `"billing"` vs `"shipping"` form sections). See [Instance Management](/core/instance-management) for the registry mechanics.
+`useId()` returns a stable-per-mount value, so keying on it (`static key` on a synthetic `_id` arg) gives each mount a private instance that lives and dies with it. For a hand-managed shared key (e.g. `"billing"` vs `"shipping"` form sections), pass that value in `args` with a matching `static key`. See [Instance Management](/core/instance-management) for the registry mechanics.
 :::
 
 ## Async, loading, and error state
@@ -2679,19 +2687,19 @@ this.patch({ items: next, total: recompute(next) });
 get total() { return this.state.items.reduce(/* ... */); }
 ```
 
-### Reaching for `instanceId` when `args` would key it
+### Threading a separate key when `args` would key it
 
-When the distinguishing value is *meaningful data* (a `userId`, a `docId`), hand-threading it through `instanceId` makes you pass the same value twice — once to key the instance, once to feed it. Let `args` key identity instead.
+When the distinguishing value is *meaningful data* (a `userId`, a `docId`), threading it through a separate synthetic key makes you pass the same value twice — once to key the instance, once to feed it. Let `args` key identity instead.
 
 ```tsx
-// Bad — userId threaded through instanceId, then passed again as data
-const [s] = useBloc(UserCardCubit, { instanceId: userId });
+// Bad — userId threaded through a synthetic key, then passed again as data
+const [s] = useBloc(UserCardCubit, { args: { _key: userId, userId } });
 
 // Fix — args key the instance AND seed init() in one step
 const [s] = useBloc(UserCardCubit, { args: { userId } });
 ```
 
-Reserve explicit `instanceId` for keys that aren't part of the bloc's data: named sections (`"billing"` / `"shipping"`), externally-supplied ids, or a per-mount `useId()`.
+Identity always derives from `args` (via `static key` or the structural hash) — there is no separate `instanceId` option. For a per-mount private instance, include `useId()` in `args` with a matching `static key`.
 
 ### Raw inline callbacks in `deps`
 
@@ -3604,7 +3612,9 @@ interface EditorState {
   future: Note[]; // most-recently-undone … oldest-undone
 }
 // ---cut---
-class EditorCubit extends Cubit<EditorState> {
+class EditorCubit extends Cubit<EditorState, { title: string; body: string }> {
+  // identity derives from the note title
+  static key = (a: { title: string }) => `editor-${a.title}`;
   // Hard cap prevents unbounded memory growth.
   private static readonly MAX_HISTORY = 50;
 
@@ -3666,9 +3676,7 @@ class EditorCubit extends Cubit<EditorState> {
 
 ```tsx
 function NoteEditor({ initial }: { initial: { title: string; body: string } }) {
-  const instanceId = `editor-${initial.title}`;
   const [state, editor] = useBloc(EditorCubit, {
-    instanceId,
     args: initial,
     select: (s, bloc) => [
       s.note.title,
@@ -3761,6 +3769,7 @@ declare class ReconnectingWebSocket {
 declare const WS_URL: string;
 // ---cut---
 class ChatCubit extends Cubit<ChatState, { channelId: string }> {
+  static key = (a: { channelId: string }) => a.channelId;
   private socket: ReconnectingWebSocket | null = null;
 
   constructor() {
@@ -3819,7 +3828,6 @@ class ChatCubit extends Cubit<ChatState, { channelId: string }> {
 ```tsx
 function ChatRoom({ channelId }: { channelId: string }) {
   const [state, chat] = useBloc(ChatCubit, {
-    instanceId: channelId,
     args: { channelId },
   });
 
@@ -3846,7 +3854,7 @@ skip it.
 :::
 
 ::: tip Per-channel instances
-Pass `channelId` as both `instanceId` and `args`. Multiple `<ChatRoom>` components
+Pass `channelId` in `args` — `ChatCubit`'s `static key` derives identity from it. Multiple `<ChatRoom>` components
 with different `channelId` values each get their own Cubit (and socket); the same
 `channelId` reuses a shared instance. When all consumers of a channel unmount,
 the instance is disposed and the socket is closed automatically.
@@ -4158,11 +4166,11 @@ If you must pass a callback **into** a bloc, route it through the `deps` lane (a
 |---|---|---|
 | Two instances when you expected one | `args` differ structurally between consumers (or a fresh object that hashes differently) | Ensure args are equal; narrow identity with `static key` |
 | A **new** instance every render | A function or non-serializable value is in `args` | Move it to `deps`; `args` must be JSON-serializable |
-| Everyone shares one instance, but you wanted one per item | All consumers use the same key (default, or same `args`) | Pass distinct `args`, an explicit `instanceId`, or `instanceId: useId()` for per-mount |
-| Per-item components leak into each other | Same `instanceId` reused across items | Give each item a unique `instanceId` (e.g. the row id) |
+| Everyone shares one instance, but you wanted one per item | All consumers use the same key (default, or same `args`) | Pass distinct `args` (e.g. a name field, or `_id: useId()` + `static key` for per-mount) |
+| Per-item components leak into each other | Same `args` key reused across items | Give each item distinct `args` (e.g. the row id) |
 
 ::: details "I got two instances when I expected one"
-Identity is resolved from, in precedence order: explicit **`instanceId`** → `<BlocProvider>` context → `static key(args)` → **structural hash of `args`** → the `'default'` sentinel. Two consumers land on the same instance only when their resolved key matches.
+Identity is resolved from, in precedence order: own **`args`** (via `static key(args)`, else the **structural hash of `args`**) → `<BlocProvider>` context args → the `'default'` sentinel. Two consumers land on the same instance only when their resolved key matches.
 
 Common causes of an unexpected split:
 
@@ -4202,28 +4210,30 @@ By default, a bloc with `void` args resolves to the single `'default'` key — e
 | Want | Use |
 |---|---|
 | One instance per **data identity** (e.g. per `userId`) | `args` — same args share, different args split |
-| One instance per **caller-chosen key** | explicit `instanceId` (e.g. the row id) |
-| One **fresh** instance per component mount | `instanceId: useId()` |
+| One instance per **caller-chosen key** | `args` keyed by a `static key` (e.g. the row id) |
+| One **fresh** instance per component mount | a synthetic `args` value (`_id: useId()`) + `static key` |
 
 ```tsx
 // per data identity
 useBloc(UserCardCubit, { args: { userId } });
 
-// caller-chosen key — each row is its own instance
-useBloc(RowCubit, { instanceId: row.id });
+// per data identity — each row is its own instance
+// RowCubit has `static key = (a: { id: string }) => a.id`
+useBloc(RowCubit, { args: { id: row.id } });
 ```
 
 ```tsx
-// fresh per mount — useId() is a stable-per-mount key
-const instanceId = useId();
-useBloc(WidgetCubit, { instanceId });
+// fresh per mount — useId() is a stable-per-mount value
+// WidgetCubit has `static key = (a: { _id: string }) => a._id`
+const _id = useId();
+useBloc(WidgetCubit, { args: { _id } });
 ```
 
-A per-mount `instanceId` always overrides any `instanceId` supplied by an ancestor [`BlocProvider`](/react/use-bloc), so each mount stays private. Owner page: [Instance management](/core/instance-management).
+A synthetic per-mount key resolves to its own instance regardless of any `args` supplied by an ancestor [`BlocProvider`](/react/use-bloc), so each mount stays private. Owner page: [Instance management](/core/instance-management).
 :::
 
-::: warning `instanceId: useId()`, not `autoInstance`
-You may see `autoInstance` in old notes or stale comments — it does not exist in the shipping API. The per-mount mechanism is an explicit `instanceId` (use `useId()` for a stable-per-mount key). A `static isolated` field exists but is **not** wired into `useBloc` in the current release, so do not rely on it. See the [glossary](/guide/glossary).
+::: warning synthetic `args` + `static key`, not `autoInstance`
+You may see `autoInstance` in old notes or stale comments — it does not exist in the shipping API. The per-mount mechanism is a synthetic `args` value (`_id: useId()`) keyed by `static key`. A `static isolated` field exists but is **not** wired into `useBloc` in the current release, so do not rely on it. See the [glossary](/guide/glossary).
 :::
 
 ---
@@ -4257,12 +4267,12 @@ class SessionCubit extends Cubit<SessionState> { /* … */ }
 
 ```ts
 const ref = 'job-42';
-const job = acquire(JobCubit, undefined, ref);
+const job = acquire(JobCubit, { refId: ref });
 // … later, always:
-release(JobCubit, undefined, false, ref);
+release(JobCubit, { refId: ref });
 ```
 
-`keepAlive` instances are never auto-disposed at refcount 0; tear them down explicitly with `release(..., /* forceDispose */ true)` or `clear(Class)` (a test/teardown utility — see [testing core](/testing/core)). Owner page: [Instance management](/core/instance-management); see also [Configuration](/core/configuration#keepalive-true).
+`keepAlive` instances are never auto-disposed at refcount 0; tear them down explicitly with `release(Class, { forceDispose: true })` or `clear(Class)` (a test/teardown utility — see [testing core](/testing/core)). Owner page: [Instance management](/core/instance-management); see also [Configuration](/core/configuration#keepalive-true).
 :::
 
 ---
@@ -4337,13 +4347,13 @@ If you want this bloc visible, drop that option. The option is documented in [Co
 |---|---|---|
 | Hydration mismatch warning from React | Server and client produced different first snapshots | Seed initial state from `args` in `init(args)` so both render the same |
 | Persisted state appears, then vanishes | State changed *while* hydrating → discarded | Hold writes until `isHydrated`; observe `hydrationChanged` |
-| `instanceId` differs between server and client | Relying on internal auto-ids for stable identity | Supply an explicit `instanceId` (or `BlocProvider`) for SSR-stable keys |
+| Instance key differs between server and client | Relying on internal auto-ids for stable identity | Key off stable `args` (or a `BlocProvider`) for SSR-stable identity |
 
 ::: details "SSR / hydration notes"
 A few facts that matter when rendering on the server:
 
 - **First snapshot is synchronous.** `args` are forwarded to `init(args)` **once, before the first state snapshot**, so a bloc keyed by `args` renders identical initial state on server and client — no flash, no mismatch — provided the `args` are the same on both sides.
-- **`useBloc` does not fight React for SSR id slots.** Internally it uses a plain module counter for its consumer id (a `useId()` slot is reserved but unused), so it will not desync SSR-streamed ids. For identity that must be **stable across server/client**, set it explicitly with `instanceId` or a [`BlocProvider`](/react/use-bloc); do not rely on auto-generated ids.
+- **`useBloc` does not fight React for SSR id slots.** Internally it uses a plain module counter for its consumer id (a `useId()` slot is reserved but unused), so it will not desync SSR-streamed ids. For identity that must be **stable across server/client**, derive it from stable `args` or a [`BlocProvider`](/react/use-bloc); do not rely on auto-generated ids.
 - **State hydration is a guarded lifecycle.** `beginHydration()` → `applyHydratedState(next)` → `finishHydration()`. `applyHydratedState` returns `false` (and skips) if the bloc was disposed, is not hydrating, or **`changedWhileHydrating`** — i.e. a normal write landed mid-hydration, so the live state wins and the persisted snapshot is discarded. If persisted state seems to be ignored, you almost certainly wrote to the bloc before hydration finished. Observe transitions via the [`hydrationChanged`](/core/system-events) system event and gate writes on `isHydrated`.
 
 See [Persistence](/plugins/persistence) for the full hydration story and [System events](/core/system-events) for `hydrationChanged`.
@@ -4422,7 +4432,7 @@ A few names look alike and are easy to confuse: `select` (a re-render selector) 
 | **ensure** | Registry verb that creates-or-reuses an instance **without** taking a ref. Used by `watch` and `depend()`; the result is not kept alive by the caller. See [Instance management](/core/instance-management). |
 | **borrow / borrowSafe** | Registry reads that return an **existing** instance without creating one or counting a ref. `borrow` throws when missing; `borrowSafe` returns `{ error, instance }`. See [Instance management](/core/instance-management). |
 | **ref counting** | The mechanism behind sharing: each consumer holds one ref via `acquire`; when the last ref is released the instance is auto-disposed (unless `keepAlive`). See [Instance management](/core/instance-management). |
-| **instance key** | The string that decides which instance a consumer gets. Resolved as: explicit `instanceId` &gt; `<BlocProvider>` context &gt; `static key(args)` &gt; structural hash of `args` &gt; `'default'`. See [Inputs](/guide/inputs). |
+| **instance key** | The string that decides which instance a consumer gets. Resolved from `args`: own `args` (via `static key(args)`, else structural hash of `args`) &gt; `<BlocProvider>` context `args` &gt; `'default'`. See [Inputs](/guide/inputs). |
 | **structural key** | A deterministic, order-independent JSON hash of `args` used to key instances when no explicit key is given. Throws (dev) if `args` contains a function. See [Inputs](/guide/inputs). |
 
 ## Inputs &amp; identity
@@ -4432,8 +4442,8 @@ A few names look alike and are easy to confuse: `select` (a re-render selector) 
 | **Args** | Typed, **serializable** creation data (`Args` type param). Passed to `init(args)` once and used to key instance identity. Required by `useBloc` when declared, forbidden when `void`. See [Inputs](/guide/inputs). |
 | **Deps** | Non-serializable handles (refs, stable callbacks) injected **per consumer** via the `Deps` type param. Merged into `bloc.deps`; **never** key identity. See [Inputs](/guide/inputs). |
 | **deps (runtime)** | The merged, read-only view of all consumers' dep slices, exposed as `bloc.deps`. Changes fire [onDepsChanged](#onDepsChanged). Note: a `deps` *option* on `useBloc` is **internal**, not part of the public hook surface. See [Inputs](/guide/inputs). |
-| **instanceId** | An explicit per-consumer instance key (`string \| number`) passed to `useBloc` or `BlocProvider`. Highest-priority identity input; overrides provider context. See [useBloc](/react/use-bloc). |
-| **autoInstance** | **Not a current option.** The shipping mechanism for a fresh per-mount instance is `instanceId: useId()` on the `useBloc` call. The name `autoInstance` survives only in stale comments; a `static isolated` field exists but is not wired into `useBloc` in the current release. See [Instance management](/core/instance-management). |
+| **instanceId** | **No longer a `useBloc`/`BlocProvider` option.** Instance identity comes entirely from `args` (via `static key` or structural hash). `instanceId` survives only as a read-only **property** on each instance (its resolved key) and as the `instanceId()` branded-type helper. For a per-mount instance use `args: { _id: useId() }` + `static key`. See [Inputs](/guide/inputs). |
+| **autoInstance** | **Not a current option.** The shipping mechanism for a fresh per-mount instance is a synthetic `args` field — `args: { _id: useId() }` — plus a `static key` selecting it. The names `autoInstance`/`instanceId`-option survive only in stale comments; a `static isolated` field exists but is not wired into `useBloc` in the current release. See [Instance management](/core/instance-management). |
 | **static key** | A class static `key = (args) => string` (settable directly or via `blac({ key })`) that derives the instance key from `args`. See [Inputs](/guide/inputs). |
 | **keepAlive** | Set via `blac({ keepAlive: true })`; instances of the class are **never** auto-disposed at ref count zero (still disposable via `forceDispose`/`clear`). See [Configuration](/core/configuration). |
 | **excludeFromDevTools** | Set via `blac({ excludeFromDevTools: true })`; the class is excluded from DevTools tracking. See [Configuration](/core/configuration). |
@@ -4448,7 +4458,7 @@ A few names look alike and are easy to confuse: `select` (a re-render selector) 
 | **auto-tracking** | The default re-render strategy: when `select` is omitted, BlaC records which state leaves a render reads and re-renders only when one of them changes. Also called *dependency tracking* (the feature/page name). See [Dependency tracking](/react/dependency-tracking). |
 | **tracked proxy** | The recording `Proxy` wrapper (`trackRender`) placed around `state` during render; reads on it log leaf paths used for auto-tracking. There is **no `@tracked` decorator** — tracking is automatic. See [Tracked](/core/tracked). |
 | **per-consumer tracker** | Each `useBloc` call gets its **own** proxy + recorded path set, so re-renders stay isolated between components reading the same instance. See [Dependency tracking](/react/dependency-tracking). |
-| **BlocProvider** | A React component that supplies a default `instanceId` to descendant `useBloc` calls that omit one. An explicit `instanceId` on the call still wins. See [useBloc](/react/use-bloc). |
+| **BlocProvider** | A React component that supplies default `args` to descendant `useBloc` calls that omit their own. A call passing its own `args` still wins. See [useBloc](/react/use-bloc). |
 | **ref (tuple element)** | The third element of the `useBloc` tuple (`ComponentRef`); an advanced-use ref object rarely needed in app code. See [useBloc](/react/use-bloc). |
 
 ## Lifecycle &amp; hydration
@@ -4468,7 +4478,7 @@ A few names look alike and are easy to confuse: `select` (a re-render selector) 
 | Term | Definition |
 |---|---|
 | **watch** | `watch(blocOrRef, callback)` runs a callback once immediately and again on every change of the watched bloc(s), outside React. Return `watch.STOP` (or call the returned fn) to stop. See [watch](/core/watch). |
-| **instance() (helper)** | `instance(BlocClass, instanceId)` builds a `BlocRef` so `watch` targets a specific keyed instance rather than the default one. See [watch](/core/watch). |
+| **instance() (helper)** | `instance(BlocClass, args)` builds a `BlocRef` so `watch` targets the instance keyed by those args rather than the default one. See [watch](/core/watch). |
 | **subscribe** | `subscribe(listener)` — the legacy per-flush listener surface on a bloc. Prefer `watch` (non-React) or `useBloc` (React); new code can use `bloc.channel.subscribe`. See [watch](/core/watch). |
 | **plugin** | An observer (`BlacPlugin`) that hooks into container lifecycle (`onCreated`, `onStateChange`, `onDestroyed`, `onHydrationChange`, …) across all instances. See [Plugins](/core/plugins). |
 | **PluginManager** | The singleton (via `getPluginManager()`) that installs, uninstalls, and tracks plugins, gating each by `enabled` and `environment`. See [Plugins](/core/plugins). |
@@ -4500,7 +4510,7 @@ All three name the **same** mechanism: the render-time recording proxy that logs
 :::
 
 ::: warning No `Bloc` class, no `@tracked`, no `autoTrack`/`autoInstance` options
-BlaC has **no `Bloc` class** (only `StateContainer` and `Cubit`), **no `@tracked` decorator**, and **no `autoTrack` or `autoInstance` options**. Tracking is automatic and unconditional unless you pass `select`; a fresh per-mount instance comes from `instanceId: useId()`. If a doc or comment mentions these, it is stale.
+BlaC has **no `Bloc` class** (only `StateContainer` and `Cubit`), **no `@tracked` decorator**, and **no `autoTrack` or `autoInstance` options**. Tracking is automatic and unconditional unless you pass `select`; a fresh per-mount instance comes from a synthetic `args` value (`args: { _id: useId() }`) keyed by `static key`. If a doc or comment mentions these, it is stale.
 :::
 
 ## See also
@@ -4637,22 +4647,22 @@ If you need a literal mechanical port without adopting identity keying yet, defi
 `grep -rn "{ props:" src/` and search for `this.props` inside Cubit classes. Each maps to either `args` (identity data) or `deps` (handles).
 :::
 
-## `useBloc` identity option: `id` → `instanceId`
+## `useBloc` identity option: `id` → `args`
 
-The v1 per-instance key option was named `id`. In v2 it is `instanceId`.
+The v1 per-instance key option was named `id`. In v2 identity derives from `args` — give the class a `static key` and pass the identifying data as `args`.
 
 ```tsx
 // v1
 useBloc(FormCubit, { id: 'billing' });
 
-// v2
-useBloc(FormCubit, { instanceId: 'billing' });
+// v2 — FormCubit has `static key = (a: { section: string }) => a.section`
+useBloc(FormCubit, { args: { section: 'billing' } });
 ```
 
-There is also no `autoInstance` option in v2 (it never shipped in the public surface). For a private per-mount instance, pass `instanceId: useId()`. See [Passing Inputs](/guide/inputs#per-component-private-instances).
+There is also no `autoInstance` (or `instanceId`) option in v2. For a private per-mount instance, include a synthetic `args` value — `args: { _id: useId() }` — and key on it with `static key`. See [Passing Inputs](/guide/inputs#per-component-private-instances).
 
 ::: details Find call sites
-`grep -rn "useBloc(.*{ *id:" src/` — rename the key to `instanceId`.
+`grep -rn "useBloc(.*{ *id:" src/` — move the identifying value into `args` and add a matching `static key`.
 :::
 
 ## `Blac` facade → registry functions
@@ -4661,7 +4671,7 @@ v1's static `Blac` facade (`Blac.getBloc(C, { id })`, `Blac.getAllBlocs(C)`) is 
 
 | v1                                | v2                                                                            |
 | --------------------------------- | ----------------------------------------------------------------------------- |
-| `Blac.getBloc(C, { id })`         | `ensure(C, id)` (create if missing, no ref) or `acquire(C, id)` (ref-counted) |
+| `Blac.getBloc(C, { id })`         | `ensure(C, { args })` (create if missing, no ref) or `acquire(C, { args })` (ref-counted) |
 | `Blac.getAllBlocs(C)`             | `getAll(C)`                                                                   |
 | `Blac.clearAll()` (test teardown) | `clearAll()`                                                                  |
 
@@ -4742,7 +4752,7 @@ This is primarily relevant for plugin authors and DevTools integrations that nee
 Migration isn't only about what's gone. v2 adds capabilities a v1 codebase should adopt as it moves over:
 
 - **The input model** — `args` (identity-keyed creation data), `deps` (non-serializable handles), and method-call events replace the old single `props` slot. This is the headline addition; start at [Passing Inputs](/guide/inputs).
-- **Per-mount instances** via `instanceId: useId()` (the supported replacement for the nonexistent `autoInstance`).
+- **Per-mount instances** via a synthetic `args` value (`args: { _id: useId() }`) keyed by `static key` (the supported replacement for the nonexistent `autoInstance`).
 - **Automatic, path-scoped re-renders** — no `dependencies`/selector needed for the common case; the returned state proxy tracks exactly what your component reads. See [Dependency Tracking](/react/dependency-tracking).
 - **Hydration lifecycle** — `beginHydration`/`finishHydration`/`waitForHydration` and the `hydrationChanged` event, used by the [persistence plugin](/plugins/persistence).
 - **Circuit breakers** — `configureBlac({ maxInstancesPerType, maxRefsPerInstance, maxEmitsPerSecond })` guard against leaks and emit storms. See [Configuration](/core/configuration).
@@ -7442,29 +7452,26 @@ Disposal is **synchronous** with the `release` call that drops the count to zero
 
 ## Registry functions
 
-### `acquire(BlocClass, instanceKey?, refId?, args?)`
+### `acquire(BlocClass, opts?)`
 
 Create or return an existing instance, incrementing the ref count.
 
 ```ts
 function acquire<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceKey?: string,
-  refId?: string,
-  args?: ExtractArgs<T>,
+  opts?: { args?: ExtractArgs<T>; refId?: string },
 ): InstanceType<T>;
 ```
 
-| Parameter     | Type                                  | Required | Description                                                                                                            |
-| ------------- | ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class to acquire an instance of.                                                                   |
-| `instanceKey` | `string`                              | no       | Explicit registry key. Defaults to the key derived from `args` or `'default'`.                                         |
-| `refId`       | `string`                              | no       | Caller-supplied ref identifier. Used by `useBloc` to pair with `release`. Rarely set manually.                         |
-| `args`        | `ExtractArgs<T>`                      | no       | Serializable construction data passed to `init(args)`. Used to derive the instance key when no `instanceKey` is given. |
+| Parameter     | Type                                  | Required | Description                                                                                    |
+| ------------- | ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class to acquire an instance of.                                           |
+| `opts.args`   | `ExtractArgs<T>`                      | no       | Serializable construction data passed to `init(args)`. Derives the instance key.               |
+| `opts.refId`  | `string`                              | no       | Caller-supplied ref identifier. Used by `useBloc` to pair with `release`. Rarely set manually. |
 
 **Returns:** `InstanceType<T>` — the live instance (newly created or existing).
 
-**Behavior.** If no instance exists for the resolved key, `acquire` creates one, calls `init(args)`, and fires the internal `'created'` event. If an instance already exists, it is returned as-is. The ref count is always incremented. **Every `acquire` must have a matching `release`** — a missing `release` is the canonical instance leak. In React, `useBloc` owns this pair; call `acquire` directly only in server-side or scripting contexts.
+**Behavior.** The instance key is derived from `opts.args` (`static key` if declared, else the structural hash, else `'default'`). If no instance exists for the resolved key, `acquire` creates one, calls `init(args)`, and fires the internal `'created'` event. If an instance already exists, it is returned as-is. The ref count is always incremented. **Every `acquire` must have a matching `release`** — a missing `release` is the canonical instance leak. In React, `useBloc` owns this pair; call `acquire` directly only in server-side or scripting contexts.
 
 ```ts twoslash
 import { acquire, release } from '@blac/core';
@@ -7484,23 +7491,21 @@ console.log(counter.state.count); // => 1
 release(CounterCubit); // must pair with acquire
 ```
 
-### `ensure(BlocClass, instanceKey?, args?)`
+### `ensure(BlocClass, opts?)`
 
 Create or return an existing instance **without** taking a ref.
 
 ```ts
 function ensure<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceKey?: string,
-  args?: ExtractArgs<T>,
+  opts?: { args?: ExtractArgs<T> },
 ): InstanceType<T>;
 ```
 
-| Parameter     | Type                                  | Required | Description                                            |
-| ------------- | ------------------------------------- | -------- | ------------------------------------------------------ |
-| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class.                             |
-| `instanceKey` | `string`                              | no       | Explicit registry key.                                 |
-| `args`        | `ExtractArgs<T>`                      | no       | Construction data for `init(args)` and key derivation. |
+| Parameter   | Type                                  | Required | Description                                            |
+| ----------- | ------------------------------------- | -------- | ------------------------------------------------------ |
+| `BlocClass` | `T extends StateContainerConstructor` | yes      | The state-container class.                             |
+| `opts.args` | `ExtractArgs<T>`                      | no       | Construction data for `init(args)` and key derivation. |
 
 **Returns:** `InstanceType<T>` — the live instance.
 
@@ -7521,21 +7526,21 @@ const auth = ensure(AuthCubit);
 console.log(auth.state.userId); // no release needed
 ```
 
-### `borrow(BlocClass, instanceKey?)`
+### `borrow(BlocClass, opts?)`
 
 Return an existing instance without taking a ref. Throws if the instance does not exist.
 
 ```ts
 function borrow<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceKey?: string,
+  opts?: { args?: ExtractArgs<T> },
 ): InstanceType<T>;
 ```
 
-| Parameter     | Type                                  | Required | Description                                     |
-| ------------- | ------------------------------------- | -------- | ----------------------------------------------- |
-| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class.                      |
-| `instanceKey` | `string`                              | no       | Explicit registry key. Defaults to `'default'`. |
+| Parameter   | Type                                  | Required | Description                                                      |
+| ----------- | ------------------------------------- | -------- | --------------------------------------------------------------- |
+| `BlocClass` | `T extends StateContainerConstructor` | yes      | The state-container class.                                      |
+| `opts.args` | `ExtractArgs<T>`                      | no       | Args identifying the instance. Defaults to the `'default'` key. |
 
 **Returns:** `InstanceType<T>` — the live instance.
 
@@ -7557,23 +7562,23 @@ function readCount(): number {
 }
 ```
 
-### `borrowSafe(BlocClass, instanceKey?)`
+### `borrowSafe(BlocClass, opts?)`
 
 Return an existing instance without taking a ref. Returns an error object instead of throwing.
 
 ```ts
 function borrowSafe<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceKey?: string,
+  opts?: { args?: ExtractArgs<T> },
 ):
   | { error: Error; instance: null }
   | { error: null; instance: InstanceType<T> };
 ```
 
-| Parameter     | Type                                  | Required | Description                                     |
-| ------------- | ------------------------------------- | -------- | ----------------------------------------------- |
-| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class.                      |
-| `instanceKey` | `string`                              | no       | Explicit registry key. Defaults to `'default'`. |
+| Parameter   | Type                                  | Required | Description                                                     |
+| ----------- | ------------------------------------- | -------- | --------------------------------------------------------------- |
+| `BlocClass` | `T extends StateContainerConstructor` | yes      | The state-container class.                                      |
+| `opts.args` | `ExtractArgs<T>`                      | no       | Args identifying the instance. Defaults to the `'default'` key. |
 
 **Returns:** `{ error: null; instance: InstanceType<T> }` when the instance exists, or `{ error: Error; instance: null }` when it does not.
 
@@ -7597,88 +7602,85 @@ if (error) {
 }
 ```
 
-### `release(BlocClass, instanceKey?, forceDispose?, refId?)`
+### `release(BlocClass, opts?)`
 
 Decrement the ref count. Dispose the instance when count reaches zero.
 
 ```ts
 function release<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceKey?: string,
-  forceDispose?: boolean,
-  refId?: string,
+  opts?: { args?: ExtractArgs<T>; refId?: string; forceDispose?: boolean },
 ): void;
 ```
 
-| Parameter      | Type                                  | Required | Description                                                                          |
-| -------------- | ------------------------------------- | -------- | ------------------------------------------------------------------------------------ |
-| `BlocClass`    | `T extends StateContainerConstructor` | yes      | The state-container class.                                                           |
-| `instanceKey`  | `string`                              | no       | The key used when `acquire` was called. **Must match** the key used at acquire time. |
-| `forceDispose` | `boolean`                             | no       | When `true`, dispose immediately even if `keepAlive` is set. Default `false`.        |
-| `refId`        | `string`                              | no       | The ref identifier passed to `acquire`. Rarely set manually.                         |
+| Parameter          | Type                                  | Required | Description                                                                       |
+| ------------------ | ------------------------------------- | -------- | --------------------------------------------------------------------------------- |
+| `BlocClass`        | `T extends StateContainerConstructor` | yes      | The state-container class.                                                        |
+| `opts.args`        | `ExtractArgs<T>`                      | no       | The args used when `acquire` was called. **Must resolve to the same key.**        |
+| `opts.refId`       | `string`                              | no       | The ref identifier passed to `acquire`. Rarely set manually.                      |
+| `opts.forceDispose`| `boolean`                             | no       | When `true`, dispose immediately even if `keepAlive` is set. Default `false`.     |
 
 **Returns:** `void`.
 
-**Behavior.** `release` is **idempotent for an already-dropped ref** — releasing more times than you acquired won't throw, it just no-ops once the count is gone. The key you release with **must match** the key you acquired with; a mismatch leaves the original ref dangling forever. At ref count zero, the instance is disposed synchronously (unless `keepAlive` is set or `forceDispose` is `false`).
+**Behavior.** `release` is **idempotent for an already-dropped ref** — releasing more times than you acquired won't throw, it just no-ops once the count is gone. The `args` you release with **must resolve to the same key** you acquired with; a mismatch leaves the original ref dangling forever. At ref count zero, the instance is disposed synchronously (unless `keepAlive` is set or `forceDispose` is `false`).
 
 ```ts twoslash
 import { acquire, release } from '@blac/core';
 import { Cubit } from '@blac/core';
 
-class SessionCubit extends Cubit<{ token: string | null }> {
+class SessionCubit extends Cubit<{ token: string | null }, { scope: string }> {
+  static key = (a: { scope: string }) => a.scope;
   constructor() {
     super({ token: null });
   }
 }
 
-const session = acquire(SessionCubit, 'main');
+const session = acquire(SessionCubit, { args: { scope: 'main' } });
 // ... use session ...
-release(SessionCubit, 'main'); // key must match acquire's key
+release(SessionCubit, { args: { scope: 'main' } }); // args must match acquire's args
 ```
 
 ## Named instances
 
-Pass an instance key as the second argument to any registry function to manage named instances:
+To manage distinct named instances, declare an `Args` shape and pass `args` to any registry function. The instance key is derived from those args — a `static key` if the class declares one, otherwise the structural hash of the args:
 
 ```ts twoslash
 import { acquire, release } from '@blac/core';
 import { Cubit } from '@blac/core';
 
-class EditorCubit extends Cubit<{ content: string }> {
+class EditorCubit extends Cubit<{ content: string }, { docId: string }> {
+  static key = (a: { docId: string }) => a.docId;
   constructor() {
     super({ content: '' });
   }
 }
 
-const editor1 = acquire(EditorCubit, 'doc-42');
-const editor2 = acquire(EditorCubit, 'doc-99');
+const editor1 = acquire(EditorCubit, { args: { docId: 'doc-42' } });
+const editor2 = acquire(EditorCubit, { args: { docId: 'doc-99' } });
 
 // These are different instances
 const areDifferent = editor1 !== editor2; // true
 
-release(EditorCubit, 'doc-42');
-release(EditorCubit, 'doc-99');
+release(EditorCubit, { args: { docId: 'doc-42' } });
+release(EditorCubit, { args: { docId: 'doc-99' } });
 ```
 
-In React, use the `instanceId` option as an escape hatch for explicit keys:
+In React, pass the same `args`:
 
 ```tsx
-const [state] = useBloc(EditorCubit, { instanceId: 'doc-42' });
+const [state] = useBloc(EditorCubit, { args: { docId: 'doc-42' } });
 ```
 
 ### Args-derived identity (preferred)
 
-When a bloc declares `Args`, the preferred way to get distinct instances is to pass `args` — the instance key is derived automatically (structural hash by default, or `static key` if declared). This avoids threading the same value through both `instanceId` and a separate data channel:
+When a bloc declares `Args`, the way to get distinct instances is to pass `args` — the instance key is derived automatically (structural hash by default, or `static key` if declared). The meaningful value keys the instance *and* feeds `init(args)`, so you never pass the same value twice:
 
 ```tsx
-// Before — id is opaque, userId had to be passed a second time
-const [s] = useBloc(UserCardCubit, { instanceId: userId });
-
-// After — the meaningful value keys the instance AND feeds init(args)
+// The meaningful value keys the instance AND feeds init(args)
 const [s] = useBloc(UserCardCubit, { args: { userId } });
 ```
 
-Identity precedence: explicit `instanceId` > `<BlocProvider>` context > `static key(args)` / structural hash of `args` > `'default'`.
+Identity precedence: own `args` (via `static key(args)`, else structural hash of `args`) > `<BlocProvider>` context args > `'default'`.
 
 The resolved key is the registry's single source of truth — `acquire` and `release` both run their inputs through the same resolution, so a ref taken under an args-derived key is dropped under the same key. See [Passing Inputs](/guide/inputs) for the full model and [Configuration](/core/configuration#key-args-string) for `static key`.
 
@@ -7784,7 +7786,7 @@ class SessionCubit extends Cubit<SessionState> {
 }
 ```
 
-`keepAlive` instances are never auto-disposed at ref count 0 — tear them down explicitly with `release(Class, key, true)` (force-dispose) or `clear(Class)` in teardown. See [Configuration](/core/configuration#keepalive-true).
+`keepAlive` instances are never auto-disposed at ref count 0 — tear them down explicitly with `release(Class, { forceDispose: true })` or `clear(Class)` in teardown. See [Configuration](/core/configuration#keepalive-true).
 
 ### Instance never disposed / memory leak
 
@@ -8135,14 +8137,15 @@ By default, `depend(Type)` targets the `'default'` instance key. To depend on a 
 ```ts twoslash
 import { Cubit } from '@blac/core';
 
-class EditorCubit extends Cubit<{ content: string }> {
+class EditorCubit extends Cubit<{ content: string }, { docId: string }> {
+  static key = (a: { docId: string }) => a.docId;
   constructor() {
     super({ content: '' });
   }
 }
 
 class ReviewCubit extends Cubit<{ approved: boolean }> {
-  private getEditor = this.depend(EditorCubit, 'doc-42');
+  private getEditor = this.depend(EditorCubit, { docId: 'doc-42' });
 
   constructor() {
     super({ approved: false });
@@ -8150,7 +8153,7 @@ class ReviewCubit extends Cubit<{ approved: boolean }> {
 }
 ```
 
-The instance key passed here must match the key the target instance is acquired under (via `args`, an explicit `instanceId`, or a [`static key`](/core/configuration)). A mismatched key resolves a _different_ instance — see [Inputs and identity](/guide/inputs) for how keys are derived.
+The `args` passed here must resolve to the same key the target instance is acquired under (via its [`static key`](/core/configuration) or structural hash). Mismatched args resolve a _different_ instance — see [Inputs and identity](/guide/inputs) for how keys are derived.
 
 ## Alternatives
 
@@ -8349,11 +8352,11 @@ class ChannelCubit extends Cubit<ChannelState> {
   }
 
   private ensureUserCubit(userId: string) {
-    const result = borrowSafe(UserCubit, userId);
+    const result = borrowSafe(UserCubit, { args: { userId } });
     if (!result.error) return; // already exists
 
     // Create on demand with a named instance
-    acquire(UserCubit, userId).setUserId(userId);
+    acquire(UserCubit, { args: { userId } }).setUserId(userId);
   }
 
   receiveMessage = (message: MessageData) => {
@@ -8430,37 +8433,38 @@ const stop = watch(UserCubit, (user) => {
 stop();
 ```
 
-## `instance(BlocClass, instanceId)`
+## `instance(BlocClass, args?)`
 
 Create a reference to a specific keyed bloc instance for use with `watch`.
 
 ```ts
 function instance<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceId: string,
+  args?: ExtractArgs<T>,
 ): BlocRef<T>;
 ```
 
-| Parameter    | Type                                  | Required | Description                                                                   |
-| ------------ | ------------------------------------- | -------- | ----------------------------------------------------------------------------- |
-| `BlocClass`  | `T extends StateContainerConstructor` | yes      | The bloc class to reference.                                                  |
-| `instanceId` | `string`                              | yes      | The instance key — the same `id` you would pass as `instanceId` to `useBloc`. |
+| Parameter   | Type                                  | Required | Description                                                          |
+| ----------- | ------------------------------------- | -------- | -------------------------------------------------------------------- |
+| `BlocClass` | `T extends StateContainerConstructor` | yes      | The bloc class to reference.                                         |
+| `args`      | `ExtractArgs<T>`                      | no       | The args identifying the instance — the same args you pass to `useBloc`. Resolved to a key via `static key`/structural hash. |
 
 **Returns:** a `BlocRef<T>` — a lightweight reference object that tells `watch` which keyed instance to resolve.
 
-**Behavior.** By default `watch(SomeCubit, ...)` resolves the **default** instance. Wrap with `instance(Class, id)` to target a specific keyed instance.
+**Behavior.** By default `watch(SomeCubit, ...)` resolves the **default** instance. Wrap with `instance(Class, args)` to target the instance keyed by those args.
 
 ```ts twoslash
 import { watch, instance } from '@blac/core';
 import { Cubit } from '@blac/core';
 
-class UserCubit extends Cubit<{ name: string }> {
+class UserCubit extends Cubit<{ name: string }, { userId: string }> {
+  static key = (a: { userId: string }) => a.userId;
   constructor() {
     super({ name: '' });
   }
 }
 
-const stop = watch(instance(UserCubit, 'user-123'), (user) => {
+const stop = watch(instance(UserCubit, { userId: 'user-123' }), (user) => {
   console.log(user.state.name);
 });
 ```
@@ -9615,12 +9619,12 @@ Tracking is automatic and structural — driven by a render-time proxy, not by d
 
 By default all components calling `useBloc(SameCubit)` share one instance. You can scope instances per key or per mount:
 
-| Mode      | How to enable                  | Behavior                                          |
-| --------- | ------------------------------ | ------------------------------------------------- |
-| Shared    | Default                        | All components share one instance                 |
-| Named     | `{ instanceId: 'key' }`        | Components with the same key share an instance     |
-| Per-args  | `{ args: { id } }`             | Each distinct `args` value gets its own instance   |
-| Per-mount | `{ instanceId: useId() }`      | Each component mount gets a private instance        |
+| Mode      | How to enable                       | Behavior                                          |
+| --------- | ----------------------------------- | ------------------------------------------------- |
+| Shared    | Default                             | All components share one instance                 |
+| Per-args  | `{ args: { id } }`                  | Each distinct `args` value gets its own instance   |
+| Named     | `{ args: { key } }` + `static key`  | Consumers with the same resolved key share an instance |
+| Per-mount | `{ args: { _id: useId() } }` + `static key` | Each component mount gets a private instance |
 
 See [Passing Inputs](/guide/inputs) for the full identity model and precedence.
 
@@ -9692,20 +9696,19 @@ See it in action:
 
 ## Options
 
-`useBloc` accepts one optional options object. `UseBlocOptions` has exactly five keys — reach for the one that matches your need:
+`useBloc` accepts one optional options object. `UseBlocOptions` has exactly four keys — reach for the one that matches your need:
 
-| Option       | Type                               | Required            | Description                                                                                        |
-| ------------ | ---------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------- |
-| `args`       | the bloc's `Args` type             | when `Args != void` | Typed construction data; derives instance identity. Required when declared, forbidden when `void`. |
-| `instanceId` | `string \| number`                 | no                  | Explicit instance key. Pass `useId()` for a per-mount private instance.                            |
-| `select`     | `(state: S, bloc: T) => unknown[]` | no                  | Explicit dependency selector; disables auto-tracking.                                              |
-| `onMount`    | `(bloc: InstanceType<T>) => void`  | no                  | Called once when the component mounts with the bloc instance.                                      |
-| `onUnmount`  | `(bloc: InstanceType<T>) => void`  | no                  | Called when the component unmounts (bloc still alive at this point).                               |
+| Option      | Type                               | Required            | Description                                                                                        |
+| ----------- | ---------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------- |
+| `args`      | the bloc's `Args` type             | when `Args != void` | Typed construction data; derives instance identity. Required when declared, forbidden when `void`. |
+| `select`    | `(state: S, bloc: T) => unknown[]` | no                  | Explicit dependency selector; disables auto-tracking.                                              |
+| `onMount`   | `(bloc: InstanceType<T>) => void`  | no                  | Called once when the component mounts with the bloc instance.                                      |
+| `onUnmount` | `(bloc: InstanceType<T>) => void`  | no                  | Called when the component unmounts (bloc still alive at this point).                               |
 
-::: tip These five are the entire option surface
+::: tip These four are the entire option surface
 `UseBlocOptions` has exactly these keys. Two things people expect that are **not** options here:
 
-- **Per-mount instances** are not an option — pass `instanceId: useId()` so each mount gets its own private instance (see [`instanceId`](#instanceid) and [Passing Inputs](/guide/inputs)).
+- **Per-mount instances** — pass a per-mount unique value in `args` (e.g. `args: { _id: useId() }`) with a matching `static key` on the class so each mount gets its own private instance (see [`args`](#args) and [Passing Inputs](/guide/inputs)).
 - **Non-serializable handles** (refs, callbacks) are a bloc-level `Deps` concept, not a `useBloc` option; see [Injecting handles (`deps`)](#injecting-handles-deps).
 
 There is no `autoTrack` flag — auto-tracking is the default and you opt out with `select`.
@@ -9736,36 +9739,33 @@ const [state] = useBloc(UserCardCubit, { args: { userId } });
 
 - **Identity:** different `args` values produce different instances. By default identity is the structural hash of all args. Override with `static key` on the class.
 - **Serializable only** — refs, callbacks, and DOM elements must not go in `args` (they'd produce a new instance every render). Put them in the bloc's `Deps` instead — see [Injecting handles (`deps`)](#injecting-handles-deps).
-- **Per-component private instances** — to give each mount its own instance (disposed on unmount), pass a per-mount `instanceId` keyed by React's `useId()`:
+- **Per-component private instances** — to give each mount its own instance (disposed on unmount), include a per-mount unique value in `args` and declare `static key` on the class so it becomes the identity key:
 
 ```tsx
-class FormCubit extends Cubit<FormState, FormArgs> {}
+class FormCubit extends Cubit<FormState, { _id: string }> {
+  static key = (a: { _id: string }) => a._id;
+}
 
 // each mount of this component gets its own FormCubit instance
-const instanceId = useId();
-const [state, cubit] = useBloc(FormCubit, { args: options, instanceId });
+const _id = useId();
+const [state, cubit] = useBloc(FormCubit, { args: { ...options, _id } });
 ```
 
 See [Passing Inputs](/guide/inputs) for the full identity model.
 
-### `instanceId`
+### Named instances via `args`
 
-```ts
-instanceId?: string | number
-```
-
-**Returns:** `void` (the option overrides the instance key used for resolution).
-
-**Behavior.** Use a named instance instead of the default shared one. Components with the same `instanceId` share the same instance. This is the escape hatch for identities that can't be derived from `args`. Pass `useId()` for a per-mount private instance that is disposed when the component unmounts.
+To get a named instance instead of the default shared one, declare an `Args` shape with a `static key` and pass the identifying value as `args`. Consumers with the same resolved key share the same instance.
 
 ```tsx
-const [state] = useBloc(EditorCubit, { instanceId: 'doc-42' });
+// EditorCubit has `static key = (a: { docId: string }) => a.docId`
+const [state] = useBloc(EditorCubit, { args: { docId: 'doc-42' } });
 ```
 
-When a bloc declares `Args`, prefer using `args` for identity — the meaningful value keys the instance and feeds the bloc in one step. Reserve `instanceId` for cases where the key genuinely can't be derived from args.
+The meaningful value keys the instance and feeds `init(args)` in one step — there is no separate `instanceId` option.
 
 ::: tip Need a fresh instance per component mount?
-Pass `instanceId: useId()`. `useId()` returns a stable-per-mount value, so every call site gets its own private instance, disposed on unmount. Useful for per-form or per-item cubits. See [Passing Inputs](/guide/inputs).
+Include `useId()` in `args` with a matching `static key`. `useId()` returns a stable-per-mount value, so every call site gets its own private instance, disposed on unmount. Useful for per-form or per-item cubits. See [Passing Inputs](/guide/inputs).
 :::
 
 ### `select`
@@ -9862,11 +9862,10 @@ An inline callback (`onComplete={() => …}`) gets a new identity every render, 
 
 This is the canonical instance-identity precedence for `useBloc`. Other pages defer to this list:
 
-1. **Explicit `instanceId`** on the call — hard override, wins over everything below (pass `useId()` here for a per-mount private instance)
-2. **`<BlocProvider>` context id** — inherited from a parent provider when no explicit `instanceId` is given
-3. **`static key(args)`** — class-supplied key derived from `args`
-4. **Structural hash of `args`** — default when the bloc declares `Args` and no `key` is set
-5. **`'default'`** — singleton fallback when the bloc has no `args`, no key, and no provider
+1. **`<BlocProvider>` context args** — inherited from a parent provider when present
+2. **`static key(args)`** — class-supplied key derived from `args`
+3. **Structural hash of `args`** — default when the bloc declares `Args` and no `key` is set
+4. **`'default'`** — singleton fallback when the bloc has no `args`, no key, and no provider
 
 Blocs declare explicit identity via a static property:
 
@@ -9880,12 +9879,13 @@ class DocumentCubit extends Cubit<
 }
 ```
 
-A note on `<BlocProvider>` (step 2 above): it supplies a default `instanceId` to descendant `useBloc` calls that don't pass one of their own, so a subtree can share a scoped instance without threading the key through props. An explicit `instanceId` on the call still wins over it.
+A note on `<BlocProvider>` (step 2 above): it supplies default `args` to descendant `useBloc` calls that don't pass their own, so a subtree can share a scoped instance without threading the key through props. A call passing its own `args` still wins over it.
 
 ```tsx
 import { BlocProvider } from '@blac/react';
 
-<BlocProvider instanceId="customer-42">
+// CustomerCubit has `static key = (a: { id: string }) => a.id`
+<BlocProvider args={{ id: 'customer-42' }}>
   <CustomerView /> {/* useBloc(CustomerCubit) here resolves to "customer-42" */}
 </BlocProvider>;
 ```
@@ -9897,7 +9897,7 @@ See [Passing Inputs](/guide/inputs) for the full decision matrix.
 - **Passing a fresh `select` each render.** The selector must be referentially stable (wrap it in `useCallback`). A new function identity each render re-keys the subscription, which the underlying channel treats as a new consumer.
 - **Putting non-serializable values in `args`.** Refs, callbacks, and DOM nodes change identity every render, so a fresh `args` object produces a brand-new instance each time (and `args` must be JSON-serializable). Use the bloc's `Deps` for handles — see [Injecting handles (`deps`)](#injecting-handles-deps).
 - **Reaching for `instanceId` when `args` would do.** If the identifying value is also useful inside the bloc, pass it as `args` so it keys the instance _and_ feeds `init` in one step. Reserve `instanceId` for keys that aren't part of the bloc's data.
-- **Expecting an `autoTrack` or `autoInstance` option.** Neither exists. Opt out of tracking with `select`; get per-mount instances with `instanceId: useId()`.
+- **Expecting an `autoTrack`, `autoInstance`, or `instanceId` option.** None exist. Opt out of tracking with `select`; get per-mount instances with a synthetic `args` value (`args: { _id: useId() }`) keyed by `static key`.
   :::
 
 ## Lifecycle
@@ -9954,28 +9954,33 @@ See [Dependency Tracking](/react/dependency-tracking) for the full recording rul
 
 **Cause:** Both mounts resolve to the same instance key (`'default'` when there are no `args`). When the first mount releases, the instance disposes and the remount creates a fresh one — but if `keepAlive` is set, the instance persists and the remount picks it back up.
 
-**Fix:** For one private instance per mount, pass `instanceId: useId()`. Each mount gets a key that is stable for that mount's lifetime and disposed on unmount:
+**Fix:** For one private instance per mount, include a per-mount unique value in `args` and use `static key` to make it the identity key. `useId()` returns a stable-per-mount value:
 
 ```tsx
-const instanceId = useId();
-const [state] = useBloc(WidgetCubit, { instanceId });
+class WidgetCubit extends Cubit<WidgetState, { _id: string }> {
+  static key = (a: { _id: string }) => a._id;
+}
+
+const _id = useId();
+const [state] = useBloc(WidgetCubit, { args: { _id } });
 ```
 
 See [Instance Management](/core/instance-management) and [Passing Inputs](/guide/inputs).
 
-### `autoTrack`, `autoInstance`, or `isolated` option not found
+### `autoTrack`, `autoInstance`, `isolated`, or `instanceId` option not found
 
-**Symptom:** TypeScript errors or runtime `undefined` when passing `autoTrack`, `autoInstance`, `isolated`, or `dependencies` to `useBloc`.
+**Symptom:** TypeScript errors or runtime `undefined` when passing `autoTrack`, `autoInstance`, `isolated`, `instanceId`, or `dependencies` to `useBloc`.
 
-**Cause:** These were v1 or pre-release APIs that were removed. `UseBlocOptions` has exactly five keys: `args`, `instanceId`, `select`, `onMount`, `onUnmount`.
+**Cause:** These were v1 or pre-release APIs that were removed. `UseBlocOptions` has exactly four keys: `args`, `select`, `onMount`, `onUnmount`.
 
 **Fix:**
 
-| Old                         | Replacement                                         |
-| --------------------------- | --------------------------------------------------- |
-| `autoTrack` / no option     | Auto-tracking is the default; opt out with `select` |
-| `autoInstance` / `isolated` | `instanceId: useId()` for per-mount instances       |
-| `dependencies`              | Renamed to `select` in v2                           |
+| Old                         | Replacement                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------ |
+| `autoTrack` / no option     | Auto-tracking is the default; opt out with `select`                                  |
+| `autoInstance` / `isolated` | Include a per-mount unique value in `args` with `static key` for per-mount instances |
+| `instanceId`                | Use `args`-derived identity; include a unique value in `args` + `static key`         |
+| `dependencies`              | Renamed to `select` in v2                                                            |
 
 See [Migration from v1](/guide/migration-from-v1) for the full list of renamed/removed options.
 
@@ -10577,7 +10582,6 @@ The hook signature, return tuple, and options are identical to the React version
 ```ts
 const [state, bloc, ref] = useBloc(MyCubit, {
   args: { id },                       // typed; required when the bloc declares Args
-  instanceId: 'optional-key',         // per-consumer instance key
   select: (state, bloc) => [bloc.someGetter], // re-render selector (opts out of auto-track)
   onMount: (bloc) => {
     /* runs after acquire */
@@ -11540,13 +11544,13 @@ withTestRegistry(() => {
 
 ## Seeding state
 
-### `withBlocState(BlocClass, state, instanceKey?)`
+### `withBlocState(BlocClass, state, args?)`
 
 ```ts
 function withBlocState<T extends StateContainerConstructor>(
   BlocClass: T,
   state: Partial<ExtractState<T>>,
-  instanceKey?: string,
+  args?: ExtractArgs<T>,
 ): InstanceType<T>;
 ```
 
@@ -11567,21 +11571,21 @@ it('filters active todos', () => {
 });
 ```
 
-For named instances, pass the `instanceKey`:
+For named instances, pass the `args` that identify them (resolved via the class's `static key`/structural hash):
 
 ```ts
-withBlocState(EditorCubit, { content: 'Hello' }, 'doc-1');
-withBlocState(EditorCubit, { content: 'World' }, 'doc-2');
+withBlocState(EditorCubit, { content: 'Hello' }, { docId: 'doc-1' });
+withBlocState(EditorCubit, { content: 'World' }, { docId: 'doc-2' });
 ```
 
-### `withBlocMethod(BlocClass, methodName, impl, instanceKey?)`
+### `withBlocMethod(BlocClass, methodName, impl, args?)`
 
 ```ts
 function withBlocMethod<T extends StateContainerConstructor>(
   BlocClass: T,
   methodName: keyof InstanceType<T>,
   impl: (...args: any[]) => any,
-  instanceKey?: string,
+  args?: ExtractArgs<T>,
 ): InstanceType<T>;
 ```
 
@@ -11690,13 +11694,13 @@ Stubs are commonly paired with `registerOverride` to inject them into the regist
 
 ## Overrides
 
-### `registerOverride(BlocClass, instance, instanceKey?)`
+### `registerOverride(BlocClass, instance, args?)`
 
 ```ts
 function registerOverride<T extends StateContainerConstructor>(
   BlocClass: T,
   instance: InstanceType<T>,
-  instanceKey?: string,
+  args?: ExtractArgs<T>,
 ): void;
 ```
 
@@ -11717,14 +11721,14 @@ it('uses the override when resolving dependencies', () => {
 });
 ```
 
-### `overrideEnsure(BlocClass, instance, fn, instanceKey?)`
+### `overrideEnsure(BlocClass, instance, fn, args?)`
 
 ```ts
 function overrideEnsure<T extends StateContainerConstructor, R>(
   BlocClass: T,
   instance: InstanceType<T>,
   fn: () => R,
-  instanceKey?: string,
+  args?: ExtractArgs<T>,
 ): R;
 ```
 
@@ -11877,11 +11881,11 @@ Use the `instanceKey` parameter on any helper to test named instances:
 blacTestSetup();
 
 it('manages independent editor instances', () => {
-  withBlocState(EditorCubit, { content: 'Doc A' }, 'doc-a');
-  withBlocState(EditorCubit, { content: 'Doc B' }, 'doc-b');
+  withBlocState(EditorCubit, { content: 'Doc A' }, { docId: 'doc-a' });
+  withBlocState(EditorCubit, { content: 'Doc B' }, { docId: 'doc-b' });
 
-  const editorA = ensure(EditorCubit, 'doc-a');
-  const editorB = ensure(EditorCubit, 'doc-b');
+  const editorA = ensure(EditorCubit, { args: { docId: 'doc-a' } });
+  const editorB = ensure(EditorCubit, { args: { docId: 'doc-b' } });
 
   expect(editorA.state.content).toBe('Doc A');
   expect(editorB.state.content).toBe('Doc B');
@@ -12012,21 +12016,21 @@ it('calls save on form submit', async () => {
 
 ### Named instances
 
-If your component uses `useBloc(Cubit, { instanceId })`, pass the same key:
+If your component keys a bloc by `args` (e.g. `useBloc(EditorCubit, { args: { docId } })`), pass the same `args` so the stub registers under the matching instance key:
 
 ```tsx
 it('renders the correct editor', () => {
-  renderWithBloc(<Editor instanceId="doc-42" />, {
+  renderWithBloc(<Editor docId="doc-42" />, {
     bloc: EditorCubit,
     state: { content: 'Hello world' },
-    instanceKey: 'doc-42',
+    args: { docId: 'doc-42' },
   });
   expect(screen.getByText('Hello world')).toBeInTheDocument();
 });
 ```
 
 ::: warning Match the resolved instance key
-`instanceKey` here must match the key your component's `useBloc` resolves to. With an explicit `useBloc(Cubit, { instanceId })`, that is the stringified `instanceId`. With `args`-keyed blocs the key is derived structurally from the args, so prefer to control identity by seeding the stub directly (next section) rather than guessing the key. See [Inputs](/guide/inputs) for how identity is resolved.
+The `args` you pass must resolve to the same key your component's `useBloc` resolves to — `renderWithBloc` runs them through the same `static key`/structural-hash resolution. There is no separate string-key option; identity always flows through `args`. See [Inputs](/guide/inputs) for how identity is resolved.
 :::
 
 ### `args`- and `deps`-based blocs
