@@ -30,24 +30,34 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[H]` waiting on human 
 - [x] 3.R2 Rollout core comms/tracking (Sonnet/med) [P3] — 8380a3c3 (bloc-comm, watch, tracked)
 - [x] 3.R3 Rollout react pages (Sonnet/med) [P3] — c77ce39d (use-bloc, dep-tracking, performance)
 
-## Phase 4 — Visual & interactive
-- [ ] 2.9 DevTools/logging prose + captions (Sonnet/med) [split]
-- [H] 2.9 Capture screenshots/GIF (human)
-- [ ] 3.11 Before/after perf demo (Sonnet/high) [P4] + [H] browser check
-- [ ] 3.5 Playground page (Sonnet/med) [P4] + [H] browser check
-- [ ] 3.6 Showcase gallery (Sonnet/high) [P4] + [H] browser check
-- [ ] 4.W Wire playground + showcase (Haiku/med) [serial, last]
+## Phase 4 — Visual & interactive  (authoring ✅)
+- [x] 2.9 DevTools/logging prose + captions (Sonnet/med) — 509793e1
+- [x] fix: dropped unresolved <img> refs — 0c082727 (VitePress FAILS build on
+      missing <img>/asset; pending screenshots are callouts, no <img>)
+- [H] 2.9 Capture screenshots/GIF (human) — files: devtools-instances/-state-diff/
+      -event-log/-logging-console.png in apps/docs/public/, then re-add <img>
+- [x] 3.11 Before/after perf demo (Sonnet/high) — 68a7b6a3 + [H] browser check
+- [x] 3.5 Playground page (Sonnet/med) — 9b3ee9ab + [H] browser check
+- [x] 3.6 Showcase gallery (Sonnet/high) — 113dfe76 (messenger cut) + [H] browser check
+- [ ] 4.W Wire playground + showcase → folded into final combined wiring
 
-## Phase 5 — Tier 3 differentiators
-- [ ] 3.1 End-to-end Tutorial (Opus/high) + [H] browser check
-- [ ] 3.2 Internals chapter (Opus/high)
-- [ ] 3.3 Integrations tree: nextjs/remix/rn/outside-react (Sonnet/high) [P5a]
-- [ ] 3.7 Coming-from flutter-bloc/zustand/redux (Sonnet/high) [P5a]
-- [ ] 3.9 Plugin recipes catalog (Sonnet/med) [P5b]
-- [ ] 3.10 llms.txt / llms-full.txt (Haiku/med) [P5b]
-- [ ] 3.4 Auto-API reference — OPTIONAL, evaluate vs core/types.md (likely skip)
-- [ ] 3.8 Unified sidebar — OPTIONAL, run alone after all wiring (Sonnet/med)
-- [ ] 5.W Wire phase-5 pages (Haiku/med) [serial, last]
+## Phase 5 — Tier 3 differentiators  ✅ COMPLETE
+- [x] 3.1 End-to-end Tutorial (Opus/high) — fe27d7b8 + [H] browser check (Sandpack checkpoints)
+- [x] 3.2 Internals chapter (Opus/high) — d1e403ca
+- [x] 3.3 Integrations tree: nextjs/remix/rn/outside-react (Sonnet/high) — 1efafcb5
+- [x] 3.7 Coming-from flutter-bloc/zustand/redux (Sonnet/high) — 2e0967e8 (+1cadfc36 fmt)
+- [x] 3.9 Plugin recipes catalog (Sonnet/med) — 98cc6042
+- [x] 3.10 llms.txt / llms-full.txt (Haiku/med) — bd20299c (hand-generated; regenerate on content change)
+- [~] 3.4 Auto-API reference — SKIPPED (core/types.md covers it); removed stale
+      docs:api promise from readme — fa6bd05c
+- [~] 3.8 Unified sidebar — DEFERRED (optional polish; current per-section sidebars work)
+- [x] 5.W/45.W Wire all phase 4-5 pages (Sonnet) — 8b8704c2
+
+## Outstanding human gates (browser / capture — cannot be done headlessly)
+- [H] 1.C delete sandpack-spike.md after verifying demo on / and /react/use-bloc
+- [H] 2.9 capture 4 DevTools/logging screenshots → apps/docs/public/, re-add <img>
+- [H] Browser-verify Sandpack on: /react/performance, /playground, /showcase,
+      /guide/tutorial (checkpoints) — CDN install + live re-render behavior
 
 ## Deferred
 - [D] 2.3 Mermaid — plugin is VitePress-1.x-only; revisit via custom client-only
