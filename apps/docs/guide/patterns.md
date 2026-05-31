@@ -87,20 +87,24 @@ Define the selector outside the component (or wrap it in `useCallback`). A fresh
 
 ## Named instances
 
-Use `instanceId` when you need multiple independent instances of the same Cubit class. Each key gets its own instance with its own state and lifecycle.
+When you need multiple independent instances of the same Cubit class, make the distinguishing name an `args` field and key on it with `static key`. Each name gets its own instance with its own state and lifecycle.
 
 ```tsx
+class FormCubit extends Cubit<FormState, { section: string }> {
+  static key = (a: FormCubit['args']) => a.section;
+}
+
 function FormPage() {
   return (
     <>
-      <FormSection instanceId="billing" />
-      <FormSection instanceId="shipping" />
+      <FormSection section="billing" />
+      <FormSection section="shipping" />
     </>
   );
 }
 
-function FormSection({ instanceId }: { instanceId: string }) {
-  const [state, form] = useBloc(FormCubit, { instanceId });
+function FormSection({ section }: { section: string }) {
+  const [state, form] = useBloc(FormCubit, { args: { section } });
   // Each section has independent state
   return (
     <input
@@ -113,7 +117,7 @@ function FormSection({ instanceId }: { instanceId: string }) {
 
 Named instances are ref-counted independently. When all components using `"billing"` unmount, that instance is disposed while `"shipping"` stays alive.
 
-When the distinguishing key is _meaningful data_ (a `userId`, a `docId`) rather than an arbitrary label, prefer keying by `args` instead — see [Passing Inputs](/guide/inputs). Reach for an explicit `instanceId` when the key is anonymous or externally managed.
+The name (`"billing"` / `"shipping"`) is just as much `args` data as a `userId` or `docId` would be — there is no separate key channel. See [Passing Inputs](/guide/inputs) for the full identity model.
 
 ## Persisting state outside React
 
@@ -264,20 +268,24 @@ The instance is created on first use and stays alive for the entire app session,
 
 ## Per-component private instances
 
-When a component needs its _own_ instance — never shared with siblings, disposed when it unmounts — give it a per-mount `instanceId`. `useId()` is the idiomatic source of a stable-per-mount key:
+When a component needs its _own_ instance — never shared with siblings, disposed when it unmounts — add a per-mount unique value to `args` and key on it with `static key`. `useId()` is the idiomatic source of a stable-per-mount value:
 
 ```tsx
 import { useId } from 'react';
 
+class UploadCubit extends Cubit<UploadState, { _id: string }> {
+  static key = (a: UploadCubit['args']) => a._id;
+}
+
 function UploadWidget() {
-  const instanceId = useId(); // unique per mount, stable across this mount's renders
-  const [state, upload] = useBloc(UploadCubit, { instanceId });
+  const _id = useId(); // unique per mount, stable across this mount's renders
+  const [state, upload] = useBloc(UploadCubit, { args: { _id } });
 
   return <progress value={state.progress} max={100} />;
 }
 ```
 
-Two `<UploadWidget />` siblings get two independent instances; each is disposed on its own unmount. This is the supported replacement for the removed `autoInstance` option. To seed the instance with identity data, combine it with `args` — see [Passing Inputs](/guide/inputs).
+Two `<UploadWidget />` siblings get two independent instances; each is disposed on its own unmount. This is the supported replacement for the removed `autoInstance`/`instanceId` options. Any real identity data goes in the same `args` object alongside `_id` — see [Passing Inputs](/guide/inputs).
 
 ## Getter-based computed values
 

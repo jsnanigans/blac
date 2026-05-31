@@ -74,9 +74,9 @@ interface CartState {
 Auto-tracking records the *leaf paths* a render reads. A getter that reads `this.state.items` is recorded as a dependency on `items`; when `items` changes the getter is re-evaluated and consumers re-render. A getter that no consumer reads costs nothing. See [Patterns & Recipes](/guide/patterns#getter-based-computed-values) for the recipe.
 :::
 
-## `args` vs `deps` vs `instanceId`: the decision rule
+## `args` vs `deps`: the decision rule
 
-**Principle:** put **serializable identity in `args`**, **non-serializable handles in `deps`**, and reach for **`instanceId` only when identity cannot be derived from data**.
+**Principle:** put **serializable identity in `args`** and **non-serializable handles in `deps`**. Every instance is keyed from its `args` — there is no separate key input.
 
 This is the single most common source of confusion, so commit the rule to memory:
 
@@ -84,7 +84,7 @@ This is the single most common source of confusion, so commit the rule to memory
 |---|---|---|
 | Serializable data that defines *which* instance (a `userId`, an `endpoint`, a filter set) | **`args`** | Args are hashed into the instance key — same args share one instance, different args fork. |
 | A non-serializable handle (a `useRef`, a stable `useCallback`, an external API object) | **`deps`** | Deps never key identity and are merged per-consumer; the bloc reads them lazily. |
-| An opaque, externally-managed key that isn't derivable from data | **`instanceId`** | The literal escape hatch when no `args`-derived key fits. |
+| An opaque key that isn't real bloc data (a per-mount id, an externally-managed token) | **a synthetic `args` field + `static key`** | Add the value to `args` (e.g. `_id`) and key on it; nothing else forks the instance. |
 
 The mechanics of all three live in [Passing Inputs to Blocs](/guide/inputs); this is just the judgment. Note that `deps` is **not** a `useBloc` option in v2 — a consumer contributes its slice from a mount effect via the `APPLY_DEPS` / `REMOVE_DEPS_OWNER` handles from `@blac/core` (the examples below import them); see [Wiring deps from a component](/guide/inputs#wiring-deps-from-a-component).
 
@@ -120,15 +120,16 @@ See the full treatment in [Passing Inputs to Blocs](/guide/inputs#the-callback-s
 
 ### Per-component private instances
 
-When a component needs its *own* instance with its own lifecycle (disposed on unmount), pass a per-mount `instanceId` keyed by React's `useId()` — each mount gets a fresh private instance.
+When a component needs its *own* instance with its own lifecycle (disposed on unmount), add a per-mount unique value to `args` keyed by React's `useId()` and select it with `static key` — each mount gets a fresh private instance.
 
 ```ts
-// Good — a plain Cubit; identity is decided at the call site
-class FileUploadCubit extends Cubit<UploadState, { endpoint: string }> {
+// Good — a synthetic `_id` keys the instance; endpoint rides along as config
+class FileUploadCubit extends Cubit<UploadState, { endpoint: string; _id: string }> {
+  static key = (a: FileUploadCubit['args']) => a._id;
   constructor() {
     super({ status: 'idle', progress: 0 });
   }
-  protected init(args: { endpoint: string }) {
+  protected init(args: { endpoint: string; _id: string }) {
     this.endpoint = args.endpoint;
   }
 }
@@ -136,12 +137,12 @@ class FileUploadCubit extends Cubit<UploadState, { endpoint: string }> {
 
 ```tsx
 // Each FileUpload mount owns a private instance
-const instanceId = useId();
-const [state, upload] = useBloc(FileUploadCubit, { args: { endpoint }, instanceId });
+const _id = useId();
+const [state, upload] = useBloc(FileUploadCubit, { args: { endpoint, _id } });
 ```
 
 ::: tip One source of per-mount identity
-`useId()` returns a stable-per-mount value, so passing it as `instanceId` gives each mount a private instance that lives and dies with it — and always wins over an inherited [`<BlocProvider>`](/react/use-bloc) context. Reserve a hand-written `instanceId` for keys you genuinely manage yourself (e.g. `"billing"` vs `"shipping"` form sections). See [Instance Management](/core/instance-management) for the registry mechanics.
+`useId()` returns a stable-per-mount value, so keying on it gives each mount a private instance that lives and dies with it. For *named* sections that should share an instance by name (e.g. `"billing"` vs `"shipping"` form sections), make that name a real `args` field and key on it the same way. See [Instance Management](/core/instance-management) for the registry mechanics.
 :::
 
 ## Async, loading, and error state
@@ -345,19 +346,19 @@ this.patch({ items: next, total: recompute(next) });
 get total() { return this.state.items.reduce(/* ... */); }
 ```
 
-### Reaching for `instanceId` when `args` would key it
+### Threading identity outside `args`
 
-When the distinguishing value is *meaningful data* (a `userId`, a `docId`), hand-threading it through `instanceId` makes you pass the same value twice — once to key the instance, once to feed it. Let `args` key identity instead.
+When the distinguishing value is *meaningful data* (a `userId`, a `docId`), it belongs in `args` — args both key the instance and seed `init()` in one step. Don't invent a parallel key channel.
 
 ```tsx
-// Bad — userId threaded through instanceId, then passed again as data
-const [s] = useBloc(UserCardCubit, { instanceId: userId });
+// Bad — passing userId as a bare positional/extra arg, separate from args
+const [s] = useBloc(UserCardCubit, userId);
 
 // Fix — args key the instance AND seed init() in one step
 const [s] = useBloc(UserCardCubit, { args: { userId } });
 ```
 
-Reserve explicit `instanceId` for keys that aren't part of the bloc's data: named sections (`"billing"` / `"shipping"`), externally-supplied ids, or a per-mount `useId()`.
+For keys that aren't real bloc data — named sections (`"billing"` / `"shipping"`), externally-supplied ids, or a per-mount `useId()` — add the value as an `args` field and key on it with `static key`. There is no separate `instanceId` channel.
 
 ### Raw inline callbacks in `deps`
 
@@ -406,7 +407,7 @@ Use `select` deliberately: to opt a writer-only component *out* of all re-render
 
 ## See also
 
-- [Passing Inputs to Blocs](/guide/inputs) — the mechanics of `args`, `deps`, and `instanceId`
+- [Passing Inputs to Blocs](/guide/inputs) — the mechanics of `args` and `deps`
 - [Patterns & Recipes](/guide/patterns) — concrete copy-paste recipes for these principles
 - [Performance](/react/performance) — re-render mechanics and the cost model
 - [Troubleshooting](/guide/troubleshooting) — symptom-first fixes for the anti-patterns above

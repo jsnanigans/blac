@@ -67,22 +67,26 @@ const DocumentCubit = blac({ key: (args) => args.docId })(
 );
 ```
 
-See [Configuration](/core/configuration) for the rest of the `blac()` options (`keepAlive`, `equality`, `excludeFromDevTools`) and [Glossary](/guide/glossary) for how `args`, `static key`, and `instanceId` relate.
+See [Configuration](/core/configuration) for the rest of the `blac()` options (`keepAlive`, `equality`, `excludeFromDevTools`) and [Glossary](/guide/glossary) for how `args` and `static key` relate.
 
 ### Per-component private instances
 
-To give each mount its own instance — disposed on unmount, never shared — pass a unique `instanceId`. The idiomatic source of a stable-per-mount key is React's `useId()`:
+To give each mount its own instance — disposed on unmount, never shared — include a **per-mount unique value in `args`** and declare a `static key` that uses it. The idiomatic source of a stable-per-mount value is React's `useId()`:
 
 ```tsx
 // private instance, own lifecycle, seeded with args
-const instanceId = useId();
-const [state, cubit] = useBloc(FileUploadCubit, { args: options, instanceId });
+class FileUploadCubit extends Cubit<UploadState, { endpoint: string; _id: string }> {
+  static key = (a: FileUploadCubit['args']) => a._id;
+}
+
+const _id = useId();
+const [state, cubit] = useBloc(FileUploadCubit, { args: { ...options, _id } });
 ```
 
-Because `useId()` returns a different value per component instance (and the same value across that component's re-renders), each mount gets a private bloc that lives and dies with it. The `instanceId` you pass always wins over an inherited [`<BlocProvider>`](/react/use-bloc) context and over any args-derived key.
+Because `useId()` returns a different value per component instance (and the same value across that component's re-renders), the derived key is unique per mount, so each mount gets a private bloc that lives and dies with it. The other args (`endpoint`) still seed `init(args)` — they ride along without forking instances because only `_id` keys identity.
 
-::: warning No `autoInstance` option
-Earlier drafts (and some example UI text) mention `useBloc(C, { args, autoInstance: true })`. **That option does not exist** in v2 — `useBloc` accepts only `args`, `instanceId`, `select`, `onMount`, and `onUnmount`. The per-mount idiom is the explicit `instanceId: useId()` shown above. See [useBloc](/react/use-bloc) for the complete option list.
+::: warning No `instanceId` or `autoInstance` option
+Earlier drafts (and some example UI text) mention `useBloc(C, { args, instanceId })` or `useBloc(C, { args, autoInstance: true })`. **Neither option exists** in v2 — `useBloc` accepts only `args`, `select`, `onMount`, and `onUnmount`. The per-mount idiom is the synthetic-args `static key` shown above. See [useBloc](/react/use-bloc) for the complete option list.
 :::
 
 ### Args must be serializable
@@ -219,7 +223,7 @@ Prefer these patterns, best first:
 - **Non-serializable value in `args`** — a ref, callback, DOM node, or class instance makes the structural hash unstable, so you get a *new instance every render*. Put it in deps instead. (The structural-key hasher throws in dev if it sees a function in `args`.)
 - **Capturing an inline callback in deps** — `{ onComplete: () => doThing() }` freezes the first render's closure. Stabilize with `useCallback`, or invert the callback (option 1 above).
 - **Two consumers writing the same deps key** — last write wins and the value flickers. Give each shared value exactly one owning component.
-- **Reaching for `deps:` or `autoInstance:` as `useBloc` options** — neither exists. Wire deps from an effect; key per-mount instances with `instanceId: useId()`.
+- **Reaching for `deps:`, `instanceId:`, or `autoInstance:` as `useBloc` options** — none exist. Wire deps from an effect; key per-mount instances with a synthetic `args` value + `static key` (e.g. `args: { _id: useId() }`).
 :::
 
 ---
@@ -259,13 +263,11 @@ When `useBloc` resolves which instance to connect to, it consults sources in thi
 
 | Priority | Source | Resolved key |
 |---|---|---|
-| 1 | explicit `instanceId` option | The literal value you pass (escape hatch / per-mount via `useId()`) |
-| 2 | `<BlocProvider>` context id | Inherited from a parent provider when no explicit `instanceId` |
-| 3 | `static key(args)` | Return value of the class's key function |
-| 4 | Structural hash of `args` | Default when `args` are declared and no `static key` |
-| 5 | `'default'` | Singleton fallback (no `args`, no key, no context) |
+| 1 | own `args` on the `useBloc` call | `static key(args)` if declared, else the structural hash of `args` |
+| 2 | `<BlocProvider>` context `args` | same resolution applied to inherited args, when the call passes no own `args` |
+| 3 | `'default'` | singleton fallback — no `args`, no `static key`, no provider |
 
-`args`-derived identity (rows 3–4) is the **primary idiom** for meaningful per-value instances. `instanceId` (row 1) is the escape hatch for identities that can't be derived from args — anonymous, opaque, externally managed, or deliberately per-mount via `useId()`.
+`args`-derived identity is the **only** idiom for per-value instances. For an identity that can't be derived from real data — anonymous, opaque, externally managed, or deliberately per-mount — synthesize one by adding a value to `args` (e.g. `_id: useId()`) and keying on it with `static key`.
 
 ### Decision matrix
 
@@ -273,7 +275,7 @@ Two questions decide everything: **is this input identity (set once) or live (ch
 
 | | Input defines identity / set once | Input is live and changing |
 |---|---|---|
-| **Private to one component** | `useBloc(C, { args, instanceId: useId() })` — own instance, seeded from args | per-mount `instanceId` + call `cubit.xChanged(v)` from that component's effect |
+| **Private to one component** | `useBloc(C, { args: { ...data, _id: useId() } })` + `static key` on `_id` — own instance, seeded from args | synthetic per-mount `args` + call `cubit.xChanged(v)` from that component's effect |
 | **Shared across consumers** | `useBloc(C, { args })` — args key the instance; override race impossible | call `cubit.xChanged(v)` from the **one owning component's** effect |
 
 Non-serializable handles (refs, callbacks, controllers) sit *outside* this matrix entirely — they go through the [deps lane](#deps-non-serializable-handles) and never touch identity.
@@ -289,6 +291,6 @@ The `select` option (the per-consumer re-render selector) is unrelated to the `d
 - [Best Practices](/guide/best-practices) — *which* lane to choose, and the judgment behind it
 - [Mental Model](/guide/mental-model) — *why* instances are shared and ref-counted
 - [useBloc](/react/use-bloc) — the complete option list and identity precedence (canonical)
-- [Glossary](/guide/glossary) — definitions of `args`, `deps`, `instanceId`, `static key`
+- [Glossary](/guide/glossary) — definitions of `args`, `deps`, `static key`
 - [Patterns & Recipes](/guide/patterns) — concrete copy-paste recipes
 - [Cubit](/core/cubit) — `init(args)`, `onDepsChanged`, and the mutation API

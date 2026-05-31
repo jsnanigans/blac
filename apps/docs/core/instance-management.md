@@ -45,29 +45,26 @@ Disposal is **synchronous** with the `release` call that drops the count to zero
 
 ## Registry functions
 
-### `acquire(BlocClass, instanceKey?, refId?, args?)`
+### `acquire(BlocClass, opts?)`
 
 Create or return an existing instance, incrementing the ref count.
 
 ```ts
 function acquire<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceKey?: string,
-  refId?: string,
-  args?: ExtractArgs<T>,
+  opts?: { args?: ExtractArgs<T>; refId?: string },
 ): InstanceType<T>;
 ```
 
-| Parameter     | Type                                  | Required | Description                                                                                                            |
-| ------------- | ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class to acquire an instance of.                                                                   |
-| `instanceKey` | `string`                              | no       | Explicit registry key. Defaults to the key derived from `args` or `'default'`.                                         |
-| `refId`       | `string`                              | no       | Caller-supplied ref identifier. Used by `useBloc` to pair with `release`. Rarely set manually.                         |
-| `args`        | `ExtractArgs<T>`                      | no       | Serializable construction data passed to `init(args)`. Used to derive the instance key when no `instanceKey` is given. |
+| Parameter     | Type                                  | Required | Description                                                                                    |
+| ------------- | ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class to acquire an instance of.                                           |
+| `opts.args`   | `ExtractArgs<T>`                      | no       | Serializable construction data passed to `init(args)`. Derives the instance key.               |
+| `opts.refId`  | `string`                              | no       | Caller-supplied ref identifier. Used by `useBloc` to pair with `release`. Rarely set manually. |
 
 **Returns:** `InstanceType<T>` — the live instance (newly created or existing).
 
-**Behavior.** If no instance exists for the resolved key, `acquire` creates one, calls `init(args)`, and fires the internal `'created'` event. If an instance already exists, it is returned as-is. The ref count is always incremented. **Every `acquire` must have a matching `release`** — a missing `release` is the canonical instance leak. In React, `useBloc` owns this pair; call `acquire` directly only in server-side or scripting contexts.
+**Behavior.** The instance key is derived from `opts.args` (`static key` if declared, else the structural hash, else `'default'`). If no instance exists for the resolved key, `acquire` creates one, calls `init(args)`, and fires the internal `'created'` event. If an instance already exists, it is returned as-is. The ref count is always incremented. **Every `acquire` must have a matching `release`** — a missing `release` is the canonical instance leak. In React, `useBloc` owns this pair; call `acquire` directly only in server-side or scripting contexts.
 
 ```ts twoslash
 import { acquire, release } from '@blac/core';
@@ -87,23 +84,21 @@ console.log(counter.state.count); // => 1
 release(CounterCubit); // must pair with acquire
 ```
 
-### `ensure(BlocClass, instanceKey?, args?)`
+### `ensure(BlocClass, opts?)`
 
 Create or return an existing instance **without** taking a ref.
 
 ```ts
 function ensure<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceKey?: string,
-  args?: ExtractArgs<T>,
+  opts?: { args?: ExtractArgs<T> },
 ): InstanceType<T>;
 ```
 
-| Parameter     | Type                                  | Required | Description                                            |
-| ------------- | ------------------------------------- | -------- | ------------------------------------------------------ |
-| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class.                             |
-| `instanceKey` | `string`                              | no       | Explicit registry key.                                 |
-| `args`        | `ExtractArgs<T>`                      | no       | Construction data for `init(args)` and key derivation. |
+| Parameter   | Type                                  | Required | Description                                            |
+| ----------- | ------------------------------------- | -------- | ------------------------------------------------------ |
+| `BlocClass` | `T extends StateContainerConstructor` | yes      | The state-container class.                             |
+| `opts.args` | `ExtractArgs<T>`                      | no       | Construction data for `init(args)` and key derivation. |
 
 **Returns:** `InstanceType<T>` — the live instance.
 
@@ -124,21 +119,21 @@ const auth = ensure(AuthCubit);
 console.log(auth.state.userId); // no release needed
 ```
 
-### `borrow(BlocClass, instanceKey?)`
+### `borrow(BlocClass, opts?)`
 
 Return an existing instance without taking a ref. Throws if the instance does not exist.
 
 ```ts
 function borrow<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceKey?: string,
+  opts?: { args?: ExtractArgs<T> },
 ): InstanceType<T>;
 ```
 
-| Parameter     | Type                                  | Required | Description                                     |
-| ------------- | ------------------------------------- | -------- | ----------------------------------------------- |
-| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class.                      |
-| `instanceKey` | `string`                              | no       | Explicit registry key. Defaults to `'default'`. |
+| Parameter   | Type                                  | Required | Description                                                       |
+| ----------- | ------------------------------------- | -------- | ---------------------------------------------------------------- |
+| `BlocClass` | `T extends StateContainerConstructor` | yes      | The state-container class.                                       |
+| `opts.args` | `ExtractArgs<T>`                      | no       | Args identifying the instance. Defaults to the `'default'` key.  |
 
 **Returns:** `InstanceType<T>` — the live instance.
 
@@ -160,23 +155,23 @@ function readCount(): number {
 }
 ```
 
-### `borrowSafe(BlocClass, instanceKey?)`
+### `borrowSafe(BlocClass, opts?)`
 
 Return an existing instance without taking a ref. Returns an error object instead of throwing.
 
 ```ts
 function borrowSafe<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceKey?: string,
+  opts?: { args?: ExtractArgs<T> },
 ):
   | { error: Error; instance: null }
   | { error: null; instance: InstanceType<T> };
 ```
 
-| Parameter     | Type                                  | Required | Description                                     |
-| ------------- | ------------------------------------- | -------- | ----------------------------------------------- |
-| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class.                      |
-| `instanceKey` | `string`                              | no       | Explicit registry key. Defaults to `'default'`. |
+| Parameter   | Type                                  | Required | Description                                                      |
+| ----------- | ------------------------------------- | -------- | --------------------------------------------------------------- |
+| `BlocClass` | `T extends StateContainerConstructor` | yes      | The state-container class.                                      |
+| `opts.args` | `ExtractArgs<T>`                      | no       | Args identifying the instance. Defaults to the `'default'` key. |
 
 **Returns:** `{ error: null; instance: InstanceType<T> }` when the instance exists, or `{ error: Error; instance: null }` when it does not.
 
@@ -200,90 +195,87 @@ if (error) {
 }
 ```
 
-### `release(BlocClass, instanceKey?, forceDispose?, refId?)`
+### `release(BlocClass, opts?)`
 
 Decrement the ref count. Dispose the instance when count reaches zero.
 
 ```ts
 function release<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceKey?: string,
-  forceDispose?: boolean,
-  refId?: string,
+  opts?: { args?: ExtractArgs<T>; refId?: string; forceDispose?: boolean },
 ): void;
 ```
 
-| Parameter      | Type                                  | Required | Description                                                                          |
-| -------------- | ------------------------------------- | -------- | ------------------------------------------------------------------------------------ |
-| `BlocClass`    | `T extends StateContainerConstructor` | yes      | The state-container class.                                                           |
-| `instanceKey`  | `string`                              | no       | The key used when `acquire` was called. **Must match** the key used at acquire time. |
-| `forceDispose` | `boolean`                             | no       | When `true`, dispose immediately even if `keepAlive` is set. Default `false`.        |
-| `refId`        | `string`                              | no       | The ref identifier passed to `acquire`. Rarely set manually.                         |
+| Parameter          | Type                                  | Required | Description                                                                       |
+| ------------------ | ------------------------------------- | -------- | --------------------------------------------------------------------------------- |
+| `BlocClass`        | `T extends StateContainerConstructor` | yes      | The state-container class.                                                        |
+| `opts.args`        | `ExtractArgs<T>`                      | no       | The args used when `acquire` was called. **Must resolve to the same key.**        |
+| `opts.refId`       | `string`                              | no       | The ref identifier passed to `acquire`. Rarely set manually.                      |
+| `opts.forceDispose`| `boolean`                             | no       | When `true`, dispose immediately even if `keepAlive` is set. Default `false`.     |
 
 **Returns:** `void`.
 
-**Behavior.** `release` is **idempotent for an already-dropped ref** — releasing more times than you acquired won't throw, it just no-ops once the count is gone. The key you release with **must match** the key you acquired with; a mismatch leaves the original ref dangling forever. At ref count zero, the instance is disposed synchronously (unless `keepAlive` is set or `forceDispose` is `false`).
+**Behavior.** `release` is **idempotent for an already-dropped ref** — releasing more times than you acquired won't throw, it just no-ops once the count is gone. The `args` you release with **must resolve to the same key** you acquired with; a mismatch leaves the original ref dangling forever. At ref count zero, the instance is disposed synchronously (unless `keepAlive` is set or `forceDispose` is `false`).
 
 ```ts twoslash
 import { acquire, release } from '@blac/core';
 import { Cubit } from '@blac/core';
 
-class SessionCubit extends Cubit<{ token: string | null }> {
+class SessionCubit extends Cubit<{ token: string | null }, { scope: string }> {
+  static key = (a: SessionCubit['args']) => a.scope;
   constructor() {
     super({ token: null });
   }
 }
 
-const session = acquire(SessionCubit, 'main');
+const session = acquire(SessionCubit, { args: { scope: 'main' } });
 // ... use session ...
-release(SessionCubit, 'main'); // key must match acquire's key
+release(SessionCubit, { args: { scope: 'main' } }); // args must match acquire's
 ```
 
 ## Named instances
 
-Pass an instance key as the second argument to any registry function to manage named instances:
+To manage distinct named instances, declare an `Args` shape and pass `args` to any registry function. The instance key is derived from those args — a `static key` if the class declares one, otherwise the structural hash of the args:
 
 ```ts twoslash
 import { acquire, release } from '@blac/core';
 import { Cubit } from '@blac/core';
 
-class EditorCubit extends Cubit<{ content: string }> {
+class EditorCubit extends Cubit<{ content: string }, { docId: string }> {
+  static key = (a: EditorCubit['args']) => a.docId;
   constructor() {
     super({ content: '' });
   }
 }
 
-const editor1 = acquire(EditorCubit, 'doc-42');
-const editor2 = acquire(EditorCubit, 'doc-99');
+const editor1 = acquire(EditorCubit, { args: { docId: 'doc-42' } });
+const editor2 = acquire(EditorCubit, { args: { docId: 'doc-99' } });
 
 // These are different instances
 const areDifferent = editor1 !== editor2; // true
 
-release(EditorCubit, 'doc-42');
-release(EditorCubit, 'doc-99');
+release(EditorCubit, { args: { docId: 'doc-42' } });
+release(EditorCubit, { args: { docId: 'doc-99' } });
 ```
 
-In React, use the `instanceId` option as an escape hatch for explicit keys:
+In React, pass the same `args`:
 
 ```tsx
-const [state] = useBloc(EditorCubit, { instanceId: 'doc-42' });
+const [state] = useBloc(EditorCubit, { args: { docId: 'doc-42' } });
 ```
 
-### Args-derived identity (preferred)
+### Args derive identity
 
-When a bloc declares `Args`, the preferred way to get distinct instances is to pass `args` — the instance key is derived automatically (structural hash by default, or `static key` if declared). This avoids threading the same value through both `instanceId` and a separate data channel:
+`args` are the **only** way to get distinct instances — the meaningful value keys the instance *and* feeds `init(args)`, so you never pass the same id twice:
 
 ```tsx
-// Before — id is opaque, userId had to be passed a second time
-const [s] = useBloc(UserCardCubit, { instanceId: userId });
-
-// After — the meaningful value keys the instance AND feeds init(args)
+// The meaningful value keys the instance AND feeds init(args)
 const [s] = useBloc(UserCardCubit, { args: { userId } });
 ```
 
-Identity precedence: explicit `instanceId` > `<BlocProvider>` context > `static key(args)` / structural hash of `args` > `'default'`.
+Identity precedence: own `args` (via `static key(args)`, else structural hash of `args`) > `<BlocProvider>` context args > `'default'`.
 
-The resolved key is the registry's single source of truth — `acquire` and `release` both run their inputs through the same resolution, so a ref taken under an args-derived key is dropped under the same key. See [Passing Inputs](/guide/inputs) for the full model and [Configuration](/core/configuration#key-args-string) for `static key`.
+The resolved key is the registry's single source of truth — `acquire` and `release` both run their `args` through the same resolution, so a ref taken under a given args key is dropped under the same key. See [Passing Inputs](/guide/inputs) for the full model and [Configuration](/core/configuration#key-args-string) for `static key`.
 
 ## Querying the registry
 
@@ -356,7 +348,7 @@ release(CounterCubit);
 ## See also
 
 - [Configuration](/core/configuration) — `keepAlive`, `static key`, and the circuit breakers that catch leaks
-- [Passing Inputs](/guide/inputs) — `args`, `instanceId`, and the full instance-identity model
+- [Passing Inputs](/guide/inputs) — `args` and the full instance-identity model
 - [System Events](/core/system-events) — the `dispose` event that fires when an instance is torn down
 - [Testing core logic](/testing/core) — using `clear`/`clearAll` to isolate the registry between tests
 
@@ -387,7 +379,7 @@ class SessionCubit extends Cubit<SessionState> {
 }
 ```
 
-`keepAlive` instances are never auto-disposed at ref count 0 — tear them down explicitly with `release(Class, key, true)` (force-dispose) or `clear(Class)` in teardown. See [Configuration](/core/configuration#keepalive-true).
+`keepAlive` instances are never auto-disposed at ref count 0 — tear them down explicitly with `release(Class, { forceDispose: true })` or `clear(Class)` in teardown. See [Configuration](/core/configuration#keepalive-true).
 
 ### Instance never disposed / memory leak
 

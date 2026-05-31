@@ -130,11 +130,11 @@ If you must pass a callback **into** a bloc, route it through the `deps` lane (a
 |---|---|---|
 | Two instances when you expected one | `args` differ structurally between consumers (or a fresh object that hashes differently) | Ensure args are equal; narrow identity with `static key` |
 | A **new** instance every render | A function or non-serializable value is in `args` | Move it to `deps`; `args` must be JSON-serializable |
-| Everyone shares one instance, but you wanted one per item | All consumers use the same key (default, or same `args`) | Pass distinct `args`, an explicit `instanceId`, or `instanceId: useId()` for per-mount |
-| Per-item components leak into each other | Same `instanceId` reused across items | Give each item a unique `instanceId` (e.g. the row id) |
+| Everyone shares one instance, but you wanted one per item | All consumers use the same key (default, or same `args`) | Pass distinct `args` (e.g. a name field, or `_id: useId()` + `static key` for per-mount) |
+| Per-item components leak into each other | Same `args` key reused across items | Give each item distinct `args` (e.g. the row id) |
 
 ::: details "I got two instances when I expected one"
-Identity is resolved from, in precedence order: explicit **`instanceId`** → `<BlocProvider>` context → `static key(args)` → **structural hash of `args`** → the `'default'` sentinel. Two consumers land on the same instance only when their resolved key matches.
+Identity is resolved from, in precedence order: own **`args`** (via `static key(args)`, else the **structural hash of `args`**) → `<BlocProvider>` context args → the `'default'` sentinel. Two consumers land on the same instance only when their resolved key matches.
 
 Common causes of an unexpected split:
 
@@ -169,33 +169,33 @@ useBloc(ListCubit, { args: { listId } /* , deps: { onSelect } via your deps wiri
 :::
 
 ::: details "Everyone shares one instance when I wanted per-item"
-By default, a bloc with `void` args resolves to the single `'default'` key — every consumer shares it. To get one instance per item, give each consumer a distinct identity. Three ways, pick by intent:
+By default, a bloc with `void` args resolves to the single `'default'` key — every consumer shares it. To get one instance per item, give each consumer distinct `args`. Identity always comes from `args`; differ by intent only in *what* you put there:
 
 | Want | Use |
 |---|---|
-| One instance per **data identity** (e.g. per `userId`) | `args` — same args share, different args split |
-| One instance per **caller-chosen key** | explicit `instanceId` (e.g. the row id) |
-| One **fresh** instance per component mount | `instanceId: useId()` |
+| One instance per **data identity** (e.g. per `userId`) | `args: { userId }` — same args share, different args split |
+| One instance per **caller-chosen key** | a name field in args, e.g. `args: { row: row.id }` + `static key` |
+| One **fresh** instance per component mount | `args: { _id: useId() }` + `static key` |
 
 ```tsx
 // per data identity
 useBloc(UserCardCubit, { args: { userId } });
 
-// caller-chosen key — each row is its own instance
-useBloc(RowCubit, { instanceId: row.id });
+// caller-chosen key — each row is its own instance (static key = a => a.row)
+useBloc(RowCubit, { args: { row: row.id } });
 ```
 
 ```tsx
-// fresh per mount — useId() is a stable-per-mount key
-const instanceId = useId();
-useBloc(WidgetCubit, { instanceId });
+// fresh per mount — useId() is a stable-per-mount value (static key = a => a._id)
+const _id = useId();
+useBloc(WidgetCubit, { args: { _id } });
 ```
 
-A per-mount `instanceId` always overrides any `instanceId` supplied by an ancestor [`BlocProvider`](/react/use-bloc), so each mount stays private. Owner page: [Instance management](/core/instance-management).
+A per-mount instance keyed off `useId()` always resolves to its own key, never the args supplied by an ancestor [`BlocProvider`](/react/use-bloc), so each mount stays private. Owner page: [Instance management](/core/instance-management).
 :::
 
-::: warning `instanceId: useId()`, not `autoInstance`
-You may see `autoInstance` in old notes or stale comments — it does not exist in the shipping API. The per-mount mechanism is an explicit `instanceId` (use `useId()` for a stable-per-mount key). A `static isolated` field exists but is **not** wired into `useBloc` in the current release, so do not rely on it. See the [glossary](/guide/glossary).
+::: warning `args: { _id: useId() }`, not `autoInstance` or `instanceId`
+You may see `autoInstance` or an `instanceId` option in old notes or stale comments — neither exists in the shipping API. The per-mount mechanism is a synthetic `args` field plus a `static key` that selects it (use `useId()` for a stable-per-mount value). A `static isolated` field exists but is **not** wired into `useBloc` in the current release, so do not rely on it. See the [glossary](/guide/glossary).
 :::
 
 ---
@@ -309,13 +309,13 @@ If you want this bloc visible, drop that option. The option is documented in [Co
 |---|---|---|
 | Hydration mismatch warning from React | Server and client produced different first snapshots | Seed initial state from `args` in `init(args)` so both render the same |
 | Persisted state appears, then vanishes | State changed *while* hydrating → discarded | Hold writes until `isHydrated`; observe `hydrationChanged` |
-| `instanceId` differs between server and client | Relying on internal auto-ids for stable identity | Supply an explicit `instanceId` (or `BlocProvider`) for SSR-stable keys |
+| Instance key differs between server and client | Relying on internal auto-ids for stable identity | Key off stable `args` (or a `BlocProvider`) for SSR-stable identity |
 
 ::: details "SSR / hydration notes"
 A few facts that matter when rendering on the server:
 
 - **First snapshot is synchronous.** `args` are forwarded to `init(args)` **once, before the first state snapshot**, so a bloc keyed by `args` renders identical initial state on server and client — no flash, no mismatch — provided the `args` are the same on both sides.
-- **`useBloc` does not fight React for SSR id slots.** Internally it uses a plain module counter for its consumer id (a `useId()` slot is reserved but unused), so it will not desync SSR-streamed ids. For identity that must be **stable across server/client**, set it explicitly with `instanceId` or a [`BlocProvider`](/react/use-bloc); do not rely on auto-generated ids.
+- **`useBloc` does not fight React for SSR id slots.** Internally it uses a plain module counter for its consumer id (a `useId()` slot is reserved but unused), so it will not desync SSR-streamed ids. For identity that must be **stable across server/client**, derive it from stable `args` or a [`BlocProvider`](/react/use-bloc); do not rely on auto-generated ids.
 - **State hydration is a guarded lifecycle.** `beginHydration()` → `applyHydratedState(next)` → `finishHydration()`. `applyHydratedState` returns `false` (and skips) if the bloc was disposed, is not hydrating, or **`changedWhileHydrating`** — i.e. a normal write landed mid-hydration, so the live state wins and the persisted snapshot is discarded. If persisted state seems to be ignored, you almost certainly wrote to the bloc before hydration finished. Observe transitions via the [`hydrationChanged`](/core/system-events) system event and gate writes on `isHydrated`.
 
 See [Persistence](/plugins/persistence) for the full hydration story and [System events](/core/system-events) for `hydrationChanged`.
@@ -360,7 +360,7 @@ You hit `maxInstancesPerType` or `maxRefsPerInstance` from the global config —
 ## See also
 
 - [Mental Model](/guide/mental-model) — the *why* behind tracking, identity, and disposal
-- [Passing inputs](/guide/inputs) — `args`, `deps`, and `instanceId` in depth
+- [Passing inputs](/guide/inputs) — `args` and `deps` in depth
 - [`useBloc`](/react/use-bloc) — the canonical options and precedence reference
 - [Instance management](/core/instance-management) — acquire/release, ref counting, `keepAlive`
 - [Glossary](/guide/glossary) — one-line definitions for every term used here
