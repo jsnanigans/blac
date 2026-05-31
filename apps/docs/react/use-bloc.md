@@ -48,20 +48,19 @@ See it in action:
 
 ## Options
 
-`useBloc` accepts one optional options object. `UseBlocOptions` has exactly five keys — reach for the one that matches your need:
+`useBloc` accepts one optional options object. `UseBlocOptions` has exactly four keys — reach for the one that matches your need:
 
-| Option       | Type                               | Required            | Description                                                                                        |
-| ------------ | ---------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------- |
-| `args`       | the bloc's `Args` type             | when `Args != void` | Typed construction data; derives instance identity. Required when declared, forbidden when `void`. |
-| `instanceId` | `string \| number`                 | no                  | Explicit instance key. Pass `useId()` for a per-mount private instance.                            |
-| `select`     | `(state: S, bloc: T) => unknown[]` | no                  | Explicit dependency selector; disables auto-tracking.                                              |
-| `onMount`    | `(bloc: InstanceType<T>) => void`  | no                  | Called once when the component mounts with the bloc instance.                                      |
-| `onUnmount`  | `(bloc: InstanceType<T>) => void`  | no                  | Called when the component unmounts (bloc still alive at this point).                               |
+| Option      | Type                               | Required            | Description                                                                                        |
+| ----------- | ---------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------- |
+| `args`      | the bloc's `Args` type             | when `Args != void` | Typed construction data; derives instance identity. Required when declared, forbidden when `void`. |
+| `select`    | `(state: S, bloc: T) => unknown[]` | no                  | Explicit dependency selector; disables auto-tracking.                                              |
+| `onMount`   | `(bloc: InstanceType<T>) => void`  | no                  | Called once when the component mounts with the bloc instance.                                      |
+| `onUnmount` | `(bloc: InstanceType<T>) => void`  | no                  | Called when the component unmounts (bloc still alive at this point).                               |
 
-::: tip These five are the entire option surface
+::: tip These four are the entire option surface
 `UseBlocOptions` has exactly these keys. Two things people expect that are **not** options here:
 
-- **Per-mount instances** are not an option — pass `instanceId: useId()` so each mount gets its own private instance (see [`instanceId`](#instanceid) and [Passing Inputs](/guide/inputs)).
+- **Per-mount instances** — pass a per-mount unique value in `args` (e.g. `args: { _id: useId() }`) with a matching `static key` on the class so each mount gets its own private instance (see [`args`](#args) and [Passing Inputs](/guide/inputs)).
 - **Non-serializable handles** (refs, callbacks) are a bloc-level `Deps` concept, not a `useBloc` option; see [Injecting handles (`deps`)](#injecting-handles-deps).
 
 There is no `autoTrack` flag — auto-tracking is the default and you opt out with `select`.
@@ -92,37 +91,19 @@ const [state] = useBloc(UserCardCubit, { args: { userId } });
 
 - **Identity:** different `args` values produce different instances. By default identity is the structural hash of all args. Override with `static key` on the class.
 - **Serializable only** — refs, callbacks, and DOM elements must not go in `args` (they'd produce a new instance every render). Put them in the bloc's `Deps` instead — see [Injecting handles (`deps`)](#injecting-handles-deps).
-- **Per-component private instances** — to give each mount its own instance (disposed on unmount), pass a per-mount `instanceId` keyed by React's `useId()`:
+- **Per-component private instances** — to give each mount its own instance (disposed on unmount), include a per-mount unique value in `args` and declare `static key` on the class so it becomes the identity key:
 
 ```tsx
-class FormCubit extends Cubit<FormState, FormArgs> {}
+class FormCubit extends Cubit<FormState, { _id: string }> {
+  static key = (a: { _id: string }) => a._id;
+}
 
 // each mount of this component gets its own FormCubit instance
-const instanceId = useId();
-const [state, cubit] = useBloc(FormCubit, { args: options, instanceId });
+const _id = useId();
+const [state, cubit] = useBloc(FormCubit, { args: { ...options, _id } });
 ```
 
 See [Passing Inputs](/guide/inputs) for the full identity model.
-
-### `instanceId`
-
-```ts
-instanceId?: string | number
-```
-
-**Returns:** `void` (the option overrides the instance key used for resolution).
-
-**Behavior.** Use a named instance instead of the default shared one. Components with the same `instanceId` share the same instance. This is the escape hatch for identities that can't be derived from `args`. Pass `useId()` for a per-mount private instance that is disposed when the component unmounts.
-
-```tsx
-const [state] = useBloc(EditorCubit, { instanceId: 'doc-42' });
-```
-
-When a bloc declares `Args`, prefer using `args` for identity — the meaningful value keys the instance and feeds the bloc in one step. Reserve `instanceId` for cases where the key genuinely can't be derived from args.
-
-::: tip Need a fresh instance per component mount?
-Pass `instanceId: useId()`. `useId()` returns a stable-per-mount value, so every call site gets its own private instance, disposed on unmount. Useful for per-form or per-item cubits. See [Passing Inputs](/guide/inputs).
-:::
 
 ### `select`
 
@@ -218,11 +199,10 @@ An inline callback (`onComplete={() => …}`) gets a new identity every render, 
 
 This is the canonical instance-identity precedence for `useBloc`. Other pages defer to this list:
 
-1. **Explicit `instanceId`** on the call — hard override, wins over everything below (pass `useId()` here for a per-mount private instance)
-2. **`<BlocProvider>` context id** — inherited from a parent provider when no explicit `instanceId` is given
-3. **`static key(args)`** — class-supplied key derived from `args`
-4. **Structural hash of `args`** — default when the bloc declares `Args` and no `key` is set
-5. **`'default'`** — singleton fallback when the bloc has no `args`, no key, and no provider
+1. **`<BlocProvider>` context args** — inherited from a parent provider when present
+2. **`static key(args)`** — class-supplied key derived from `args`
+3. **Structural hash of `args`** — default when the bloc declares `Args` and no `key` is set
+4. **`'default'`** — singleton fallback when the bloc has no `args`, no key, and no provider
 
 Blocs declare explicit identity via a static property:
 
@@ -236,13 +216,13 @@ class DocumentCubit extends Cubit<
 }
 ```
 
-A note on `<BlocProvider>` (step 2 above): it supplies a default `instanceId` to descendant `useBloc` calls that don't pass one of their own, so a subtree can share a scoped instance without threading the key through props. An explicit `instanceId` on the call still wins over it.
+A note on `<BlocProvider>`: it supplies `args` to descendant `useBloc` calls that don't pass their own, so a subtree can share a scoped instance without threading data through props.
 
 ```tsx
 import { BlocProvider } from '@blac/react';
 
-<BlocProvider instanceId="customer-42">
-  <CustomerView /> {/* useBloc(CustomerCubit) here resolves to "customer-42" */}
+<BlocProvider args={{ customerId: 'customer-42' }}>
+  <CustomerView /> {/* useBloc(CustomerCubit) here inherits args from the provider */}
 </BlocProvider>;
 ```
 
@@ -252,8 +232,7 @@ See [Passing Inputs](/guide/inputs) for the full decision matrix.
 
 - **Passing a fresh `select` each render.** The selector must be referentially stable (wrap it in `useCallback`). A new function identity each render re-keys the subscription, which the underlying channel treats as a new consumer.
 - **Putting non-serializable values in `args`.** Refs, callbacks, and DOM nodes change identity every render, so a fresh `args` object produces a brand-new instance each time (and `args` must be JSON-serializable). Use the bloc's `Deps` for handles — see [Injecting handles (`deps`)](#injecting-handles-deps).
-- **Reaching for `instanceId` when `args` would do.** If the identifying value is also useful inside the bloc, pass it as `args` so it keys the instance _and_ feeds `init` in one step. Reserve `instanceId` for keys that aren't part of the bloc's data.
-- **Expecting an `autoTrack` or `autoInstance` option.** Neither exists. Opt out of tracking with `select`; get per-mount instances with `instanceId: useId()`.
+- **Expecting an `autoTrack`, `autoInstance`, or `instanceId` option.** None of these exist. Opt out of tracking with `select`; get per-mount instances by including a per-mount unique value in `args` with a matching `static key`.
   :::
 
 ## Lifecycle
@@ -273,7 +252,7 @@ For the registry mechanics behind acquire/release and ref counting, see [Instanc
 
 ## See also
 
-- [Passing Inputs](/guide/inputs) — `args`, `deps`, `instanceId`, per-mount isolation, and the identity model
+- [Passing Inputs](/guide/inputs) — `args`, `deps`, per-mount isolation, and the identity model
 - [Dependency Tracking](/react/dependency-tracking) — How auto-tracking decides what re-renders
 - [Performance](/react/performance) — Splitting readers and writers, anti-patterns
 - [Cubit](/core/cubit) — The state container these options connect to
@@ -310,27 +289,32 @@ See [Dependency Tracking](/react/dependency-tracking) for the full recording rul
 
 **Cause:** Both mounts resolve to the same instance key (`'default'` when there are no `args`). When the first mount releases, the instance disposes and the remount creates a fresh one — but if `keepAlive` is set, the instance persists and the remount picks it back up.
 
-**Fix:** For one private instance per mount, pass `instanceId: useId()`. Each mount gets a key that is stable for that mount's lifetime and disposed on unmount:
+**Fix:** For one private instance per mount, include a per-mount unique value in `args` and use `static key` to make it the identity key. `useId()` returns a stable-per-mount value:
 
 ```tsx
-const instanceId = useId();
-const [state] = useBloc(WidgetCubit, { instanceId });
+class WidgetCubit extends Cubit<WidgetState, { _id: string }> {
+  static key = (a: { _id: string }) => a._id;
+}
+
+const _id = useId();
+const [state] = useBloc(WidgetCubit, { args: { _id } });
 ```
 
 See [Instance Management](/core/instance-management) and [Passing Inputs](/guide/inputs).
 
-### `autoTrack`, `autoInstance`, or `isolated` option not found
+### `autoTrack`, `autoInstance`, `isolated`, or `instanceId` option not found
 
-**Symptom:** TypeScript errors or runtime `undefined` when passing `autoTrack`, `autoInstance`, `isolated`, or `dependencies` to `useBloc`.
+**Symptom:** TypeScript errors or runtime `undefined` when passing `autoTrack`, `autoInstance`, `isolated`, `instanceId`, or `dependencies` to `useBloc`.
 
-**Cause:** These were v1 or pre-release APIs that were removed. `UseBlocOptions` has exactly five keys: `args`, `instanceId`, `select`, `onMount`, `onUnmount`.
+**Cause:** These were v1 or pre-release APIs that were removed. `UseBlocOptions` has exactly four keys: `args`, `select`, `onMount`, `onUnmount`.
 
 **Fix:**
 
-| Old                         | Replacement                                         |
-| --------------------------- | --------------------------------------------------- |
-| `autoTrack` / no option     | Auto-tracking is the default; opt out with `select` |
-| `autoInstance` / `isolated` | `instanceId: useId()` for per-mount instances       |
-| `dependencies`              | Renamed to `select` in v2                           |
+| Old                         | Replacement                                                                        |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| `autoTrack` / no option     | Auto-tracking is the default; opt out with `select`                                |
+| `autoInstance` / `isolated` | Include a per-mount unique value in `args` with `static key` for per-mount instances |
+| `instanceId`                | Use `args`-derived identity; include a unique value in `args` + `static key`       |
+| `dependencies`              | Renamed to `select` in v2                                                          |
 
 See [Migration from v1](/guide/migration-from-v1) for the full list of renamed/removed options.

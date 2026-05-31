@@ -93,14 +93,14 @@ Tracking is automatic and structural — driven by a render-time proxy, not by d
 
 ## Instance modes at a glance
 
-By default all components calling `useBloc(SameCubit)` share one instance. You can scope instances per key or per mount:
+By default all components calling `useBloc(SameCubit)` share one instance. You can scope instances by `args` values or per mount:
 
-| Mode      | How to enable                  | Behavior                                          |
-| --------- | ------------------------------ | ------------------------------------------------- |
-| Shared    | Default                        | All components share one instance                 |
-| Named     | `{ instanceId: 'key' }`        | Components with the same key share an instance     |
-| Per-args  | `{ args: { id } }`             | Each distinct `args` value gets its own instance   |
-| Per-mount | `{ instanceId: useId() }`      | Each component mount gets a private instance        |
+| Mode                    | How to enable                                          | Behavior                                              |
+| ----------------------- | ------------------------------------------------------ | ----------------------------------------------------- |
+| Shared                  | Default (no `args`)                                    | All components share one instance                     |
+| Per-args (default hash) | `{ args: { id } }`                                     | Each distinct `args` value gets its own instance      |
+| Per-args (custom key)   | `{ args: { id } }` + `static key = (a) => a.id`       | Only the keyed field forks instances; others ride along |
+| Per-mount               | `{ args: { _id: useId() } }` + `static key = (a) => a._id` | Each component mount gets a private instance     |
 
 See [Passing Inputs](/guide/inputs) for the full identity model and precedence.
 
