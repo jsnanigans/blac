@@ -1,3 +1,7 @@
+<script setup>
+import { perConsumerTrackingFiles } from '../demos/per-consumer-tracking';
+</script>
+
 # useBloc
 
 The `useBloc` hook connects a React component to a state container with optimized re-renders.
@@ -21,11 +25,11 @@ function useBloc<T extends StateContainerConstructor>(
 
 ## Return values
 
-| Index | Name    | Description                                                                                    |
-| ----- | ------- | ---------------------------------------------------------------------------------------------- |
-| 0     | `state` | Current state. In auto-tracking mode (the default) this is a tracking proxy that records which paths you read so re-renders stay scoped to them. In `select` mode it's the raw state object. |
+| Index | Name    | Description                                                                                                                                                                                                                                |
+| ----- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0     | `state` | Current state. In auto-tracking mode (the default) this is a tracking proxy that records which paths you read so re-renders stay scoped to them. In `select` mode it's the raw state object.                                               |
 | 1     | `bloc`  | The Cubit instance. Call its methods to drive changes (`bloc.increment()`). The instance itself is not proxied — to make a computed getter drive re-renders, read it inside [`select`](#select) (`select: (state, bloc) => [bloc.total]`). |
-| 2     | `ref`   | An advanced-use ref object for component-bloc binding. You almost never need it; destructure just the first two values. |
+| 2     | `ref`   | An advanced-use ref object for component-bloc binding. You almost never need it; destructure just the first two values.                                                                                                                    |
 
 Typically you destructure just the first two:
 
@@ -33,20 +37,29 @@ Typically you destructure just the first two:
 const [state, counter] = useBloc(CounterCubit);
 ```
 
+## Tracking Modes
+
+By default, `useBloc` uses auto-tracking to keep re-renders scoped: the hook wraps `state` in a tracking proxy that records which paths you actually read, and the component re-renders only when one of those paths changes. This means two components consuming the same state can read different slices—one re-renders when `left` changes, the other only when `right` changes.
+
+See it in action:
+
+<BlacSandpack :files="perConsumerTrackingFiles" active-file="/App.tsx" :editor-height="500" />
+
 ## Choosing an option
 
 `useBloc` takes one optional options object. Every key is independent — reach for the one that matches your need:
 
-| Option       | Type                                         | Reach for it when                                                        |
-| ------------ | -------------------------------------------- | ------------------------------------------------------------------------ |
-| `args`       | the bloc's `Args` type (required if non-`void`) | The bloc needs typed input *and* that input identifies the instance (one instance per `userId`, etc.). |
-| `instanceId` | `string \| number`                           | You need a named instance whose key can't be derived from `args`.        |
-| `select`     | `(state, bloc) => unknown[]`                 | You want to opt out of auto-tracking and re-render only on specific values. |
-| `onMount`    | `(bloc) => void`                             | You need to kick off work once after the bloc is acquired (e.g. fetch).  |
-| `onUnmount`  | `(bloc) => void`                             | You need to clean up while the bloc is still alive (e.g. disconnect).    |
+| Option       | Type                                            | Reach for it when                                                                                      |
+| ------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `args`       | the bloc's `Args` type (required if non-`void`) | The bloc needs typed input _and_ that input identifies the instance (one instance per `userId`, etc.). |
+| `instanceId` | `string \| number`                              | You need a named instance whose key can't be derived from `args`.                                      |
+| `select`     | `(state, bloc) => unknown[]`                    | You want to opt out of auto-tracking and re-render only on specific values.                            |
+| `onMount`    | `(bloc) => void`                                | You need to kick off work once after the bloc is acquired (e.g. fetch).                                |
+| `onUnmount`  | `(bloc) => void`                                | You need to clean up while the bloc is still alive (e.g. disconnect).                                  |
 
 ::: tip These five are the entire option surface
 `UseBlocOptions` has exactly these keys. Two things people expect that are **not** options here:
+
 - **Per-mount instances** are not an option — pass `instanceId: useId()` so each mount gets its own private instance (see [`instanceId`](#instanceid) and [Passing Inputs](/guide/inputs)).
 - **Non-serializable handles** (refs, callbacks) are a bloc-level `Deps` concept, not a `useBloc` option; see [Injecting handles (`deps`)](#injecting-handles-deps).
 
@@ -108,10 +121,11 @@ For handles that need to trigger initialization on arrival (e.g. a canvas ref), 
 
 ::: tip Avoid raw inline callbacks as handles
 An inline callback (`onComplete={() => …}`) gets a new identity every render, so a bloc that captured it holds a stale closure. Prefer:
+
 1. **Callback inversion (best):** expose state; let the component call its fresh callback from its own `useEffect`.
 2. **Stabilize with `useCallback`** before passing.
 3. **Push via an event** — call a bloc method from an effect.
-:::
+   :::
 
 ### `select`
 
@@ -190,7 +204,10 @@ This is the canonical instance-identity precedence for `useBloc`. Other pages de
 Blocs declare explicit identity via a static property:
 
 ```ts
-class DocumentCubit extends Cubit<DocState, { docId: string; readonly: boolean }> {
+class DocumentCubit extends Cubit<
+  DocState,
+  { docId: string; readonly: boolean }
+> {
   static key = (args: DocumentCubit['args']) => args.docId;
   // docId keys the instance; readonly is config that rides along but doesn't fork instances
 }
@@ -209,11 +226,12 @@ import { BlocProvider } from '@blac/react';
 See [Passing Inputs](/guide/inputs) for the full decision matrix.
 
 ::: warning Common mistakes
+
 - **Passing a fresh `select` each render.** The selector must be referentially stable (wrap it in `useCallback`). A new function identity each render re-keys the subscription, which the underlying channel treats as a new consumer.
 - **Putting non-serializable values in `args`.** Refs, callbacks, and DOM nodes change identity every render, so a fresh `args` object produces a brand-new instance each time (and `args` must be JSON-serializable). Use the bloc's `Deps` for handles — see [Injecting handles (`deps`)](#injecting-handles-deps).
-- **Reaching for `instanceId` when `args` would do.** If the identifying value is also useful inside the bloc, pass it as `args` so it keys the instance *and* feeds `init` in one step. Reserve `instanceId` for keys that aren't part of the bloc's data.
+- **Reaching for `instanceId` when `args` would do.** If the identifying value is also useful inside the bloc, pass it as `args` so it keys the instance _and_ feeds `init` in one step. Reserve `instanceId` for keys that aren't part of the bloc's data.
 - **Expecting an `autoTrack` or `autoInstance` option.** Neither exists. Opt out of tracking with `select`; get per-mount instances with `instanceId: useId()`.
-:::
+  :::
 
 ## Lifecycle
 
