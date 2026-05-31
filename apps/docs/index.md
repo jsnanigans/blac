@@ -39,8 +39,12 @@ features:
 
   - icon: ⚛️
     title: Batched Updates
-    details: 'Changes coalesce on the microtask queue and dispatch through React''s normal update path, so a burst of updates in one tick re-renders a component once.'
+    details: "Changes coalesce on the microtask queue and dispatch through React's normal update path, so a burst of updates in one tick re-renders a component once."
 ---
+
+<script setup>
+import { perConsumerTrackingFiles } from './demos/per-consumer-tracking';
+</script>
 
 ## Quick Example
 
@@ -62,6 +66,12 @@ function Counter() {
   return <button onClick={counter.increment}>{state.count}</button>;
 }
 ```
+
+## See It: Only the Reader Re-renders
+
+Auto-tracking means each component re-renders only when the state properties it actually read have changed. Click "Bump left" and watch: the left counter's render count ticks up, but the right counter stays put. The right component never re-rendered because it never read `state.left`.
+
+<BlacSandpack :files="perConsumerTrackingFiles" active-file="/App.tsx" :editor-height="500" />
 
 ## Installation
 
