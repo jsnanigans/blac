@@ -17,13 +17,13 @@ export function CanvasView() {
     if (f % 15 === 0) setFrame(f);
   }, []);
 
-  // autoInstance replaced with explicit instanceId via useId()
-  const instanceId = useId();
-  const [state, bloc] = useBloc(CanvasCubit, { instanceId });
+  // Per-mount private instance via synthetic args
+  const _id = useId();
+  const [state, bloc] = useBloc(CanvasCubit, { args: { _id } });
 
   // Push deps to the cubit manually (replaces the removed `deps` option).
   const canvas = mounted ? canvasRef.current : null;
-  const ownerId = instanceId;
+  const ownerId = _id;
   useEffect(() => {
     bloc[APPLY_DEPS](ownerId, { canvas, onTick });
     return () => {

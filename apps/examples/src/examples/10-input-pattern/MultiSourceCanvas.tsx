@@ -19,7 +19,7 @@ function CanvasProvider() {
 
   // Contributes only the canvas handle; does not read state.
   const [, bloc] = useBloc(CanvasCubit, {
-    instanceId: MULTI_INSTANCE_ID,
+    args: { _id: MULTI_INSTANCE_ID },
   });
 
   const canvas = canvasRef.current;
@@ -60,7 +60,7 @@ function TickLogger() {
   }, []);
 
   const [, bloc] = useBloc(CanvasCubit, {
-    instanceId: MULTI_INSTANCE_ID,
+    args: { _id: MULTI_INSTANCE_ID },
   });
 
   useEffect(() => {

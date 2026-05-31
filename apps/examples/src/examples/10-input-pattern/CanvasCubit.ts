@@ -25,7 +25,10 @@ export interface CanvasState {
  * The frame counter is imperative (drawn to the canvas, pushed out via the
  * `onTick` dep). It never goes through bloc state.
  */
-export class CanvasCubit extends Cubit<CanvasState, void, CanvasDeps> {
+export type CanvasArgs = { _id?: string };
+
+export class CanvasCubit extends Cubit<CanvasState, CanvasArgs, CanvasDeps> {
+  static key = (a?: CanvasArgs) => a?._id ?? 'default';
   private _rafId: number | null = null;
   private _canvas: HTMLCanvasElement | null = null;
   private _onTick?: (frame: number) => void;
