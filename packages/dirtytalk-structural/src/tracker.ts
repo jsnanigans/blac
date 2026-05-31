@@ -48,7 +48,11 @@ const isStructurallyWrappable = (v: object): boolean => {
  *   `value.user === value.user` within one render.
  * - Iteration coarsens: `for..of`, `.map`, `.find`, `.reduce`, etc. record
  *   the entry path (e.g. `users`) but **not** per-index paths. Callbacks
- *   receive the raw underlying values.
+ *   receive the raw underlying values. This entry path is also *pinned*: a
+ *   later own-property read on the same array (notably `.length`) cannot
+ *   supersede it. Otherwise a consumer that both reads `users.length` and
+ *   iterates `users` would track only `users.length` and miss element-content
+ *   changes that preserve the array length.
  * - Methods (own functions on non-array objects) are bound to the parent
  *   proxy so internal `this.x` reads continue to record.
  * - Reading a method without invoking it does not record (methods live on
@@ -62,6 +66,14 @@ export const trackRender = <S>(
   interner: PathInterner,
 ): TrackResult<S> => {
   const paths = new Set<PathId>();
+  // Path ids that array iteration has asserted as *content* dependencies (the
+  // array's own entry path). Unlike a plain object — where reading `user.name`
+  // legitimately narrows interest away from `user` — iterating or calling a
+  // method on an array means the consumer depends on element contents, so a
+  // later own-property read such as `.length` must NOT supersede it. Pinning is
+  // order-independent: whichever of (`.length` read, iteration) happens last,
+  // the array path survives.
+  const pinned = new Set<PathId>();
 
   if (!isWrappable(state)) {
     return { value: state, paths };
@@ -77,6 +89,15 @@ export const trackRender = <S>(
 
     const isArray = Array.isArray(target);
 
+    // Pin this array's own entry path as a content dependency. Called when an
+    // iteration entry point (Symbol.iterator) or any array method is accessed.
+    const pinArrayPath = (): void => {
+      if (prefix === '') return;
+      const id = interner.intern(prefix);
+      paths.add(id);
+      pinned.add(id);
+    };
+
     const handler: ProxyHandler<object> = {
       get(t, key, receiver) {
         // Symbol keys (Symbol.iterator, Symbol.toStringTag, ...) never
@@ -86,6 +107,9 @@ export const trackRender = <S>(
         if (typeof key === 'symbol') {
           const sv = Reflect.get(t, key, receiver);
           if (isArray && typeof sv === 'function') {
+            // Iteration entry point (Symbol.iterator → for..of / spread). The
+            // consumer depends on element contents, so pin the array's path.
+            pinArrayPath();
             return (sv as (...a: unknown[]) => unknown).bind(t);
           }
           return sv;
@@ -100,6 +124,10 @@ export const trackRender = <S>(
         // from its parent, satisfying the coarsening contract.
         if (!Object.prototype.hasOwnProperty.call(t, key)) {
           if (isArray && typeof value === 'function') {
+            // Array method (.map, .find, .reduce, .includes, …). Using one
+            // means the consumer depends on element contents, so pin the
+            // array's path — a later `.length` read must not drop it.
+            pinArrayPath();
             return (value as (...a: unknown[]) => unknown).bind(t);
           }
           return value;
@@ -111,7 +139,12 @@ export const trackRender = <S>(
         // a consumer that only read a specific leaf beneath it.
         const path = childPath(prefix, key as string);
         paths.add(interner.intern(path));
-        if (prefix !== '') paths.delete(interner.intern(prefix));
+        if (prefix !== '') {
+          const parentId = interner.intern(prefix);
+          // Keep an iteration-pinned array path: `.length` (or any own read)
+          // must not narrow away a content dependency the consumer also has.
+          if (!pinned.has(parentId)) paths.delete(parentId);
+        }
 
         if (!isWrappable(value)) {
           // Primitive, null, undefined: return as-is.

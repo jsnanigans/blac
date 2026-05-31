@@ -88,6 +88,48 @@ describe('trackRender', () => {
     expect(strings).not.toContain('users.1');
   });
 
+  it('4d. iterating after reading .length keeps the array path pinned', () => {
+    // Regression: a consumer that reads `items.length` (e.g. an empty check)
+    // and then iterates must still track `items`, so an element-content change
+    // that preserves length wakes it. Without pinning, the `.length` read
+    // supersedes `items` and only `items.length` is tracked.
+    const interner = new PathInterner();
+    const { value, paths } = trackRender(
+      { items: [{ status: 'sent' }, { status: 'sent' }] },
+      interner,
+    );
+    if (value.items.length === 0) throw new Error('unreachable');
+    const statuses = value.items.map((it) => it.status);
+    expect(statuses).toEqual(['sent', 'sent']);
+    const strings = asPathStrings(paths, interner);
+    expect(strings).toContain('items');
+    expect(strings).toContain('items.length');
+  });
+
+  it('4e. reading .length after iterating does not drop the array path', () => {
+    // Same as 4d but reversed order: pinning must be order-independent.
+    const interner = new PathInterner();
+    const { value, paths } = trackRender(
+      { items: [{ status: 'sent' }] },
+      interner,
+    );
+    value.items.forEach(() => {});
+    void value.items.length;
+    const strings = asPathStrings(paths, interner);
+    expect(strings).toContain('items');
+    expect(strings).toContain('items.length');
+  });
+
+  it('4f. reading only .length stays narrow (no array path)', () => {
+    // A length-only consumer must NOT be widened to the whole array — pinning
+    // only kicks in on iteration / method access.
+    const interner = new PathInterner();
+    const { value, paths } = trackRender({ items: [1, 2, 3] }, interner);
+    void value.items.length;
+    const strings = asPathStrings(paths, interner);
+    expect(strings).toEqual(['items.length']);
+  });
+
   it('5. conditional reads only record the taken branch', () => {
     const interner = new PathInterner();
     const { value, paths } = trackRender({ a: 1, b: 2 }, interner);
