@@ -132,24 +132,12 @@ export class WebSocketMock {
     const messageId = (outgoing.payload as Record<string, unknown>)
       .id as string;
 
-    // [DIAG] temporary — confirm send path + key resolution
-    console.warn('[WS DIAG] simulateMessageDelivery', {
-      channelId: outgoing.channelId,
-      messageId,
-      registeredChannelBlocs: getAll(ChannelBloc).map((c: any) => ({
-        instanceId: c.instanceId,
-        channelDotId: c.state?.channel?.id,
-      })),
-    });
-
     // Simulate network delay for "sent" status
     setTimeout(
       () => {
         try {
-          const channel = borrowSafe(ChannelBloc, outgoing.channelId);
-          console.warn('[WS DIAG] sent-timer borrowSafe', {
-            channelId: outgoing.channelId,
-            error: channel.error?.message ?? null,
+          const channel = borrowSafe(ChannelBloc, {
+            args: { channelId: outgoing.channelId },
           });
           if (!channel.error) {
             channel.instance.updateMessageStatus(messageId, 'sent');
@@ -165,10 +153,8 @@ export class WebSocketMock {
     setTimeout(
       () => {
         try {
-          const channel = borrowSafe(ChannelBloc, outgoing.channelId);
-          console.warn('[WS DIAG] delivered-timer borrowSafe', {
-            channelId: outgoing.channelId,
-            error: channel.error?.message ?? null,
+          const channel = borrowSafe(ChannelBloc, {
+            args: { channelId: outgoing.channelId },
           });
           if (!channel.error) {
             channel.instance.updateMessageStatus(messageId, 'delivered');
@@ -221,7 +207,7 @@ export class WebSocketMock {
       };
 
       // Try to send to active ChannelBloc, otherwise save to persistence
-      const channelResult = borrowSafe(ChannelBloc, channelId);
+      const channelResult = borrowSafe(ChannelBloc, { args: { channelId } });
 
       if (!channelResult.error) {
         // Channel is active - send event directly
@@ -279,7 +265,9 @@ export class WebSocketMock {
       setTimeout(
         () => {
           try {
-            const ch = borrowSafe(ChannelBloc, channel.instanceId);
+            const ch = borrowSafe(ChannelBloc, {
+              args: { channelId: channel.instanceId },
+            });
             if (!ch.error) {
               ch.instance.userTyping(botUserId, false);
             }
@@ -311,7 +299,7 @@ export class WebSocketMock {
         if (!isActive) return;
 
         try {
-          const result = borrowSafe(UserCubit, userId);
+          const result = borrowSafe(UserCubit, { args: { userId } });
           if (!result.error) {
             const statuses: Array<'online' | 'away' | 'offline'> = [
               'online',

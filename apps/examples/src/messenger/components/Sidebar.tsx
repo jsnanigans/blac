@@ -20,17 +20,13 @@ interface SidebarProps {
 export function Sidebar({ currentUserId }: SidebarProps) {
   const [appState, { setActiveChannel, setCurrentUserId }] = useBloc(AppCubit);
   const [contacts] = useBloc(ContactsCubit);
-  const [currentUser, { setUserId }] = useBloc(UserCubit, {
-    instanceId: currentUserId,
+  const [currentUser] = useBloc(UserCubit, {
+    args: { userId: currentUserId },
   });
 
   useEffect(() => {
     setCurrentUserId({ currentUserId });
   }, [currentUserId, setCurrentUserId]);
-
-  useEffect(() => {
-    setUserId(currentUserId);
-  }, [currentUserId, setUserId]);
 
   return (
     <div className="sidebar">

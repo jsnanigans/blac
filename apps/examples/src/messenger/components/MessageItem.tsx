@@ -17,8 +17,7 @@ interface MessageItemProps {
  */
 export function MessageItem({ message, isOwn }: MessageItemProps) {
   const [user] = useBloc(UserCubit, {
-    instanceId: message.userId,
-    onMount: (bloc) => bloc.setUserId(message.userId),
+    args: { userId: message.userId },
   });
 
   const formatTime = (timestamp: number) => {

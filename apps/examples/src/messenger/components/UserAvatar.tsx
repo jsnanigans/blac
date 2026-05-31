@@ -21,8 +21,7 @@ export function UserAvatar({
   showStatus = true,
 }: UserAvatarProps) {
   const [user] = useBloc(UserCubit, {
-    instanceId: userId,
-    onMount: (bloc) => bloc.setUserId(userId),
+    args: { userId },
   });
 
   const sizeClasses = {

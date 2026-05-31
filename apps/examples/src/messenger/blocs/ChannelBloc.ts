@@ -3,7 +3,7 @@ import type { Message, Channel } from '../types';
 import { persistenceService } from '../services/PersistenceService';
 import { NotificationCubit } from './NotificationCubit';
 import { UserCubit } from './UserCubit';
-import { CURRENT_USER_ID, MOCK_USERS } from '../mockData';
+import { CURRENT_USER_ID } from '../mockData';
 import { ContactsCubit } from './ContactsCubit';
 import { webSocket } from '../services/WebSocketMock';
 
@@ -28,14 +28,11 @@ export class ChannelBloc extends Cubit<ChannelState, ChannelArgs> {
     if (userId === CURRENT_USER_ID) return;
 
     // Check if UserCubit already exists
-    const result = borrowSafe(UserCubit, userId);
+    const result = borrowSafe(UserCubit, { args: { userId } });
     if (!result.error) return; // Already exists
 
-    // Create UserCubit on-demand
-    const user = MOCK_USERS.find((u) => u.id === userId);
-    if (user) {
-      acquire(UserCubit, userId).setUserId(userId);
-    }
+    // Create UserCubit on-demand (init() will hydrate from MOCK_USERS)
+    acquire(UserCubit, { args: { userId } });
   }
 
   constructor() {

@@ -4,12 +4,16 @@ import { MOCK_USERS } from '../mockData';
 
 /**
  * User profile state - shared instances (one per user)
- * instanceKey: userId
+ * Keyed by userId via args identity.
  *
  * Demonstrates shared instance pattern - multiple components can share
  * the same user instance without duplication
  */
-export class UserCubit extends Cubit<User> {
+export type UserArgs = { userId: string };
+
+export class UserCubit extends Cubit<User, UserArgs> {
+  static key = (a: UserArgs) => a.userId;
+
   constructor() {
     super({
       id: '',
@@ -18,6 +22,13 @@ export class UserCubit extends Cubit<User> {
       status: 'offline',
       customStatus: undefined,
     });
+  }
+
+  protected override init({ userId }: UserArgs): void {
+    const user = MOCK_USERS.find((u) => u.id === userId);
+    if (user) {
+      this.patch(user);
+    }
   }
 
   setUserId = (userId: string) => {
