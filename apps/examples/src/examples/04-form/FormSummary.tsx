@@ -4,7 +4,7 @@ import { Button, RenderCounter } from '../../shared/components';
 
 export function FormSummary({ instanceId }: { instanceId: string }) {
   const [, bloc] = useBloc(FormCubit, {
-    instanceId,
+    args: { id: instanceId },
     select: (_state, b) => [b.isValid, b.errors],
   });
 

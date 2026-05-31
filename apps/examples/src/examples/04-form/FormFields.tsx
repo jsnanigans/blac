@@ -3,7 +3,7 @@ import { FormCubit } from './FormCubit';
 import { Input, Textarea, RenderCounter } from '../../shared/components';
 
 export function FormFields({ instanceId }: { instanceId: string }) {
-  const [state, bloc] = useBloc(FormCubit, { instanceId });
+  const [state, bloc] = useBloc(FormCubit, { args: { id: instanceId } });
 
   const fieldError = (
     field: 'name' | 'email' | 'password' | 'confirmPassword' | 'bio',

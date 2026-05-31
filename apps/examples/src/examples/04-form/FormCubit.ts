@@ -27,7 +27,11 @@ const initialState: FormState = {
 
 type FieldName = 'name' | 'email' | 'password' | 'confirmPassword' | 'bio';
 
-export class FormCubit extends Cubit<FormState> {
+export type FormArgs = { id: string };
+
+export class FormCubit extends Cubit<FormState, FormArgs> {
+  static key = (a: FormArgs) => a.id;
+
   constructor() {
     super({ ...initialState });
   }
