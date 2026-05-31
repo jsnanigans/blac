@@ -97,8 +97,8 @@ class ChatCubit extends Cubit<ChatState, { channelId: string }> {
 
 ```tsx
 function ChatRoom({ channelId }: { channelId: string }) {
+  // args: { channelId } both seeds init() and keys the instance — one per channel
   const [state, chat] = useBloc(ChatCubit, {
-    instanceId: channelId,
     args: { channelId },
   });
 
@@ -125,10 +125,11 @@ skip it.
 :::
 
 ::: tip Per-channel instances
-Pass `channelId` as both `instanceId` and `args`. Multiple `<ChatRoom>` components
-with different `channelId` values each get their own Cubit (and socket); the same
-`channelId` reuses a shared instance. When all consumers of a channel unmount,
-the instance is disposed and the socket is closed automatically.
+`channelId` lives in `args`, which both seeds `init()` and keys the instance.
+Multiple `<ChatRoom>` components with different `channelId` values each get their
+own Cubit (and socket); the same `channelId` reuses a shared instance. When all
+consumers of a channel unmount, the instance is disposed and the socket is closed
+automatically.
 :::
 
 ::: warning Message volume

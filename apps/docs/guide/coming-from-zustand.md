@@ -330,6 +330,6 @@ the lower-overhead choice. See [When to use BlaC](/guide/introduction#when-to-us
 
 - [Comparison](/guide/comparison) — BlaC vs Zustand vs Jotai side by side, including when Zustand is the better fit
 - [Core Concepts](/guide/concepts) — state containers, registry, dependency tracking
-- [useBloc](/react/use-bloc) — full hook reference with `select`, `onMount`, `instanceId`
+- [useBloc](/react/use-bloc) — full hook reference with `args`, `select`, `onMount`
 - [Dependency Tracking](/react/dependency-tracking) — auto-tracking and `select` in depth
 - [Patterns & Recipes](/guide/patterns) — cross-bloc deps, persistence, async

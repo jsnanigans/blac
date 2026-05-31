@@ -33,7 +33,7 @@ BlaC takes a different approach:
 - **State logic lives in classes, not components.** Define your state shape and mutations in a `Cubit` class. Components just read state and call methods.
 - **No providers or context wrappers.** Import your class, call `useBloc(MyClass)`, and you're connected. The registry handles instance creation and sharing automatically.
 - **Re-renders are precise by default.** Auto-tracking proxies detect which state properties your component reads during render. Only changes to those properties trigger re-renders.
-- **Lifecycle is declarative.** Instances are shared by default. Use `instanceId` for named per-component instances or `@blac({ keepAlive: true })` for persistent singletons.
+- **Lifecycle is declarative.** Instances are shared by default. Use `args` (with a `static key`) for named per-component instances or `@blac({ keepAlive: true })` for persistent singletons.
 - **Built for TypeScript.** State types flow from your class definition through the hook return value with zero type annotations needed.
 
 ::: info How does this compare to Redux / Zustand / Jotai / MobX?
@@ -57,7 +57,7 @@ BlaC has two layers:
 
 **Core** (`@blac/core`) provides state containers, a global registry with ref counting, a plugin system, and utilities like `watch`. Proxy-based dependency tracking is built in — no separate adapter package is needed.
 
-**React** (`@blac/react`) provides the `useBloc` hook. It subscribes each component to the bloc's path-scoped channel and re-renders through React's normal update path when a tracked read path changes. The optional `BlocProvider` shown above scopes a default `instanceId` to a subtree — most apps never need it (see [useBloc](/react/use-bloc) for when it helps).
+**React** (`@blac/react`) provides the `useBloc` hook. It subscribes each component to the bloc's path-scoped channel and re-renders through React's normal update path when a tracked read path changes. The optional `BlocProvider` shown above scopes default `args` to a subtree — most apps never need it (see [useBloc](/react/use-bloc) for when it helps).
 
 ::: details Under the hood: the DirtyTalk engine family
 The "what changed, who cares, when do we tell them" machinery — path-based dirty tracking, the render-time proxy, microtask-batched flushing — lives in a lower-level, framework-agnostic family of packages called [DirtyTalk](/dirtytalk/). BlaC's `StateContainer` extends `@dirtytalk/structural`'s container; you never need to touch it directly, but it's there if you want to understand the foundation.

@@ -58,8 +58,7 @@ The hook signature, return tuple, and options are identical to the React version
 
 ```ts
 const [state, bloc, ref] = useBloc(MyCubit, {
-  args: { id },                       // typed; required when the bloc declares Args
-  instanceId: 'optional-key',         // per-consumer instance key
+  args: { id },                       // typed; required when the bloc declares Args; derives identity
   select: (state, bloc) => [bloc.someGetter], // re-render selector (opts out of auto-track)
   onMount: (bloc) => {
     /* runs after acquire */

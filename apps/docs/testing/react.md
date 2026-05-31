@@ -111,21 +111,21 @@ it('calls save on form submit', async () => {
 
 ### Named instances
 
-If your component uses `useBloc(Cubit, { instanceId })`, pass the same key:
+If your component keys a bloc by `args` (e.g. `useBloc(EditorCubit, { args: { docId } })`), pass the same `args` so the stub registers under the matching instance key:
 
 ```tsx
 it('renders the correct editor', () => {
-  renderWithBloc(<Editor instanceId="doc-42" />, {
+  renderWithBloc(<Editor docId="doc-42" />, {
     bloc: EditorCubit,
     state: { content: 'Hello world' },
-    instanceKey: 'doc-42',
+    args: { docId: 'doc-42' },
   });
   expect(screen.getByText('Hello world')).toBeInTheDocument();
 });
 ```
 
 ::: warning Match the resolved instance key
-`instanceKey` here must match the key your component's `useBloc` resolves to. With an explicit `useBloc(Cubit, { instanceId })`, that is the stringified `instanceId`. With `args`-keyed blocs the key is derived structurally from the args, so prefer to control identity by seeding the stub directly (next section) rather than guessing the key. See [Inputs](/guide/inputs) for how identity is resolved.
+The `args` you pass must resolve to the same key your component's `useBloc` resolves to — `renderWithBloc` runs them through the same `static key`/structural-hash resolution. There is no separate string-key option; identity always flows through `args`. See [Inputs](/guide/inputs) for how identity is resolved.
 :::
 
 ### `args`- and `deps`-based blocs
@@ -330,4 +330,4 @@ The getter runs against real state, so you test real logic — not a mocked retu
 - [Core Testing API](/testing/core) — the stub/override/seeding primitives these helpers wrap
 - [Testing Overview](/testing/overview) — registry isolation and the import convention
 - [useBloc](/react/use-bloc) — the hook your components use, and how it resolves instance identity
-- [Inputs](/guide/inputs) — the `args` / `deps` / `instanceId` lanes you seed in tests
+- [Inputs](/guide/inputs) — the `args` / `deps` lanes you seed in tests

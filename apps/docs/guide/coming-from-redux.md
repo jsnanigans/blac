@@ -418,6 +418,6 @@ ceremony without removing the testability or the DevTools story.
 
 - [Comparison](/guide/comparison) — BlaC vs Zustand vs Jotai, with Redux in the honest-comparisons table
 - [Core Concepts](/guide/concepts) — state containers, registry, dependency tracking
-- [useBloc](/react/use-bloc) — full hook reference with `select`, `onMount`, `instanceId`
+- [useBloc](/react/use-bloc) — full hook reference with `args`, `select`, `onMount`
 - [Async](/guide/async) — async methods, status unions, cancellation, and why BlaC skips Suspense
 - [DevTools](/plugins/devtools) — first-party BlaC DevTools plugin

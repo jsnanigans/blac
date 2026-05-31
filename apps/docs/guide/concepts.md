@@ -70,23 +70,22 @@ All calls to `useBloc(CounterCubit)` return the same instance. This is the commo
 
 ### Named
 
-Pass `instanceId` to share an instance within a specific key. Different keys get different instances.
+Put the distinguishing value in `args` (and select it with `static key`) to get a distinct instance per key. Different args resolve to different instances.
 
 ```tsx
-useBloc(EditorCubit, { instanceId: 'doc-42' });
+useBloc(EditorCubit, { args: { docId: 'doc-42' } });
 ```
 
 ### Keep alive
 
 With `@blac({ keepAlive: true })`, the instance survives even when all components using it unmount. It persists for the lifetime of the app.
 
-## Inputs: args, deps, instanceId
+## Inputs: args and deps
 
-Components rarely need a blank container — they need one seeded with data. BlaC keeps that data in three separate lanes so a shared instance with many consumers never races:
+Components rarely need a blank container — they need one seeded with data. BlaC keeps that data in two separate lanes so a shared instance with many consumers never races:
 
-- **`args`** — serializable data that *identifies* an instance (e.g. a document id). Same args resolve to the same instance.
+- **`args`** — serializable data that *identifies* an instance (e.g. a document id). Same args resolve to the same instance; identity is derived from args alone.
 - **`deps`** — non-serializable handles (callbacks, services) injected per consumer, never used for identity.
-- **`instanceId`** — an explicit key when you want a distinct instance regardless of args.
 
 This is just the teaser; the full model, the precedence rules, and the failure modes live in [Inputs](/guide/inputs).
 
@@ -137,7 +136,7 @@ Official plugins: [Logging](/plugins/logging), [DevTools](/plugins/devtools), [P
 
 ## Glossary
 
-Every term used above — `StateContainer`, `Cubit`, registry, ref counting, auto-tracking, `args`/`deps`/`instanceId`, hydration, `depend()`, and the rest — has a one-line definition in the [Glossary](/guide/glossary), each linking to its deep page.
+Every term used above — `StateContainer`, `Cubit`, registry, ref counting, auto-tracking, `args`/`deps`, hydration, `depend()`, and the rest — has a one-line definition in the [Glossary](/guide/glossary), each linking to its deep page.
 
 ## What's next?
 

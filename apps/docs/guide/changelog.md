@@ -137,7 +137,7 @@ BlaC React bindings v2 — complete rewrite with improved hooks and performance.
   `useSyncExternalStore` for Concurrent Mode compatibility.
 - Per-consumer proxy tracking — only re-renders when accessed properties change.
 - Manual `select` option for explicit dependency control.
-- `instanceId` for per-component isolated instances.
+- `args`-derived identity for per-component and named instances.
 - React 18 and 19 support.
 
 ---

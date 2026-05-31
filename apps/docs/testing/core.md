@@ -117,13 +117,13 @@ withTestRegistry(() => {
 
 ## Seeding state
 
-### `withBlocState(BlocClass, state, instanceKey?)`
+### `withBlocState(BlocClass, state, args?)`
 
 ```ts
 function withBlocState<T extends StateContainerConstructor>(
   BlocClass: T,
   state: Partial<ExtractState<T>>,
-  instanceKey?: string,
+  args?: ExtractArgs<T>,
 ): InstanceType<T>;
 ```
 
@@ -144,21 +144,21 @@ it('filters active todos', () => {
 });
 ```
 
-For named instances, pass the `instanceKey`:
+For named instances, pass the `args` that identify them (resolved via the class's `static key`/structural hash):
 
 ```ts
-withBlocState(EditorCubit, { content: 'Hello' }, 'doc-1');
-withBlocState(EditorCubit, { content: 'World' }, 'doc-2');
+withBlocState(EditorCubit, { content: 'Hello' }, { docId: 'doc-1' });
+withBlocState(EditorCubit, { content: 'World' }, { docId: 'doc-2' });
 ```
 
-### `withBlocMethod(BlocClass, methodName, impl, instanceKey?)`
+### `withBlocMethod(BlocClass, methodName, impl, args?)`
 
 ```ts
 function withBlocMethod<T extends StateContainerConstructor>(
   BlocClass: T,
   methodName: keyof InstanceType<T>,
   impl: (...args: any[]) => any,
-  instanceKey?: string,
+  args?: ExtractArgs<T>,
 ): InstanceType<T>;
 ```
 
@@ -260,20 +260,20 @@ it('reacts to a wired dependency', () => {
 `args` and `deps` can be combined with `state` and `methods` in the same call.
 
 ::: tip
-This is the only place `args` and `deps` enter the testing API. There is no separate `args` option on `withBlocState`; if you need an args-seeded instance in the registry, build it with `createCubitStub({ args })` and inject it with `registerOverride`. See [Inputs](/guide/inputs) for the `args`/`deps`/`instanceId` model.
+`createCubitStub` is the only place `deps` enter the testing API. The registry helpers (`withBlocState`, `withBlocMethod`, `registerOverride`, `overrideEnsure`) take an optional trailing `args` argument — it both keys the instance and seeds `init(args)` — but none of them accept `deps`. For a deps-wired instance, build it with `createCubitStub({ args, deps })` and inject it with `registerOverride`. See [Inputs](/guide/inputs) for the `args`/`deps` model.
 :::
 
 Stubs are commonly paired with `registerOverride` to inject them into the registry for use by dependent code or React components.
 
 ## Overrides
 
-### `registerOverride(BlocClass, instance, instanceKey?)`
+### `registerOverride(BlocClass, instance, args?)`
 
 ```ts
 function registerOverride<T extends StateContainerConstructor>(
   BlocClass: T,
   instance: InstanceType<T>,
-  instanceKey?: string,
+  args?: ExtractArgs<T>,
 ): void;
 ```
 
@@ -294,14 +294,14 @@ it('uses the override when resolving dependencies', () => {
 });
 ```
 
-### `overrideEnsure(BlocClass, instance, fn, instanceKey?)`
+### `overrideEnsure(BlocClass, instance, fn, args?)`
 
 ```ts
 function overrideEnsure<T extends StateContainerConstructor, R>(
   BlocClass: T,
   instance: InstanceType<T>,
   fn: () => R,
-  instanceKey?: string,
+  args?: ExtractArgs<T>,
 ): R;
 ```
 
@@ -448,17 +448,17 @@ The stub is a real `ShippingCubit` instance, so `cart.getShipping()` works exact
 
 ## Testing keyed instances
 
-Use the `instanceKey` parameter on any helper to test named instances:
+Pass the `args` that identify each instance to any helper (the class's `static key`/structural hash resolves them to the registry key):
 
 ```ts
 blacTestSetup();
 
 it('manages independent editor instances', () => {
-  withBlocState(EditorCubit, { content: 'Doc A' }, 'doc-a');
-  withBlocState(EditorCubit, { content: 'Doc B' }, 'doc-b');
+  withBlocState(EditorCubit, { content: 'Doc A' }, { docId: 'doc-a' });
+  withBlocState(EditorCubit, { content: 'Doc B' }, { docId: 'doc-b' });
 
-  const editorA = ensure(EditorCubit, 'doc-a');
-  const editorB = ensure(EditorCubit, 'doc-b');
+  const editorA = ensure(EditorCubit, { args: { docId: 'doc-a' } });
+  const editorB = ensure(EditorCubit, { args: { docId: 'doc-b' } });
 
   expect(editorA.state.content).toBe('Doc A');
   expect(editorB.state.content).toBe('Doc B');

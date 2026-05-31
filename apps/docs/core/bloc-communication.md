@@ -70,19 +70,20 @@ class CartCubit extends Cubit<{ items: CartItem[] }> {
 
 ### Named instance dependencies
 
-By default, `depend(Type)` targets the `'default'` instance key. To depend on a specific [named instance](/core/instance-management):
+By default, `depend(Type)` targets the `'default'` instance key. To depend on a specific [named instance](/core/instance-management), pass the `args` that identify it:
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
 
-class EditorCubit extends Cubit<{ content: string }> {
+class EditorCubit extends Cubit<{ content: string }, { docId: string }> {
+  static key = (a: EditorCubit['args']) => a.docId;
   constructor() {
     super({ content: '' });
   }
 }
 
 class ReviewCubit extends Cubit<{ approved: boolean }> {
-  private getEditor = this.depend(EditorCubit, 'doc-42');
+  private getEditor = this.depend(EditorCubit, { docId: 'doc-42' });
 
   constructor() {
     super({ approved: false });
@@ -90,7 +91,7 @@ class ReviewCubit extends Cubit<{ approved: boolean }> {
 }
 ```
 
-The instance key passed here must match the key the target instance is acquired under (via `args`, an explicit `instanceId`, or a [`static key`](/core/configuration)). A mismatched key resolves a _different_ instance — see [Inputs and identity](/guide/inputs) for how keys are derived.
+The `args` passed here must resolve to the same key the target instance is acquired under (via its `static key` or structural hash). Mismatched args resolve a _different_ instance — see [Inputs and identity](/guide/inputs) for how keys are derived.
 
 ## Alternatives
 
@@ -310,6 +311,6 @@ Use `borrowSafe` over `borrow` when the instance may not exist yet. `borrow` thr
 ## See also
 
 - [Instance Management](/core/instance-management) — the registry, ref counting, and `ensure`/`borrow`/`acquire`
-- [Inputs and identity](/guide/inputs) — how `args`, `instanceId`, and `static key` resolve the instance a `depend()` targets
+- [Inputs and identity](/guide/inputs) — how `args` and `static key` resolve the instance a `depend()` targets
 - [Best Practices](/guide/best-practices) — when cross-bloc coupling is sound versus a smell
 - [Glossary](/guide/glossary) — definitions for registry, `ensure`, `keepAlive`, and auto-tracking

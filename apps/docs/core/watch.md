@@ -51,37 +51,38 @@ const stop = watch(UserCubit, (user) => {
 stop();
 ```
 
-## `instance(BlocClass, instanceId)`
+## `instance(BlocClass, args?)`
 
 Create a reference to a specific keyed bloc instance for use with `watch`.
 
 ```ts
 function instance<T extends StateContainerConstructor>(
   BlocClass: T,
-  instanceId: string,
+  args?: ExtractArgs<T>,
 ): BlocRef<T>;
 ```
 
-| Parameter    | Type                                  | Required | Description                                                                   |
-| ------------ | ------------------------------------- | -------- | ----------------------------------------------------------------------------- |
-| `BlocClass`  | `T extends StateContainerConstructor` | yes      | The bloc class to reference.                                                  |
-| `instanceId` | `string`                              | yes      | The instance key — the same `id` you would pass as `instanceId` to `useBloc`. |
+| Parameter   | Type                                  | Required | Description                                                          |
+| ----------- | ------------------------------------- | -------- | -------------------------------------------------------------------- |
+| `BlocClass` | `T extends StateContainerConstructor` | yes      | The bloc class to reference.                                         |
+| `args`      | `ExtractArgs<T>`                      | no       | The args identifying the instance — the same args you pass to `useBloc`. Resolved to a key via `static key`/structural hash. |
 
 **Returns:** a `BlocRef<T>` — a lightweight reference object that tells `watch` which keyed instance to resolve.
 
-**Behavior.** By default `watch(SomeCubit, ...)` resolves the **default** instance. Wrap with `instance(Class, id)` to target a specific keyed instance.
+**Behavior.** By default `watch(SomeCubit, ...)` resolves the **default** instance. Wrap with `instance(Class, args)` to target the instance keyed by those args.
 
 ```ts twoslash
 import { watch, instance } from '@blac/core';
 import { Cubit } from '@blac/core';
 
-class UserCubit extends Cubit<{ name: string }> {
+class UserCubit extends Cubit<{ name: string }, { userId: string }> {
+  static key = (a: UserCubit['args']) => a.userId;
   constructor() {
     super({ name: '' });
   }
 }
 
-const stop = watch(instance(UserCubit, 'user-123'), (user) => {
+const stop = watch(instance(UserCubit, { userId: 'user-123' }), (user) => {
   console.log(user.state.name);
 });
 ```

@@ -26,12 +26,19 @@ interface EditorState {
   future: Note[]; // most-recently-undone … oldest-undone
 }
 // ---cut---
-class EditorCubit extends Cubit<EditorState> {
+class EditorCubit extends Cubit<EditorState, Note> {
   // Hard cap prevents unbounded memory growth.
   private static readonly MAX_HISTORY = 50;
 
-  constructor(initial: Note) {
-    super({ note: initial, past: [], future: [] });
+  // One instance per note title — args both seed and key the instance.
+  static key = (initial: Note) => initial.title;
+
+  constructor() {
+    super({ note: { title: '', body: '' }, past: [], future: [] });
+  }
+
+  protected init(initial: Note) {
+    this.emit({ note: initial, past: [], future: [] });
   }
 
   /** Push the current note onto the past stack, then apply `next`. */
@@ -88,9 +95,8 @@ class EditorCubit extends Cubit<EditorState> {
 
 ```tsx
 function NoteEditor({ initial }: { initial: { title: string; body: string } }) {
-  const instanceId = `editor-${initial.title}`;
+  // `static key` derives identity from the title — one EditorCubit per note.
   const [state, editor] = useBloc(EditorCubit, {
-    instanceId,
     args: initial,
     select: (s, bloc) => [
       s.note.title,

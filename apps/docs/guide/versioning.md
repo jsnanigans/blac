@@ -116,7 +116,7 @@ Summary of the categories covered there:
 - `@blac/adapter` package removed
 - `Bloc` event-driven class removed; use `Cubit`
 - `props` generic replaced by `args` / `deps` input lanes
-- `id` option renamed to `instanceId`
+- `id` option removed; instance identity is derived from `args` (+ optional `static key`)
 - `Blac` static facade replaced by tree-shakeable registry functions
 - Plugin hook renames (`onInstanceCreated` → `onCreated`, etc.)
 - `onSystemEvent('stateChanged')` is now microtask-coalesced

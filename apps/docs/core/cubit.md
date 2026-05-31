@@ -585,7 +585,7 @@ class FormCubit extends Cubit<{ email: string; password: string }> {
 
 - [Mental Model](/guide/mental-model) — why class-based containers, proxy tracking, and microtask batching
 - [Best Practices](/guide/best-practices) — how to scope blocs, model async, and choose args vs deps
-- [Passing Inputs](/guide/inputs) — the full args / deps / instanceId identity model
+- [Passing Inputs](/guide/inputs) — the full args / deps identity model
 - [Glossary](/guide/glossary) — StateContainer vs Cubit vs bloc vs instance, and other terms
 
 ## Troubleshooting

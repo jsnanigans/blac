@@ -122,22 +122,25 @@ If you need a literal mechanical port without adopting identity keying yet, defi
 `grep -rn "{ props:" src/` and search for `this.props` inside Cubit classes. Each maps to either `args` (identity data) or `deps` (handles).
 :::
 
-## `useBloc` identity option: `id` → `instanceId`
+## `useBloc` identity option: `id` → `args`
 
-The v1 per-instance key option was named `id`. In v2 it is `instanceId`.
+The v1 per-instance key option was named `id`. v2 has **no** explicit key option at all — instance identity is derived from `args`. Move the distinguishing value into `args` and select it with a `static key` on the class.
 
 ```tsx
 // v1
 useBloc(FormCubit, { id: 'billing' });
 
-// v2
-useBloc(FormCubit, { instanceId: 'billing' });
+// v2 — the value lives in args; static key makes it the identity
+class FormCubit extends Cubit<FormState, { section: string }> {
+  static key = (a: FormCubit['args']) => a.section;
+}
+useBloc(FormCubit, { args: { section: 'billing' } });
 ```
 
-There is also no `autoInstance` option in v2 (it never shipped in the public surface). For a private per-mount instance, pass `instanceId: useId()`. See [Passing Inputs](/guide/inputs#per-component-private-instances).
+There is also no `instanceId` or `autoInstance` option in v2 (neither shipped in the public surface). For a private per-mount instance, add a synthetic `args` field — `args: { _id: useId() }` — with a matching `static key`. See [Passing Inputs](/guide/inputs#per-component-private-instances).
 
 ::: details Find call sites
-`grep -rn "useBloc(.*{ *id:" src/` — rename the key to `instanceId`.
+`grep -rn "useBloc(.*{ *id:" src/` — move the key into `args` and add a `static key`.
 :::
 
 ## `Blac` facade → registry functions
@@ -227,7 +230,7 @@ This is primarily relevant for plugin authors and DevTools integrations that nee
 Migration isn't only about what's gone. v2 adds capabilities a v1 codebase should adopt as it moves over:
 
 - **The input model** — `args` (identity-keyed creation data), `deps` (non-serializable handles), and method-call events replace the old single `props` slot. This is the headline addition; start at [Passing Inputs](/guide/inputs).
-- **Per-mount instances** via `instanceId: useId()` (the supported replacement for the nonexistent `autoInstance`).
+- **Per-mount instances** via a synthetic `args: { _id: useId() }` field + `static key` (the supported replacement for the nonexistent `autoInstance`/`instanceId` options).
 - **Automatic, path-scoped re-renders** — no `dependencies`/selector needed for the common case; the returned state proxy tracks exactly what your component reads. See [Dependency Tracking](/react/dependency-tracking).
 - **Hydration lifecycle** — `beginHydration`/`finishHydration`/`waitForHydration` and the `hydrationChanged` event, used by the [persistence plugin](/plugins/persistence).
 - **Circuit breakers** — `configureBlac({ maxInstancesPerType, maxRefsPerInstance, maxEmitsPerSecond })` guard against leaks and emit storms. See [Configuration](/core/configuration).

@@ -144,17 +144,21 @@ In flutter_bloc you place a `BlocProvider` in the widget tree so descendants can
 Two calls to `useBloc(CounterCubit)` always return the same instance, regardless of where in the React
 tree they sit.
 
-For scoped instances — an editor with a per-document state — pass `instanceId` instead of a wrapping
-provider:
+For scoped instances — an editor with per-document state — make the scoping value part of `args`
+instead of using a wrapping provider:
 
 ```tsx
+class EditorCubit extends Cubit<EditorState, { docId: string }> {
+  static key = (a: EditorCubit['args']) => a.docId;
+}
+
 function Editor({ docId }: { docId: string }) {
-  const [state, editor] = useBloc(EditorCubit, { instanceId: docId });
+  const [state, editor] = useBloc(EditorCubit, { args: { docId } });
   // ...
 }
 ```
 
-Each `docId` gets an independent `EditorCubit`. When all components using that `instanceId` unmount,
+Each `docId` gets an independent `EditorCubit`. When all components using that `docId` unmount,
 the instance is disposed automatically (same ref-counting lifecycle as flutter_bloc's `BlocProvider`
 `create` + `close`).
 
@@ -303,6 +307,6 @@ translation. If you used `Bloc` events, collapse each `on<Event>` handler into a
 
 - [Core Concepts](/guide/concepts) — state containers, registry, dependency tracking
 - [Comparison](/guide/comparison) — BlaC vs Zustand vs Jotai, including the flutter_bloc lineage
-- [useBloc](/react/use-bloc) — full hook reference with `select`, `onMount`, `instanceId`
+- [useBloc](/react/use-bloc) — full hook reference with `args`, `select`, `onMount`
 - [Async](/guide/async) — async methods, status unions, cancellation
 - [Persistence](/plugins/persistence) — the persist plugin and storage adapters

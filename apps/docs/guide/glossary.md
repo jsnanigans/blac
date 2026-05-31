@@ -24,7 +24,7 @@ A few names look alike and are easy to confuse: `select` (a re-render selector) 
 | **ensure** | Registry verb that creates-or-reuses an instance **without** taking a ref. Used by `watch` and `depend()`; the result is not kept alive by the caller. See [Instance management](/core/instance-management). |
 | **borrow / borrowSafe** | Registry reads that return an **existing** instance without creating one or counting a ref. `borrow` throws when missing; `borrowSafe` returns `{ error, instance }`. See [Instance management](/core/instance-management). |
 | **ref counting** | The mechanism behind sharing: each consumer holds one ref via `acquire`; when the last ref is released the instance is auto-disposed (unless `keepAlive`). See [Instance management](/core/instance-management). |
-| **instance key** | The string that decides which instance a consumer gets. Resolved as: explicit `instanceId` &gt; `<BlocProvider>` context &gt; `static key(args)` &gt; structural hash of `args` &gt; `'default'`. See [Inputs](/guide/inputs). |
+| **instance key** | The string that decides which instance a consumer gets. Resolved from `args`: own `args` (via `static key(args)`, else structural hash of `args`) &gt; `<BlocProvider>` context `args` &gt; `'default'`. See [Inputs](/guide/inputs). |
 | **structural key** | A deterministic, order-independent JSON hash of `args` used to key instances when no explicit key is given. Throws (dev) if `args` contains a function. See [Inputs](/guide/inputs). |
 
 ## Inputs &amp; identity
@@ -34,8 +34,8 @@ A few names look alike and are easy to confuse: `select` (a re-render selector) 
 | **Args** | Typed, **serializable** creation data (`Args` type param). Passed to `init(args)` once and used to key instance identity. Required by `useBloc` when declared, forbidden when `void`. See [Inputs](/guide/inputs). |
 | **Deps** | Non-serializable handles (refs, stable callbacks) injected **per consumer** via the `Deps` type param. Merged into `bloc.deps`; **never** key identity. See [Inputs](/guide/inputs). |
 | **deps (runtime)** | The merged, read-only view of all consumers' dep slices, exposed as `bloc.deps`. Changes fire [onDepsChanged](#onDepsChanged). Note: a `deps` *option* on `useBloc` is **internal**, not part of the public hook surface. See [Inputs](/guide/inputs). |
-| **instanceId** | An explicit per-consumer instance key (`string \| number`) passed to `useBloc` or `BlocProvider`. Highest-priority identity input; overrides provider context. See [useBloc](/react/use-bloc). |
-| **autoInstance** | **Not a current option.** The shipping mechanism for a fresh per-mount instance is `instanceId: useId()` on the `useBloc` call. The name `autoInstance` survives only in stale comments; a `static isolated` field exists but is not wired into `useBloc` in the current release. See [Instance management](/core/instance-management). |
+| **instanceId** | **No longer a `useBloc`/`BlocProvider` option.** Instance identity comes entirely from `args` (via `static key` or structural hash). `instanceId` survives only as a read-only **property** on each instance (its resolved key) and as the `instanceId()` branded-type helper. For a per-mount instance use `args: { _id: useId() }` + `static key`. See [Inputs](/guide/inputs). |
+| **autoInstance** | **Not a current option.** The shipping mechanism for a fresh per-mount instance is a synthetic `args` field — `args: { _id: useId() }` — plus a `static key` selecting it. The names `autoInstance`/`instanceId`-option survive only in stale comments; a `static isolated` field exists but is not wired into `useBloc` in the current release. See [Instance management](/core/instance-management). |
 | **static key** | A class static `key = (args) => string` (settable directly or via `blac({ key })`) that derives the instance key from `args`. See [Inputs](/guide/inputs). |
 | **keepAlive** | Set via `blac({ keepAlive: true })`; instances of the class are **never** auto-disposed at ref count zero (still disposable via `forceDispose`/`clear`). See [Configuration](/core/configuration). |
 | **excludeFromDevTools** | Set via `blac({ excludeFromDevTools: true })`; the class is excluded from DevTools tracking. See [Configuration](/core/configuration). |
@@ -50,7 +50,7 @@ A few names look alike and are easy to confuse: `select` (a re-render selector) 
 | **auto-tracking** | The default re-render strategy: when `select` is omitted, BlaC records which state leaves a render reads and re-renders only when one of them changes. Also called *dependency tracking* (the feature/page name). See [Dependency tracking](/react/dependency-tracking). |
 | **tracked proxy** | The recording `Proxy` wrapper (`trackRender`) placed around `state` during render; reads on it log leaf paths used for auto-tracking. There is **no `@tracked` decorator** — tracking is automatic. See [Tracked](/core/tracked). |
 | **per-consumer tracker** | Each `useBloc` call gets its **own** proxy + recorded path set, so re-renders stay isolated between components reading the same instance. See [Dependency tracking](/react/dependency-tracking). |
-| **BlocProvider** | A React component that supplies a default `instanceId` to descendant `useBloc` calls that omit one. An explicit `instanceId` on the call still wins. See [useBloc](/react/use-bloc). |
+| **BlocProvider** | A React component that supplies default `args` to descendant `useBloc` calls that omit their own. A call passing its own `args` still wins. See [useBloc](/react/use-bloc). |
 | **ref (tuple element)** | The third element of the `useBloc` tuple (`ComponentRef`); an advanced-use ref object rarely needed in app code. See [useBloc](/react/use-bloc). |
 
 ## Lifecycle &amp; hydration
@@ -70,7 +70,7 @@ A few names look alike and are easy to confuse: `select` (a re-render selector) 
 | Term | Definition |
 |---|---|
 | **watch** | `watch(blocOrRef, callback)` runs a callback once immediately and again on every change of the watched bloc(s), outside React. Return `watch.STOP` (or call the returned fn) to stop. See [watch](/core/watch). |
-| **instance() (helper)** | `instance(BlocClass, instanceId)` builds a `BlocRef` so `watch` targets a specific keyed instance rather than the default one. See [watch](/core/watch). |
+| **instance() (helper)** | `instance(BlocClass, args)` builds a `BlocRef` so `watch` targets the instance keyed by those args rather than the default one. See [watch](/core/watch). |
 | **subscribe** | `subscribe(listener)` — the legacy per-flush listener surface on a bloc. Prefer `watch` (non-React) or `useBloc` (React); new code can use `bloc.channel.subscribe`. See [watch](/core/watch). |
 | **plugin** | An observer (`BlacPlugin`) that hooks into container lifecycle (`onCreated`, `onStateChange`, `onDestroyed`, `onHydrationChange`, …) across all instances. See [Plugins](/core/plugins). |
 | **PluginManager** | The singleton (via `getPluginManager()`) that installs, uninstalls, and tracks plugins, gating each by `enabled` and `environment`. See [Plugins](/core/plugins). |
@@ -102,7 +102,7 @@ All three name the **same** mechanism: the render-time recording proxy that logs
 :::
 
 ::: warning No `Bloc` class, no `@tracked`, no `autoTrack`/`autoInstance` options
-BlaC has **no `Bloc` class** (only `StateContainer` and `Cubit`), **no `@tracked` decorator**, and **no `autoTrack` or `autoInstance` options**. Tracking is automatic and unconditional unless you pass `select`; a fresh per-mount instance comes from `instanceId: useId()`. If a doc or comment mentions these, it is stale.
+BlaC has **no `Bloc` class** (only `StateContainer` and `Cubit`), **no `@tracked` decorator**, and **no `autoTrack`, `autoInstance`, or `instanceId` options**. Tracking is automatic and unconditional unless you pass `select`; a fresh per-mount instance comes from `args: { _id: useId() }` + `static key`. If a doc or comment mentions these, it is stale.
 :::
 
 ## See also

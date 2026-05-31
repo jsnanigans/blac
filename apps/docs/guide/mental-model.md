@@ -111,7 +111,7 @@ The cost of React Context for shared state is structural: every shared value nee
 const [state, cart] = useBloc(CartCubit);
 ```
 
-Two components calling `useBloc(CartCubit)` get the same instance because the registry hands back the same object, regardless of where they sit in the tree. Sharing is by _identity in a registry_, not by _position under a provider_. You can still scope an instance to a subtree when you want to — `instanceId` (or `BlocProvider` supplying a default `instanceId` to descendants) keys a distinct instance — but that is opt-in, not the price of admission.
+Two components calling `useBloc(CartCubit)` get the same instance because the registry hands back the same object, regardless of where they sit in the tree. Sharing is by _identity in a registry_, not by _position under a provider_. You can still scope an instance to a subtree when you want to — distinct `args` (or a `BlocProvider` supplying default `args` to descendants) keys a distinct instance — but that is opt-in, not the price of admission.
 
 ### Ref-counted lifecycle — automatic disposal
 
@@ -126,7 +126,7 @@ Inputs to a bloc come in two flavors with opposite requirements, and conflating 
 - **`args`** is _serializable identity data_ — the user id whose data this bloc holds. It is forwarded to `init(args)` and used to compute the instance key, so two `useBloc(UserCubit, { args: { id: 7 } })` calls share one instance and a different id gets a different instance. Because it keys identity, `args` **must be serializable** (a function in `args` throws — put it in deps).
 - **`deps`** is _non-serializable, per-consumer handles_ — callbacks, API clients, refs. These must **not** affect identity (a shared instance can't have one identity per callback), so they are merged per consumer rather than baked into the key.
 
-Keeping these lanes separate is what lets a single shared instance accept per-consumer wiring without an override race (two consumers fighting over one value). The `args` lane and `instanceId` are first-class `useBloc` options; the `deps` runtime mechanism on `StateContainer` is currently internal and not exposed as a `useBloc` option in the React surface. The motivation and full mechanics live in [Inputs: args, deps, instanceId](/guide/inputs).
+Keeping these lanes separate is what lets a single shared instance accept per-consumer wiring without an override race (two consumers fighting over one value). The `args` lane is a first-class `useBloc` option and the sole source of instance identity; the `deps` runtime mechanism on `StateContainer` is currently internal and not exposed as a `useBloc` option in the React surface. The motivation and full mechanics live in [Inputs: args and deps](/guide/inputs).
 
 ### Immutable emit
 
@@ -150,9 +150,9 @@ Putting it together, here is what one `useBloc(UserCubit, { args: { id: 7 } })` 
 
 ```text
 MOUNT
-  1. resolve instance key   explicit instanceId? → context? → static key(args)
-                            → structural key from args → "default"
-  2. acquire(UserCubit, key, refId, args)
+  1. resolve instance key   static key(args)? → structural key from args
+                            → provider context args → "default"
+  2. acquire(UserCubit, { args, refId })
        ├─ exists?  → return it, refs[refId]++          (share)
        └─ new?     → new UserCubit(); initConfig(config);
                      init(args) runs once; refs = 1     (create)
@@ -172,7 +172,7 @@ LIVE
 
 UNMOUNT
   8. onUnmount(bloc) fires      (bloc still alive here)
-  9. release(UserCubit, key, refId)  → refs[refId]--
+  9. release(UserCubit, { args, refId })  → refs[refId]--
  10. refs.size === 0 && !keepAlive?
        ├─ yes → dispose(): 'dispose' event, channel torn down,
        │         registry entry removed, cascade-dispose zero-ref deps
@@ -189,5 +189,5 @@ Two details worth internalizing:
 
 - [Core Concepts](/guide/concepts) — the quick tour this page goes deep on
 - [Dependency Tracking](/react/dependency-tracking) — auto-track vs `select` in practice
-- [Inputs: args, deps, instanceId](/guide/inputs) — the input lanes and identity precedence
+- [Inputs: args and deps](/guide/inputs) — the input lanes and identity precedence
 - [Structural: Concepts](/dirtytalk/structural/concepts) — the path-tracking engine BlaC is built on
