@@ -13,7 +13,10 @@ class ExtBlocB extends Cubit<{ x: number }> {
   }
 }
 
-class ExtBlocA extends Cubit<{ multiplier: number }> {
+class ExtBlocA extends Cubit<{ multiplier: number }, { _id: string }> {
+  static key(args: { _id: string } | undefined) {
+    return args?._id ?? 'default';
+  }
   private bGetter = this.depend(ExtBlocB);
   constructor() {
     super({ multiplier: 2 });
@@ -176,14 +179,14 @@ describe('useBloc — cross-bloc React integration', () => {
     function CompA() {
       renderA++;
       const [extState] = useBloc(ExtBlocB);
-      const [, bloc] = useBloc(ExtBlocA, { instanceId: 'a' });
+      const [, bloc] = useBloc(ExtBlocA, { args: { _id: 'a' } });
       void extState.x;
       return <span data-testid="a">{bloc.result}</span>;
     }
     function CompB() {
       renderB++;
       const [extState] = useBloc(ExtBlocB);
-      const [, bloc] = useBloc(ExtBlocA, { instanceId: 'b' });
+      const [, bloc] = useBloc(ExtBlocA, { args: { _id: 'b' } });
       void extState.x;
       return <span data-testid="b">{bloc.result}</span>;
     }

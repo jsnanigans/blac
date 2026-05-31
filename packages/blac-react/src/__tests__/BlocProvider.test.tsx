@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { render, act, screen } from '@testing-library/react';
-import { Cubit, hasInstance, borrow } from '@blac/core';
+import { Cubit, hasInstance } from '@blac/core';
 import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 import { BlocProvider } from '../BlocProvider';
 
-class CounterCubit extends Cubit<{ n: number }> {
+class CounterCubit extends Cubit<{ n: number }, { _id: string }> {
+  static key(args: { _id: string } | undefined) {
+    return args?._id ?? 'default';
+  }
   constructor() {
     super({ n: 0 });
   }
@@ -14,10 +17,23 @@ class CounterCubit extends Cubit<{ n: number }> {
   }
 }
 
+// A second bloc so we can test multi-bloc provider composition.
+class FlagCubit extends Cubit<{ on: boolean }, { _id: string }> {
+  static key(args: { _id: string } | undefined) {
+    return args?._id ?? 'default';
+  }
+  constructor() {
+    super({ on: false });
+  }
+  toggle() {
+    this.patch({ on: !this.state.on });
+  }
+}
+
 blacTestSetup();
 
-describe('E1 — BlocProvider instance-id context', () => {
-  it('descendants resolve to the provider id when no explicit instanceId is given', () => {
+describe('E1 — BlocProvider args-based scoping', () => {
+  it('descendants resolve to the provider args when no own args are given', () => {
     let blocA!: CounterCubit;
     let blocB!: CounterCubit;
 
@@ -29,24 +45,22 @@ describe('E1 — BlocProvider instance-id context', () => {
 
     render(
       <>
-        <BlocProvider instanceId="ctx-1">
+        <BlocProvider bloc={CounterCubit} args={{ _id: 'ctx-1' }}>
           <Probe assign={(b) => (blocA = b)} />
         </BlocProvider>
-        <BlocProvider instanceId="ctx-2">
+        <BlocProvider bloc={CounterCubit} args={{ _id: 'ctx-2' }}>
           <Probe assign={(b) => (blocB = b)} />
         </BlocProvider>
       </>,
     );
 
     expect(blocA).not.toBe(blocB);
-    expect(hasInstance(CounterCubit, 'ctx-1')).toBe(true);
-    expect(hasInstance(CounterCubit, 'ctx-2')).toBe(true);
+    // CounterCubit.key returns _id, so key equals the _id string.
+    expect(hasInstance(CounterCubit, { args: { _id: 'ctx-1' } })).toBe(true);
+    expect(hasInstance(CounterCubit, { args: { _id: 'ctx-2' } })).toBe(true);
   });
 
   it('two descendants under the same provider share the same instance', async () => {
-    // Per-consumer design: each useBloc consumer returns its own proxy. The
-    // shared-instance contract is verified against the raw bloc registered
-    // under the provider's instanceId.
     let blocA!: CounterCubit;
     let blocB!: CounterCubit;
 
@@ -57,20 +71,18 @@ describe('E1 — BlocProvider instance-id context', () => {
     }
 
     render(
-      <BlocProvider instanceId="shared">
+      <BlocProvider bloc={CounterCubit} args={{ _id: 'shared' }}>
         <Probe assign={(b) => (blocA = b)} />
         <Probe assign={(b) => (blocB = b)} />
       </BlocProvider>,
     );
 
-    const raw = borrow(CounterCubit, 'shared');
     await act(async () => {
-      raw.inc();
+      blocA.inc();
     });
     expect(blocA.state.n).toBe(1);
     expect(blocB.state.n).toBe(1);
     expect(blocA.state).toBe(blocB.state);
-    expect(hasInstance(CounterCubit, 'shared')).toBe(true);
   });
 
   it('a state change under one provider does not re-render a sibling subtree', async () => {
@@ -88,10 +100,10 @@ describe('E1 — BlocProvider instance-id context', () => {
 
     render(
       <>
-        <BlocProvider instanceId="ctx-a">
+        <BlocProvider bloc={CounterCubit} args={{ _id: 'ctx-a' }}>
           <CompA />
         </BlocProvider>
-        <BlocProvider instanceId="ctx-b">
+        <BlocProvider bloc={CounterCubit} args={{ _id: 'ctx-b' }}>
           <CompB />
         </BlocProvider>
       </>,
@@ -105,36 +117,32 @@ describe('E1 — BlocProvider instance-id context', () => {
     expect(screen.getByTestId('b').textContent).toBe('0');
   });
 
-  it('explicit instanceId on useBloc overrides the provider', () => {
-    let blocA!: CounterCubit;
-    let blocB!: CounterCubit;
+  it('explicit args on useBloc override the provider args', () => {
+    let blocCtx!: CounterCubit;
+    let blocOwn!: CounterCubit;
 
     function CtxProbe({ assign }: { assign: (b: CounterCubit) => void }) {
       const [, b] = useBloc(CounterCubit);
       assign(b as CounterCubit);
       return null;
     }
-    function ExplicitProbe({ assign }: { assign: (b: CounterCubit) => void }) {
-      const [, b] = useBloc(CounterCubit, { instanceId: 'override' });
+    function OwnArgsProbe({ assign }: { assign: (b: CounterCubit) => void }) {
+      const [, b] = useBloc(CounterCubit, { args: { _id: 'override' } });
       assign(b as CounterCubit);
       return null;
     }
 
     render(
-      <BlocProvider instanceId="ctx">
-        <CtxProbe assign={(b) => (blocA = b)} />
-        <ExplicitProbe assign={(b) => (blocB = b)} />
+      <BlocProvider bloc={CounterCubit} args={{ _id: 'ctx' }}>
+        <CtxProbe assign={(b) => (blocCtx = b)} />
+        <OwnArgsProbe assign={(b) => (blocOwn = b)} />
       </BlocProvider>,
     );
 
-    expect(blocA).not.toBe(blocB);
-    expect(hasInstance(CounterCubit, 'ctx')).toBe(true);
-    expect(hasInstance(CounterCubit, 'override')).toBe(true);
+    expect(blocCtx).not.toBe(blocOwn);
+    expect(hasInstance(CounterCubit, { args: { _id: 'ctx' } })).toBe(true);
+    expect(hasInstance(CounterCubit, { args: { _id: 'override' } })).toBe(true);
   });
-
-  // Deleted: `autoInstance / static isolated overrides provider context` —
-  // `static isolated` is gone (use `instanceId` with a unique key instead);
-  // there is nothing left in the public surface that overrides BlocProvider.
 
   it('sibling subtree without a provider falls back to the default key', () => {
     let inside!: CounterCubit;
@@ -153,7 +161,7 @@ describe('E1 — BlocProvider instance-id context', () => {
 
     render(
       <>
-        <BlocProvider instanceId="ctx">
+        <BlocProvider bloc={CounterCubit} args={{ _id: 'ctx' }}>
           <InsideProbe />
         </BlocProvider>
         <OutsideProbe />
@@ -161,8 +169,9 @@ describe('E1 — BlocProvider instance-id context', () => {
     );
 
     expect(inside).not.toBe(outside);
-    expect(hasInstance(CounterCubit, 'ctx')).toBe(true);
-    expect(hasInstance(CounterCubit, 'default')).toBe(true);
+    expect(hasInstance(CounterCubit, { args: { _id: 'ctx' } })).toBe(true);
+    // Outside has no args and no provider → default key
+    expect(hasInstance(CounterCubit)).toBe(true);
   });
 
   it('unmounting a provider subtree drops the ref on that instance', () => {
@@ -174,7 +183,7 @@ describe('E1 — BlocProvider instance-id context', () => {
       return (
         <>
           {show && (
-            <BlocProvider instanceId="ephemeral">
+            <BlocProvider bloc={CounterCubit} args={{ _id: 'ephemeral' }}>
               <Probe />
             </BlocProvider>
           )}
@@ -183,41 +192,63 @@ describe('E1 — BlocProvider instance-id context', () => {
     }
 
     const { rerender } = render(<Parent show={true} />);
-    expect(hasInstance(CounterCubit, 'ephemeral')).toBe(true);
+    expect(hasInstance(CounterCubit, { args: { _id: 'ephemeral' } })).toBe(
+      true,
+    );
 
     rerender(<Parent show={false} />);
-    expect(hasInstance(CounterCubit, 'ephemeral')).toBe(false);
+    expect(hasInstance(CounterCubit, { args: { _id: 'ephemeral' } })).toBe(
+      false,
+    );
   });
 
-  it('numeric instanceId on the provider is coerced to string', async () => {
-    let blocNum!: CounterCubit;
-    let blocStr!: CounterCubit;
+  it('nested providers for different bloc classes compose correctly', () => {
+    let counter!: CounterCubit;
+    let flag!: FlagCubit;
 
-    function Probe({ assign }: { assign: (b: CounterCubit) => void }) {
-      const [, b] = useBloc(CounterCubit);
-      assign(b as CounterCubit);
+    function Probe() {
+      const [, c] = useBloc(CounterCubit);
+      const [, f] = useBloc(FlagCubit);
+      counter = c as CounterCubit;
+      flag = f as FlagCubit;
       return null;
     }
 
     render(
-      <>
-        <BlocProvider instanceId={7}>
-          <Probe assign={(b) => (blocNum = b)} />
+      <BlocProvider bloc={CounterCubit} args={{ _id: 'counter-ctx' }}>
+        <BlocProvider bloc={FlagCubit} args={{ _id: 'flag-ctx' }}>
+          <Probe />
         </BlocProvider>
-        <BlocProvider instanceId="7">
-          <Probe assign={(b) => (blocStr = b)} />
-        </BlocProvider>
-      </>,
+      </BlocProvider>,
     );
 
-    // Per-consumer design: compare via the raw instance registered under "7".
-    const raw = borrow(CounterCubit, '7');
-    await act(async () => {
-      raw.inc();
-    });
-    expect(blocNum.state.n).toBe(1);
-    expect(blocStr.state.n).toBe(1);
-    expect(blocNum.state).toBe(blocStr.state);
-    expect(hasInstance(CounterCubit, '7')).toBe(true);
+    expect(hasInstance(CounterCubit, { args: { _id: 'counter-ctx' } })).toBe(
+      true,
+    );
+    expect(hasInstance(FlagCubit, { args: { _id: 'flag-ctx' } })).toBe(true);
+    expect(counter).not.toBeNull();
+    expect(flag).not.toBeNull();
+  });
+
+  it('provider for one bloc does not affect useBloc of a different bloc', () => {
+    let flag!: FlagCubit;
+
+    function Probe() {
+      // No FlagCubit provider above — should use default key.
+      const [, f] = useBloc(FlagCubit);
+      flag = f as FlagCubit;
+      return null;
+    }
+
+    render(
+      // Only a CounterCubit provider, no FlagCubit provider.
+      <BlocProvider bloc={CounterCubit} args={{ _id: 'counter-only' }}>
+        <Probe />
+      </BlocProvider>,
+    );
+
+    // FlagCubit should have resolved to the default key (no args, no provider).
+    expect(hasInstance(FlagCubit)).toBe(true);
+    expect(flag).not.toBeNull();
   });
 });

@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { render, act, screen } from '@testing-library/react';
-import { Cubit, getRefCount, hasInstance, borrow } from '@blac/core';
+import {
+  Cubit,
+  getRefCount,
+  hasInstance,
+  borrow,
+  getRegistry,
+} from '@blac/core';
 import { useBloc } from '../useBloc';
 import { blacTestSetup } from '@blac/core/testing';
 
@@ -12,6 +18,19 @@ class CounterBloc extends Cubit<{ count: number }> {
   }
   inc() {
     this.emit({ count: this.state.count + 1 });
+  }
+  set(n: number) {
+    this.emit({ count: n });
+  }
+}
+
+// Args-enabled bloc for the "50 unique args" isolation test.
+class ArgsCounterBloc extends Cubit<{ count: number }, { _id: string }> {
+  static key(args: { _id: string } | undefined) {
+    return args?._id ?? 'default';
+  }
+  constructor() {
+    super({ count: 0 });
   }
   set(n: number) {
     this.emit({ count: n });
@@ -107,9 +126,9 @@ describe('useBloc — stress tests', () => {
     expect(screen.getByTestId('child').textContent).toBe('7');
   });
 
-  it('50 unique instanceIds created simultaneously — all tracked correctly', async () => {
+  it('50 unique args-keyed instances created simultaneously — all tracked correctly', async () => {
     function Comp({ id }: { id: number }) {
-      const [state] = useBloc(CounterBloc, { instanceId: `inst-${id}` });
+      const [state] = useBloc(ArgsCounterBloc, { args: { _id: `inst-${id}` } });
       return <span data-testid={`inst-${id}`}>{state.count}</span>;
     }
     render(
@@ -121,13 +140,16 @@ describe('useBloc — stress tests', () => {
     );
 
     for (let i = 0; i < 50; i++) {
-      expect(hasInstance(CounterBloc, `inst-${i}`)).toBe(true);
+      // ArgsCounterBloc.key returns _id directly, so key equals `inst-${i}`.
+      expect(getRegistry().hasInstance(ArgsCounterBloc, `inst-${i}`)).toBe(
+        true,
+      );
       expect(screen.getByTestId(`inst-${i}`).textContent).toBe('0');
     }
 
-    // Emit on one instance should not affect others
+    // Emit on one args-instance should not affect others
     await act(async () => {
-      borrow(CounterBloc, 'inst-5').set(99);
+      borrow(ArgsCounterBloc, { args: { _id: 'inst-5' } }).set(99);
     });
     expect(screen.getByTestId('inst-5').textContent).toBe('99');
     expect(screen.getByTestId('inst-6').textContent).toBe('0');

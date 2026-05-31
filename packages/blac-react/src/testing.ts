@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import type { RenderResult } from '@testing-library/react';
-import type { StateContainerConstructor } from '@blac/core';
+import type { ExtractArgs, StateContainerConstructor } from '@blac/core';
 import { StateContainerRegistry, getRegistry, setRegistry } from '@blac/core';
 import {
   registerOverride,
@@ -13,21 +13,23 @@ interface RenderWithBlocOptions<
   T extends StateContainerConstructor,
 > extends CubitStubOptions<T> {
   bloc: T;
-  instanceKey?: string;
+  /** Args used to resolve which instance the stub is registered under. */
+  args?: ExtractArgs<T>;
 }
 
 export function renderWithBloc<T extends StateContainerConstructor>(
   ui: ReactElement,
   options: RenderWithBlocOptions<T>,
 ): RenderResult & { bloc: InstanceType<T> } {
-  const { bloc: BlocClass, instanceKey, ...stubOptions } = options;
+  const { bloc: BlocClass, args, ...stubOptions } = options;
 
   const previous = getRegistry();
   const testRegistry = new StateContainerRegistry();
   setRegistry(testRegistry);
 
-  const instance = createCubitStub(BlocClass, stubOptions);
-  registerOverride(BlocClass, instance, instanceKey);
+  // Pass args explicitly so createCubitStub calls initConfig → init().
+  const instance = createCubitStub(BlocClass, { ...stubOptions, args } as any);
+  registerOverride(BlocClass, instance, args);
 
   let renderResult: RenderResult;
   try {

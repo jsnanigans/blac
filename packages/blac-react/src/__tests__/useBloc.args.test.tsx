@@ -67,17 +67,15 @@ describe('useBloc args option', () => {
     // Underlying state objects are equal (same instance).
     expect(r1.current[0]).toEqual(r2.current[0]);
 
-    // Verify via borrow using the structural key derived from args.
-    const instanceKey = JSON.stringify({ userId: 'shared-user' });
-    const raw = borrow(UserCard, instanceKey);
+    // Verify via borrow using args.
+    const raw = borrow(UserCard, { args: { userId: 'shared-user' } });
     expect(raw).not.toBeNull();
     expect(raw.state.id).toBe('shared-user');
   });
 
-  it('args passed alongside explicit instanceId still reach init', () => {
+  it('args-only: instance keyed by args reaches init', () => {
     const { result } = renderHook(() =>
       useBloc(UserCard, {
-        instanceId: 'explicit-key',
         args: { userId: 'carol' },
       }),
     );
@@ -86,18 +84,17 @@ describe('useBloc args option', () => {
 
   it('disposes the args-keyed instance on unmount (no leak)', () => {
     const args = { userId: 'leaky' };
-    const key = JSON.stringify(args);
 
     const { unmount } = renderHook(() => useBloc(UserCard, { args }));
     // Instance exists while mounted.
-    expect(borrow(UserCard, key)).not.toBeNull();
+    expect(borrow(UserCard, { args })).not.toBeNull();
 
     unmount();
 
     // After unmount the ref must be dropped and the instance disposed.
     // Before the fix, release looked up 'default' instead of the args key,
     // so the instance lingered here forever.
-    expect(() => borrow(UserCard, key)).toThrow();
+    expect(() => borrow(UserCard, { args })).toThrow();
   });
 });
 
@@ -107,8 +104,7 @@ describe('useBloc args option', () => {
 
 import type { UseBlocOptions } from '../types';
 
-// When an args-bloc options object is constructed without args, TypeScript errors.
-// @ts-expect-error — args is required for UserCard but omitted
+// For an args-bloc, omitting args is valid (provider may supply them at runtime).
 const _missingArgs: UseBlocOptions<typeof UserCard> = {};
 void _missingArgs;
 
@@ -116,6 +112,6 @@ void _missingArgs;
 const _wrongType: UseBlocOptions<typeof UserCard> = { args: { userId: 42 } };
 void _wrongType;
 
-// Void-args bloc: args field is forbidden (type never); passing it is valid to omit.
-const _voidArgsOpts: UseBlocOptions<typeof SimpleCounter> = { instanceId: 'x' };
+// Void-args bloc: args field is forbidden (type never) — omit it entirely.
+const _voidArgsOpts: UseBlocOptions<typeof SimpleCounter> = {};
 void _voidArgsOpts;

@@ -48,8 +48,13 @@ class EditorBloc extends Cubit<EditorState, void, EditorDeps> {
 }
 
 // React components that consume the blocs.
-function BookDisplay(): React.ReactElement {
-  const [state] = useBloc(BookBloc);
+// BookDisplay accepts optional args to forward to useBloc for key resolution.
+function BookDisplay({
+  args,
+}: {
+  args?: { title: string };
+}): React.ReactElement {
+  const [state] = useBloc(BookBloc, args ? { args } : undefined);
   return <div data-testid="title">{state.title ?? 'no-title'}</div>;
 }
 
@@ -60,9 +65,10 @@ function EditorDisplay(): React.ReactElement {
 
 describe('renderWithBloc — args support', () => {
   it('seeds bloc state from args and the rendered component reflects it', () => {
-    const { bloc } = renderWithBloc(<BookDisplay />, {
+    const testArgs = { title: 'Pragmatic Programmer' };
+    const { bloc } = renderWithBloc(<BookDisplay args={testArgs} />, {
       bloc: BookBloc,
-      args: { title: 'Pragmatic Programmer' },
+      args: testArgs,
     });
 
     expect(bloc.state.title).toBe('Pragmatic Programmer');

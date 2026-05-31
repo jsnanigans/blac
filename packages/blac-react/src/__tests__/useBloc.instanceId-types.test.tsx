@@ -1,153 +1,112 @@
 /**
- * Test that instanceId accepts correct types: string | number | undefined
- * And rejects null and other invalid types
+ * Type-acceptance tests for the args option on useBloc.
+ *
+ * Replaces the old instanceId type tests now that instanceId is removed.
+ * Runtime behaviour is covered by useBloc.args.test.tsx; this file focuses
+ * on compile-time type acceptance and the args-forwarding runtime contract.
  */
 
 import { describe, it, expect } from 'vite-plus/test';
 import { render, screen } from '@testing-library/react';
 import { Cubit } from '@blac/core';
+import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
-interface CounterState {
-  count: number;
-}
+blacTestSetup();
 
-class CounterCubit extends Cubit<CounterState> {
-  constructor(initialCount: number = 0) {
-    super({ count: initialCount });
+// Bloc with required args
+class TaggedBloc extends Cubit<{ tag: string }, { tag: string }> {
+  constructor() {
+    super({ tag: '' });
   }
-
-  increment = () => {
-    this.patch({ count: this.state.count + 1 });
-  };
+  protected init(a: { tag: string }) {
+    this.emit({ tag: a.tag });
+  }
 }
 
-describe('useBloc instanceId type checking', () => {
-  it('should accept string instanceId', () => {
-    function TestComponent() {
-      const [state] = useBloc(CounterCubit, { instanceId: 'my-counter' });
-      return <div>Count: {state.count}</div>;
-    }
+// Void-args bloc
+class PlainBloc extends Cubit<{ value: number }> {
+  constructor() {
+    super({ value: 0 });
+  }
+}
 
+describe('useBloc args type-acceptance', () => {
+  it('accepts args matching the bloc Args type', () => {
+    function TestComponent() {
+      const [state] = useBloc(TaggedBloc, { args: { tag: 'hello' } });
+      return <div>Tag: {state.tag}</div>;
+    }
     render(<TestComponent />);
-    expect(screen.getByText('Count: 0')).toBeDefined();
+    expect(screen.getByText('Tag: hello')).toBeDefined();
   });
 
-  it('should accept number instanceId', () => {
+  it('void-args bloc can be called without options', () => {
     function TestComponent() {
-      const [state] = useBloc(CounterCubit, { instanceId: 123 });
-      return <div>Count: {state.count}</div>;
+      const [state] = useBloc(PlainBloc);
+      return <div>Value: {state.value}</div>;
     }
-
     render(<TestComponent />);
-    expect(screen.getByText('Count: 0')).toBeDefined();
+    expect(screen.getByText('Value: 0')).toBeDefined();
   });
 
-  it('should accept undefined instanceId (implicit)', () => {
+  it('void-args bloc can be called with select/onMount/onUnmount but no args', () => {
     function TestComponent() {
-      const [state] = useBloc(CounterCubit);
-      return <div>Count: {state.count}</div>;
-    }
-
-    render(<TestComponent />);
-    expect(screen.getByText('Count: 0')).toBeDefined();
-  });
-
-  it('should accept undefined instanceId (explicit)', () => {
-    function TestComponent() {
-      const [state] = useBloc(CounterCubit, { instanceId: undefined });
-      return <div>Count: {state.count}</div>;
-    }
-
-    render(<TestComponent />);
-    expect(screen.getByText('Count: 0')).toBeDefined();
-  });
-
-  it('should handle number instanceIds correctly', () => {
-    function TestComponent() {
-      const [state1] = useBloc(CounterCubit, { instanceId: 1 });
-      const [state2] = useBloc(CounterCubit, { instanceId: 2 });
-      const [state3] = useBloc(CounterCubit, { instanceId: 1 }); // Same as state1
-
-      return (
-        <div>
-          <div>Count1: {state1.count}</div>
-          <div>Count2: {state2.count}</div>
-          <div>Count3: {state3.count}</div>
-        </div>
-      );
-    }
-
-    render(<TestComponent />);
-    expect(screen.getByText('Count1: 0')).toBeDefined();
-    expect(screen.getByText('Count2: 0')).toBeDefined();
-    expect(screen.getByText('Count3: 0')).toBeDefined();
-  });
-
-  it('should handle optional instanceId prop (CounterView pattern)', () => {
-    interface CounterViewProps {
-      label: string;
-      instanceKey?: string;
-    }
-
-    function CounterView({ label, instanceKey }: CounterViewProps) {
-      // This is the common pattern: passing optional prop directly to instanceId
-      const [state] = useBloc(CounterCubit, {
-        instanceId: instanceKey,
+      const [state] = useBloc(PlainBloc, {
+        select: (s) => [s.value],
+        onMount: () => {},
+        onUnmount: () => {},
       });
-      return (
-        <div>
-          {label}: {state.count}
-        </div>
-      );
+      return <div>Value: {state.value}</div>;
     }
-
-    function TestComponent() {
-      return (
-        <div>
-          <CounterView label="Counter A" />
-          <CounterView label="Counter B" instanceKey="isolated-1" />
-          <CounterView label="Counter C" instanceKey="isolated-2" />
-        </div>
-      );
-    }
-
     render(<TestComponent />);
-    expect(screen.getByText('Counter A: 0')).toBeDefined();
-    expect(screen.getByText('Counter B: 0')).toBeDefined();
-    expect(screen.getByText('Counter C: 0')).toBeDefined();
+    expect(screen.getByText('Value: 0')).toBeDefined();
   });
 
-  // TypeScript compile-time test
-  // The following would cause TypeScript errors if uncommented:
-  //
-  // it('should NOT accept null instanceId', () => {
-  //   function TestComponent() {
-  //     // @ts-expect-error - null is not a valid instanceId
-  //     const [state] = useBloc(CounterCubit, { instanceId: null });
-  //     return <div>Count: {state.count}</div>;
-  //   }
-  //
-  //   render(<TestComponent />);
-  // });
-  //
-  // it('should NOT accept boolean instanceId', () => {
-  //   function TestComponent() {
-  //     // @ts-expect-error - boolean is not a valid instanceId
-  //     const [state] = useBloc(CounterCubit, { instanceId: true });
-  //     return <div>Count: {state.count}</div>;
-  //   }
-  //
-  //   render(<TestComponent />);
-  // });
-  //
-  // it('should NOT accept object instanceId', () => {
-  //   function TestComponent() {
-  //     // @ts-expect-error - object is not a valid instanceId
-  //     const [state] = useBloc(CounterCubit, { instanceId: {} });
-  //     return <div>Count: {state.count}</div>;
-  //   }
-  //
-  //   render(<TestComponent />);
-  // });
+  it('two components with different args get different instances', () => {
+    let instanceA: TaggedBloc | null = null;
+    let instanceB: TaggedBloc | null = null;
+
+    function CompA() {
+      const [, bloc] = useBloc(TaggedBloc, { args: { tag: 'alpha' } });
+      instanceA = bloc as TaggedBloc;
+      return null;
+    }
+    function CompB() {
+      const [, bloc] = useBloc(TaggedBloc, { args: { tag: 'beta' } });
+      instanceB = bloc as TaggedBloc;
+      return null;
+    }
+
+    render(
+      <>
+        <CompA />
+        <CompB />
+      </>,
+    );
+
+    expect(instanceA).not.toBeNull();
+    expect(instanceB).not.toBeNull();
+    expect(instanceA).not.toBe(instanceB);
+  });
 });
+
+// ---------------------------------------------------------------------------
+// Compile-time type tests (verified by typecheck / tsc --noEmit)
+// ---------------------------------------------------------------------------
+
+import type { UseBlocOptions } from '../types';
+
+// For an args-bloc, omitting args is valid (provider may supply them at runtime).
+const _missingArgs: UseBlocOptions<typeof TaggedBloc> = {};
+void _missingArgs;
+
+// args field wrong type.
+// @ts-expect-error — wrong args field type (number not assignable to string)
+const _wrongType: UseBlocOptions<typeof TaggedBloc> = { args: { tag: 42 } };
+void _wrongType;
+
+// instanceId is gone — passing it is a TS error.
+// @ts-expect-error — instanceId does not exist on UseBlocOptions
+const _noInstanceId: UseBlocOptions<typeof PlainBloc> = { instanceId: 'x' };
+void _noInstanceId;

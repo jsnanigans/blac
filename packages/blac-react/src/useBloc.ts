@@ -8,8 +8,7 @@ import {
   type RefObject,
 } from 'react';
 import {
-  acquire,
-  release,
+  getRegistry,
   resolveInstanceKey,
   type ExtractArgs,
   type ExtractState,
@@ -23,7 +22,7 @@ import {
   trackRender,
   type PathSet,
 } from '@dirtytalk/structural';
-import { useInstanceIdFromContext } from './BlocProvider';
+import { useProvidedArgs } from './BlocProvider';
 import type { ComponentRef, UseBlocOptions, UseBlocReturn } from './types';
 
 let nextConsumerId = 0;
@@ -43,11 +42,18 @@ let nextConsumerId = 0;
  *
  * Lifecycle:
  * - The bloc is acquired from the registry on mount and released on
- *   unmount. The instance key is the explicit `options.instanceId`, then
- *   the surrounding {@link BlocProvider} context, then the default key.
+ *   unmount. The instance key is derived from `options.args` (own args),
+ *   then the surrounding {@link BlocProvider} context args for this bloc,
+ *   then the default key (no args).
  * - `options.onMount` fires after the bloc is acquired; `options.onUnmount`
  *   fires *before* the registry releases its ref, so the bloc is still
  *   alive when the callback runs.
+ *
+ * Per-mount private instance:
+ * ```ts
+ * const id = useId();
+ * const [state, bloc] = useBloc(MyBloc, { args: { _id: id } });
+ * ```
  *
  * @template T - The state container constructor type (inferred from BlocClass)
  * @param BlocClass - The state container class to connect to
@@ -66,9 +72,9 @@ let nextConsumerId = 0;
  * });
  * ```
  *
- * @example Named instance
+ * @example Args-based shared instance
  * ```ts
- * const [state, bloc] = useBloc(MyBloc, { instanceId: 'cart-42' });
+ * const [state, bloc] = useBloc(UserBloc, { args: { userId: 'alice' } });
  * ```
  */
 export function useBloc<
@@ -105,42 +111,48 @@ export function useBloc<
   // ---------------------------------------------------------------------------
   // Identity resolution
   //
+  // Priority: own args > provider args (for this bloc class) > none.
+  //
   // Args are user-supplied; callers commonly pass a fresh object literal each
   // render. Memoising on `args` directly would bust every render. We compute a
   // structural key (JSON.stringify) for the useMemo dep instead — undefined
   // args (void-args blocs) collapse to an undefined key.
   // ---------------------------------------------------------------------------
-  const args = (options as { args?: ExtractArgs<T> } | undefined)?.args;
-  const argsRef = useRef(args);
-  argsRef.current = args;
-  const argsKey = args === undefined ? undefined : JSON.stringify(args);
+  const ownArgs = (options as { args?: ExtractArgs<T> } | undefined)?.args;
+  const ownArgsRef = useRef(ownArgs);
+  ownArgsRef.current = ownArgs;
+  const ownArgsKey =
+    ownArgs === undefined ? undefined : JSON.stringify(ownArgs);
 
-  const explicitInstanceId = options?.instanceId;
-  const ctxInstanceId = useInstanceIdFromContext();
+  // Read provided args from the nearest BlocProvider for this bloc class.
+  const providerArgs = useProvidedArgs(BlocClass);
+  const providerArgsRef = useRef(providerArgs);
+  providerArgsRef.current = providerArgs;
+  const providerArgsKey =
+    providerArgs === undefined ? undefined : JSON.stringify(providerArgs);
 
   const { bloc, instanceKey } = useMemo<{
     bloc: TBloc;
     instanceKey: string;
   }>(() => {
-    const explicitKey =
-      explicitInstanceId !== undefined
-        ? String(explicitInstanceId)
-        : ctxInstanceId;
-    const resolvedKey = resolveInstanceKey(
-      BlocClass,
-      explicitKey,
-      argsRef.current,
-    );
+    // Own args win over provider args; provider args win over no args.
+    const effectiveArgs =
+      ownArgsRef.current !== undefined
+        ? ownArgsRef.current
+        : providerArgsRef.current;
+
+    const resolvedKey = resolveInstanceKey(BlocClass, effectiveArgs);
     const refId = `useBloc@${consumerId}`;
-    const instance = acquire(
-      BlocClass,
-      resolvedKey,
+    const registry = getRegistry();
+    const instance = registry.acquire(BlocClass, resolvedKey, {
+      canCreate: true,
+      countRef: true,
       refId,
-      argsRef.current,
-    ) as TBloc;
+      args: effectiveArgs,
+    }) as TBloc;
     return { bloc: instance, instanceKey: resolvedKey };
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [BlocClass, explicitInstanceId, ctxInstanceId, argsKey]);
+  }, [BlocClass, ownArgsKey, providerArgsKey]);
 
   // ---------------------------------------------------------------------------
   // Channel subscription
@@ -216,7 +228,7 @@ export function useBloc<
     return () => {
       onUnmountRef.current?.(bloc as InstanceType<T>);
       const refId = `useBloc@${consumerId}`;
-      release(BlocClass, instanceKey, false, refId);
+      getRegistry().release(BlocClass, instanceKey, false, refId);
     };
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [bloc, instanceKey]);

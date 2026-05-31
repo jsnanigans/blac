@@ -7,11 +7,14 @@ import type {
 import type { RefObject } from 'react';
 
 /**
- * Conditional `args` field: required when the bloc declares Args, forbidden
- * (type `never`) when the bloc uses the default `void` Args.
+ * Conditional `args` field:
+ * - When the bloc uses the default `void` Args: args is forbidden (type `never`).
+ * - When the bloc declares Args: args is optional (may be inherited from a
+ *   `BlocProvider` ancestor at runtime; omitting it resolves to the provider
+ *   args or the default key).
  */
 type ArgsOption<T extends StateContainerConstructor> =
-  ExtractArgs<T> extends void ? { args?: never } : { args: ExtractArgs<T> };
+  ExtractArgs<T> extends void ? { args?: never } : { args?: ExtractArgs<T> };
 
 /**
  * Configuration options for {@link useBloc}.
@@ -19,17 +22,16 @@ type ArgsOption<T extends StateContainerConstructor> =
  * @template TBloc - The state container constructor type
  *
  * @remarks
+ * Instance identity is derived entirely from `args`. For a per-mount private
+ * instance (like the old `instanceId: useId()` pattern) pass a stable unique
+ * object: `{ args: { _id: useId() } }`.
+ *
  * The `dependencies` option from BlaC v1 has been removed — use `select`
  * instead. Codemod: rename `dependencies` → `select`; the return value is
  * still a tuple/array compared per-index via `Object.is`.
  */
 export type UseBlocOptions<TBloc extends StateContainerConstructor> =
   ArgsOption<TBloc> & {
-    /**
-     * Per-consumer instance identifier. Overrides any `instanceId` provided
-     * by an ancestor {@link BlocProvider}.
-     */
-    instanceId?: string | number;
     /**
      * Per-consumer re-render selector. When provided, the hook re-renders
      * only when the returned array's elements change (Object.is per index).

@@ -27,7 +27,24 @@ class CounterBloc extends Cubit<{ count: number }> {
   };
 }
 
-class IsolatedBloc extends Cubit<{ count: number }> {
+// Used in Args-Based Shared Instances tests (requires args for identity)
+class ArgsCounterBloc extends Cubit<{ count: number }, { _id: string }> {
+  static key(args: { _id: string } | undefined) {
+    return args?._id ?? 'default';
+  }
+  constructor() {
+    super({ count: 0 });
+  }
+
+  increment = () => {
+    this.patch({ count: this.state.count + 1 });
+  };
+}
+
+class IsolatedBloc extends Cubit<{ count: number }, { _id: string }> {
+  static key(args: { _id: string } | undefined) {
+    return args?._id ?? 'default';
+  }
   constructor() {
     super({ count: 0 });
   }
@@ -107,12 +124,12 @@ describe('useBloc', () => {
   });
 
   describe('Isolated Instances', () => {
-    it('should create new instance for each instanceId', () => {
+    it('should create new instance for each unique args', () => {
       const { result: result1 } = renderHook(() =>
-        useBloc(IsolatedBloc, { instanceId: 'iso-a' }),
+        useBloc(IsolatedBloc, { args: { _id: 'iso-a' } }),
       );
       const { result: result2 } = renderHook(() =>
-        useBloc(IsolatedBloc, { instanceId: 'iso-b' }),
+        useBloc(IsolatedBloc, { args: { _id: 'iso-b' } }),
       );
 
       const [, bloc1] = result1.current;
@@ -122,17 +139,17 @@ describe('useBloc', () => {
       expect(bloc1).not.toBe(bloc2);
     });
 
-    it('should maintain separate state for each instance', async () => {
+    it('should maintain separate state for each args-isolated instance', async () => {
       const { result: result1 } = renderHook(() => {
         const [state, bloc] = useBloc(IsolatedBloc, {
-          instanceId: 'iso-c',
+          args: { _id: 'iso-c' },
           select: () => [],
         });
         return { state, bloc };
       });
       const { result: result2 } = renderHook(() => {
         const [state, bloc] = useBloc(IsolatedBloc, {
-          instanceId: 'iso-d',
+          args: { _id: 'iso-d' },
           select: () => [],
         });
         return { state, bloc };
@@ -148,28 +165,28 @@ describe('useBloc', () => {
     });
   });
 
-  describe('Custom Instance IDs', () => {
-    it('should use custom instance ID for shared blocs', () => {
+  describe('Args-Based Shared Instances', () => {
+    it('different args produce different instances', () => {
       const { result: result1 } = renderHook(() =>
-        useBloc(CounterBloc, { instanceId: 'counter-1' }),
+        useBloc(ArgsCounterBloc, { args: { _id: 'counter-1' } }),
       );
       const { result: result2 } = renderHook(() =>
-        useBloc(CounterBloc, { instanceId: 'counter-2' }),
+        useBloc(ArgsCounterBloc, { args: { _id: 'counter-2' } }),
       );
 
       const [, bloc1] = result1.current;
       const [, bloc2] = result2.current;
 
-      // Different IDs should get different instances
+      // Different args → different instances
       expect(bloc1).not.toBe(bloc2);
     });
 
-    it('should share instance with same custom ID', async () => {
+    it('same args produce the same shared instance', async () => {
       const { result: result1 } = renderHook(() =>
-        useBloc(CounterBloc, { instanceId: 'shared-counter' }),
+        useBloc(ArgsCounterBloc, { args: { _id: 'shared-counter' } }),
       );
       const { result: result2 } = renderHook(() =>
-        useBloc(CounterBloc, { instanceId: 'shared-counter' }),
+        useBloc(ArgsCounterBloc, { args: { _id: 'shared-counter' } }),
       );
 
       const [, bloc1] = result1.current;
@@ -177,7 +194,7 @@ describe('useBloc', () => {
 
       // Per-consumer design: each consumer returns its own proxy. Identity is
       // asserted via the shared underlying raw instance.
-      const raw = borrow(CounterBloc, 'shared-counter');
+      const raw = borrow(ArgsCounterBloc, { args: { _id: 'shared-counter' } });
       await act(async () => {
         raw.increment();
       });

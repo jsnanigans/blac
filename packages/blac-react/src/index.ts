@@ -12,6 +12,6 @@ export type { BlacReactConfig } from './config';
 export type { UseBlocOptions, UseBlocReturn } from './types';
 export {
   BlocProvider,
-  useInstanceIdFromContext,
+  useProvidedArgs,
   type BlocProviderProps,
 } from './BlocProvider';

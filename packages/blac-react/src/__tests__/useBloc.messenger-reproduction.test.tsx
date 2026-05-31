@@ -48,7 +48,10 @@ interface UserState {
 // Blocs - Similar to messenger example
 // ============================================================================
 
-class ChannelBloc extends Cubit<ChannelState> {
+class ChannelBloc extends Cubit<ChannelState, { channelId: string }> {
+  static key(args: { channelId: string } | undefined) {
+    return args?.channelId ?? 'default';
+  }
   constructor() {
     super({
       channelId: '',
@@ -92,7 +95,10 @@ class ChannelBloc extends Cubit<ChannelState> {
   };
 }
 
-class UserCubit extends Cubit<UserState> {
+class UserCubit extends Cubit<UserState, { userId: string }> {
+  static key(args: { userId: string } | undefined) {
+    return args?.userId ?? 'default';
+  }
   constructor() {
     super({
       id: '',
@@ -134,7 +140,7 @@ function MessageItem({ message, isOwn }: MessageItemProps) {
   _messageItemRenderCount++;
 
   const [user] = useBloc(UserCubit, {
-    instanceId: message.userId,
+    args: { userId: message.userId },
     onMount: (cubit) => cubit.initialize(message.userId),
   });
 
@@ -179,7 +185,7 @@ function MessageList({ channelId, currentUserId }: MessageListProps) {
   // CRITICAL: Destructure messages from state
   // This is what determines dependency tracking
   const [{ messages }] = useBloc(ChannelBloc, {
-    instanceId: channelId,
+    args: { channelId },
   });
 
   if (messages.length === 0) {
@@ -220,7 +226,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const currentUserId = 'user-me';
 
     // Setup: Add initial messages
-    const channel = acquire(ChannelBloc, channelId);
+    const channel = acquire(ChannelBloc, { args: { channelId } });
     channel.initialize(channelId);
     const msg1Id = channel.addMessage('Hello World', currentUserId);
     const msg2Id = channel.addMessage('this is that', currentUserId);
@@ -259,7 +265,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-2';
     const currentUserId = 'user-me';
 
-    const channel = acquire(ChannelBloc, channelId);
+    const channel = acquire(ChannelBloc, { args: { channelId } });
     channel.initialize(channelId);
     const msg1Id = channel.addMessage('Test message', currentUserId);
 
@@ -285,7 +291,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-3';
     const currentUserId = 'user-me';
 
-    const channel = acquire(ChannelBloc, channelId);
+    const channel = acquire(ChannelBloc, { args: { channelId } });
     channel.initialize(channelId);
     const msg1Id = channel.addMessage('Message 1', currentUserId);
     const msg2Id = channel.addMessage('Message 2', currentUserId);
@@ -317,7 +323,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-4';
     const currentUserId = 'user-me';
 
-    const channel = acquire(ChannelBloc, channelId);
+    const channel = acquire(ChannelBloc, { args: { channelId } });
     channel.initialize(channelId);
     channel.addMessage('Message 1', currentUserId);
     channel.addMessage('Message 2', currentUserId);
