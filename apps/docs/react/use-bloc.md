@@ -255,3 +255,59 @@ For the registry mechanics behind acquire/release and ref counting, see [Instanc
 - [Performance](/react/performance) — Splitting readers and writers, anti-patterns
 - [Cubit](/core/cubit) — The state container these options connect to
 - [Migration from v1](/guide/migration-from-v1) — The `dependencies` → `select` rename and other changes
+
+## Troubleshooting
+
+For the full FAQ see [Troubleshooting](/guide/troubleshooting). Below are the problems most specific to `useBloc`.
+
+### Component re-renders too often
+
+**Symptom:** A component re-renders on state changes it doesn't display.
+
+**Cause:** Reading a coarse path (whole object or array) instead of the specific leaf you render. A spread (`{...state}`) or an early destructure before drilling into a path widens the tracked set.
+
+**Fix:** Read exactly the leaf you render through the live proxy, or use `select` to depend on a derived value:
+
+```tsx
+// Tracks every property — any change re-renders:
+const { user } = state;
+return <span>{user.name}</span>;
+
+// Tracks only user.name:
+return <span>{state.user.name}</span>;
+
+// Or: select a derived/computed value so re-renders are gated on the boundary
+```
+
+See [Dependency Tracking](/react/dependency-tracking) for the full recording rules.
+
+### State leaks between component mounts
+
+**Symptom:** A component mounts, unmounts, and then remounts with stale state from the previous mount — or two independent mounts share state unexpectedly.
+
+**Cause:** Both mounts resolve to the same instance key (`'default'` when there are no `args`). When the first mount releases, the instance disposes and the remount creates a fresh one — but if `keepAlive` is set, the instance persists and the remount picks it back up.
+
+**Fix:** For one private instance per mount, pass `instanceId: useId()`. Each mount gets a key that is stable for that mount's lifetime and disposed on unmount:
+
+```tsx
+const instanceId = useId();
+const [state] = useBloc(WidgetCubit, { instanceId });
+```
+
+See [Instance Management](/core/instance-management) and [Passing Inputs](/guide/inputs).
+
+### `autoTrack`, `autoInstance`, or `isolated` option not found
+
+**Symptom:** TypeScript errors or runtime `undefined` when passing `autoTrack`, `autoInstance`, `isolated`, or `dependencies` to `useBloc`.
+
+**Cause:** These were v1 or pre-release APIs that were removed. `UseBlocOptions` has exactly five keys: `args`, `instanceId`, `select`, `onMount`, `onUnmount`.
+
+**Fix:**
+
+| Old                         | Replacement                                         |
+| --------------------------- | --------------------------------------------------- |
+| `autoTrack` / no option     | Auto-tracking is the default; opt out with `select` |
+| `autoInstance` / `isolated` | `instanceId: useId()` for per-mount instances       |
+| `dependencies`              | Renamed to `select` in v2                           |
+
+See [Migration from v1](/guide/migration-from-v1) for the full list of renamed/removed options.

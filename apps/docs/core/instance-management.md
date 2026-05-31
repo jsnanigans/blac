@@ -201,3 +201,55 @@ In React this is handled for you — let `useBloc` own the acquire/release pair 
 - [Passing Inputs](/guide/inputs) — `args`, `instanceId`, and the full instance-identity model
 - [System Events](/core/system-events) — the `dispose` event that fires when an instance is torn down
 - [Testing core logic](/testing/core) — using `clear`/`clearAll` to isolate the registry between tests
+
+## Troubleshooting
+
+For the full FAQ see [Troubleshooting](/guide/troubleshooting). Below are the instance-management-specific problems.
+
+### State unexpectedly resets on remount
+
+**Symptom:** A component unmounts and remounts and finds the bloc in its initial state — any previous state is gone.
+
+**Cause:** When the last consumer releases, the instance is disposed immediately (ref count 0 → dispose). The next consumer acquires a brand-new instance with fresh state.
+
+**Fix:** If state must persist across unmounts, mark the class `keepAlive`:
+
+```ts
+import { blac, Cubit } from '@blac/core';
+
+@blac({ keepAlive: true })
+class SessionCubit extends Cubit<SessionState> {
+  /* … */
+}
+```
+
+`keepAlive` instances are never auto-disposed at ref count 0 — tear them down explicitly with `release(Class, key, true)` (force-dispose) or `clear(Class)` in teardown. See [Configuration](/core/configuration#keepalive-true).
+
+### Instance never disposed / memory leak
+
+**Symptom:** DevTools shows an instance that should have been disposed is still alive, or ref count never returns to 0.
+
+**Cause:** An `acquire` outside React has no matching `release`. Every call to `acquire` increments the ref count; without a matching `release` the count never reaches zero.
+
+**Fix:** Pair every `acquire` with a `release`, ideally in a `try/finally`. If you only need to read without owning the lifecycle, use `borrow` or `ensure` — neither takes a ref:
+
+```ts
+// Leaks — no release
+function readOnce() {
+  const c = acquire(CounterCubit);
+  return c.state.count;
+}
+
+// Fixed — borrow takes no ref
+function readOnce() {
+  return borrow(CounterCubit).state.count;
+}
+```
+
+### Circuit breaker threw ("max instances" / "max refs")
+
+**Symptom:** `acquire` throws with a message like "exceeded the maximum live instances" or "exceeded the maximum refs."
+
+**Cause:** Almost always a leak — an unstable instance key (non-serializable `args`) spawning endless instances, or a missing `release` accumulating refs. The limit is not too low; the leak is real.
+
+**Fix:** Find and fix the leak before raising the limit. Common causes: non-serializable values in `args` (fix: move to `deps`), `acquire` without `release` (fix: pair them), args that differ structurally each render (fix: normalise types). See [Configuration: circuit breakers](/core/configuration#circuit-breakers) and [Troubleshooting](/guide/troubleshooting#instance-identity-too-many--too-few).

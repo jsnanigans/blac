@@ -49,7 +49,7 @@ Notice `addItem` and `setFilter` are defined as arrow-function class fields, not
 
 ## Mutation Methods
 
-State in BlaC is **immutable from the outside**: you never assign to `this.state.x`. Instead you hand the container a *new* state and it diffs the change, marks which paths moved, and wakes only the consumers that read those paths. The three methods below are three ways to produce that next state.
+State in BlaC is **immutable from the outside**: you never assign to `this.state.x`. Instead you hand the container a _new_ state and it diffs the change, marks which paths moved, and wakes only the consumers that read those paths. The three methods below are three ways to produce that next state.
 
 ::: info Why immutable?
 The diffing that powers smart re-renders (see [Dependency Tracking](/react/dependency-tracking)) needs a previous value and a next value to compare. Mutating in place would leave nothing to compare against, so a mutation would either re-render everything or nothing. Producing a new value on every change is what lets BlaC wake exactly the right consumers.
@@ -105,7 +105,7 @@ The per-class/global equality function applies to `emit` and `update` only. `pat
 | Reset to initial state     | `emit`   |
 
 ::: danger Common mistake: emit with a partial object
-`emit` *replaces* the whole state — it does not merge. Passing a partial object silently drops every field you left out:
+`emit` _replaces_ the whole state — it does not merge. Passing a partial object silently drops every field you left out:
 
 ```ts
 // state was { items: [...], filter: 'all' }
@@ -177,6 +177,7 @@ class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
 `init(args)` is a protected lifecycle method — not callable from outside the class. It replaces the old `setConfig`/`setProps` patterns.
 
 When `useBloc` is called with `{ args }`, those args are:
+
 - Required at the call site (type error if omitted when `Args != void`)
 - Used to derive the instance identity (different args ⇒ different instance)
 - Available synchronously in `init` before any consumer sees state
@@ -188,7 +189,10 @@ See [Passing Inputs](/guide/inputs) for the full args/identity model.
 By default, instance identity is the structural hash of all args. Override with a static property on the class to control exactly which args distinguish one instance from another:
 
 ```ts
-class DocumentCubit extends Cubit<DocState, { docId: string; readonly: boolean }> {
+class DocumentCubit extends Cubit<
+  DocState,
+  { docId: string; readonly: boolean }
+> {
   static key = (args: DocumentCubit['args']) => args.docId;
   // `readonly` rides along as config but does NOT fork instances
 }
@@ -203,20 +207,21 @@ Declare a `Deps` type as the third generic parameter to receive non-serializable
 ```ts
 class FileUploadCubit extends Cubit<
   UploadState,
-  { endpoint: string },                       // Args
-  { inputRef?: RefObject<HTMLInputElement> }  // Deps
+  { endpoint: string }, // Args
+  { inputRef?: RefObject<HTMLInputElement> } // Deps
 > {
   protected init(args: { endpoint: string }) {
     this.endpoint = args.endpoint;
   }
 
   openPicker() {
-    this.deps.inputRef?.current?.click?.();   // lazy read, may be undefined
+    this.deps.inputRef?.current?.click?.(); // lazy read, may be undefined
   }
 }
 ```
 
 **Key properties of deps:**
+
 - **Never key identity** — different refs don't fork the instance
 - **Per-consumer merged** — each `useBloc` call contributes its own slice; the bloc sees the union
 - **Live** — updated after each commit; may change over time
@@ -248,6 +253,7 @@ class CanvasRendererCubit extends Cubit<
 `onDepsChanged` is optional — blocs that don't declare it just read `this.deps.x` lazily. When declared, it gives the bloc clean acquire/release edges without any consumer-side cleanup wiring.
 
 ::: danger Common mistakes with args and deps
+
 - **Non-serializable value in `args`.** Args are hashed to derive instance identity; a function, ref, or class instance in `args` either throws (functions) or produces a fresh hash every render, spawning a new instance each time. Put non-serializable handles in `deps` instead.
 - **Two consumers writing the same `deps` key.** Deps are merged per consumer into one view. If two `useBloc` call sites both supply `deps.controller`, the bloc sees one of them (last writer for that key) — decide a single owner.
 - **Reading `this.deps.x` without guarding.** A dep may legitimately be `undefined` (no consumer has supplied it yet, or it unmounted). Always use optional chaining, as in `this.deps.inputRef?.current`.
@@ -267,13 +273,13 @@ These are available inside your Cubit class but not from the outside:
 
 ## Public properties
 
-| Property          | Type              | Description                            |
-| ----------------- | ----------------- | -------------------------------------- |
-| `state`           | `Readonly<S>`     | Current state value                    |
-| `isDisposed`      | `boolean`         | Whether the instance has been disposed |
-| `name`            | `string`          | Display name (defaults to class name)  |
-| `instanceId`      | `string`          | Unique instance identifier             |
-| `createdAt`       | `number`          | Creation timestamp                     |
+| Property          | Type              | Description                                                                                                               |
+| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `state`           | `Readonly<S>`     | Current state value                                                                                                       |
+| `isDisposed`      | `boolean`         | Whether the instance has been disposed                                                                                    |
+| `name`            | `string`          | Display name (defaults to class name)                                                                                     |
+| `instanceId`      | `string`          | Unique instance identifier                                                                                                |
+| `createdAt`       | `number`          | Creation timestamp                                                                                                        |
 | `hydrationStatus` | `HydrationStatus` | Current hydration phase (`'idle'` \| `'hydrating'` \| `'hydrated'` \| `'error'`); see [Persistence](/plugins/persistence) |
 
 ## Async methods
@@ -345,3 +351,47 @@ class FormCubit extends Cubit<{ email: string; password: string }> {
 - [Best Practices](/guide/best-practices) — how to scope blocs, model async, and choose args vs deps
 - [Passing Inputs](/guide/inputs) — the full args / deps / instanceId identity model
 - [Glossary](/guide/glossary) — StateContainer vs Cubit vs bloc vs instance, and other terms
+
+## Troubleshooting
+
+For the full FAQ see [Troubleshooting](/guide/troubleshooting). Below are the Cubit-specific problems.
+
+### `emit` silently drops fields
+
+**Symptom:** After calling `emit`, some state fields are `undefined` even though you didn't intend to clear them.
+
+**Cause:** `emit` **replaces** the entire state — it does not merge. Passing a partial object drops every field you omit.
+
+**Fix:** Use `patch` for partial updates, or spread existing state in `update`:
+
+```ts
+// state: { items: [...], filter: 'all' }
+this.emit({ filter: 'done' }); // items is now undefined!
+
+// Fix A — patch merges only the listed fields
+this.patch({ filter: 'done' });
+
+// Fix B — update reads current state first
+this.update((s) => ({ ...s, filter: 'done' }));
+```
+
+See [Mutation Methods: Choosing a method](#choosing-a-method) above.
+
+### A new instance is created on every render
+
+**Symptom:** DevTools shows a new bloc instance being created and destroyed on every render, or the circuit-breaker throws "max instances exceeded."
+
+**Cause:** A non-serializable value (function, ref, class instance) is in `args`. Because `args` must be JSON-serializable, a fresh object reference each render produces a different hash and therefore a different instance key.
+
+**Fix:** Move non-serializable values to the bloc's `Deps` lane — they never affect instance identity:
+
+```ts
+// Non-serializable in args → new instance every render (throws in dev)
+useBloc(UploadCubit, { args: { onComplete: () => {} } });
+
+// Serializable identity in args, handle in deps
+useBloc(UploadCubit, { args: { endpoint: '/upload' } });
+// (wire the callback via deps — see Cubit Deps and Passing Inputs)
+```
+
+See [Deps: non-serializable handles](#deps-non-serializable-handles) and [Troubleshooting: instance identity](/guide/troubleshooting#instance-identity-too-many--too-few).
