@@ -1,5 +1,4 @@
 import {
-  ensure,
   getAll,
   getPluginManager,
   getRegistry,
@@ -31,7 +30,13 @@ class BlacFacade {
     options?: GetBlocOptions,
   ): InstanceType<C> {
     applyStaticConfig(BlocClass);
-    const instance = ensure(BlocClass, options?.id) as InstanceType<C>;
+    // Use the internal-tier registry method so that v1's raw string `id` is
+    // used as the instance key directly (not passed through the args-based
+    // public `ensure`, which no longer accepts a string key).
+    const instance = getRegistry().ensure(
+      BlocClass,
+      options?.id,
+    ) as InstanceType<C>;
     if (options?.props !== undefined) {
       this.applyProps(instance, options.props);
     }

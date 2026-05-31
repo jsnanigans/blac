@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
-import { hasInstance, getRefCount } from '@blac/core';
+import { getRegistry } from '@blac/core';
 import { Cubit } from '../Cubit';
 import { Blac } from '../Blac';
 
@@ -33,20 +33,21 @@ describe('Blac façade', () => {
   it('getBloc returns an instance and registers it under the default key', () => {
     const inst = Blac.getBloc(CounterCubit);
     expect(inst).toBeInstanceOf(CounterCubit);
-    expect(hasInstance(CounterCubit, 'default')).toBe(true);
+    // `getBloc` uses the internal-tier ensure; verify via registry directly.
+    expect(getRegistry().hasInstance(CounterCubit, 'default')).toBe(true);
   });
 
   it('getBloc with `id` keys the instance separately', () => {
     const a = Blac.getBloc(CounterCubit, { id: 'a' });
     const b = Blac.getBloc(CounterCubit, { id: 'b' });
     expect(a).not.toBe(b);
-    expect(hasInstance(CounterCubit, 'a')).toBe(true);
-    expect(hasInstance(CounterCubit, 'b')).toBe(true);
+    expect(getRegistry().hasInstance(CounterCubit, 'a')).toBe(true);
+    expect(getRegistry().hasInstance(CounterCubit, 'b')).toBe(true);
   });
 
   it('getBloc does not add a ref (ensure semantics)', () => {
     Blac.getBloc(CounterCubit, { id: 'no-ref' });
-    expect(getRefCount(CounterCubit, 'no-ref')).toBe(0);
+    expect(getRegistry().getRefCount(CounterCubit, 'no-ref')).toBe(0);
   });
 
   it('getBloc with `props` and an initWithProps method forwards to it', () => {
@@ -83,8 +84,8 @@ describe('Blac façade', () => {
 
   it('resetInstance clears the registry', () => {
     Blac.getBloc(CounterCubit, { id: 'transient' });
-    expect(hasInstance(CounterCubit, 'transient')).toBe(true);
+    expect(getRegistry().hasInstance(CounterCubit, 'transient')).toBe(true);
     Blac.resetInstance();
-    expect(hasInstance(CounterCubit, 'transient')).toBe(false);
+    expect(getRegistry().hasInstance(CounterCubit, 'transient')).toBe(false);
   });
 });

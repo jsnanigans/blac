@@ -4,14 +4,16 @@ import type { StateContainerConstructor } from '@blac/core';
 const applied = new WeakSet<StateContainerConstructor>();
 
 /**
- * Honors v1's `static keepAlive` / `static isolated` declarations on a bloc
- * class when its first instance is requested via the shim.
+ * Honors v1's `static keepAlive` declaration on a bloc class when its first
+ * instance is requested via the shim.
  *
- * - `static keepAlive = true` already works at the registry layer (E2 reads
- *   the static property directly), but we re-run the decorator to normalize
- *   any metadata path future versions might add.
- * - `static isolated = true` is consumed by `@blac/react`'s `useBloc` (E3);
- *   nothing extra is needed here.
+ * - `static keepAlive = true` already works at the registry layer (the
+ *   registry reads the static property directly), but we re-run the decorator
+ *   to normalize any metadata path future versions might add.
+ *
+ * NOTE: `static isolated` and `autoInstance` were removed in v2. They are no
+ * longer read or acted upon here. Per-mount isolation is achieved via
+ * `useBloc(Bloc, { args: { _id: useId() } })` instead.
  *
  * Called from `Blac.getBloc` and the shim's `useBloc`. Idempotent per class.
  */

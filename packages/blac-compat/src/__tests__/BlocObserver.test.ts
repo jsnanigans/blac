@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { acquire, release, getRegistry } from '@blac/core';
+import { getRegistry } from '@blac/core';
 import { Cubit } from '../Cubit';
 import { BlocObserver } from '../BlocObserver';
 
@@ -26,16 +26,16 @@ describe('BlocObserver adapter', () => {
     const onBlocAdded = vi.fn();
     new BlocObserver({ onBlocAdded });
 
-    const inst = acquire(ObservedCubit, 'obs-added');
+    const inst = getRegistry().acquire(ObservedCubit, 'obs-added');
     expect(onBlocAdded).toHaveBeenCalledWith(inst);
-    release(ObservedCubit, 'obs-added');
+    getRegistry().release(ObservedCubit, 'obs-added');
   });
 
   it('forwards onChange with v0-shaped { currentState, nextState } payload', async () => {
     const onChange = vi.fn();
     new BlocObserver({ onChange });
 
-    const inst = acquire(ObservedCubit, 'obs-change');
+    const inst = getRegistry().acquire(ObservedCubit, 'obs-change');
     inst.inc();
     // State-change notifications are queued via microtask; flush before asserting.
     await Promise.resolve();
@@ -51,15 +51,15 @@ describe('BlocObserver adapter', () => {
     expect(event.currentState).toEqual({ n: 0 });
     expect(event.nextState).toEqual({ n: 1 });
 
-    release(ObservedCubit, 'obs-change');
+    getRegistry().release(ObservedCubit, 'obs-change');
   });
 
   it('forwards onBlocRemoved on dispose', () => {
     const onBlocRemoved = vi.fn();
     new BlocObserver({ onBlocRemoved });
 
-    acquire(ObservedCubit, 'obs-removed');
-    release(ObservedCubit, 'obs-removed');
+    getRegistry().acquire(ObservedCubit, 'obs-removed');
+    getRegistry().release(ObservedCubit, 'obs-removed');
     expect(onBlocRemoved).toHaveBeenCalled();
   });
 });

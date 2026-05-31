@@ -42,11 +42,15 @@ export function useBloc<TBloc extends StateContainerConstructor>(
   BlocClass: TBloc,
   options?: V1UseBlocOptions<TBloc>,
 ): V1UseBlocReturn<TBloc> {
-  // v1 had no concept of `args`, so we can't statically satisfy v2's
-  // conditional `args` field for a generic bloc. Cast at the adapter boundary;
-  // v1 blocs always used the default `void` Args.
+  // Map v1's `id` (raw string key) to a stable args object so v2's `useBloc`
+  // can derive a consistent instance key. Using `_compat_id` as the property
+  // name ensures different v1 ids produce different instances and that the
+  // compat BlocProvider's args match when no explicit `id` is given.
+  // Cast at the adapter boundary; v1 blocs always used the default `void` Args.
+  const compatArgs =
+    options?.id !== undefined ? { _compat_id: String(options.id) } : undefined;
   const [state, bloc] = v2UseBloc(BlocClass, {
-    instanceId: options?.id,
+    ...(compatArgs !== undefined ? { args: compatArgs } : {}),
     select: options?.dependencySelector,
     onMount: options?.onMount,
   } as UseBlocOptions<TBloc>);

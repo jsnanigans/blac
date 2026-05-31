@@ -53,7 +53,7 @@ describe('shim useBloc', () => {
     expect(onMount).toHaveBeenCalledTimes(1);
   });
 
-  it('re-renders when bloc state changes (v2 plumbing intact)', () => {
+  it('re-renders when bloc state changes (v2 plumbing intact)', async () => {
     let bloc!: CounterCubit;
     function Comp() {
       const [state, b] = useBloc(CounterCubit, { id: 'rerender' });
@@ -62,26 +62,34 @@ describe('shim useBloc', () => {
     }
     render(<Comp />);
     expect(screen.getByTestId('n').textContent).toBe('0');
-    act(() => {
+    // v2's channel subscription fires asynchronously via useEffect; use async
+    // act to flush all pending effects and state updates.
+    await act(async () => {
       bloc.inc();
     });
     expect(screen.getByTestId('n').textContent).toBe('1');
   });
 
-  it('legacy `props` option invokes initWithProps on mount when available', () => {
+  it('legacy `props` option invokes initWithProps on mount when available', async () => {
     let captured: WithInitCubit | undefined;
     function Comp() {
-      const [, b] = useBloc(WithInitCubit, {
+      // Use the auto-tracked `state` proxy (first tuple element) so the
+      // component subscribes to `name` changes and the DOM stays in sync.
+      const [state, b] = useBloc(WithInitCubit, {
         id: 'props-init',
         props: { name: 'Bren' },
       });
       captured = b as WithInitCubit;
-      return <span data-testid="name">{(b as WithInitCubit).state.name}</span>;
+      return <span data-testid="name">{state.name}</span>;
     }
     render(<Comp />);
-    // initWithProps runs in useEffect (mount); the patched state is then
-    // visible via the bloc instance directly. The component re-renders too,
-    // so the DOM reflects the new state.
+    // initWithProps runs in useEffect (mount) and patches state, which fires
+    // the channel subscription (also async). Flush two async act rounds: first
+    // to drain mount effects (calling initWithProps), then to flush the
+    // resulting state-change re-render.
+    await act(async () => {});
+    await act(async () => {});
+    // After effects flush: bloc state and DOM both reflect the patched name.
     expect(captured?.state.name).toBe('Bren');
     expect(screen.getByTestId('name').textContent).toBe('Bren');
   });
