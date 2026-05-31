@@ -119,6 +119,8 @@ export default defineConfig({
       { text: 'Testing', link: '/testing/overview' },
       { text: 'Integrations', link: '/integrations/ssr' },
       { text: 'DirtyTalk', link: '/dirtytalk/' },
+      { text: 'Playground', link: '/playground' },
+      { text: 'Showcase', link: '/showcase' },
       { text: 'Comparison', link: '/guide/comparison' },
       {
         text: `v${version}`,
@@ -139,6 +141,10 @@ export default defineConfig({
           items: [
             { text: 'What is BlaC?', link: '/guide/introduction' },
             { text: 'Quick Start', link: '/guide/getting-started' },
+            {
+              text: 'Tutorial: build a Todo app, then make it time-travel',
+              link: '/guide/tutorial',
+            },
             { text: 'Core Concepts', link: '/guide/concepts' },
             { text: 'Mental Model', link: '/guide/mental-model' },
             { text: 'Passing Inputs', link: '/guide/inputs' },
@@ -147,10 +153,22 @@ export default defineConfig({
         {
           text: 'Going Deeper',
           items: [
+            { text: 'How BlaC Works Internally', link: '/guide/internals' },
             { text: 'Async', link: '/guide/async' },
             { text: 'TypeScript', link: '/guide/typescript' },
             { text: 'Patterns & Recipes', link: '/guide/patterns' },
             { text: 'Best Practices', link: '/guide/best-practices' },
+          ],
+        },
+        {
+          text: 'Coming from…',
+          items: [
+            {
+              text: 'Flutter Bloc',
+              link: '/guide/coming-from-flutter-bloc',
+            },
+            { text: 'Zustand', link: '/guide/coming-from-zustand' },
+            { text: 'Redux', link: '/guide/coming-from-redux' },
           ],
         },
         {
@@ -197,6 +215,7 @@ export default defineConfig({
             { text: 'Logging', link: '/plugins/logging' },
             { text: 'DevTools', link: '/plugins/devtools' },
             { text: 'Persistence', link: '/plugins/persistence' },
+            { text: 'Plugin Recipes', link: '/plugins/recipes' },
           ],
         },
       ],
@@ -218,7 +237,26 @@ export default defineConfig({
               text: 'SSR & per-request isolation',
               link: '/integrations/ssr',
             },
+            { text: 'Next.js', link: '/integrations/nextjs' },
+            { text: 'Remix', link: '/integrations/remix' },
+            { text: 'React Native', link: '/integrations/react-native' },
+            {
+              text: 'Using BlaC outside React',
+              link: '/integrations/outside-react',
+            },
           ],
+        },
+      ],
+      '/playground': [
+        {
+          text: 'Playground',
+          items: [{ text: 'Playground', link: '/playground' }],
+        },
+      ],
+      '/showcase': [
+        {
+          text: 'Showcase',
+          items: [{ text: 'Showcase', link: '/showcase' }],
         },
       ],
     },
