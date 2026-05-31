@@ -1,6 +1,6 @@
-# Instance Management
+# Instance management
 
-The registry is a global singleton that manages the lifecycle of state container instances. It handles creation, sharing, ref counting, and disposal.
+The registry is a global singleton that manages the lifecycle of state container instances. It handles creation, sharing, ref counting, and disposal. Every signature on this page is quoted from the `@blac/core` source.
 
 ## The mental model: a shared library with checkouts
 
@@ -45,86 +45,219 @@ Disposal is **synchronous** with the `release` call that drops the count to zero
 
 ## Registry functions
 
-### Creating and accessing instances
+### `acquire(BlocClass, instanceKey?, refId?, args?)`
+
+Create or return an existing instance, incrementing the ref count.
 
 ```ts
-import { acquire, ensure, borrow, borrowSafe } from '@blac/core';
+function acquire<T extends StateContainerConstructor>(
+  BlocClass: T,
+  instanceKey?: string,
+  refId?: string,
+  args?: ExtractArgs<T>,
+): InstanceType<T>;
 ```
 
-| Function                  | Creates if missing? | Affects ref count? | Throws?                           |
-| ------------------------- | ------------------- | ------------------ | --------------------------------- |
-| `acquire(Class, key?)`    | Yes                 | +1                 | No                                |
-| `ensure(Class, key?)`     | Yes                 | No                 | No                                |
-| `borrow(Class, key?)`     | No                  | No                 | Yes, if not found                 |
-| `borrowSafe(Class, key?)` | No                  | No                 | No, returns `{ error, instance }` |
+| Parameter     | Type                                  | Required | Description                                                                                                            |
+| ------------- | ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class to acquire an instance of.                                                                   |
+| `instanceKey` | `string`                              | no       | Explicit registry key. Defaults to the key derived from `args` or `'default'`.                                         |
+| `refId`       | `string`                              | no       | Caller-supplied ref identifier. Used by `useBloc` to pair with `release`. Rarely set manually.                         |
+| `args`        | `ExtractArgs<T>`                      | no       | Serializable construction data passed to `init(args)`. Used to derive the instance key when no `instanceKey` is given. |
 
-**`acquire`** — Use when you own the reference and will `release` it later. This is what `useBloc` calls internally. The pairing matters: an `acquire` with no matching `release` is the canonical instance leak (see [Common mistakes](#common-mistakes)).
+**Returns:** `InstanceType<T>` — the live instance (newly created or existing).
 
-**`ensure`** — Use when you need the instance to exist but don't want to affect its lifecycle. Common inside other cubits via `depend()`. Because `ensure` takes **no ref**, it never keeps an instance alive on its own — the instance can be disposed out from under you if nothing else holds a ref. See [Bloc Communication](/core/bloc-communication).
+**Behavior.** If no instance exists for the resolved key, `acquire` creates one, calls `init(args)`, and fires the internal `'created'` event. If an instance already exists, it is returned as-is. The ref count is always incremented. **Every `acquire` must have a matching `release`** — a missing `release` is the canonical instance leak. In React, `useBloc` owns this pair; call `acquire` directly only in server-side or scripting contexts.
 
-**`borrow`** — Use when the instance must already exist. Throws if it doesn't. Good for cases where the absence of an instance is a programming error.
+```ts twoslash
+import { acquire, release } from '@blac/core';
+import { Cubit } from '@blac/core';
 
-**`borrowSafe`** — Like `borrow` but returns an object instead of throwing:
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+  increment = () => this.update((s) => ({ count: s.count + 1 }));
+}
+
+// --- outside React ---
+const counter = acquire(CounterCubit);
+counter.increment();
+console.log(counter.state.count); // => 1
+release(CounterCubit); // must pair with acquire
+```
+
+### `ensure(BlocClass, instanceKey?, args?)`
+
+Create or return an existing instance **without** taking a ref.
 
 ```ts
-const { error, instance } = borrowSafe(AuthCubit);
-if (error) {
-  console.log('Auth not initialized yet');
+function ensure<T extends StateContainerConstructor>(
+  BlocClass: T,
+  instanceKey?: string,
+  args?: ExtractArgs<T>,
+): InstanceType<T>;
+```
+
+| Parameter     | Type                                  | Required | Description                                            |
+| ------------- | ------------------------------------- | -------- | ------------------------------------------------------ |
+| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class.                             |
+| `instanceKey` | `string`                              | no       | Explicit registry key.                                 |
+| `args`        | `ExtractArgs<T>`                      | no       | Construction data for `init(args)` and key derivation. |
+
+**Returns:** `InstanceType<T>` — the live instance.
+
+**Behavior.** Like `acquire`, but takes **no ref** — the instance can be disposed by another caller while you hold the returned reference. Use `ensure` inside other cubits (via `depend()`) or in tooling that only needs the instance to exist without pinning its lifecycle. Because no ref is taken, no matching `release` is needed.
+
+```ts twoslash
+import { ensure } from '@blac/core';
+import { Cubit } from '@blac/core';
+
+class AuthCubit extends Cubit<{ userId: string | null }> {
+  constructor() {
+    super({ userId: null });
+  }
+}
+
+// ensure creates AuthCubit if it's not alive yet, but does not keep it alive
+const auth = ensure(AuthCubit);
+console.log(auth.state.userId); // no release needed
+```
+
+### `borrow(BlocClass, instanceKey?)`
+
+Return an existing instance without taking a ref. Throws if the instance does not exist.
+
+```ts
+function borrow<T extends StateContainerConstructor>(
+  BlocClass: T,
+  instanceKey?: string,
+): InstanceType<T>;
+```
+
+| Parameter     | Type                                  | Required | Description                                     |
+| ------------- | ------------------------------------- | -------- | ----------------------------------------------- |
+| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class.                      |
+| `instanceKey` | `string`                              | no       | Explicit registry key. Defaults to `'default'`. |
+
+**Returns:** `InstanceType<T>` — the live instance.
+
+**Behavior.** Does not create the instance if it is absent; throws an `Error` instead. Use `borrow` when the absence of an instance is a programming error — it makes the failure loud and immediate rather than silently returning `undefined`. No ref is taken, so no `release` is needed.
+
+```ts twoslash
+import { borrow } from '@blac/core';
+import { Cubit } from '@blac/core';
+
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+}
+
+// Safe read-only access — no acquire/release pair needed
+function readCount(): number {
+  return borrow(CounterCubit).state.count;
 }
 ```
 
-### Releasing instances
+### `borrowSafe(BlocClass, instanceKey?)`
+
+Return an existing instance without taking a ref. Returns an error object instead of throwing.
 
 ```ts
-import { release } from '@blac/core';
-
-release(CounterCubit); // release default instance
-release(EditorCubit, 'doc-42'); // release named instance
+function borrowSafe<T extends StateContainerConstructor>(
+  BlocClass: T,
+  instanceKey?: string,
+):
+  | { error: Error; instance: null }
+  | { error: null; instance: InstanceType<T> };
 ```
 
-At ref count zero, the instance is disposed automatically (unless `keepAlive` is set). `release` is **idempotent for an already-dropped ref** — releasing more times than you acquired won't throw, it just no-ops once the count is gone. The key you release with **must match** the key you acquired with (see [Args-derived identity](#args-derived-identity-preferred)); otherwise the ref is taken under one key and never dropped from it.
+| Parameter     | Type                                  | Required | Description                                     |
+| ------------- | ------------------------------------- | -------- | ----------------------------------------------- |
+| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class.                      |
+| `instanceKey` | `string`                              | no       | Explicit registry key. Defaults to `'default'`. |
 
-### Querying the registry
+**Returns:** `{ error: null; instance: InstanceType<T> }` when the instance exists, or `{ error: Error; instance: null }` when it does not.
+
+**Behavior.** Identical to `borrow` but returns a discriminated union instead of throwing. Prefer `borrowSafe` in code paths where absence is expected (e.g. optional integrations) and `borrow` where absence is always a bug.
+
+```ts twoslash
+import { borrowSafe } from '@blac/core';
+import { Cubit } from '@blac/core';
+
+class AuthCubit extends Cubit<{ userId: string | null }> {
+  constructor() {
+    super({ userId: null });
+  }
+}
+
+const { error, instance } = borrowSafe(AuthCubit);
+if (error) {
+  console.log('Auth not initialized yet');
+} else {
+  console.log(instance.state.userId);
+}
+```
+
+### `release(BlocClass, instanceKey?, forceDispose?, refId?)`
+
+Decrement the ref count. Dispose the instance when count reaches zero.
 
 ```ts
-import {
-  hasInstance,
-  getRefCount,
-  getAll,
-  forEach,
-  getStats,
-} from '@blac/core';
-
-hasInstance(CounterCubit); // boolean
-getRefCount(CounterCubit); // number of distinct active refs
-getAll(CounterCubit); // all instances of this class
-forEach(CounterCubit, (inst) => {}); // iterate instances
-getStats(); // { registeredTypes, totalInstances, typeBreakdown }
+function release<T extends StateContainerConstructor>(
+  BlocClass: T,
+  instanceKey?: string,
+  forceDispose?: boolean,
+  refId?: string,
+): void;
 ```
 
-### Cleanup
+| Parameter      | Type                                  | Required | Description                                                                          |
+| -------------- | ------------------------------------- | -------- | ------------------------------------------------------------------------------------ |
+| `BlocClass`    | `T extends StateContainerConstructor` | yes      | The state-container class.                                                           |
+| `instanceKey`  | `string`                              | no       | The key used when `acquire` was called. **Must match** the key used at acquire time. |
+| `forceDispose` | `boolean`                             | no       | When `true`, dispose immediately even if `keepAlive` is set. Default `false`.        |
+| `refId`        | `string`                              | no       | The ref identifier passed to `acquire`. Rarely set manually.                         |
 
-```ts
-import { clear, clearAll } from '@blac/core';
+**Returns:** `void`.
 
-clear(CounterCubit); // dispose and remove all instances of this class
-clearAll(); // dispose and remove everything
+**Behavior.** `release` is **idempotent for an already-dropped ref** — releasing more times than you acquired won't throw, it just no-ops once the count is gone. The key you release with **must match** the key you acquired with; a mismatch leaves the original ref dangling forever. At ref count zero, the instance is disposed synchronously (unless `keepAlive` is set or `forceDispose` is `false`).
+
+```ts twoslash
+import { acquire, release } from '@blac/core';
+import { Cubit } from '@blac/core';
+
+class SessionCubit extends Cubit<{ token: string | null }> {
+  constructor() {
+    super({ token: null });
+  }
+}
+
+const session = acquire(SessionCubit, 'main');
+// ... use session ...
+release(SessionCubit, 'main'); // key must match acquire's key
 ```
-
-::: warning clear / clearAll are teardown tools, not app code
-`clear` and `clearAll` dispose instances **regardless of ref count**, ignoring `keepAlive`. That is exactly what you want between tests to isolate the registry, but in running app code it will pull state out from under live components. Reach for them in test setup/teardown — see [Testing core logic](/testing/core) — not in feature code.
-:::
 
 ## Named instances
 
 Pass an instance key as the second argument to any registry function to manage named instances:
 
-```ts
+```ts twoslash
+import { acquire, release } from '@blac/core';
+import { Cubit } from '@blac/core';
+
+class EditorCubit extends Cubit<{ content: string }> {
+  constructor() {
+    super({ content: '' });
+  }
+}
+
 const editor1 = acquire(EditorCubit, 'doc-42');
 const editor2 = acquire(EditorCubit, 'doc-99');
 
 // These are different instances
-editor1 !== editor2; // true
+const areDifferent = editor1 !== editor2; // true
 
 release(EditorCubit, 'doc-42');
 release(EditorCubit, 'doc-99');
@@ -140,7 +273,7 @@ const [state] = useBloc(EditorCubit, { instanceId: 'doc-42' });
 
 When a bloc declares `Args`, the preferred way to get distinct instances is to pass `args` — the instance key is derived automatically (structural hash by default, or `static key` if declared). This avoids threading the same value through both `instanceId` and a separate data channel:
 
-```ts
+```tsx
 // Before — id is opaque, userId had to be passed a second time
 const [s] = useBloc(UserCardCubit, { instanceId: userId });
 
@@ -152,48 +285,73 @@ Identity precedence: explicit `instanceId` > `<BlocProvider>` context > `static 
 
 The resolved key is the registry's single source of truth — `acquire` and `release` both run their inputs through the same resolution, so a ref taken under an args-derived key is dropped under the same key. See [Passing Inputs](/guide/inputs) for the full model and [Configuration](/core/configuration#key-args-string) for `static key`.
 
+## Querying the registry
+
+```ts twoslash
+import {
+  hasInstance,
+  getRefCount,
+  getAll,
+  forEach,
+  getStats,
+} from '@blac/core';
+import { Cubit } from '@blac/core';
+
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+}
+
+const _a = hasInstance(CounterCubit); // boolean
+const _b = getRefCount(CounterCubit); // number of distinct active refs
+const _c = getAll(CounterCubit); // all instances of this class
+forEach(CounterCubit, (_inst) => {}); // iterate instances
+const _d = getStats(); // { registeredTypes, totalInstances, typeBreakdown }
+```
+
+## Cleanup
+
+```ts twoslash
+import { clear, clearAll } from '@blac/core';
+import { Cubit } from '@blac/core';
+
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+}
+
+clear(CounterCubit); // dispose and remove all instances of this class
+clearAll(); // dispose and remove everything
+```
+
+::: warning `clear` / `clearAll` are teardown tools, not app code
+`clear` and `clearAll` dispose instances **regardless of ref count**, ignoring `keepAlive`. That is exactly what you want between tests to isolate the registry, but in running app code it will pull state out from under live components. Reach for them in test setup/teardown — see [Testing core logic](/testing/core) — not in feature code.
+:::
+
 ## In React vs outside React
 
 In React, `useBloc` handles `acquire` and `release` automatically. You rarely call registry functions directly.
 
 Outside React (tests, scripts, server-side code), manage the lifecycle manually:
 
-```ts
+```ts twoslash
+import { acquire, release } from '@blac/core';
+import { Cubit } from '@blac/core';
+
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+  increment = () => this.update((s) => ({ count: s.count + 1 }));
+}
+
 const counter = acquire(CounterCubit);
 counter.increment();
 console.log(counter.state.count);
 release(CounterCubit);
 ```
-
-## Common mistakes
-
-::: danger Common mistakes
-**1. `acquire` without a matching `release` (the classic leak).** Outside React, every `acquire` you make is your responsibility to `release`. Forgetting it keeps the ref count above zero forever, so the instance never disposes:
-
-```ts
-function readOnce() {
-  const c = acquire(CounterCubit); // ref count 1
-  return c.state.count;
-  // BUG: no release — ref count stays at 1, instance never disposes
-}
-```
-
-Pair them explicitly (`try/finally` is a good fit), or if you only need to read without ownership, use `borrow`/`ensure` instead — neither takes a ref:
-
-```ts
-function readOnce() {
-  return borrow(CounterCubit).state.count; // no ref taken, nothing to release
-}
-```
-
-In React this is handled for you — let `useBloc` own the acquire/release pair rather than calling the registry yourself.
-
-**2. Releasing with a different key than you acquired.** `acquire(Editor, 'doc-42')` then `release(Editor)` (default key) leaves the `'doc-42'` ref dangling forever. Always release the same key.
-
-**3. Expecting state to survive a zero-ref gap.** Once the last consumer releases, the instance disposes immediately and the next consumer gets fresh state. If state must persist across unmounts, mark the class [`keepAlive`](/core/configuration).
-
-**4. Reaching for a higher circuit-breaker limit instead of fixing the leak.** If `acquire` throws "exceeded the maximum live instances/references," the cause is almost always an unstable key or a missing `release` — not a limit that's too low. See [Configuration](/core/configuration#circuit-breakers).
-:::
 
 ## See also
 
@@ -214,12 +372,18 @@ For the full FAQ see [Troubleshooting](/guide/troubleshooting). Below are the in
 
 **Fix:** If state must persist across unmounts, mark the class `keepAlive`:
 
-```ts
+```ts twoslash
 import { blac, Cubit } from '@blac/core';
+
+interface SessionState {
+  token: string | null;
+}
 
 @blac({ keepAlive: true })
 class SessionCubit extends Cubit<SessionState> {
-  /* … */
+  constructor() {
+    super({ token: null });
+  }
 }
 ```
 
@@ -233,11 +397,21 @@ class SessionCubit extends Cubit<SessionState> {
 
 **Fix:** Pair every `acquire` with a `release`, ideally in a `try/finally`. If you only need to read without owning the lifecycle, use `borrow` or `ensure` — neither takes a ref:
 
-```ts
+```ts twoslash
+import { acquire, borrow, release } from '@blac/core';
+import { Cubit } from '@blac/core';
+
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+}
+
 // Leaks — no release
-function readOnce() {
+function readOnceBad() {
   const c = acquire(CounterCubit);
   return c.state.count;
+  // BUG: ref count never drops to 0
 }
 
 // Fixed — borrow takes no ref
