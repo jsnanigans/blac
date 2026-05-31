@@ -22,6 +22,7 @@ const referenceSidebar = [
       { text: 'System Events', link: '/core/system-events' },
       { text: 'Bloc Communication', link: '/core/bloc-communication' },
       { text: 'watch', link: '/core/watch' },
+      { text: 'Low-level subscribe', link: '/core/subscribe' },
       { text: 'Authoring Plugins', link: '/core/plugins' },
       { text: 'Types', link: '/core/types' },
     ],
@@ -153,12 +154,35 @@ export default defineConfig({
           ],
         },
         {
+          text: 'Recipes',
+          items: [
+            { text: 'Debounce', link: '/guide/recipes/debounce' },
+            { text: 'Form Validation', link: '/guide/recipes/form-validation' },
+            {
+              text: 'Optimistic Update',
+              link: '/guide/recipes/optimistic-update',
+            },
+            { text: 'Pagination', link: '/guide/recipes/pagination' },
+            {
+              text: 'Reset to Initial State',
+              link: '/guide/recipes/reset-to-initial',
+            },
+            { text: 'Undo / Redo', link: '/guide/recipes/undo-redo' },
+            {
+              text: 'WebSocket Subscription',
+              link: '/guide/recipes/websocket',
+            },
+          ],
+        },
+        {
           text: 'Reference Aids',
           items: [
             { text: 'Comparison', link: '/guide/comparison' },
             { text: 'Troubleshooting & FAQ', link: '/guide/troubleshooting' },
             { text: 'Glossary', link: '/guide/glossary' },
             { text: 'Migrating from v1', link: '/guide/migration-from-v1' },
+            { text: 'Versioning & Stability', link: '/guide/versioning' },
+            { text: 'Changelog', link: '/guide/changelog' },
           ],
         },
       ],
