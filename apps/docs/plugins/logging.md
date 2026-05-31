@@ -54,13 +54,9 @@ Groups are collapsed by default — click the `▶` arrow to expand. Switch to `
 
 The simple format truncates state JSON at 50 characters, which keeps CI logs scannable.
 
-<figure>
-  <img src="/devtools-logging-console.png" alt="Logging plugin: grouped console.group output in Chrome DevTools Console panel" />
-</figure>
-
-::: tip Screenshot
-The image above shows the Console panel with four collapsed `[BlaC]` groups: plugin install, instance creation, a state change, and disposal. The state change group is expanded to reveal the Previous / Current diff.
-_Screenshot pending — drop the file at `apps/docs/public/devtools-logging-console.png`._
+::: tip Screenshot pending
+The Console panel shows collapsed `[BlaC]` groups — plugin install, instance creation, a state change, and disposal — with the state-change group expanded to reveal the Previous / Current diff.
+_Drop the file at `apps/docs/public/devtools-logging-console.png` (then re-add the `<img>`)._
 :::
 
 ## Configuration

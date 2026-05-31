@@ -82,13 +82,9 @@ The Instances tab lists every active state container with everything you need to
 
 Click an instance to see its full state tree and a side-by-side diff history.
 
-<figure>
-  <img src="/devtools-instances.png" alt="DevTools: Instances tab showing CartCubit and AuthCubit with ref counts and state previews" />
-</figure>
-
-::: tip Screenshot
-The image above shows the Instances tab with two active blocs. Each row displays the class name, a truncated instance ID, the current ref count (`R:2`), and a compact JSON preview of the current state. A yellow insight pill appears on `CartCubit` because its update rate exceeded 30/10 s.
-_Screenshot pending — a human will capture this from the running examples app and drop the file at `apps/docs/public/devtools-instances.png`._
+::: tip Screenshot pending
+The Instances tab shows every active bloc. Each row displays the class name, a truncated instance ID, the current ref count (`R:2`), and a compact JSON preview of the current state. A yellow insight pill appears on a bloc when its update rate exceeds 30/10 s.
+_A human will capture this from the running examples app and drop the file at `apps/docs/public/devtools-instances.png` (then re-add the `<img>`)._
 :::
 
 ::: info Reading `R:n`
@@ -99,13 +95,9 @@ _Screenshot pending — a human will capture this from the running examples app 
 
 When you select an instance, the detail panel shows a side-by-side diff of the previous and current state. Each state change is recorded with a timestamp and the call stack that triggered it.
 
-<figure>
-  <img src="/devtools-state-diff.png" alt="DevTools: state diff panel showing previous and current CartCubit state side by side" />
-</figure>
-
-::: tip Screenshot
-The image above shows the detail panel for `CartCubit`. The left column (red) is the previous state; the right column (green) is the current state. Changed keys are highlighted. A timestamp and abbreviated call stack appear below each diff entry.
-_Screenshot pending — drop the file at `apps/docs/public/devtools-state-diff.png`._
+::: tip Screenshot pending
+The detail panel shows a side-by-side diff for the selected bloc. The left column (red) is the previous state; the right column (green) is the current state. Changed keys are highlighted, with a timestamp and abbreviated call stack below each diff entry.
+_Drop the file at `apps/docs/public/devtools-state-diff.png` (then re-add the `<img>`)._
 :::
 
 ### Browse the event log
@@ -124,13 +116,9 @@ The Logs tab shows a timeline of all lifecycle events:
 State changes are coalesced once per animation frame: if a bloc emits several times before the next rAF tick, the Logs tab records a single `instance-updated` entry with the final state. This keeps the timeline readable during high-frequency updates. The full snapshot history in the detail panel still captures every intermediate state.
 :::
 
-<figure>
-  <img src="/devtools-event-log.png" alt="DevTools: Logs tab with instance-created, instance-updated, and refs-changed events" />
-</figure>
-
-::: tip Screenshot
-The image above shows the Logs tab. Each row has an event type badge, a timestamp, and a collapsible payload. The `refs-changed` event shows the previous and current ref count; `instance-updated` shows the coalesced final state for that frame.
-_Screenshot pending — drop the file at `apps/docs/public/devtools-event-log.png`._
+::: tip Screenshot pending
+The Logs tab lists events with a type badge, a timestamp, and a collapsible payload. The `refs-changed` event shows the previous and current ref count; `instance-updated` shows the coalesced final state for that frame.
+_Drop the file at `apps/docs/public/devtools-event-log.png` (then re-add the `<img>`)._
 :::
 
 ### Time-travel
