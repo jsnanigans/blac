@@ -6,7 +6,7 @@ System events are lifecycle hooks **inside a single state container instance**. 
 
 ## Available events
 
-```ts
+```ts twoslash
 type SystemEvent = 'stateChanged' | 'dispose' | 'hydrationChanged';
 ```
 

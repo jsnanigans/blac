@@ -48,7 +48,8 @@ import { perConsumerTrackingFiles } from './demos/per-consumer-tracking';
 
 ## Quick Example
 
-```tsx
+```tsx twoslash
+import React from 'react';
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 

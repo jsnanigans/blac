@@ -60,7 +60,7 @@ class CartCubit extends Cubit<CartState> {
 }
 ```
 
-```ts
+```ts twoslash
 // Bad — subtotal/itemCount stored alongside items; every mutation must
 // recompute them by hand, and one missed update silently desyncs the UI
 interface CartState {

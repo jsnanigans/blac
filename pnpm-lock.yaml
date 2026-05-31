@@ -130,9 +130,15 @@ importers:
       '@shikijs/vitepress-twoslash':
         specifier: ^3.23.0
         version: 3.23.0(typescript@6.0.3)
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.15
       oxc-minify:
         specifier: latest
         version: 0.133.0
+      react:
+        specifier: 'catalog:'
+        version: 19.2.6
       sandpack-vue3:
         specifier: 3.1.12
         version: 3.1.12(vue@3.5.35(typescript@6.0.3))

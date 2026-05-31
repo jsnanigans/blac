@@ -4,7 +4,8 @@ BlaC (Business Logic Components) is a TypeScript state management library for Re
 
 A first taste — the whole loop in one screen:
 
-```tsx
+```tsx twoslash
+import React from 'react';
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 

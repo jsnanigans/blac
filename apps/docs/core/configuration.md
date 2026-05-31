@@ -140,7 +140,7 @@ The decorator form (`@blac({ … })`) requires decorator support in your toolcha
 
 `configureBlac` sets app-wide defaults. Call it **once, early** (before any blocs are acquired) — typically at your app's entry point. It shallow-merges the partial config into the current globals, so you only pass the keys you want to change.
 
-```ts
+```ts twoslash
 import { configureBlac } from '@blac/core';
 
 configureBlac({
@@ -175,7 +175,7 @@ If `acquire` throws an instance- or ref-limit error, raising the limit usually j
 
 The global equality function applied to every bloc that doesn't declare its own via [`@blac({ equality })`](#equality-equalityfn). The exported default, `shallowEqualState`, short-circuits on `Object.is`, returns `false` for non-objects/`null`, and otherwise compares top-level keys with `Object.is`. Swap it to change the default skip behavior for the whole app:
 
-```ts
+```ts twoslash
 import { configureBlac, shallowEqualState } from '@blac/core';
 
 // Treat any two states as different unless referentially identical

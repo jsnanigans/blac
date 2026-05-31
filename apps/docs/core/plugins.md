@@ -12,7 +12,7 @@ A **plugin** is the escape hatch: it installs once, globally, and observes lifec
 
 A plugin is a plain object: a `name`, a `version`, and any subset of the optional hooks below. Implement only what you need — every hook is optional.
 
-```ts
+```ts twoslash
 import { type BlacPlugin, type PathSet, ALL_PATHS } from '@blac/core';
 
 const myPlugin: BlacPlugin = {
@@ -147,7 +147,7 @@ Most plugins act on the whole `next` state and ignore `paths` entirely. Reach fo
 
 A `PathId` is an integer, not a string. Each BlaC class has its own **per-class `PathInterner`** that maps path strings (`"items"`, `"user.profile.name"`) to those integers. Interning to integers keeps the hot path (diffing and set intersection on every flush) cheap — comparing numbers beats comparing strings. To turn a `PathId` back into a readable string, call `interner.lookup(pathId)` on the **focal container's** interner, reachable via `ctx.container`:
 
-```ts
+```ts twoslash
 import { type BlacPlugin, type PathSet, ALL_PATHS } from '@blac/core';
 
 const pathLoggingPlugin: BlacPlugin = {
@@ -179,7 +179,7 @@ const pathLoggingPlugin: BlacPlugin = {
 
 Here is an end-to-end plugin you can install as-is. It logs creation and disposal, and reports each state change with its changed paths — a self-contained template you can adapt for analytics, audit logs, or telemetry.
 
-```ts
+```ts twoslash
 import {
   getPluginManager,
   type BlacPlugin,

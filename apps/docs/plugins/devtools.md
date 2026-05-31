@@ -141,7 +141,7 @@ Press **Alt+D** to toggle the in-app DevTools overlay.
 
 High-frequency or internal state containers can be hidden:
 
-```ts
+```ts twoslash
 import { blac, Cubit } from '@blac/core';
 
 @blac({ excludeFromDevTools: true })
