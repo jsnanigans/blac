@@ -1,3 +1,7 @@
+<script setup>
+import { perfBeforeFiles, perfAfterFiles } from '../demos/perf-before-after';
+</script>
+
 # Performance
 
 BlaC's performance story is **re-render isolation**: each component re-renders only when the specific state it reads changes, and components that read nothing don't re-render at all. This falls out of [auto-tracking](/react/dependency-tracking) — most apps get it for free. This page is for when you want to confirm it's working, push it further, or render large lists efficiently.
@@ -19,6 +23,22 @@ function UserName() {
 ```
 
 This happens automatically — no selectors, no memoization, no configuration. For the exact recording rules (and the patterns that quietly over-track), see [Dependency Tracking](/react/dependency-tracking).
+
+## Interactive before/after
+
+The two sandboxes below use the same `DashCubit` (three independent fields: temperature, humidity, pressure). The render counters show which components actually re-render on each button press.
+
+**Before — coarse read.** The parent component reads all three fields from `state` and passes them as props. Any field change wakes the parent, which re-renders and passes new props to every child. Bump any field — all three counters tick.
+
+<BlacSandpack :files="perfBeforeFiles" :editor-height="520" />
+
+**After — per-field tracking.** Each card calls `useBloc` directly and reads only its own field. Auto-tracking records exactly which paths were read, so only the card whose field changed re-renders. Bump any field — only that card's counter ticks.
+
+<BlacSandpack :files="perfAfterFiles" :editor-height="520" />
+
+::: tip What changed between "before" and "after"
+The only structural difference is that each `Stat` component now calls `useBloc` itself instead of receiving props from a parent. No selector, no `React.memo`, no `useMemo` — just not over-reading state.
+:::
 
 ## Measuring re-render isolation
 
