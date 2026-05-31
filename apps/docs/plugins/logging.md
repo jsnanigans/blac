@@ -19,6 +19,50 @@ getPluginManager().install(new LoggingPlugin({ level: 'info' }), {
 });
 ```
 
+## What the output looks like
+
+The default `format: 'grouped'` writes collapsible `console.group` entries for every event. Here is representative output for a short session — plugin install, a `CartCubit` state change, and its disposal:
+
+```console
+▶ [BlaC] Plugin installed
+    Registered types: 1
+    Total instances:  0
+
+▶ [BlaC] Created CartCubit#a1b2c3d4
+    Class:         CartCubit
+    Instance ID:   a1b2c3d4-e5f6-7890-abcd-ef1234567890
+    Initial state: { items: [], total: 0 }
+
+▶ [BlaC] CartCubit#a1b2c3d4 state changed
+    Previous: { items: [], total: 0 }
+    Current:  { items: [{ id: 1, name: "Widget", qty: 2 }], total: 19.98 }
+
+▶ [BlaC] Disposed CartCubit#a1b2c3d4
+    Lifespan:      4.2s
+    State changes: 1
+    Final state:   { items: [{ id: 1, name: "Widget", qty: 2 }], total: 19.98 }
+```
+
+Groups are collapsed by default — click the `▶` arrow to expand. Switch to `format: 'simple'` for a flat, line-per-event view:
+
+```console
+[BlaC] Plugin installed (1 types, 0 instances)
+[BlaC] Created CartCubit#a1b2c3d4
+[BlaC] CartCubit#a1b2c3d4 state: {"items":[],"total":0} → {"items":[{"id":1,"name":"W...
+[BlaC] Disposed CartCubit#a1b2c3d4 (lived 4.2s)
+```
+
+The simple format truncates state JSON at 50 characters, which keeps CI logs scannable.
+
+<figure>
+  <img src="/devtools-logging-console.png" alt="Logging plugin: grouped console.group output in Chrome DevTools Console panel" />
+</figure>
+
+::: tip Screenshot
+The image above shows the Console panel with four collapsed `[BlaC]` groups: plugin install, instance creation, a state change, and disposal. The state change group is expanded to reveal the Previous / Current diff.
+_Screenshot pending — drop the file at `apps/docs/public/devtools-logging-console.png`._
+:::
+
 ## Configuration
 
 Pass a `LoggingPluginConfig` object to the constructor:
@@ -44,6 +88,7 @@ new LoggingPlugin({
 | `logLifecycle`     | `boolean`                                     | `true`      | Log instance creation and disposal              |
 | `logStateChanges`  | `boolean`                                     | `true`      | Log state changes                               |
 | `includeCallstack` | `boolean`                                     | `false`     | Show call stacks for state changes              |
+| `logPaths`         | `boolean`                                     | `false`     | Log the dirtytalk paths that changed            |
 | `include`          | `string[]`                                    | —           | Whitelist: only log these class names           |
 | `exclude`          | `string[]`                                    | —           | Blacklist: skip these class names               |
 | `filter`           | `FilterFn`                                    | —           | Custom filter function                          |
