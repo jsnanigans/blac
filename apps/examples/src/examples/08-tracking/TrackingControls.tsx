@@ -143,7 +143,7 @@ export function TrackingControls() {
             </code>
             <Button
               size="small"
-              onClick={() => bloc.editItemTitle(item.id, item.title + '·')}
+              onClick={() => bloc.appendItemTitle(item.id, '·')}
             >
               title+
             </Button>

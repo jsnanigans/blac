@@ -78,6 +78,15 @@ class TodoCubit extends Cubit<TodoState> {
     );
     this.patch({ items });
   }
+
+  // Appends a character to items[index].title via patch().
+  // Mirrors TrackingBloc.editItemTitle — always reads current state.
+  appendTitlePatch(index: number, char: string) {
+    const items = this.state.items.map((item, i) =>
+      i === index ? { ...item, title: item.title + char } : item,
+    );
+    this.patch({ items });
+  }
 }
 
 class MatrixCubit extends Cubit<MatrixState> {
@@ -286,20 +295,20 @@ describe('array-tracking isolation', () => {
       expect(cLen.callback).toHaveBeenCalledTimes(1);
     });
 
-    it('items.map() consumer wakes on any array mutation (map reads full array)', async () => {
+    it('items.map(i => i.title) consumer does NOT wake when unrelated field changes', async () => {
       const cubit = new TodoCubit();
-      // .map() call pins the "items" path — consumer depends on the whole array
+      // .map(i => i.title) now tracks items.length + items.*.title precisely
       const cMap = makeConsumer(cubit, 'cMap', (s) =>
         void s.items.map((i) => i.title),
       );
-      // Also add a second consumer so emit() runs diffAlongSkeleton, not ALL_PATHS
+      // Second consumer to force diffAlongSkeleton (not ALL_PATHS shortcut)
       const c0 = makeConsumer(cubit, 'c0', (s) => void s.items[0].title);
 
-      cubit.setDoneEmit(1, false); // changes items[1].done, new array ref
+      cubit.setDoneEmit(1, false); // changes items[1].done only — title unchanged
       await flush();
 
-      // map consumer depends on "items" reference → wakes on any array change
-      expect(cMap.callback).toHaveBeenCalledTimes(1);
+      // Precise tracking: items[1].done != any tracked path → no wake
+      expect(cMap.callback).not.toHaveBeenCalled();
     });
   });
 
@@ -680,5 +689,96 @@ describe('matrix[][] tracking isolation', () => {
       expect(rowSum0.callback).not.toHaveBeenCalled(); // FAILS
       expect(rowSum1.callback).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Consecutive-patch regression (tracking-lab title+ bug)
+//
+// Observed: `items.map(i => i.title)` consumer re-renders on the first
+// title+ click but NOT on subsequent ones until `done` is toggled.
+//
+// Root cause (NOT in core tracking — confirmed by the tests below passing):
+//
+//   TrackingControls does `state.items.map((item, i) => <JSX>)` where the
+//   onClick closure captures `item.title`. With TRACK_ARRAY_ITERATION=true,
+//   `item` is a sub-proxy. But `item.title` is only accessed INSIDE the
+//   onClick closure body — never during JSX render — so the proxy never
+//   records it. TrackingControls tracks `items.k.id` and `items.k.done`
+//   (evaluated during render) but NOT `items.k.title`.
+//
+//   Therefore TrackingControls never re-renders when titles change, and the
+//   onClick always captures the stale `item.title` from the last render
+//   (which may be mount-time state). The second click sends the same title
+//   that's already in state → _refineAncestorMarks sees no value change →
+//   the `items.map(titles)` consumer correctly stays asleep.
+//
+//   Fix: use `bloc.appendItemTitle(id, '·')` so the bloc reads the current
+//   title from its own state, bypassing the stale closure entirely. Reading
+//   state from `bloc.state` inside an event handler is always fresh; reading
+//   it from a sub-proxy captured during a past render is an antipattern.
+// ---------------------------------------------------------------------------
+
+describe('consecutive-patch regression (tracking-lab title+ bug)', () => {
+  blacTestSetup();
+
+  it('map(title) consumer wakes on each consecutive patch (reads from current state)', async () => {
+    const cubit = new TodoCubit();
+
+    // Mirrors the `items.map(titles)` consumer in the tracking-lab.
+    const cMap = makeConsumer(cubit, 'cMap', (s) =>
+      void s.items.map((i) => i.title),
+    );
+    // Second consumer to force diffAlongSkeleton (not ALL_PATHS shortcut).
+    const c0 = makeConsumer(cubit, 'c0', (s) => void s.items[0].title);
+
+    // First patch — equivalent to clicking `title+` once.
+    cubit.appendTitlePatch(0, '.');
+    await flush();
+
+    expect(cMap.callback).toHaveBeenCalledTimes(1);
+    cMap.callback.mockClear();
+
+    // Second patch — clicking `title+` again.
+    // Each call reads `cubit.state` (current), so the title really changes.
+    cubit.appendTitlePatch(0, '.');
+    await flush();
+
+    // BUG (before fix): cMap.callback is NOT called here because the
+    // skeleton lost `items.0.title` after the first patch re-registered
+    // paths (or the interest closure no longer intersects the dirty set).
+    expect(cMap.callback).toHaveBeenCalledTimes(1);
+  });
+
+  it('map(title) consumer does NOT wake when patch sends the same title (stale-closure sim)', async () => {
+    // Simulates the TrackingControls bug: the onClick captures `item.title`
+    // from a stale sub-proxy (old render). Clicking sends the SAME title →
+    // the patch is a structural no-op for that field → _refineAncestorMarks
+    // correctly produces no leaf change → consumer stays asleep.
+    const cubit = new TodoCubit();
+    const cMap = makeConsumer(cubit, 'cMap', (s) =>
+      void s.items.map((i) => i.title),
+    );
+    const c0 = makeConsumer(cubit, 'c0', (s) => void s.items[0].title);
+
+    // First real patch.
+    cubit.appendTitlePatch(0, '.');
+    await flush();
+    expect(cMap.callback).toHaveBeenCalledTimes(1);
+    cMap.callback.mockClear();
+
+    // Second "patch" with the STALE title (same value as after first patch).
+    // This is what happens when the onClick closure reads item.title from the
+    // proxy of the previous render's state instead of the current state.
+    const staleTitle = 'Wire up tracker.'; // the title AFTER the first patch
+    const itemsWithStale = cubit.state.items.map((item, i) =>
+      i === 0 ? { ...item, title: staleTitle } : item,
+    );
+    cubit.patch({ items: itemsWithStale });
+    await flush();
+
+    // Correct: _refineAncestorMarks sees items.0.title unchanged → no wake.
+    // This confirms the tracking is correct; the bug is in the stale closure.
+    expect(cMap.callback).not.toHaveBeenCalled();
   });
 });

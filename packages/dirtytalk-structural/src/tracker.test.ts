@@ -46,7 +46,7 @@ describe('trackRender', () => {
     expect(strings).toEqual(['items.2.name']);
   });
 
-  it('4. iteration coarsens — records entry, not per-index', () => {
+  it('4. iteration records per-field paths via bound proxy', () => {
     const interner = new PathInterner();
     const { value, paths } = trackRender(
       { items: [{ price: 1 }, { price: 2 }, { price: 3 }] },
@@ -55,26 +55,31 @@ describe('trackRender', () => {
     const total = value.items.reduce((sum, it) => sum + it.price, 0);
     expect(total).toBe(6);
     const strings = asPathStrings(paths, interner);
-    expect(strings).toContain('items');
-    expect(strings).not.toContain('items.0');
-    expect(strings).not.toContain('items.1');
-    expect(strings).not.toContain('items.2');
-    expect(strings).not.toContain('items.length');
+    // Per-field leaf paths — only `price` was accessed inside the callback.
+    expect(strings).toContain('items.0.price');
+    expect(strings).toContain('items.1.price');
+    expect(strings).toContain('items.2.price');
+    // length tracked (reduce reads it internally); items itself superseded.
+    expect(strings).toContain('items.length');
+    expect(strings).not.toContain('items');
   });
 
-  it('4b. for..of coarsens for arrays of primitives', () => {
+  it('4b. for..of records per-index paths for primitive arrays', () => {
     const interner = new PathInterner();
     const { value, paths } = trackRender({ tags: ['a', 'b', 'c'] }, interner);
     const collected: string[] = [];
     for (const t of value.tags) collected.push(t);
     expect(collected).toEqual(['a', 'b', 'c']);
     const strings = asPathStrings(paths, interner);
-    expect(strings).toContain('tags');
-    expect(strings).not.toContain('tags.0');
-    expect(strings).not.toContain('tags.length');
+    // Primitives have no sub-properties — per-index paths are the leaves.
+    expect(strings).toContain('tags.0');
+    expect(strings).toContain('tags.1');
+    expect(strings).toContain('tags.2');
+    expect(strings).toContain('tags.length');
+    expect(strings).not.toContain('tags');
   });
 
-  it('4c. .find coarsens — callback receives raw items', () => {
+  it('4c. .find records per-field paths — callback receives sub-proxies', () => {
     const interner = new PathInterner();
     const { value, paths } = trackRender(
       { users: [{ active: false }, { active: true }] },
@@ -83,16 +88,13 @@ describe('trackRender', () => {
     const found = value.users.find((u) => u.active);
     expect(found?.active).toBe(true);
     const strings = asPathStrings(paths, interner);
-    expect(strings).toContain('users');
-    expect(strings).not.toContain('users.0');
-    expect(strings).not.toContain('users.1');
+    expect(strings).toContain('users.0.active');
+    expect(strings).toContain('users.1.active');
+    expect(strings).toContain('users.length');
+    expect(strings).not.toContain('users');
   });
 
-  it('4d. iterating after reading .length keeps the array path pinned', () => {
-    // Regression: a consumer that reads `items.length` (e.g. an empty check)
-    // and then iterates must still track `items`, so an element-content change
-    // that preserves length wakes it. Without pinning, the `.length` read
-    // supersedes `items` and only `items.length` is tracked.
+  it('4d. reading .length then iterating — tracks length and per-field paths', () => {
     const interner = new PathInterner();
     const { value, paths } = trackRender(
       { items: [{ status: 'sent' }, { status: 'sent' }] },
@@ -102,12 +104,14 @@ describe('trackRender', () => {
     const statuses = value.items.map((it) => it.status);
     expect(statuses).toEqual(['sent', 'sent']);
     const strings = asPathStrings(paths, interner);
-    expect(strings).toContain('items');
+    // length covers structural changes; per-field paths cover content changes.
     expect(strings).toContain('items.length');
+    expect(strings).toContain('items.0.status');
+    expect(strings).toContain('items.1.status');
+    expect(strings).not.toContain('items');
   });
 
-  it('4e. reading .length after iterating does not drop the array path', () => {
-    // Same as 4d but reversed order: pinning must be order-independent.
+  it('4e. iterating then reading .length — same precise result regardless of order', () => {
     const interner = new PathInterner();
     const { value, paths } = trackRender(
       { items: [{ status: 'sent' }] },
@@ -116,8 +120,11 @@ describe('trackRender', () => {
     value.items.forEach(() => {});
     void value.items.length;
     const strings = asPathStrings(paths, interner);
-    expect(strings).toContain('items');
+    // forEach accessed items[0] but the callback read no fields — items.0 is
+    // the leaf. length was read both internally and explicitly.
     expect(strings).toContain('items.length');
+    expect(strings).toContain('items.0');
+    expect(strings).not.toContain('items');
   });
 
   it('4f. reading only .length stays narrow (no array path)', () => {

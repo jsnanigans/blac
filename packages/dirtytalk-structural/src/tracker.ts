@@ -2,6 +2,20 @@ import type { PathId } from './types';
 import type { PathSet } from './path-set';
 import type { PathInterner } from './path-interner';
 
+/**
+ * When true, array iteration methods (.map, .filter, .forEach, .find,
+ * .reduce, Symbol.iterator, etc.) bind to the recording proxy rather than the
+ * raw array. Callbacks receive per-index sub-proxies, so `items.map(i =>
+ * i.title)` records `items.length`, `items.0.title`, `items.1.title`, …
+ * instead of just `items`. Re-renders are isolated to the specific items and
+ * fields that actually changed.
+ *
+ * Set to false to revert to coarse tracking: every array iteration records
+ * only the array's own entry path (e.g. `items`), waking all consumers of
+ * that array on any element change regardless of which field changed.
+ */
+const TRACK_ARRAY_ITERATION = true;
+
 export interface TrackResult<S> {
   value: S;
   paths: PathSet;
@@ -46,13 +60,14 @@ const isStructurallyWrappable = (v: object): boolean => {
  * - Nested objects/arrays return a child proxy that records into the same
  *   `paths` set. Proxies are cached per-target via a per-call `WeakMap`, so
  *   `value.user === value.user` within one render.
- * - Iteration coarsens: `for..of`, `.map`, `.find`, `.reduce`, etc. record
- *   the entry path (e.g. `users`) but **not** per-index paths. Callbacks
- *   receive the raw underlying values. This entry path is also *pinned*: a
- *   later own-property read on the same array (notably `.length`) cannot
- *   supersede it. Otherwise a consumer that both reads `users.length` and
- *   iterates `users` would track only `users.length` and miss element-content
- *   changes that preserve the array length.
+ * - Iteration (when {@link TRACK_ARRAY_ITERATION} is true, the default): array
+ *   methods and `for..of` / spread bind to the proxy, so the method's internal
+ *   index reads (`this.length`, `this[0]`, …) go through the `get` trap.
+ *   Callbacks receive per-index sub-proxies, so `items.map(i => i.title)`
+ *   records `items.length`, `items.0.title`, `items.1.title`, … — precise
+ *   leaf paths that isolate re-renders to the specific items and fields that
+ *   changed. When the flag is false the old coarsening applies: every
+ *   iteration records only the array's own entry path (e.g. `items`).
  * - Methods (own functions on non-array objects) are bound to the parent
  *   proxy so internal `this.x` reads continue to record.
  * - Reading a method without invoking it does not record (methods live on
@@ -107,6 +122,12 @@ export const trackRender = <S>(
         if (typeof key === 'symbol') {
           const sv = Reflect.get(t, key, receiver);
           if (isArray && typeof sv === 'function') {
+            if (TRACK_ARRAY_ITERATION) {
+              // Bind to the proxy so the iterator's internal index reads
+              // (e.g. this[0], this.length) go through the get trap and
+              // record per-index paths.
+              return (sv as (...a: unknown[]) => unknown).bind(wrap(t, prefix));
+            }
             // Iteration entry point (Symbol.iterator → for..of / spread). The
             // consumer depends on element contents, so pin the array's path.
             pinArrayPath();
@@ -124,6 +145,15 @@ export const trackRender = <S>(
         // from its parent, satisfying the coarsening contract.
         if (!Object.prototype.hasOwnProperty.call(t, key)) {
           if (isArray && typeof value === 'function') {
+            if (TRACK_ARRAY_ITERATION) {
+              // Bind to the proxy so the method's internal reads (this.length,
+              // this[0], this[1], …) go through the get trap. Callbacks
+              // receive sub-proxies and their property accesses record precise
+              // leaf paths (e.g. items.0.title) instead of the coarse entry.
+              return (value as (...a: unknown[]) => unknown).bind(
+                wrap(t, prefix),
+              );
+            }
             // Array method (.map, .find, .reduce, .includes, …). Using one
             // means the consumer depends on element contents, so pin the
             // array's path — a later `.length` read must not drop it.

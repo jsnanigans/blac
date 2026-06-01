@@ -152,6 +152,12 @@ export class TrackingBloc extends Cubit<TrackingState> {
     });
   };
 
+  appendItemTitle = (id: string, affix: string) => {
+    const item = this.state.items.find((i) => i.id === id);
+    if (!item) return;
+    this.editItemTitle(id, item.title + affix);
+  };
+
   addItem = () => {
     const id = Math.random().toString(36).slice(2, 8);
     this.patch({
