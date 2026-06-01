@@ -70,7 +70,8 @@
       "Bash(grep *)",
       "Skill(subagents-planner)",
       "Bash(vp install *)",
-      "Bash(vp fmt *)"
+      "Bash(vp fmt *)",
+      "Bash(node_modules/.bin/vite-plus test *)"
     ]
   }
 }

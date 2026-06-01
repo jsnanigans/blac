@@ -3,7 +3,7 @@ import {
   MicrotaskScheduler,
   type Scheduler,
 } from '@dirtytalk/engine';
-import { changedPathsFromPatch, diffAlongSkeleton } from './diff';
+import { changedPathsFromPatch, diffAlongSkeleton, getAt } from './diff';
 import { PathInterner } from './path-interner';
 
 /**
@@ -160,11 +160,12 @@ export abstract class StructuralContainer<S> {
    * and treats class instances, arrays, Date, Map, Set, etc. as atomic leaves.
    *
    * Dirty paths are derived from the patch's shape but **value-filtered**: a
-   * path is marked only if its value actually changed. This keeps marking
-   * precise and skeleton-independent (so raw `subscribe()` callers — devtools,
-   * plugins — wake correctly) while ensuring an over-broad patch (e.g.
-   * spreading a whole parent object when only one field changed) does not
-   * over-wake consumers of the unchanged siblings.
+   * path is marked only if its value actually changed. Plain-object branches are
+   * handled precisely by `changedPathsFromPatch`. For atomic-leaf replacements
+   * (arrays, class instances, etc.) where `changedPathsFromPatch` would emit a
+   * coarse ancestor-watch mark, `_refineAncestorMarks` replaces it with precise
+   * skeleton-child diffs so per-index consumers only wake when their specific
+   * value changed.
    */
   patch(partial: DeepPartial<S>): void {
     if (Object.keys(partial as object).length === 0) return;
@@ -176,14 +177,14 @@ export abstract class StructuralContainer<S> {
     // Apply state mutation atomically *before* mark so consumers see the new
     // state when they read it inside the dirty callback.
     this._state = next;
-    const paths = changedPathsFromPatch(
+    const rough = changedPathsFromPatch(
       prev,
       next,
       partial as Partial<S>,
       this.interner,
       this._equalsFn(),
     );
-    this._channel.mark(paths);
+    this._channel.mark(this._refineAncestorMarks(rough, prev, next));
   }
 
   update(fn: (state: S) => S): void {
@@ -236,6 +237,79 @@ export abstract class StructuralContainer<S> {
     let s: PathSet = emptyPathSet();
     for (const p of this._consumerPaths.values()) s = pathSetUnion(s, p);
     this._skeleton = s;
+  }
+
+  /**
+   * Replace coarse ancestor-watch marks in `rough` with precise skeleton-child
+   * diffs. Called by `patch()` after `changedPathsFromPatch`.
+   *
+   * When `changedPathsFromPatch` hits an atomic-leaf change (an array, class
+   * instance, etc.) it emits both `PathId(path)` and the ancestor-watch
+   * `PathId("\0a:path")`. The ancestor-watch is intentionally broad — it wakes
+   * any consumer whose expanded interest includes that ancestor — but it cannot
+   * distinguish which child paths actually changed value.
+   *
+   * This method replaces each ancestor-watch mark with a targeted
+   * `diffAlongSkeleton`-style pass over the skeleton paths that are children of
+   * that ancestor, adding only the ones whose value actually changed. The normal
+   * `PathId(path)` mark (for consumers that pinned the parent directly, e.g. via
+   * `.map()`) is preserved — it passes through unchanged.
+   *
+   * Fast-exits:
+   *   - No ancestor-watch marks in `rough` → return `rough` as-is (plain-object
+   *     patches pay zero overhead).
+   *   - Skeleton is empty or ALL_PATHS → return `rough` as-is.
+   */
+  private _refineAncestorMarks(rough: PathSet, prev: S, next: S): PathSet {
+    if (rough === ALL_PATHS) return rough;
+    const roughSet = rough as Set<PathId>;
+
+    // Fast exit: scan for any ancestor-watch mark before allocating anything.
+    let hasAncestor = false;
+    for (const id of roughSet) {
+      if (this.interner.isAncestorId(id)) {
+        hasAncestor = true;
+        break;
+      }
+    }
+    if (!hasAncestor) return rough;
+
+    // Fast exit: nothing in the skeleton to refine against.
+    if (this._skeleton === ALL_PATHS) return rough;
+    const skeleton = this._skeleton as Set<PathId>;
+    if (skeleton.size === 0) return rough;
+
+    const equalsFn = this._equalsFn();
+    const result = new Set<PathId>();
+
+    for (const id of roughSet) {
+      if (!this.interner.isAncestorId(id)) {
+        // Normal path mark (e.g. PathId("items"), PathId("matrix")): keep as-is.
+        // These wake consumers that pinned the parent directly (e.g. via .map()).
+        result.add(id);
+        continue;
+      }
+
+      // Ancestor-watch mark: replace with precise value-diffs against skeleton
+      // children. `lookup` strips the sentinel so we get the real ancestor path.
+      const ancestorPath = this.interner.lookup(id);
+      const prefix = ancestorPath + '.';
+
+      for (const skelId of skeleton) {
+        const skelPath = this.interner.lookup(skelId);
+        if (!skelPath.startsWith(prefix)) continue;
+        // Value-compare at this skeleton path — same logic as diffAlongSkeleton.
+        const pv = getAt(prev, skelPath);
+        const nv = getAt(next, skelPath);
+        const eq = equalsFn ? equalsFn(skelId, pv, nv) : Object.is(pv, nv);
+        if (!eq) result.add(skelId);
+      }
+      // The ancestor-watch mark itself is intentionally dropped: it has been
+      // replaced by the precise leaf marks above. Consumers whose expanded
+      // interest relied on it will instead match directly on the leaf PathIds.
+    }
+
+    return result;
   }
 }
 
