@@ -1,5 +1,13 @@
 # @dirtytalk/spatial
 
+## 0.0.4
+
+### Patch Changes
+
+- Refresh pinned dependency versions across the monorepo. No public API changes.
+- Updated dependencies
+  - @dirtytalk/engine@0.0.4
+
 ## 0.0.3
 
 ### Patch Changes

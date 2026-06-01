@@ -1,5 +1,13 @@
 # @blac/plugin-persist
 
+## 0.0.13
+
+### Patch Changes
+
+- Rebuild against the latest `@blac/core` (args-only identity) and refresh pinned dependency versions. No own API changes.
+- Updated dependencies [0a3fa8c]
+  - @blac/core@2.0.16
+
 ## 0.0.12
 
 ### Patch Changes

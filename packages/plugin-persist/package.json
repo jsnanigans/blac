@@ -1,6 +1,6 @@
 {
   "name": "@blac/plugin-persist",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "IndexedDB persistence plugin for BlaC state management",

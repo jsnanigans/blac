@@ -1,5 +1,13 @@
 # @blac/logging-plugin
 
+## 2.0.17
+
+### Patch Changes
+
+- Rebuild against the latest `@blac/core` (args-only identity) and refresh pinned dependency versions. No own API changes.
+- Updated dependencies [0a3fa8c]
+  - @blac/core@2.0.16
+
 ## 2.0.16
 
 ### Patch Changes
