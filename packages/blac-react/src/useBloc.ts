@@ -132,9 +132,10 @@ export function useBloc<
   const providerArgsKey =
     providerArgs === undefined ? undefined : JSON.stringify(providerArgs);
 
-  const { bloc, instanceKey } = useMemo<{
+  const { bloc, instanceKey, trackedBloc } = useMemo<{
     bloc: TBloc;
     instanceKey: string;
+    trackedBloc: TBloc;
   }>(() => {
     // Own args win over provider args; provider args win over no args.
     const effectiveArgs =
@@ -151,7 +152,47 @@ export function useBloc<
       refId,
       args: effectiveArgs,
     }) as TBloc;
-    return { bloc: instance, instanceKey: resolvedKey };
+
+    // Build a map of getter descriptors from the prototype chain (excluding
+    // Object.prototype). This is computed once per bloc acquisition so that
+    // the proxy's get trap is O(1) per property access. Arrow-function class
+    // properties (own, bound in the constructor) are not getters and pass
+    // through unmodified.
+    const getterDescs = new Map<string | symbol, PropertyDescriptor>();
+    let proto = Object.getPrototypeOf(instance);
+    while (proto && proto !== Object.prototype) {
+      for (const key of Object.getOwnPropertyNames(proto)) {
+        const desc = Object.getOwnPropertyDescriptor(proto, key);
+        if (desc?.get && !getterDescs.has(key)) getterDescs.set(key, desc);
+      }
+      proto = Object.getPrototypeOf(proto);
+    }
+
+    // Stable proxy: one allocation per bloc acquisition. Captures
+    // `trackedStateRef` by reference so getter calls during each render see
+    // the current render's tracking proxy. Non-getter access is a single Map
+    // lookup + Reflect.get — no prototype walk on the hot path.
+    const proxy = new Proxy(instance as object, {
+      get(target, key, receiver) {
+        const desc = getterDescs.get(key);
+        if (desc?.get) {
+          // Redirect `this.state` to the current render's tracking proxy.
+          // Passing the receiver through Reflect.get ensures chained getter
+          // calls (getters that call other getters) stay in tracked context.
+          const thisProxy = new Proxy(target, {
+            get(t, k, r) {
+              if (k === 'state')
+                return trackedStateRef.current ?? Reflect.get(t, k, r);
+              return Reflect.get(t, k, r);
+            },
+          });
+          return desc.get.call(thisProxy);
+        }
+        return Reflect.get(target, key, receiver);
+      },
+    }) as TBloc;
+
+    return { bloc: instance, instanceKey: resolvedKey, trackedBloc: proxy };
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [BlocClass, ownArgsKey, providerArgsKey]);
 
@@ -177,6 +218,10 @@ export function useBloc<
   // For select-mode: cache the last selected array so we can compare against
   // the next one before forcing a re-render.
   const lastSelectionRef = useRef<unknown[] | null>(null);
+  // Current render's tracking proxy. Updated during each auto-track render so
+  // the stable getter-proxy on `trackedBloc` sees the right context when a
+  // getter is called during JSX evaluation.
+  const trackedStateRef = useRef<unknown>(null);
 
   useEffect(() => {
     // Subscribe via the channel directly. For auto-track we re-register the
@@ -273,6 +318,7 @@ export function useBloc<
       (bloc as unknown as StateContainer).interner,
     );
     state = tracked.value as ExtractState<T>;
+    trackedStateRef.current = tracked.value;
     pathRef.current = tracked.paths;
     // NOTE: registerConsumerPaths is intentionally NOT called here. The
     // proxy hasn't been accessed yet, so `tracked.paths` is an empty Set
@@ -309,7 +355,7 @@ export function useBloc<
 
   return [
     state,
-    bloc,
+    trackedBloc,
     componentRef as RefObject<ComponentRef>,
   ] as UseBlocReturn<T, ExtractState<T>>;
 }

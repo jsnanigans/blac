@@ -71,7 +71,8 @@
       "Skill(subagents-planner)",
       "Bash(vp install *)",
       "Bash(vp fmt *)",
-      "Bash(node_modules/.bin/vite-plus test *)"
+      "Bash(node_modules/.bin/vite-plus test *)",
+      "Bash(node_modules/.bin/vp pack *)"
     ]
   }
 }
