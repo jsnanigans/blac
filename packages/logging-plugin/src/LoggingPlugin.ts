@@ -32,7 +32,11 @@ function decodePaths(
   interner: { lookup(id: number): string },
 ): string[] {
   if (paths === ALL_PATHS) return ['<all>'];
-  return Array.from(paths as Set<number>).map((id) => interner.lookup(id));
+  // `lookup` decodes ancestor-watch ids back to their real path, so a normal
+  // mark and its ancestor-watch sibling can decode to the same string — dedup.
+  return Array.from(
+    new Set(Array.from(paths as Set<number>).map((id) => interner.lookup(id))),
+  );
 }
 
 export class LoggingPlugin implements BlacPlugin {

@@ -268,10 +268,13 @@ describe('pathsFromPatch', () => {
 });
 
 describe('changedPathsFromPatch', () => {
+  // `lookup` decodes ancestor-watch ids back to their real path, so a normal
+  // mark and its ancestor-watch sibling collapse onto the same string — dedup
+  // to model the human-facing path list (matching the devtools/logging decode).
   const paths = (set: PathSet, interner: PathInterner): string[] => {
     if (set === ALL_PATHS || !(set instanceof Set))
       throw new Error('expected Set');
-    return [...set].map((id) => interner.lookup(id)).sort();
+    return [...new Set([...set].map((id) => interner.lookup(id)))].sort();
   };
 
   it('marks only the path whose value actually changed', () => {
@@ -348,6 +351,62 @@ describe('changedPathsFromPatch', () => {
     const next = { a: 1, b: 2 };
     const result = changedPathsFromPatch(prev, next, { a: 1 }, interner);
     expect(paths(result, interner)).toEqual([]);
+  });
+
+  // --- ancestor-watch lane (atomic-replacement marks) -----------------------
+
+  it('emits an ancestor-watch mark for an atomically-replaced array', () => {
+    // A descendant-reader (`items.length`) can only wake on an array swap via
+    // the ancestor-watch lane, since the patch shape stops at `items`.
+    const interner = new PathInterner();
+    const prev = { items: [1, 2, 3] };
+    const next = { items: [1, 2, 3, 4] };
+    const result = changedPathsFromPatch(
+      prev,
+      next,
+      { items: [1, 2, 3, 4] },
+      interner,
+    ) as Set<PathId>;
+    expect(result.has(interner.intern('items'))).toBe(true);
+    expect(result.has(interner.internAncestor('items'))).toBe(true);
+  });
+
+  it('emits an ancestor-watch mark when a parent is replaced with null', () => {
+    const interner = new PathInterner();
+    type Nullable = { profile: { bio: string } | null };
+    const prev: Nullable = { profile: { bio: 'x' } };
+    const next: Nullable = { profile: null };
+    const result = changedPathsFromPatch(
+      prev,
+      next,
+      { profile: null },
+      interner,
+    ) as Set<PathId>;
+    expect(result.has(interner.intern('profile'))).toBe(true);
+    expect(result.has(interner.internAncestor('profile'))).toBe(true);
+  });
+
+  it('does NOT emit an ancestor-watch for a plain-object parent (strict siblings)', () => {
+    // The crux of the fix: a `user.name` change recurses through the plain
+    // `user`, so `user` gets a normal pulse-up mark but NO ancestor-watch mark.
+    // A `user.email` reader expands an ancestor-watch on `user` — with no
+    // matching source mark it stays asleep.
+    const interner = new PathInterner();
+    const prev = { user: { name: 'Ada', email: 'a@x.io' } };
+    const next = { user: { name: 'Grace', email: 'a@x.io' } };
+    const result = changedPathsFromPatch(
+      prev,
+      next,
+      { user: { name: 'Grace', email: 'a@x.io' } },
+      interner,
+    ) as Set<PathId>;
+    // Plain parent: pulse-up mark only, no ancestor-watch.
+    expect(result.has(interner.intern('user'))).toBe(true);
+    expect(result.has(interner.internAncestor('user'))).toBe(false);
+    // Terminal string leaf gets the ancestor-watch (harmless: nothing reads
+    // below a string), but the unchanged sibling is untouched in both lanes.
+    expect(result.has(interner.intern('user.email'))).toBe(false);
+    expect(result.has(interner.internAncestor('user.email'))).toBe(false);
   });
 });
 

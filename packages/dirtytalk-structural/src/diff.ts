@@ -130,6 +130,17 @@ const walkPatch = (
  * consumer skeleton, so raw channel subscribers wake correctly — without
  * over-waking siblings when a patch over-spreads an unchanged parent.
  *
+ * For every path replaced *atomically* (an array, `null`, a primitive, a class
+ * instance — anything this walk can't descend into) an additional
+ * *ancestor-watch* mark is emitted via `interner.internAncestor`. A consumer
+ * that read a descendant of such a path (e.g. `items.length` under the array
+ * `items`) expands its interest with matching ancestor-watch ids, so it wakes
+ * even though only the parent is in the patch shape. Plain-object branches emit
+ * no ancestor-watch mark — recursion already marks their precise changed
+ * leaves, which descendant-readers match directly. This is what keeps object
+ * sibling-leaf updates strict (a `user.name` change does not wake a
+ * `user.email` reader) while array / wholesale-replacement readers still wake.
+ *
  * `equalsAt` is the same per-path custom-equality seam as `diffAlongSkeleton`;
  * default is reference equality (`Object.is`).
  */
@@ -170,7 +181,20 @@ export const changedPathsFromPatch = <S>(
       const eq = equalsAt ? equalsAt(id, pv, nv) : Object.is(pv, nv);
       if (eq) continue; // value unchanged → skip this branch (and its subtree)
       out.add(id);
-      walk(node[key], pv, nv, childPath);
+      const childPatch = node[key];
+      if (isPlainPatchObject(childPatch)) {
+        // Plain-object branch: recurse and mark the precise changed leaves,
+        // which descendant-readers match directly — no ancestor-watch needed.
+        walk(childPatch, pv, nv, childPath);
+      } else {
+        // Atomic replacement (array, null, primitive, class instance, Date,
+        // Map, …): the diff can't see inside it, so a consumer that read a
+        // *descendant* (e.g. `items.length`, `profile.bio`) has nothing to
+        // match the normal `childPath` mark. Emit the ancestor-watch mark so
+        // its expanded-ancestor interest intersects. (`walk` would early-return
+        // here anyway, so recursion behaviour is unchanged.)
+        out.add(interner.internAncestor(childPath));
+      }
     }
   };
   walk(patch as unknown, prev, next, '');

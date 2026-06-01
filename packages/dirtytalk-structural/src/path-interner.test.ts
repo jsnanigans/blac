@@ -45,6 +45,26 @@ describe('PathInterner', () => {
     expect(interner.size).toBe(2);
   });
 
+  it('internAncestor returns an id distinct from the normal path id', () => {
+    const interner = new PathInterner();
+    const normal = interner.intern('user');
+    const ancestor = interner.internAncestor('user');
+    expect(ancestor).not.toBe(normal);
+    // Idempotent like intern.
+    expect(interner.internAncestor('user')).toBe(ancestor);
+  });
+
+  it('lookup decodes an ancestor-watch id back to its real path', () => {
+    const interner = new PathInterner();
+    const ancestor = interner.internAncestor('items');
+    expect(interner.lookup(ancestor)).toBe('items');
+  });
+
+  it('ancestor-watch ids of different paths do not collide', () => {
+    const interner = new PathInterner();
+    expect(interner.internAncestor('a')).not.toBe(interner.internAncestor('b'));
+  });
+
   it('independent instances have independent namespaces', () => {
     const a = new PathInterner();
     const b = new PathInterner();

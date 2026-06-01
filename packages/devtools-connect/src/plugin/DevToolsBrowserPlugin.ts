@@ -249,8 +249,15 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       decodedPaths = 'all';
     } else {
       try {
-        decodedPaths = Array.from(paths as Set<number>).map((pid) =>
-          instance.interner.lookup(pid),
+        // `lookup` decodes ancestor-watch ids back to their real path, so the
+        // dirty set may map two ids (a normal mark and its ancestor-watch
+        // sibling) onto the same string — dedup to the human-facing path list.
+        decodedPaths = Array.from(
+          new Set(
+            Array.from(paths as Set<number>).map((pid) =>
+              instance.interner.lookup(pid),
+            ),
+          ),
         );
       } catch {
         decodedPaths = 'all';

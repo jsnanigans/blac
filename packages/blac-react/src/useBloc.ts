@@ -165,10 +165,14 @@ export function useBloc<
   // ---------------------------------------------------------------------------
   const [, force] = useReducer((x: number) => x + 1, 0);
   const pathRef = useRef<PathSet>(emptyPathSet());
-  // Expanded interest: leaf paths PLUS their ancestor paths, so that when
-  // `patch` marks a parent (e.g. 'items') and the consumer tracked a child
-  // (e.g. 'items.length'), the intersection still fires. Updated in
-  // useLayoutEffect after each render once pathRef.current is populated.
+  // Expanded interest: leaf paths PLUS *ancestor-watch* ids for their parents,
+  // so that when `patch` atomically replaces a parent (e.g. the array 'items')
+  // and the consumer tracked a child (e.g. 'items.length'), the intersection
+  // still fires — while a structural pulse-up of a plain-object parent (e.g.
+  // 'user' when a sibling 'user.name' changed) does NOT, because pulse-up marks
+  // are normal ids and ancestor-watch ids only intersect their own lane.
+  // Updated in useLayoutEffect after each render once pathRef.current is
+  // populated.
   const expandedInterestRef = useRef<PathSet>(emptyPathSet());
   // For select-mode: cache the last selected array so we can compare against
   // the next one before forcing a re-render.
@@ -293,9 +297,10 @@ export function useBloc<
     const container = bloc as unknown as StateContainer;
     const paths = pathRef.current;
     container.registerConsumerPaths(consumerId, paths);
-    // Expand interest to include ancestor paths so that `patch`-marked parent
-    // paths (e.g. 'items') wake a consumer that tracked a child (e.g.
-    // 'items.length').
+    // Register the *normal* leaf paths above for the source-side skeleton, then
+    // build the channel interest as leaves + ancestor-watch ids so that an
+    // atomic `patch` replacement of a parent (e.g. the array 'items') wakes a
+    // consumer that tracked a child (e.g. 'items.length').
     expandedInterestRef.current = expandWithAncestors(
       paths,
       container.interner,
@@ -319,19 +324,26 @@ const shallowArrayEqual = (a: unknown[], b: unknown[]): boolean => {
 };
 
 /**
- * Expand a PathSet to include all ancestor paths of every tracked path.
+ * Expand a PathSet to include an *ancestor-watch* id for every ancestor of
+ * every tracked leaf.
  *
  * The auto-tracker records leaf paths (e.g. `'items.length'`), but
- * `StructuralContainer.patch` marks parent paths (e.g. `'items'`) since it
- * only walks the patch shape — not individual array elements or nested
- * descendants. Without ancestor expansion, a channel subscriber with interest
- * `{'items.length'}` would miss a `patch`-triggered `dirty={'items'}` because
- * `intersects({'items.length'}, {'items'}) = false`.
+ * `StructuralContainer.patch` can only mark the parent (`'items'`) when it
+ * replaces a value atomically (arrays, `null`, primitives — it can't see
+ * inside). Without expansion, a subscriber with interest `{'items.length'}`
+ * would miss a `patch`-triggered atomic-replacement of `items`.
  *
- * Example: for leaf path `'a.b.c'`, adds `'a.b'` and `'a'` (but NOT `''`
- * root, since a root change would be captured by ALL_PATHS from the source
- * when there are ≤1 consumers, and adding `''` would make every field change
- * wake this consumer regardless of what it actually reads).
+ * Ancestors are added under the interner's *ancestor-watch* lane
+ * (`internAncestor`), NOT as normal ids. The source emits a matching
+ * ancestor-watch mark only for paths it replaces atomically — never for a
+ * plain-object structural pulse-up. So `{'items.length'}` wakes when the array
+ * `items` is replaced, but `{'user.email'}` does NOT wake when a sibling
+ * `user.name` changes and pulses `user` up: pulse-up `user` is a normal id and
+ * the ancestor-watch `user` only intersects another ancestor-watch `user`.
+ *
+ * Example: leaf `'a.b.c'` adds ancestor-watch ids for `'a.b'` and `'a'` (but
+ * NOT the `''` root — a root change is covered by `ALL_PATHS` from the source,
+ * and `''` would wake this consumer on every field change).
  */
 function expandWithAncestors(paths: PathSet, interner: PathInterner): PathSet {
   if (paths === ALL_PATHS) return ALL_PATHS;
@@ -341,11 +353,17 @@ function expandWithAncestors(paths: PathSet, interner: PathInterner): PathSet {
   const expanded = new Set<number>(leafPaths);
   for (const id of leafPaths) {
     const str = interner.lookup(id);
-    // Add all non-root ancestor segments: 'a.b.c' → add 'a.b', 'a'
+    // Add all non-root ancestor segments as *ancestor-watch* ids: 'a.b.c' →
+    // watch 'a.b' and 'a'. These live in the interner's ancestor lane so they
+    // only intersect the source's atomic-replacement marks (`internAncestor`),
+    // never a structural pulse-up mark of the same path. That is what lets a
+    // descendant-reader (e.g. `items.length`) wake on an array/null replacement
+    // without a sibling-leaf reader (`user.email`) waking when a sibling
+    // (`user.name`) changes and pulses up through `user`.
     let idx = str.lastIndexOf('.');
     while (idx > 0) {
       const ancestor = str.slice(0, idx);
-      expanded.add(interner.intern(ancestor));
+      expanded.add(interner.internAncestor(ancestor));
       idx = ancestor.lastIndexOf('.');
     }
   }
