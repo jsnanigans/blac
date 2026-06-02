@@ -3,63 +3,74 @@ layout: home
 
 hero:
   name: BlaC
-  text: Business Logic Components
-  tagline: Type-safe state management for React with automatic re-render optimization
+  text: State management that stays out of your way
+  tagline: Put your logic in a class. Read it with one hook. Components re-render only when the data they actually used changes — no providers, no selectors, no boilerplate.
+  image:
+    src: /logo.svg
+    alt: BlaC
   actions:
     - theme: brand
       text: Get Started
       link: /guide/introduction
     - theme: alt
-      text: Quick Start
+      text: Quick Start — 5 min
       link: /guide/getting-started
     - theme: alt
-      text: Reference
-      link: /core/cubit
+      text: GitHub
+      link: https://github.com/jsnanigans/blac
 
 features:
   - icon: 🎯
-    title: Type-Safe by Default
-    details: Full TypeScript inference from your state type through the hook return value. No manual type annotations needed.
+    title: Type-safe, end to end
+    details: Your state type flows from the class through the hook to the value you read. Zero annotations, full inference.
+    link: /guide/typescript
+    linkText: See TypeScript
 
   - icon: ⚡
-    title: Smart Re-renders
-    details: Auto-tracking proxies detect which state properties you read. Components only re-render when those specific properties change.
+    title: Surgical re-renders
+    details: A render-time proxy records exactly which properties you read. Touch one field, and only the components reading that field update.
+    link: /core/tracked
+    linkText: See tracking
 
   - icon: 🔌
-    title: Zero Providers
-    details: No context providers or component wrappers. Import a class, call useBloc, and state is shared automatically.
-
-  - icon: ♻️
-    title: Automatic Lifecycle
-    details: The registry manages instance creation, sharing, and disposal with ref counting. Instances clean up when no longer needed.
-
-  - icon: 🧩
-    title: Plugin Ecosystem
-    details: Official plugins for DevTools integration, console logging, and IndexedDB persistence. Or build your own.
-
-  - icon: ⚛️
-    title: Batched Updates
-    details: "Changes coalesce on the microtask queue and dispatch through React's normal update path, so a burst of updates in one tick re-renders a component once."
+    title: No providers, ever
+    details: Import the class, call useBloc, done. A ref-counted registry shares the instance and disposes it when nobody's listening.
+    link: /core/instance-management
+    linkText: See instances
 
   - icon: 🔗
-    title: Reactive Cross-Bloc Getters
-    details: "A getter on one bloc can read another bloc's state via depend().track() — and the component reading it wakes when either bloc changes. No selectors, no extra useBloc, no provider wiring."
+    title: Reactive cross-bloc getters
+    details: One bloc can read another via depend().track() — and the component reading the result wakes when either bloc changes. No selectors, no wiring.
     link: /core/bloc-communication#auto-tracking-with-track
     linkText: See .track()
+
+  - icon: 🧪
+    title: Logic you can unit-test
+    details: Business logic lives in plain classes, not components. Instantiate, call a method, assert the state. No render harness required.
+    link: /testing/overview
+    linkText: See testing
+
+  - icon: 🧩
+    title: Plugins & DevTools
+    details: Official plugins for time-travel DevTools, logging, and IndexedDB persistence — or write your own against a small surface.
+    link: /plugins/overview
+    linkText: See plugins
 ---
 
 <script setup>
 import { perConsumerTrackingFiles } from './demos/per-consumer-tracking';
 </script>
 
-## Quick Example
+## The whole loop, in one screen
+
+State and the actions that change it live in a class. A single hook connects any component to it — shared automatically, tracked automatically.
 
 ```tsx twoslash
 import React from 'react';
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 
-// 1. Define your state in a class
+// 1. Logic in a class
 class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
@@ -67,20 +78,20 @@ class CounterCubit extends Cubit<{ count: number }> {
   increment = () => this.emit({ count: this.state.count + 1 });
 }
 
-// 2. Use it in any component — state is shared automatically
+// 2. One hook — state is shared across every component that asks for it
 function Counter() {
   const [state, counter] = useBloc(CounterCubit);
   return <button onClick={counter.increment}>{state.count}</button>;
 }
 ```
 
-## See It: Only the Reader Re-renders
+## See it: only the reader re-renders
 
-Auto-tracking means each component re-renders only when the state properties it actually read have changed. Click "Bump left" and watch: the left counter's render count ticks up, but the right counter stays put. The right component never re-rendered because it never read `state.left`.
+Two counters share nothing but the page. Click **Bump left** and watch the render counters: the left one ticks up, the right one sits perfectly still. It never read `state.left`, so BlaC never re-rendered it. No `memo`, no selectors — just reading state.
 
 <BlacSandpack :files="perConsumerTrackingFiles" active-file="/App.tsx" :editor-height="500" />
 
-## Installation
+## Install
 
 ::: code-group
 
@@ -97,3 +108,5 @@ yarn add @blac/core @blac/react
 ```
 
 :::
+
+Then head to the [Quick Start](/guide/getting-started), or see how BlaC stacks up in the [Comparison](/guide/comparison).
