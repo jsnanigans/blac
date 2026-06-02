@@ -56,6 +56,7 @@ export default defineConfig({
         //   chrome.css (T3.1 — Starlight chrome polish)
         './src/styles/fonts.css',
         './src/styles/tokens.css',
+        './src/styles/riso.css',
         './src/styles/theme.css',
       ],
 

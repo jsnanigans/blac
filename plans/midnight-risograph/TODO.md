@@ -13,7 +13,7 @@ in `00-conventions.md`).
 - [x] Phase gate: strict build green, fonts load, dark palette applied
 
 ## Phase 2 — Riso kit
-- [ ] **T2.1** Riso primitive CSS — `riso.css` · Sonnet/high · *do first*
+- [x] **T2.1** Riso primitive CSS — `riso.css` · Sonnet/high · *do first*
 - [ ] **T2.2** Riso Astro components (Heading/Break/Grain) · Sonnet/medium
 - [ ] Phase gate: primitives render on a scratch check, build green
 

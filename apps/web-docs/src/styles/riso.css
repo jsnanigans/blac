@@ -1,0 +1,246 @@
+/*
+  BlaC docs — midnight-risograph print-artifact primitives.
+  All values reference --blac-* tokens from tokens.css — no raw hex here.
+
+  These utilities are STRICTLY OPT-IN. None of them apply automatically to
+  any element; every effect fires only when the class is explicitly added.
+  Safe for body prose — adding no class means zero effect.
+
+  Class summary:
+    .riso-halftone     — repeating dot-field background layer
+    .riso-overprint    — two-plate screen/multiply blend on pseudo-elements
+    .riso-misregister  — channel-split offset for display type (off-press look)
+    .riso-grain        — site-wide noise overlay; see mount-point note below
+
+  Knob custom properties (all safe to override on any parent element):
+    --blac-halftone-size    default: 3px     — dot cell size
+    --blac-halftone-opacity default: 0.12    — dot field opacity
+    --blac-misregister      default: 1.5px   — channel offset distance
+    --blac-grain-opacity    default: 0.035   — grain overlay opacity
+
+  Load order (astro.config.mjs customCss):
+    fonts.css  →  tokens.css  →  riso.css  →  chrome.css
+*/
+
+/* ── Knob defaults ─────────────────────────────────────────────────────────── */
+/*
+  Declared on :root so any element can inherit and override with a local value.
+  Phase 5 can animate --blac-misregister by setting it on a scoped ancestor.
+*/
+:root {
+  --blac-halftone-size:    3px;
+  --blac-halftone-opacity: 0.12;
+  --blac-misregister:      1.5px;
+  --blac-grain-opacity:    0.035;
+}
+
+/* ── .riso-halftone ────────────────────────────────────────────────────────── */
+/*
+  A repeating radial-gradient dot field rendered as a background layer.
+  Sits behind content via background-position; never overlaps text because
+  background is drawn under the element's content box.
+
+  The dot colour uses ink-a (dusty blue) at a low opacity so it reads as a
+  subtle print-plate texture without harming readability. Consumers may
+  override --blac-halftone-size / --blac-halftone-opacity on the element or a
+  parent to scale up for section-break set-pieces.
+
+  Two sizes of radial-gradient are layered (large + small cells) to mimic the
+  slightly irregular dot spread of real risograph registration.
+*/
+.riso-halftone {
+  position: relative; /* establish stacking context for z-index below if needed */
+
+  background-image:
+    /* Primary dot field — plate A colour */
+    radial-gradient(
+      circle,
+      color-mix(in srgb, var(--blac-ink-a) calc(var(--blac-halftone-opacity) * 100%), transparent) 35%,
+      transparent 36%
+    ),
+    /* Secondary field offset at half-pitch — subtle B-plate warmth */
+    radial-gradient(
+      circle,
+      color-mix(in srgb, var(--blac-ink-b) calc(var(--blac-halftone-opacity) * 55%), transparent) 25%,
+      transparent 26%
+    );
+
+  background-size:
+    calc(var(--blac-halftone-size) * 4) calc(var(--blac-halftone-size) * 4),
+    calc(var(--blac-halftone-size) * 8) calc(var(--blac-halftone-size) * 8);
+
+  background-position:
+    0 0,
+    calc(var(--blac-halftone-size) * 2) calc(var(--blac-halftone-size) * 2);
+
+  /* Explicitly stack behind descendant content */
+  background-attachment: local;
+}
+
+/* ── .riso-overprint ───────────────────────────────────────────────────────── */
+/*
+  Two-plate overprint technique.
+
+  STRUCTURE:
+    The element itself carries the visible content in normal flow (readable by
+    screen readers, selectable, keyboard-focusable). Two pseudo-elements — each
+    tinted with one riso ink colour — are stacked on top via absolute
+    positioning and blended with mix-blend-mode. The blend of plate A + plate B
+    produces the characteristic third hue where they overlap.
+
+  ACCESSIBILITY FOR TEXT:
+    When this class is applied to a heading or inline element whose text you
+    want to appear "overprinted", the actual text MUST remain in the element
+    itself (not only in the pseudo-elements). The pseudo-elements are visual
+    decoration and MUST have aria-hidden="true" added by the consumer when they
+    duplicate readable text. The T2.2 RisoHeading component does this — do not
+    add raw text only via ::before/::after content.
+
+  BLEND MODES:
+    Dark mode (default): mix-blend-mode: screen
+      — adds ink channels together on a dark background, brightening where they
+        overlap. Plate A (blue) + plate B (coral) → produces a warm lavender/
+        champagne third hue in the overlap zone.
+
+    Light mode (:root[data-theme='light']): mix-blend-mode: multiply
+      — subtracts each channel from the white paper, darkening the overlap into
+        a rich mixed tone (mirrors real CMYK/riso overprinting on cream stock).
+
+  isolation: isolate on the wrapper is REQUIRED: without it the blend escapes
+  the stacking context and composites against the page background, which breaks
+  the colour math and can cause illegible results.
+*/
+.riso-overprint {
+  isolation: isolate;
+  position: relative;
+}
+
+.riso-overprint::before,
+.riso-overprint::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* Separate blend context from siblings outside the wrapper */
+  mix-blend-mode: screen;
+}
+
+/* Plate A — dusty blue */
+.riso-overprint::before {
+  background: color-mix(in srgb, var(--blac-ink-a) 40%, transparent);
+}
+
+/* Plate B — warm coral; shifted down-right for the press-offset look */
+.riso-overprint::after {
+  background: color-mix(in srgb, var(--blac-ink-b) 35%, transparent);
+  transform: translate(calc(var(--blac-misregister) * 0.5), calc(var(--blac-misregister) * 0.5));
+}
+
+/* Light mode: switch to multiply so the ink darkens cream paper correctly */
+:root[data-theme='light'] .riso-overprint::before,
+:root[data-theme='light'] .riso-overprint::after {
+  mix-blend-mode: multiply;
+}
+
+/* ── .riso-misregister ─────────────────────────────────────────────────────── */
+/*
+  Channel-split offset for display type — the off-press look where the second
+  ink plate landed fractionally out of alignment with the first.
+
+  Implemented as a text-shadow "ghost" in ink-b offset by --blac-misregister,
+  with the element itself coloured ink-a. This avoids duplicating DOM nodes for
+  the common single-element case and keeps the offset animatable in Phase 5 via
+  @property or a transition on --blac-misregister.
+
+  For a stronger, more controlled split (separate R/G/B channel simulation),
+  use the full .riso-overprint instead. .riso-misregister is the lighter-weight
+  option intended for short labels, badges, and decorative headlines.
+
+  --blac-misregister is a shared knob: both .riso-misregister and the
+  .riso-overprint::after shift reference it, so animating the var on a parent
+  moves both together.
+*/
+.riso-misregister {
+  color: var(--blac-ink-a);
+
+  /*
+    Shadow uses ink-b (coral) offset by the register knob.
+    Two shadows: one slightly ahead (positive), one slightly behind (negative)
+    on the perpendicular axis — this mirrors real two-plate misreg where plates
+    drift in both x and y by different amounts.
+  */
+  text-shadow:
+    calc(var(--blac-misregister) * -1)  0                               0   color-mix(in srgb, var(--blac-ink-b) 70%, transparent),
+    0                                   var(--blac-misregister)          0   color-mix(in srgb, var(--blac-ink-b) 40%, transparent);
+}
+
+/* Light mode: flip — element uses ink-b, shadow is ink-a (paper reads lighter) */
+:root[data-theme='light'] .riso-misregister {
+  color: var(--blac-ink-b);
+  text-shadow:
+    calc(var(--blac-misregister) * -1)  0                               0   color-mix(in srgb, var(--blac-ink-a) 65%, transparent),
+    0                                   var(--blac-misregister)          0   color-mix(in srgb, var(--blac-ink-a) 35%, transparent);
+}
+
+/* ── .riso-grain ───────────────────────────────────────────────────────────── */
+/*
+  Site-wide analogue noise overlay using an inline SVG feTurbulence filter.
+
+  MOUNT POINT (for T2.2 Grain.astro and later phases):
+    There must be EXACTLY ONE instance of .riso-grain in the page. It should be
+    a fixed-position <div> or <span> rendered as the FIRST child of <body> (or
+    the layout root), before any page content. The T2.2 Grain.astro component
+    is the canonical mount; later phases (Hero, layout) import Grain rather than
+    adding a second .riso-grain element.
+
+    Expected markup (authored by Grain.astro):
+      <div class="riso-grain" aria-hidden="true"></div>
+
+    aria-hidden="true" is REQUIRED by the consumer — this element is purely
+    decorative. pointer-events: none is set here so it never blocks clicks.
+
+  FILTER STRATEGY:
+    The SVG filter is referenced via a data URI so riso.css is self-contained
+    with zero external file dependencies (matching the "zero dependencies" brief).
+    feTurbulence generates organic Perlin noise; feColorMatrix extracts only the
+    alpha channel as grey so the overlay is neutral (no colour cast). feBlend
+    composites the noise over the source graphic.
+
+    Opacity is governed by --blac-grain-opacity (default 0.035) — low enough to
+    feel like paper grain rather than static, but adjustable for set-pieces.
+
+    The filter is NOT applied per-element: a single fixed overlay covers the
+    entire viewport at a cost of one GPU composite layer, which is far cheaper
+    than applying the filter on every heading or card independently.
+*/
+.riso-grain {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999; /* above all page content; below modals/tooltips if needed */
+  opacity: var(--blac-grain-opacity);
+
+  /* Prevent the overlay itself from participating in mix-blend compositing
+     at the stacking-context level — it should composite over the final page */
+  isolation: auto;
+
+  /* The feTurbulence SVG filter as a data URI keeps this file self-contained.
+     baseFrequency 0.65 / numOctaves 4 gives a fine-grain paper texture.
+     type="fractalNoise" (vs turbulence) produces a softer, less banded result.
+     stitchTiles="stitch" removes seams when the noise tiles across the viewport.
+  */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23grain)' opacity='1'/%3E%3C/svg%3E");
+
+  background-repeat: repeat;
+  background-size: 300px 300px;
+
+  /* Overlay blends neutrally — normal keeps the grain white/grey on black */
+  mix-blend-mode: overlay;
+}
+
+/* Light mode: soft-light blends better on cream paper than overlay */
+:root[data-theme='light'] .riso-grain {
+  mix-blend-mode: soft-light;
+}
