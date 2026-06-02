@@ -1,0 +1,109 @@
+/*
+  BlaC docs — midnight-risograph color tokens.
+  All --blac-* values are the canonical source of truth; no raw hex anywhere else.
+  Starlight's --sl-color-* vars are mapped here so the built-in chrome and the
+  demo islands re-skin for free without touching their markup.
+
+  Riso plates:
+    Plate A  --blac-ink-a  dusty blue  (primary accent)
+    Plate B  --blac-ink-b  warm coral  (overprint — layered on A)
+  The overprint gradient is --blac-gradient (used by hero wordmark, accents).
+
+  Font token NAMES are declared here with fallback stacks; @font-face wiring
+  and the real 'Fraunces'/'Hanken Grotesk' values land in T1.2 (fonts.css).
+*/
+
+/* ── Dark (canonical) ──────────────────────────────────────────────────────── */
+:root {
+  /* Palette */
+  --blac-bg:        #1a1714; /* warm charcoal, the dim study */
+  --blac-surface:   #221e1a;
+  --blac-surface-2: #2b2620;
+  --blac-ink:       #ece4d4; /* warm off-white body text */
+  --blac-ink-dim:   #b3a994;
+  --blac-sage:      #a7bcaa;
+  --blac-dusty:     #8fa9c4; /* PRIMARY accent — riso plate A */
+  --blac-lavender:  #c4b8d4;
+  --blac-ink-a:     #8fa9c4; /* riso plate A (dusty blue) */
+  --blac-ink-b:     #e08a7a; /* riso plate B (warm coral) — overprints A */
+
+  /* Overprint gradient: plate A → plate B */
+  --blac-gradient: linear-gradient(120deg, var(--blac-ink-a) 10%, var(--blac-ink-b) 90%);
+
+  /* Font token names (fallback stacks; real @font-face wired in T1.2) */
+  --blac-font-display: 'Fraunces', Georgia, serif;
+  --blac-font-body:    'Hanken Grotesk', system-ui, sans-serif;
+  --blac-font-mono:    /* leave Starlight / Expressive Code default */ inherit;
+
+  /* ── Starlight contract ────────────────────────────────────────────────── */
+
+  /* Accent ramp (plate A = primary accent) */
+  --sl-color-accent-low:  #1d2b36; /* dark tinted accent well */
+  --sl-color-accent:      var(--blac-dusty);
+  --sl-color-accent-high: #ccdae8; /* lighter dusty for text-on-dark */
+
+  /* Backgrounds */
+  --sl-color-bg:      var(--blac-bg);
+  --sl-color-bg-nav:  var(--blac-surface);
+
+  /* Text */
+  --sl-color-text:          var(--blac-ink);
+  --sl-color-text-accent:   var(--blac-dusty);
+  --sl-color-text-invert:   var(--blac-bg);
+
+  /* Polarity anchors */
+  --sl-color-white: var(--blac-ink);   /* "white" in dark = warm off-white */
+  --sl-color-black: var(--blac-bg);    /* "black" in dark = warm charcoal */
+
+  /* Gray ramp: 1 = lightest (text), 6 = darkest (border/well) */
+  --sl-color-gray-1: #ddd4c2;
+  --sl-color-gray-2: #c0b5a0;
+  --sl-color-gray-3: #8c8070;
+  --sl-color-gray-4: #574f44;
+  --sl-color-gray-5: #3a332b;
+  --sl-color-gray-6: #2b2620;
+}
+
+/* ── Light (companion) ─────────────────────────────────────────────────────── */
+:root[data-theme='light'] {
+  /* Palette */
+  --blac-bg:       #f7f1e3; /* cream paper */
+  --blac-surface:  #efe7d4;
+  --blac-ink:      #2a2622;
+  --blac-ink-dim:  #6b6354;
+  /* Accents reused; darkened for AA contrast (T5.2 audits will refine) */
+  --blac-dusty:    #3d6e8c;
+  --blac-ink-a:    #3d6e8c;
+  --blac-ink-b:    #b85a4a;
+
+  /* Overprint gradient: plate A → plate B (darkened for legibility on cream) */
+  --blac-gradient: linear-gradient(120deg, var(--blac-ink-a) 10%, var(--blac-ink-b) 90%);
+
+  /* ── Starlight contract ────────────────────────────────────────────────── */
+
+  /* Accent ramp */
+  --sl-color-accent-low:  #d6e4ef;
+  --sl-color-accent:      var(--blac-dusty);
+  --sl-color-accent-high: #1e3d52;
+
+  /* Backgrounds */
+  --sl-color-bg:      var(--blac-bg);
+  --sl-color-bg-nav:  var(--blac-surface);
+
+  /* Text */
+  --sl-color-text:          var(--blac-ink);
+  --sl-color-text-accent:   var(--blac-dusty);
+  --sl-color-text-invert:   var(--blac-ink);
+
+  /* Polarity anchors */
+  --sl-color-white: var(--blac-bg);    /* "white" in light = cream paper */
+  --sl-color-black: var(--blac-ink);   /* "black" in light = warm near-black */
+
+  /* Gray ramp: 1 = lightest (text), 6 = darkest (border/well) */
+  --sl-color-gray-1: #3a342c;
+  --sl-color-gray-2: #5a5148;
+  --sl-color-gray-3: #8a7f72;
+  --sl-color-gray-4: #bdb09e;
+  --sl-color-gray-5: #ddd5c3;
+  --sl-color-gray-6: #efe7d4;
+}

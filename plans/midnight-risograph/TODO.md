@@ -8,7 +8,7 @@ in `00-conventions.md`).
 - [ ] Orchestrator: `git switch -c feat/web-docs-midnight-risograph` (off `main`)
 
 ## Phase 1 — Foundation
-- [ ] **T1.1** Color token system — `tokens.css` · Sonnet/medium · *do first*
+- [x] **T1.1** Color token system — `tokens.css` · Sonnet/medium · *do first*
 - [ ] **T1.2** `[‖]` Self-hosted Fraunces + Hanken + type scale · Sonnet/high
 - [ ] Phase gate: strict build green, fonts load, dark palette applied
 

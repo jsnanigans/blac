@@ -48,7 +48,15 @@ export default defineConfig({
       editLink: {
         baseUrl: 'https://github.com/jsnanigans/blac/edit/main/apps/web-docs/',
       },
-      customCss: ['./src/styles/theme.css'],
+      customCss: [
+        // Load order per midnight-risograph conventions:
+        //   fonts.css  (T1.2 — prepended when font task runs)
+        //   tokens.css (T1.1 — colors + font token names)
+        //   riso.css   (T2.1 — print primitives)
+        //   chrome.css (T3.1 — Starlight chrome polish)
+        './src/styles/tokens.css',
+        './src/styles/theme.css',
+      ],
 
       // Code highlighting = Expressive Code (Shiki at build time, zero client
       // JS for the highlight itself), theme-synced to light/dark. Twoslash adds

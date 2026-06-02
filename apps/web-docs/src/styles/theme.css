@@ -1,31 +1,9 @@
 /*
-  BlaC docs theme — "fresh minimal / technical".
-  Light layer over Starlight's defaults: brand accent (the logo's indigo→cyan),
-  a touch of cool to the grays, and a few restrained polish touches. We keep
-  Starlight's system font stack (no web-font payload) so pages stay fast.
-
-  Brand reference: logo gradient #6366F1 (indigo) → #22D3EE (cyan).
-  Accent palettes below are tuned from that indigo for each color mode.
+  BlaC docs theme — residual polish rules.
+  Brand palette and --sl-color-* mapping now live in tokens.css (T1.1).
+  This file keeps only the structural polish that hasn't been fully reworked yet;
+  the hero and card rules will be rebuilt in Phase 3/4 (T3.1, T4.1).
 */
-
-/* Dark mode (Starlight's default :root) ---------------------------------- */
-:root {
-  --sl-color-accent-low: #1e1b4b;
-  --sl-color-accent: #6366f1;
-  --sl-color-accent-high: #c7d2fe;
-
-  /* Brand gradient, reused by the splash hero + accents. */
-  --blac-gradient: linear-gradient(120deg, #818cf8 10%, #22d3ee 90%);
-}
-
-/* Light mode -------------------------------------------------------------- */
-:root[data-theme='light'] {
-  --sl-color-accent-low: #e0e7ff;
-  --sl-color-accent: #4f46e5;
-  --sl-color-accent-high: #312e81;
-
-  --blac-gradient: linear-gradient(120deg, #4f46e5 10%, #0891b2 90%);
-}
 
 /* Splash hero: gradient wordmark + tightened measure ---------------------- */
 .hero h1 {
