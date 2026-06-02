@@ -1,0 +1,17 @@
+---
+/*
+  Grain.astro — canonical mount for the single site-wide .riso-grain overlay.
+
+  MOUNT RULE (enforced by convention, documented in README.md):
+    Render this component EXACTLY ONCE per page — as the first child of the
+    layout root (body or the outermost layout wrapper). Later phases (Hero,
+    layout overrides) import this component rather than adding a second
+    .riso-grain element. A second mount would double the noise opacity and
+    break the single-GPU-layer contract.
+
+  No props — this component is a singleton with no configuration surface.
+  Opacity and blend mode are governed by --blac-grain-opacity (riso.css).
+*/
+---
+
+<div class="riso-grain" aria-hidden="true"></div>

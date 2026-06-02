@@ -1,0 +1,108 @@
+---
+/*
+  RisoHeading.astro — display heading with risograph overprint + optional
+  misregistration effect.
+
+  Props:
+    as         — heading level: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
+                 Default: 'h2'
+    intensity  — effect strength: 'subtle' | 'normal' | 'loud'
+                 Default: 'normal'
+                 Controls --blac-misregister scale and whether .riso-misregister
+                 is applied alongside .riso-overprint.
+    class      — forwarded to the heading element for caller-side overrides.
+
+  Slot:
+    default — the heading text. Rendered in normal flow for accessibility.
+              Screen readers see it once; decorative pseudo-element plates
+              (::before / ::after from .riso-overprint) are CSS-only and carry
+              no accessible text.
+
+  Accessibility:
+    The visible text lives in the real heading element in normal flow —
+    announced once, selectable, keyboard-focusable. The overprint plates are
+    CSS pseudo-elements (::before/::after) with content:'', so they are
+    invisible to the a11y tree. No aria-hidden needed here; the CSS contract
+    in riso.css already guards this.
+
+  Animation hook (Phase 5):
+    The heading element carries data-riso-heading="true" and the intensity as
+    data-riso-intensity="<value>". Phase 5 can use these as stable CSS/JS
+    selectors to attach variable-font registration snap and drift animations
+    without touching this component's markup.
+
+    To animate the misregister offset, Phase 5 targets:
+      [data-riso-heading] { transition: --blac-misregister 0.4s ease; }
+    or animates --blac-misregister via a @keyframes on the element directly.
+*/
+
+interface Props {
+  as?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+  intensity?: 'subtle' | 'normal' | 'loud';
+  class?: string;
+}
+
+const {
+  as: Tag = 'h2',
+  intensity = 'normal',
+  class: className,
+} = Astro.props;
+
+/*
+  Intensity → CSS knob mapping.
+  We set --blac-misregister locally on the element to scale the effect without
+  touching the global root value. Phase 5 can override these via animation.
+*/
+const misregisterScale: Record<string, string> = {
+  subtle: '0.75px',
+  normal: '1.5px',
+  loud:   '3px',
+};
+
+const localMisregister = misregisterScale[intensity];
+
+/*
+  Class composition:
+    .riso-overprint — always applied (the two-plate colour blend).
+    .riso-misregister — applied at 'normal' and 'loud' intensity only; skipped
+      at 'subtle' to keep it purely a colour effect without the channel split.
+*/
+const risoClasses = [
+  'riso-heading',
+  'riso-overprint',
+  intensity !== 'subtle' ? 'riso-misregister' : '',
+  className ?? '',
+].filter(Boolean).join(' ');
+---
+
+<Tag
+  class={risoClasses}
+  data-riso-heading="true"
+  data-riso-intensity={intensity}
+  style={`--blac-misregister: ${localMisregister};`}
+>
+  <slot />
+</Tag>
+
+<style>
+  /*
+    Display font — Fraunces variable, loaded by fonts.css.
+    Applied here (not in riso.css) because this is component-scoped styling;
+    riso.css carries only the class utilities, not heading-specific typography.
+  */
+  .riso-heading {
+    font-family: var(--blac-font-display);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  /*
+    Loud intensity: boost the Fraunces SOFT/WONK axes for extra ink warmth.
+    Uses font-variation-settings — only takes effect when the variable font is
+    loaded; degrades gracefully to the standard weight otherwise.
+  */
+  .riso-heading[data-riso-intensity='loud'] {
+    font-variation-settings: 'SOFT' 100, 'WONK' 1;
+  }
+</style>

@@ -1,0 +1,104 @@
+---
+/*
+  SectionBreak.astro — full-bleed halftone divider for between major sections.
+
+  Renders a visually distinct separator using .riso-halftone as a background
+  dot field. The decorative background layer is handled entirely by CSS and
+  carries no accessible content; a semantic <hr> provides the structural break
+  for assistive technology.
+
+  Props:
+    label      — optional short text label centred over the halftone field.
+                 When omitted the break is purely decorative.
+    dotSize    — override --blac-halftone-size for this break; default '6px'
+                 (larger than the body default of 3px for a more visible
+                 set-piece effect).
+    dotOpacity — override --blac-halftone-opacity; default '0.22'.
+    class      — forwarded to the outer wrapper for caller-side layout overrides.
+
+  Accessibility:
+    <hr> provides the separator role. If a label is present it is visible text
+    in normal flow (not duplicated in pseudo-elements). The .riso-halftone
+    background is pure CSS and carries no a11y content.
+
+  Slot:
+    default — alternative to the `label` prop; renders inside the label span.
+              If both prop and slot content are provided, the slot takes
+              precedence (slot is rendered; prop is ignored).
+*/
+
+interface Props {
+  label?: string;
+  dotSize?: string;
+  dotOpacity?: string;
+  class?: string;
+}
+
+const {
+  label,
+  dotSize    = '6px',
+  dotOpacity = '0.22',
+  class: className,
+} = Astro.props;
+
+const wrapperClasses = ['section-break', 'riso-halftone', className ?? '']
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div
+  class={wrapperClasses}
+  style={`--blac-halftone-size: ${dotSize}; --blac-halftone-opacity: ${dotOpacity};`}
+  role="separator"
+  aria-hidden={!label ? 'true' : undefined}
+>
+  {/* Semantic hr for a11y; visually hidden — the .riso-halftone div carries the look */}
+  <hr class="section-break__rule" aria-hidden="true" />
+
+  {/* Label: show slot if provided, fall back to prop */}
+  <span class="section-break__label">
+    <slot>{label}</slot>
+  </span>
+</div>
+
+<style>
+  .section-break {
+    /* Full-bleed: caller should wrap in a container that breaks out of the
+       content column if needed (e.g. Starlight's full-width slot). */
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 3rem;
+    padding-block: 1.5rem;
+    overflow: hidden;
+  }
+
+  /* The semantic <hr> is hidden — it exists only for a11y tree structure. */
+  .section-break__rule {
+    position: absolute;
+    inset: 0;
+    border: none;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Label centred over the halftone field */
+  .section-break__label {
+    position: relative; /* stack above the background */
+    z-index: 1;
+    font-family: var(--blac-font-display);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--blac-ink-dim);
+
+    /* Fade out label when empty so no ghost space is visible */
+    &:empty {
+      display: none;
+    }
+  }
+</style>

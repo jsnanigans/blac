@@ -14,7 +14,7 @@ in `00-conventions.md`).
 
 ## Phase 2 — Riso kit
 - [x] **T2.1** Riso primitive CSS — `riso.css` · Sonnet/high · *do first*
-- [ ] **T2.2** Riso Astro components (Heading/Break/Grain) · Sonnet/medium
+- [x] **T2.2** Riso Astro components (Heading/Break/Grain) · Sonnet/medium
 - [ ] Phase gate: primitives render on a scratch check, build green
 
 ## Phase 3 — Chrome  (`[‖]` group A — disjoint files)
