@@ -66,7 +66,7 @@ class CartCubit extends Cubit<{ items: CartItem[] }> {
 1. `this.depend(ShippingCubit)` records the dependency (`ShippingCubit` → instance key) and returns a getter `() => ShippingCubit`.
 2. Calling that getter resolves the instance via [`ensure()`](/core/instance-management) from the registry — creating it if it does not exist yet.
 3. The dependency is resolved **lazily on every call**, not when you declare it. This keeps `CartCubit` immune to dep-instance churn: if the depended-on instance is disposed and recreated, the next `getShipping()` call simply returns the new one.
-4. When a React component reads `cart.total`, the [auto-tracking](/react/dependency-tracking) proxy follows the getter into `ShippingCubit.state.rate` and subscribes the component to _that_ path. So `cart.total` re-renders when shipping rate changes — but this reactivity comes from the render-time tracker, not from `depend()` itself.
+4. When a React component reads `cart.total`, reactivity comes from the render-time tracker. Plain `this.getShipping().state.rate` reads a live (untracked) instance — the component re-renders only if it is also subscribed to `ShippingCubit` via `useBloc`. To opt into automatic cross-bloc subscriptions without a second `useBloc` call, use [`.track()`](#auto-tracking-with-track) on the handle.
 
 ### Named instance dependencies
 
@@ -259,6 +259,167 @@ class DashboardCubit extends Cubit<Record<string, never>> {
 ::: warning A coordinating bloc with empty state is a smell
 `Cubit<{}>` here holds no state of its own — it exists purely to compose other blocs' state. That is fine for a small read-only aggregator, but if it grows methods and starts coordinating writes across many blocs, it tends to become a god-bloc that re-couples everything `depend()` was meant to decouple. Prefer reading derived values directly in the component (or a small focused bloc per view) over one central dashboard bloc. See [Best Practices](/guide/best-practices).
 :::
+
+## Auto-tracking with `.track()`
+
+By default, `this.depend(OtherBloc)` returns a handle you call as a function (`this.getShipping()`) to get the live instance. Reading the instance's state inside a getter — `this.getShipping().state.rate` — is a plain live read. A React consumer won't re-render when `ShippingCubit` emits unless the component also calls `useBloc(ShippingCubit)` itself.
+
+Calling `.track()` on the handle opts the **current render's consumer** into automatic cross-bloc subscriptions, without a second `useBloc` at the component level:
+
+```ts
+import { Cubit } from '@blac/core';
+
+class PriceBloc extends Cubit<{ amount: number }> {
+  constructor() {
+    super({ amount: 100 });
+  }
+}
+
+class CartBloc extends Cubit<{ qty: number }> {
+  private price = this.depend(PriceBloc);
+  constructor() {
+    super({ qty: 2 });
+  }
+
+  get total() {
+    const [priceState] = this.price.track(); // opt in to cross-bloc tracking
+    return this.state.qty * priceState.amount;
+  }
+}
+```
+
+A component that reads `cart.total` during render auto-subscribes to both `CartBloc` **and** `PriceBloc` — no `useBloc(PriceBloc)` needed:
+
+```ts
+// In a React component:
+const [, cart] = useBloc(CartBloc);
+return <span>{cart.total}</span>; // re-renders when qty OR price.amount changes
+```
+
+### What `.track()` returns
+
+```ts
+handle.track(); // → [trackedState, depProxy]
+```
+
+| Element        | Type               | Description                                                                                                                                                                                   |
+| -------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `trackedState` | dep's state        | Snapshot recorded by the render-time tracker. Access fields here to record leaf paths (e.g. `priceState.amount`).                                                                             |
+| `depProxy`     | dep instance proxy | The dep wrapped in a tracking proxy. Use this to call getters on the dep; those getters' own `this.state.x` reads are also tracked (see [Dep getter transitivity](#dep-getter-transitivity)). |
+
+### Render-aware: safe everywhere
+
+`.track()` is **render-aware**. Outside a React render — in an event handler, an effect, or a plain method — it degrades gracefully to live values with no subscription side effects:
+
+```ts
+import { Cubit } from '@blac/core';
+
+class PriceBloc extends Cubit<{ amount: number }> {
+  constructor() {
+    super({ amount: 100 });
+  }
+}
+
+class CartBloc extends Cubit<{ qty: number }> {
+  private price = this.depend(PriceBloc);
+  constructor() {
+    super({ qty: 2 });
+  }
+
+  get total() {
+    const [priceState] = this.price.track();
+    return this.state.qty * priceState.amount;
+  }
+
+  logTotal() {
+    // Called outside render — .track() returns live values, no subscription registered.
+    const [priceState] = this.price.track();
+    console.log('total:', this.state.qty * priceState.amount);
+  }
+}
+```
+
+You can safely call `.track()` from methods without worrying about accidentally registering subscriptions at the wrong time.
+
+### Dep getter transitivity
+
+The second element of `.track()` — the `depProxy` — threads tracking through the dep's own getters. If the dep's getter reads `this.state.field`, that read is also recorded for the consumer:
+
+```ts
+import { Cubit } from '@blac/core';
+
+class SrcBloc extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 5 });
+  }
+  get doubled() {
+    return this.state.count * 2;
+  }
+}
+
+class AggBloc extends Cubit<{ offset: number }> {
+  private src = this.depend(SrcBloc);
+  constructor() {
+    super({ offset: 0 });
+  }
+  get computed() {
+    const [, s] = this.src.track();
+    // `s.doubled` calls the getter through the dep proxy. Inside `doubled`,
+    // `this.state.count` is intercepted and records `count` as a tracked path
+    // for the current consumer — so a SrcBloc emit on `count` wakes the consumer.
+    return this.state.offset + s.doubled;
+  }
+}
+```
+
+This works transitively for deep chains: if `A.track(B)` and inside `B.computed` there is `B.track(C)`, a consumer reading `A.computed` is subscribed to C's channel too. Bumping C wakes the consumer.
+
+### Conditional tracking
+
+`.track()` is called during the render of the getter. If it runs conditionally, the subscription is added or dropped automatically after each render:
+
+```ts
+import { Cubit } from '@blac/core';
+
+class FeatureFlagBloc extends Cubit<{ enabled: boolean }> {
+  constructor() {
+    super({ enabled: false });
+  }
+}
+
+class LivePriceBloc extends Cubit<{ price: number }> {
+  constructor() {
+    super({ price: 0 });
+  }
+}
+
+class ProductBloc extends Cubit<{ base: number }> {
+  private flags = this.depend(FeatureFlagBloc);
+  private livePrice = this.depend(LivePriceBloc);
+  constructor() {
+    super({ base: 10 });
+  }
+
+  get display() {
+    const [flags] = this.flags.track(); // always tracked
+    if (flags.enabled) {
+      const [p] = this.livePrice.track(); // only tracked when feature is on
+      return p.price;
+    }
+    return this.state.base;
+  }
+}
+```
+
+When `flags.enabled` becomes `false` on the next render, the `LivePriceBloc` subscription and ref are released. Turning it back on re-subscribes.
+
+### Mutual dependencies and cycle safety
+
+Two blocs can safely track each other (`A.track(B)` + `B.track(A)`). The reconciler detects re-entrant tracking within the same render and unions the paths rather than re-acquiring. No infinite loop occurs.
+
+### `select` mode stays primary-only
+
+When a consumer uses the `select` option on `useBloc`, `.track()` degrades to live values (same as outside-render). The `select` callback runs against the primary bloc only. This is by design — `select` is a manual subscription that opts out of auto-tracking entirely.
 
 ## On-demand instance creation
 
