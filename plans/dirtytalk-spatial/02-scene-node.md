@@ -13,7 +13,7 @@ Implement `SceneNode` — the abstract base class for anything that paints. It o
 
 `SceneNode` doesn't know about the channel directly; it walks the node-and-ancestors chain to a `SceneRoot` and calls the root's `_emitDamage(...)`. The root holds the channel; Phase 3 wires it.
 
-> **`_root()` includes `this`.** The walk starts at `this`, not `this.parent`, so a node that is itself a root resolves to itself. This is what makes `SceneRoot.adoptChild(widget)` emit the adopt-time `paint` for a *direct* child of the root — if `_root()` only walked `this.parent`, the root's own `_root()` would be `null` and direct children would never get their first paint (and, since v1 is fully damage-driven with no forced initial render, a static scene attached only to the root would never draw a frame at all).
+> **`_root()` includes `this`.** The walk starts at `this`, not `this.parent`, so a node that is itself a root resolves to itself. This is what makes `SceneRoot.adoptChild(widget)` emit the adopt-time `paint` for a _direct_ child of the root — if `_root()` only walked `this.parent`, the root's own `_root()` would be `null` and direct children would never get their first paint (and, since v1 is fully damage-driven with no forced initial render, a static scene attached only to the root would never draw a frame at all).
 
 ---
 
@@ -276,7 +276,7 @@ Required cases:
 7. **`batch` collects same-kind damages into one entry** with a union rect.
 8. **`batch` emits per-kind entries** when multiple kinds present.
 9. **Nested `batch`** — outer batch absorbs inner; only outer emits.
-10. **`adoptChild` emits a `paint` for the child's bounds** when the parent is connected to a root. Cover both shapes: (a) adopting directly onto a `StubRoot` (`root.adoptChild(child)` — `_root()` resolves to the root *itself*, so the emit fires), and (b) adopting onto an intermediate node that is itself attached to a root.
+10. **`adoptChild` emits a `paint` for the child's bounds** when the parent is connected to a root. Cover both shapes: (a) adopting directly onto a `StubRoot` (`root.adoptChild(child)` — `_root()` resolves to the root _itself_, so the emit fires), and (b) adopting onto an intermediate node that is itself attached to a root.
 11. **`removeChild` emits a `paint` for the child's prior bounds** before clearing parent.
 12. **`clipsOverflow` ancestor clips a descendant's damage rect.**
 13. **Multiple `clipsOverflow` ancestors clip cumulatively.**
@@ -330,7 +330,7 @@ Required cases:
 - **`adoptChild` must remove from prior parent first.** Forgetting causes the node to appear in two children arrays — silent corruption. The spec implies it; make the implementation explicit.
 - **`removeChild` order: emit damage first, then clear `parent`.** Cleared parent means `markDamaged` no-ops, so the erase damage is lost. Tests catch this.
 - **`setBounds` order: erase damage uses prev rect, then assignment, then fill damage uses new rect.** Reversed order causes the erase damage to use the new rect (wrong).
-- **Clip applies to *descendant* damage, not own damage.** A node with `clipsOverflow: true` doesn't clip its own `markDamaged`-without-rect emit; it clips children's emits. The walk starts at `this.parent`, not `this` — get that wrong and the node clips itself out of existence.
+- **Clip applies to _descendant_ damage, not own damage.** A node with `clipsOverflow: true` doesn't clip its own `markDamaged`-without-rect emit; it clips children's emits. The walk starts at `this.parent`, not `this` — get that wrong and the node clips itself out of existence.
 - **`batch` must clear `_batchBuffer` in `finally`.** Otherwise an exception inside `fn` leaves the buffer stuck and subsequent marks are absorbed indefinitely. Tests don't cover this case; the `finally` is the safety net.
 - **Nested batch handling: inner is absorbed into outer.** Don't try to flush per inner-end — that breaks the "one logical action, one damage" semantic.
 - **Don't expose `_emitDamage` publicly.** It's package-private by underscore-convention. User code should call `markDamaged`. Phase 3's `SceneRoot` declares `_emitDamage` so this base class can find it via structural check.

@@ -7,6 +7,7 @@ import { renderWithBloc, renderWithRegistry } from '@blac/react/testing';
 ```
 
 ::: tip Which one do I use?
+
 - **One bloc to control?** Reach for `renderWithBloc` — it stubs and registers a single bloc in one call.
 - **Multiple blocs, or fine-grained setup?** Use `renderWithRegistry` and configure the registry yourself in a callback.
 
@@ -321,9 +322,10 @@ it('displays computed total', () => {
 The getter runs against real state, so you test real logic — not a mocked return value.
 
 ::: danger Common mistakes
+
 - **Mismatched `instanceKey`.** If the component resolves a named or args-keyed instance but you register the stub under `default`, the component will spin up its own real instance and ignore your stub. Match the key, or seed via `args`/`deps` so identity lines up.
 - **Asserting before React commits.** Direct bloc mutations need `act()`; user-driven flows need `await userEvent...`; async data needs `await screen.findBy*` (or `await flush()` then a sync query). A missing `await` is the usual cause of "the test sees the old UI."
-:::
+  :::
 
 ## See also
 

@@ -17,20 +17,20 @@ files:
 
 ## Context
 
-Task 09 (`70e5fb11`) replaced the shared `blocProxyCache` + `activeTrackerMap` with per-consumer proxies that each close over their own `GetterState`. **This is the intentional, desired design**: each `useBloc` consumer tracks only the state/getters that *it* uses and re-renders only when those change — independent of other consumers of the same bloc.
+Task 09 (`70e5fb11`) replaced the shared `blocProxyCache` + `activeTrackerMap` with per-consumer proxies that each close over their own `GetterState`. **This is the intentional, desired design**: each `useBloc` consumer tracks only the state/getters that _it_ uses and re-renders only when those change — independent of other consumers of the same bloc.
 
 After task 09, `pnpm --filter @blac/react test` reports 38 failures across 11 files. They are not all regressions in the old sense — many encode behaviors of the old shared-proxy model that are no longer the spec. This task aligns the test suite (and any real impl gaps) with the per-consumer ground truth.
 
 ## Triage (pre-categorized)
 
-| Category                                  | Count | Disposition                                                                                                                                                              |
-| ----------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **A. Proxy-identity assertions**          | 11    | Test bug. Per-consumer proxies are intentionally distinct. Rewrite to compare the **raw bloc instance** (via `BlacInstanceRegistry.get(BlocClass, instanceId)` or similar) instead of comparing return values of two `useBloc` calls.               |
-| **B. Single-consumer getter re-render**   | 16    | These assert that one consumer accessing a getter re-renders when that getter's value changes. Per-consumer design preserves this — same-consumer re-render is exactly what the design enables. **If they fail, it's a real impl bug; root-cause and fix in `tracking-proxy.ts` / `adapter/index.ts`.** Do not rewrite the assertion. |
-| **C. Cross-bloc / external deps**         | 8     | Same as B for the consumer that depends on the external bloc — the test's consumer should still re-render when its `depend()`-resolved external bloc changes. **Real impl bug; root-cause and fix.** Do not rewrite away.                          |
-| **D. Filtered-list (getter value)**       | 3     | Same as B — a consumer reading a derived list-getter should re-render when the underlying state changes. **Real impl bug; root-cause and fix.**                          |
+| Category                                | Count | Disposition                                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A. Proxy-identity assertions**        | 11    | Test bug. Per-consumer proxies are intentionally distinct. Rewrite to compare the **raw bloc instance** (via `BlacInstanceRegistry.get(BlocClass, instanceId)` or similar) instead of comparing return values of two `useBloc` calls.                                                                                                 |
+| **B. Single-consumer getter re-render** | 16    | These assert that one consumer accessing a getter re-renders when that getter's value changes. Per-consumer design preserves this — same-consumer re-render is exactly what the design enables. **If they fail, it's a real impl bug; root-cause and fix in `tracking-proxy.ts` / `adapter/index.ts`.** Do not rewrite the assertion. |
+| **C. Cross-bloc / external deps**       | 8     | Same as B for the consumer that depends on the external bloc — the test's consumer should still re-render when its `depend()`-resolved external bloc changes. **Real impl bug; root-cause and fix.** Do not rewrite away.                                                                                                             |
+| **D. Filtered-list (getter value)**     | 3     | Same as B — a consumer reading a derived list-getter should re-render when the underlying state changes. **Real impl bug; root-cause and fix.**                                                                                                                                                                                       |
 
-**Rule of thumb:** if the test asserts behavior *of a single consumer's view of its own state/getters*, that behavior MUST still hold under per-consumer design — root-cause any failure and fix in impl. If the test asserts cross-consumer identity or assumes a shared tracker, rewrite the test.
+**Rule of thumb:** if the test asserts behavior _of a single consumer's view of its own state/getters_, that behavior MUST still hold under per-consumer design — root-cause any failure and fix in impl. If the test asserts cross-consumer identity or assumes a shared tracker, rewrite the test.
 
 For each failing test, list the file + name in the completion block with chosen disposition (rewrote test / fixed impl) and a one-line justification.
 
@@ -73,7 +73,7 @@ const raw = BlacInstanceRegistry.get(CounterCubit, 'shared');
 expect(raw).toBe(/* the same raw across both consumers */);
 ```
 
-If the test doesn't have access to a registry lookup, an alternative is to compare a `bloc.constructor === bloc.constructor` (always true) plus assert via *behavior* (e.g., both consumers observe the same `state` value after an update) rather than via `===`. Prefer the registry lookup if available — it's the most direct assertion of the actual invariant.
+If the test doesn't have access to a registry lookup, an alternative is to compare a `bloc.constructor === bloc.constructor` (always true) plus assert via _behavior_ (e.g., both consumers observe the same `state` value after an update) rather than via `===`. Prefer the registry lookup if available — it's the most direct assertion of the actual invariant.
 
 ### B/C/D — Investigate impl; root-cause and fix
 
@@ -157,7 +157,7 @@ Use `pnpm --filter @blac/react test -- <file>` to iterate on one file at a time.
 **Tests rewritten (Category A — 11 react + 2 preact):**
 
 Each pre-existing assertion `expect(blocA).toBe(blocB)` compared two `useBloc`
-consumers' *proxy* references, which under the per-consumer design are
+consumers' _proxy_ references, which under the per-consumer design are
 intentionally distinct. The rewrite swaps the contract to identity of the
 underlying raw bloc (via `borrow(BlocClass, instanceId)` from `@blac/core`)
 combined with a behavioural assertion (mutate via raw, both consumer proxies
@@ -199,11 +199,11 @@ consumers, masking three subtler bugs:
 2. **`packages/blac-adapter/src/index.ts` (`autoTrackSnapshot`)** — the
    original snapshot called `commitTrackedGetters` at its top, which moved
    `currentlyAccessing` into `trackedGetters`. But `useSyncExternalStore`
-   calls `getSnapshot` *multiple* times per render attempt, and the second
+   calls `getSnapshot` _multiple_ times per render attempt, and the second
    call (with `currentlyAccessing` already cleared by the first) wiped
    `trackedGetters` to ∅ before the post-render commit ran. **Fix:** stop
    committing at snapshot time. Instead, only flip
-   `isTracking` from false→true on the *first* call after a post-render
+   `isTracking` from false→true on the _first_ call after a post-render
    commit, and clear `currentlyAccessing` only on that transition. Subsequent
    in-render snapshots are no-ops for tracker state, preserving the accesses
    recorded by the render itself.
@@ -231,8 +231,8 @@ the normal "replace on real render" case and the new
 
 **Test result:**
 
-- `pnpm --filter @blac/core test`     — 528 / 528 pass (27 files).
-- `pnpm --filter @blac/adapter test`  — 34 / 34 pass (2 files).
-- `pnpm --filter @blac/react test`    — 184 / 184 pass (24 files).
-- `pnpm --filter @blac/preact test`   — 10 / 10 pass (1 file).
+- `pnpm --filter @blac/core test` — 528 / 528 pass (27 files).
+- `pnpm --filter @blac/adapter test` — 34 / 34 pass (2 files).
+- `pnpm --filter @blac/react test` — 184 / 184 pass (24 files).
+- `pnpm --filter @blac/preact test` — 10 / 10 pass (1 file).
 - All four packages also `tsc --noEmit` clean.

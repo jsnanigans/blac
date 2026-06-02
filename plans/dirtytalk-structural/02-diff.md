@@ -91,7 +91,7 @@ export const pathsFromPatch = <S>(
 ): PathSet;
 ```
 
-- Walk the patch tree depth-first. For each leaf key, intern the dotted path and add to the result set. Non-leaf branches (plain objects) also add themselves: a patch of `{ user: { email: 'x' } }` records *both* `"user"` and `"user.email"` (consumers of the parent path must wake up too).
+- Walk the patch tree depth-first. For each leaf key, intern the dotted path and add to the result set. Non-leaf branches (plain objects) also add themselves: a patch of `{ user: { email: 'x' } }` records _both_ `"user"` and `"user.email"` (consumers of the parent path must wake up too).
 - Arrays in a patch are treated as **leaves** — i.e., a `patch({ items: [...] })` records `"items"`, not per-index entries. Arrays are atomic replacements in patch semantics.
 - `null` / `undefined` values are leaves.
 - `basePath` defaults to `""`. Used internally for recursion; not typically passed by callers.
@@ -103,7 +103,8 @@ const isPlainPatchObject = (v: unknown): v is Record<string, unknown> =>
   v !== null &&
   typeof v === 'object' &&
   !Array.isArray(v) &&
-  (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null);
+  (Object.getPrototypeOf(v) === Object.prototype ||
+    Object.getPrototypeOf(v) === null);
 ```
 
 Class instances are leaves (patching with a class instance replaces the whole branch). This matches the principle of least surprise.
@@ -188,7 +189,7 @@ Class instances are leaves (patching with a class instance replaces the whole br
 - **Don't auto-strip `__proto__` / inherited props in `getAt`.** Bracket access already won't reach prototype methods for typical state shapes; over-defending costs and doesn't catch realistic bugs.
 - **`pathsFromPatch` must include intermediate paths.** A consumer of `"user"` must wake when `patch({ user: { email: 'x' } })` runs — even if it doesn't read `user.email` itself. Tree-pulses-up-the-chain semantics.
 - **Don't treat all objects as recursable in `pathsFromPatch`.** Class instances, Maps, Sets, Dates are leaves. Test with `Date` to make the boundary obvious.
-- **Don't write a "deep equals" for `equalsAt`'s default.** Default is `Object.is` — *reference equality* on objects. The whole point of immutable update is that consumers can rely on `===` to fast-skip. Writing a recursive deep-equals defeats that contract and is the wrong default.
-- **Don't intern paths greedily.** Only intern paths you're returning. If `equalsAt` says "equal", the path is *not* in the result and shouldn't get an ID. (Wait — but `interner.intern(pathStr)` is idempotent and cheap; calling it eagerly is fine. The real cost is in the map size growing. For v1, eager intern is acceptable since the skeleton's path IDs are already interned by the tracker.)
+- **Don't write a "deep equals" for `equalsAt`'s default.** Default is `Object.is` — _reference equality_ on objects. The whole point of immutable update is that consumers can rely on `===` to fast-skip. Writing a recursive deep-equals defeats that contract and is the wrong default.
+- **Don't intern paths greedily.** Only intern paths you're returning. If `equalsAt` says "equal", the path is _not_ in the result and shouldn't get an ID. (Wait — but `interner.intern(pathStr)` is idempotent and cheap; calling it eagerly is fine. The real cost is in the map size growing. For v1, eager intern is acceptable since the skeleton's path IDs are already interned by the tracker.)
 - **Avoid coupling to `container.ts`.** This module knows nothing about Containers. It takes a `PathInterner` and a `PathSet`. The container plumbs them in.
-- **Path strings here must match the tracker's emitted format exactly.** Dot-separated. No leading dot. Array indices as numeric strings. If the tracker and diff disagree on format, the skeleton walk silently misses changes. Add at least one test that uses paths *produced by the tracker* (use a real `trackRender` call to populate `skeleton`, then diff — this is the cross-module sanity check before integration).
+- **Path strings here must match the tracker's emitted format exactly.** Dot-separated. No leading dot. Array indices as numeric strings. If the tracker and diff disagree on format, the skeleton walk silently misses changes. Add at least one test that uses paths _produced by the tracker_ (use a real `trackRender` call to populate `skeleton`, then diff — this is the cross-module sanity check before integration).

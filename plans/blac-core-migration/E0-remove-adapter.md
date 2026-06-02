@@ -51,7 +51,7 @@ If you find a live importer that you weren't expecting, **do not** edit it here.
 1. **Check.**
    - `git status` clean.
    - D0, D1, D2 have committed.
-   - `rg "@blac/adapter" --type ts --type tsx -l | grep -v "^packages/blac-adapter/"` returns zero lines. If it returns *any* line, stop.
+   - `rg "@blac/adapter" --type ts --type tsx -l | grep -v "^packages/blac-adapter/"` returns zero lines. If it returns _any_ line, stop.
 
 2. **Implement.**
    - `rm -rf packages/blac-adapter`.
@@ -72,6 +72,7 @@ If you find a live importer that you weren't expecting, **do not** edit it here.
    ```
 
    Body:
+
    ```
    - Removed packages/blac-adapter (N files).
    - Tracker functionality now lives in @dirtytalk/structural's
@@ -94,6 +95,6 @@ If you find a live importer that you weren't expecting, **do not** edit it here.
 
 - **`pnpm-workspace.yaml`** likely uses `packages/*` — no explicit entry to remove. Double-check before editing.
 - **Lockfile changes.** `pnpm-lock.yaml` will lose references to `@blac/adapter`. Commit the lockfile change with the deletion.
-- **Plugin packages** (logging, persist, devtools-connect, devtools-ui) might still import from adapter. Per the plan, F-phase rewrites them — but F-phase runs *after* E0. If F-phase plugins still import adapter at E0 time, **that's a bug** — F-phase should have already landed before E0. Wait, that's not what the phase graph says: phase graph has E0 → F. So plugins may still need adapter imports at this point.
+- **Plugin packages** (logging, persist, devtools-connect, devtools-ui) might still import from adapter. Per the plan, F-phase rewrites them — but F-phase runs _after_ E0. If F-phase plugins still import adapter at E0 time, **that's a bug** — F-phase should have already landed before E0. Wait, that's not what the phase graph says: phase graph has E0 → F. So plugins may still need adapter imports at this point.
 - **Re-read the phase graph in the README.** E0 deletes the package **after D2** and **before F**. If plugins still depend on `@blac/adapter`, they will break during F-phase. F-phase must already plan to import directly from `@blac/core` / `@dirtytalk/structural`. **Coordinate via this commit's body:** if you find any F-target plugin still imports adapter, flag the specific files in the commit body so F-phase agents know what to fix first.
 - **No deletion of plugin source.** Even if a plugin imports `@blac/adapter`, that's F-phase territory. This task only deletes `packages/blac-adapter/`. The plugin will fail to typecheck/build until F lands — that's acceptable; F-phase's first agent verifies their package compiles.

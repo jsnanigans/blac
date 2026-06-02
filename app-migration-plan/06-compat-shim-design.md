@@ -34,8 +34,11 @@ export { Cubit, BlacReact, BlocObserver };
 // from 'blac-next' (v1, via workspace alias)
 export { Blac, Cubit, Bloc, BlocBase, BlacEvent };
 export type {
-  BlocConstructor, BlocGeneric, BlocState,
-  BlocHookDependencyArrayFn, InferPropsFromGeneric,
+  BlocConstructor,
+  BlocGeneric,
+  BlocState,
+  BlocHookDependencyArrayFn,
+  InferPropsFromGeneric,
 };
 
 // from '@blac/react' (v1, via workspace alias)
@@ -60,7 +63,8 @@ export abstract class Cubit<S, _P = null> extends V2Cubit<S> {
 ```
 
 **Notes.**
-- v2's `Cubit.emit` is *public* (v1 also exposes public `emit`), so no signature change.
+
+- v2's `Cubit.emit` is _public_ (v1 also exposes public `emit`), so no signature change.
 - v1's `_pushState`, `_dispose`, `_id`, `_observer.subscribe` were internal — no app code calls them, so we don't ship those.
 - The `P` type parameter is preserved to keep TypeScript happy for `class X extends Cubit<S, P>` and `BlocBase<S, P>` form.
 
@@ -69,8 +73,12 @@ export abstract class Cubit<S, _P = null> extends V2Cubit<S> {
 ```ts
 // src/Blac.ts
 import {
-  ensure, acquire, release, getAll,
-  getPluginManager, getRegistry,
+  ensure,
+  acquire,
+  release,
+  getAll,
+  getPluginManager,
+  getRegistry,
   type StateContainerConstructor,
 } from '@blac/core';
 import { applyStaticConfig } from './statics';
@@ -82,7 +90,7 @@ class BlacFacade {
     BlocClass: C,
     options?: { id?: string; props?: any; instanceRef?: string },
   ): InstanceType<C> {
-    applyStaticConfig(BlocClass);                        // honors static keepAlive / isolated (E2/E3)
+    applyStaticConfig(BlocClass); // honors static keepAlive / isolated (E2/E3)
     const instance = ensure(BlocClass, options?.id) as InstanceType<C>;
     if (options?.props !== undefined) {
       // Best-effort props injection for the shim phase.
@@ -135,7 +143,10 @@ import { getPluginManager, type BlacPlugin } from '@blac/core';
 export class BlocObserver {
   constructor(
     private readonly methods: {
-      onChange?: (bloc: any, event: { currentState: any; nextState: any }) => void;
+      onChange?: (
+        bloc: any,
+        event: { currentState: any; nextState: any },
+      ) => void;
       onTransition?: (bloc: any, event: any) => void;
       onBlocAdded?: (bloc: any) => void;
       onBlocRemoved?: (bloc: any) => void;
@@ -195,7 +206,7 @@ export class BlacReact {
 }
 ```
 
-**Caveat / known limitation.** v0's `BlacReact` *truly* scoped blocs to a per-app instance. v2 has a single global registry per process. For user-fe this is fine because there's one `BlacReact` per app, and the apps run in separate bundles. If we ever needed two coexisting apps in one runtime, the shim would need to swap registries via `setRegistry()`.
+**Caveat / known limitation.** v0's `BlacReact` _truly_ scoped blocs to a per-app instance. v2 has a single global registry per process. For user-fe this is fine because there's one `BlacReact` per app, and the apps run in separate bundles. If we ever needed two coexisting apps in one runtime, the shim would need to swap registries via `setRegistry()`.
 
 ## 7. `BlocProvider` — v0 component → E1
 

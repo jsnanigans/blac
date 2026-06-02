@@ -5,6 +5,7 @@
 **Subjects:** `@blac/core` + `@blac/react` v2.0.x, as consumed by `user-fe-reviews` (mid-migration, compat shim) and `phylon` (clean-slate v2).
 
 > The two projects are almost perfect opposites in how they use BlaC, which makes their **agreements** strong signals.
+>
 > - **user-fe-reviews**: many short-lived, prop-driven, per-instance cubits (forms, schedulers, file upload, carousels). ~99% still on the v1 compat shim; `packages/shared` is the only honest v2 surface.
 > - **phylon**: 21 long-lived global-singleton cubits in a dependency DAG, wired with `this.depend()` + module-level `watch()`. No props, no scoped instances. Direct v2, no shim.
 >
@@ -32,14 +33,14 @@ A surprising amount of friction is **discoverability**, not capability. Before b
 
 ### 2a. Already solved — the consumers just didn't use it
 
-| Capability that exists | Evidence it's unknown/unused | What to do |
-|---|---|---|
-| **`this.depend(Other)`** cross-bloc deps | user-fe-reviews: **0 uses** across 400+ cubit-lookup sites; they hand-roll observer subscriptions (`TaskListBloc.ts:89-103`). phylon: uses it heavily and it works great. | Pure discoverability gap. Document as THE cross-bloc pattern; show the before/after vs manual subscriptions. |
-| **`dependencies:` selector** in `useBloc` | **0 uses in both projects.** phylon reaches for `{ autoTrack: false }` instead; user-fe-reviews distrusts it (documented risk R8). | Re-document with a crisp "use this when auto-track over-renders" recipe. Investigate *why* it's distrusted (see §4). |
-| **Hydration API** (`beginHydration`/`applyHydratedState`/`waitForHydration`) | phylon rolled its own `localStorage` in `LayoutCubit`. | The API is SSR-persistence-shaped, not "persist this cubit to localStorage." Either document the localStorage recipe or add a persistence helper (see §3.6). |
-| **`testing` entry points** (core + react: `renderWithBloc`, `createCubitStub`, `withBlocState`, …) | phylon: **0 test files import `@blac`**; the gnarly `AnnotationsCubit` merge logic is untested. | Discoverability. README needs a "Testing" section with the recipe; the entry points are invisible right now. |
-| **`useBloc` `onMount`/`onUnmount`** | Underused; user-fe-reviews mutates in render body instead. | Document as the sanctioned init channel — but note it's insufficient for *changing* props (see §3.1). |
-| **`watch(instance(C, id))`** for named instances | Unused; `watch(BareClass)` only resolves the `default` instance — a silent footgun if you have named instances. | Document; consider a dev warning when watching a class that has only named instances. |
+| Capability that exists                                                                             | Evidence it's unknown/unused                                                                                                                                              | What to do                                                                                                                                                   |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **`this.depend(Other)`** cross-bloc deps                                                           | user-fe-reviews: **0 uses** across 400+ cubit-lookup sites; they hand-roll observer subscriptions (`TaskListBloc.ts:89-103`). phylon: uses it heavily and it works great. | Pure discoverability gap. Document as THE cross-bloc pattern; show the before/after vs manual subscriptions.                                                 |
+| **`dependencies:` selector** in `useBloc`                                                          | **0 uses in both projects.** phylon reaches for `{ autoTrack: false }` instead; user-fe-reviews distrusts it (documented risk R8).                                        | Re-document with a crisp "use this when auto-track over-renders" recipe. Investigate _why_ it's distrusted (see §4).                                         |
+| **Hydration API** (`beginHydration`/`applyHydratedState`/`waitForHydration`)                       | phylon rolled its own `localStorage` in `LayoutCubit`.                                                                                                                    | The API is SSR-persistence-shaped, not "persist this cubit to localStorage." Either document the localStorage recipe or add a persistence helper (see §3.6). |
+| **`testing` entry points** (core + react: `renderWithBloc`, `createCubitStub`, `withBlocState`, …) | phylon: **0 test files import `@blac`**; the gnarly `AnnotationsCubit` merge logic is untested.                                                                           | Discoverability. README needs a "Testing" section with the recipe; the entry points are invisible right now.                                                 |
+| **`useBloc` `onMount`/`onUnmount`**                                                                | Underused; user-fe-reviews mutates in render body instead.                                                                                                                | Document as the sanctioned init channel — but note it's insufficient for _changing_ props (see §3.1).                                                        |
+| **`watch(instance(C, id))`** for named instances                                                   | Unused; `watch(BareClass)` only resolves the `default` instance — a silent footgun if you have named instances.                                                           | Document; consider a dev warning when watching a class that has only named instances.                                                                        |
 
 ### 2b. Doesn't exist — genuine gaps (see §3 for proposals)
 
@@ -65,7 +66,7 @@ Priority = (frequency across both projects) × (friction removed) ÷ (implementa
 
 - `user-fe-reviews`: `bloc.props = props` (`AutoForm.tsx:23`), `cubit.setProps/setEmblaApi/setTotalSlides/setSlideNames(...)` in render (`Carousel.tsx:66-82`), `cubit.setRefs({inputRef})` (`FileUploadBox.tsx:228`), `cubit.setConfig(options)` (`useFileUploadState.ts:8`).
 - The "props" concept is reinvented in **3 incompatible shapes** (`props =`, `setProps`, `initWithProps`) — some idempotent, some that reset state (`UserDetailsCubit.ts:73`, `AutoFormBloc.ts:150`).
-- `onMount` only fires once, so it can't track *changing* props; devs add a second `useEffect` to re-sync, find it verbose, and fall back to render-mutation.
+- `onMount` only fires once, so it can't track _changing_ props; devs add a second `useEffect` to re-sync, find it verbose, and fall back to render-mutation.
 
 This reintroduces exactly the hazard the prop-slot removal was meant to prevent: emits during render, stale closures, StrictMode/concurrent flakiness.
 
@@ -81,6 +82,7 @@ class CarouselCubit extends Cubit<CarouselState> {
   }
 }
 ```
+
 ```tsx
 const [state, cubit] = useBloc(CarouselCubit, { inputs: { slides, emblaApi } });
 // library diffs inputs, updates cubit.inputs, calls onInputsChanged — never during render
@@ -95,10 +97,12 @@ Key properties: synced in a layout effect (not render), shallow-diffed, availabl
 ### 🔴 P0 — A computed/derived-state primitive
 
 **Problem.** Neither project has a clean way to express "state derived from other state (or other blocs), memoized." Today the options are:
-- Plain getters — re-evaluated on *every* change-check, no memoization.
+
+- Plain getters — re-evaluated on _every_ change-check, no memoization.
 - `dependencies:` selector — disables auto-track, distrusted, unused.
 
 So both hand-roll it:
+
 - **phylon**: "derived cubit" = subscribe-to-everything + per-field identity guards (`SceneCubit.ts:50-60` `lastPushedAnalysis`) + manual `recompute()` calls peppered after every mutator (`AnnotationsCubit.ts:257,265,297…`). Forget a `recompute()` and the derived value is silently stale.
 - **user-fe-reviews**: derived calculations leak into components (the very thing their CLAUDE.md bans), or into ad-hoc cubit getters.
 
@@ -109,7 +113,7 @@ class SceneCubit extends Cubit<SceneState> {
   // recomputes only when tracked reads change; memoized by reference
   readonly visibleNodes = this.computed(() => {
     const { nodes } = this.depend(TreeCubit)();
-    return nodes.filter(n => n.visible);
+    return nodes.filter((n) => n.visible);
   });
 }
 ```
@@ -129,6 +133,7 @@ private unsubs: Array<() => void> = [];
 // ... push watch() teardowns into unsubs ...
 onSystemEvent("dispose") { this.unsubs.forEach(u => u()); }
 ```
+
 with an explicit `// or it throws` comment (`MissingAttrsCubit.ts:32-36`) and `isDisposed` guards in every callback. This is phylon's single most-repeated boilerplate. In user-fe-reviews the same need shows up as hand-rolled subscribe-and-store-unsubscribe (`TaskListBloc.ts:89-103`).
 
 **Proposal — `this.watch(...)` on `StateContainer`** that registers the teardown internally and runs it on dispose, with the callback automatically skipped after disposal:
@@ -142,7 +147,7 @@ class MissingAttrsCubit extends Cubit<S> {
 }
 ```
 
-Note: `this.depend(Other)` already handles the *reactive read* case cleanly. `this.watch` covers the *imperative side-effect on change* case (e.g. "when scene changes, re-upload GPU buffers"). Both should be lifecycle-bound and documented as a pair.
+Note: `this.depend(Other)` already handles the _reactive read_ case cleanly. `this.watch` covers the _imperative side-effect on change_ case (e.g. "when scene changes, re-upload GPU buffers"). Both should be lifecycle-bound and documented as a pair.
 
 **Why now:** pure boilerplate elimination, low implementation cost, removes a documented correctness footgun ("or it throws").
 
@@ -155,8 +160,9 @@ Note: `this.depend(Other)` already handles the *reactive read* case cleanly. `th
 Relatedly, nothing stops `Blac.getBloc(X).field = y` (`AppointmentScheduler.tsx:249`) — mutating a bloc outside a state transition, which can even create a detached instance.
 
 **Proposal:**
+
 1. Warn (dev only) when `useBloc` receives an option key not in the known set. Cheap; catches an entire class of silent migration breakage.
-2. Consider `exactOptionalPropertyTypes`-style typing so a stray `props` key is a *type* error, not just a runtime warning.
+2. Consider `exactOptionalPropertyTypes`-style typing so a stray `props` key is a _type_ error, not just a runtime warning.
 3. (Stretch) Dev-mode `Object.freeze`/Proxy guard on state read outside a transition, pointing users at `emit`/`patch`/inputs.
 
 **Why now:** trivially cheap, and it directly prevents the "dead callbacks that pass type-check" failure mode that the silent-option-drop created.
@@ -165,18 +171,25 @@ Relatedly, nothing stops `Blac.getBloc(X).field = y` (`AppointmentScheduler.tsx:
 
 ### 🟠 P1 — Transient event / command channel
 
-**Problem.** BlaC only models **retained state**. When one part of the app needs to *command* another ("focus the search box", "reveal this attribute"), there's no channel — so phylon bypasses blac entirely with `window` CustomEvents (`phylon:focus-search`, `phylon:reveal-attribute`, `phylon:reveal-style-section`). user-fe-reviews has the mirror image: domain-event subscriptions hand-rolled on top of cubits (`TaskListBloc.ts`).
+**Problem.** BlaC only models **retained state**. When one part of the app needs to _command_ another ("focus the search box", "reveal this attribute"), there's no channel — so phylon bypasses blac entirely with `window` CustomEvents (`phylon:focus-search`, `phylon:reveal-attribute`, `phylon:reveal-style-section`). user-fe-reviews has the mirror image: domain-event subscriptions hand-rolled on top of cubits (`TaskListBloc.ts`).
 
 **Proposal — a one-shot effect/command emitter** distinct from state, that React can subscribe to without it becoming part of the re-render surface:
 
 ```ts
 class SearchCubit extends Cubit<S> {
   focusRequested = this.signal(); // transient, not retained
-  requestFocus() { this.focusRequested.emit(); }
+  requestFocus() {
+    this.focusRequested.emit();
+  }
 }
 ```
+
 ```tsx
-useBlocEffect(SearchCubit, c => c.focusRequested, () => inputRef.current?.focus());
+useBlocEffect(
+  SearchCubit,
+  (c) => c.focusRequested,
+  () => inputRef.current?.focus(),
+);
 ```
 
 This keeps imperative coordination inside the blac graph (debuggable, testable) instead of escaping to the global event bus.
@@ -187,7 +200,7 @@ This keeps imperative coordination inside the blac graph (debuggable, testable) 
 
 ### 🟠 P1 — Actions-only / no-subscribe handle
 
-**Problem.** Components that only *call methods* still subscribe to the full state and re-render on every change. phylon's workaround is to make `{ autoTrack: false }` the **default** on most `useBloc` calls — effectively turning off the headline tracking feature app-wide and overloading it to mean both "don't subscribe" and "I read deep state the tracker can't see."
+**Problem.** Components that only _call methods_ still subscribe to the full state and re-render on every change. phylon's workaround is to make `{ autoTrack: false }` the **default** on most `useBloc` calls — effectively turning off the headline tracking feature app-wide and overloading it to mean both "don't subscribe" and "I read deep state the tracker can't see."
 
 **Proposal — an explicit actions accessor** that subscribes to nothing:
 
@@ -204,7 +217,7 @@ Making intent explicit lets `autoTrack` go back to meaning what it should, and r
 
 ### 🟡 P2 — Deeper/non-plain state tracking
 
-**Problem.** The proxy tracker only sees plain objects/arrays (capped at depth 10) and returns Map/Set/Date/class instances **raw** — reads through them aren't tracked, and `_`/`$$`-prefixed keys are silently untracked. This is part of *why* phylon defaults to `autoTrack: false`: it reads deep nested objects the tracker can't follow.
+**Problem.** The proxy tracker only sees plain objects/arrays (capped at depth 10) and returns Map/Set/Date/class instances **raw** — reads through them aren't tracked, and `_`/`$$`-prefixed keys are silently untracked. This is part of _why_ phylon defaults to `autoTrack: false`: it reads deep nested objects the tracker can't follow.
 
 **Proposal.** At minimum, document the boundaries loudly (a "what auto-track can and can't see" table). Better: support Map/Set tracking, and dev-warn when a tracked read crosses into an untrackable value so `autoTrack:false` becomes an informed choice, not a guess.
 
@@ -236,6 +249,7 @@ These are outright defects surfaced by the capabilities audit; cheap and confide
 The manual `dependencies:` selector is the library's intended answer to "auto-track over-renders," yet it has **zero uses in either project**, and both independently route around it (phylon → `autoTrack:false`, user-fe-reviews → documented distrust, risk R8). That's not an accident.
 
 **Hypotheses to test:**
+
 - Does providing `dependencies:` disable auto-track entirely (all-or-nothing), making it feel risky?
 - Are the docs/examples missing, so nobody reaches for it?
 - Is the failure mode (forget a field → missed re-render) too punishing vs auto-track's "just works"?
@@ -260,12 +274,12 @@ Recommendation: either promote these (docs + examples) or treat their non-adopti
 
 ## 6. Suggested roadmap
 
-| Phase | Items | Theme |
-|---|---|---|
-| **1 — Stop the bleeding** | P3 doc/type fixes; P1 unknown-option warning | Cheap correctness; prevents silent bugs |
-| **2 — Close the big gaps** | P0 inputs channel; P0 lifecycle-bound `this.watch` | Kills the top anti-patterns |
-| **3 — Derivation & coordination** | P0 computed primitive; P1 transient signals; P1 actions-only | Removes hand-rolled reactivity |
-| **4 — Discoverability** | Docs for `depend`/`dependencies`/testing/hydration; the §4 investigation; trim or promote §5 subsystems | Recover features that already exist |
-| **5 — Polish** | P2 deep tracking; P2 persistence helper | Long-tail friction |
+| Phase                             | Items                                                                                                   | Theme                                   |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **1 — Stop the bleeding**         | P3 doc/type fixes; P1 unknown-option warning                                                            | Cheap correctness; prevents silent bugs |
+| **2 — Close the big gaps**        | P0 inputs channel; P0 lifecycle-bound `this.watch`                                                      | Kills the top anti-patterns             |
+| **3 — Derivation & coordination** | P0 computed primitive; P1 transient signals; P1 actions-only                                            | Removes hand-rolled reactivity          |
+| **4 — Discoverability**           | Docs for `depend`/`dependencies`/testing/hydration; the §4 investigation; trim or promote §5 subsystems | Recover features that already exist     |
+| **5 — Polish**                    | P2 deep tracking; P2 persistence helper                                                                 | Long-tail friction                      |
 
 **If only three things get built:** the **inputs channel**, the **computed primitive**, and **lifecycle-bound `this.watch`**. They map 1:1 onto the three most-repeated, cross-project anti-patterns and would let user-fe-reviews finish its migration without the render-mutation crutch.

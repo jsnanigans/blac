@@ -15,8 +15,8 @@ commit.
 
 ## Task 1.A — Embed the demo on the landing page
 
-- **Model / effort:** Haiku 4.5 / medium. *Rationale: mechanical — reuse the
-  proven embed from `sandpack-spike.md`; no new logic, build is the safety net.*
+- **Model / effort:** Haiku 4.5 / medium. _Rationale: mechanical — reuse the
+  proven embed from `sandpack-spike.md`; no new logic, build is the safety net._
 - **Parallel group:** P1 (with 1.B).
 - **Owns:** `apps/docs/index.md`.
 - **Context to read:** `apps/docs/sandpack-spike.md` (the working embed),
@@ -30,13 +30,16 @@ re-register.
 **IMPLEMENT:** After the "Quick Example" static block, add a new section
 ("See it: only the reader re-renders" or similar) with a 1–2 sentence framing of
 per-consumer tracking, then the embed copied from the spike page:
+
 ```md
 <script setup>
 import { perConsumerTrackingFiles } from './demos/per-consumer-tracking';
 </script>
+
 ...
 <BlacSandpack :files="perConsumerTrackingFiles" active-file="/App.tsx" :editor-height="500" />
 ```
+
 Keep the home `layout: home` frontmatter. Place the `<script setup>` block once,
 at the top after frontmatter.
 
@@ -50,8 +53,8 @@ enough (SSR-safety already proven for `<BlacSandpack>`).
 
 ## Task 1.B — Embed the demo on the useBloc page
 
-- **Model / effort:** Haiku 4.5 / medium. *Rationale: same mechanical embed,
-  different host page.*
+- **Model / effort:** Haiku 4.5 / medium. _Rationale: same mechanical embed,
+  different host page._
 - **Parallel group:** P1 (with 1.A).
 - **Owns:** `apps/docs/react/use-bloc.md`.
 - **Context to read:** `apps/docs/sandpack-spike.md`,
@@ -74,8 +77,8 @@ file.
 
 ## Task 1.C — Remove the spike page (serial, human-gated)
 
-- **Model / effort:** Haiku 4.5 / low. *Rationale: a delete + grep for dangling
-  refs.*
+- **Model / effort:** Haiku 4.5 / low. _Rationale: a delete + grep for dangling
+  refs._
 - **Depends on:** 1.A and 1.B committed, **and** a human confirming the demo
   renders on `/` and `/react/use-bloc` via `pnpm -F @blac/docs dev`.
 - **Owns:** `apps/docs/sandpack-spike.md` (delete).

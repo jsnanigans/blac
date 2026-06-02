@@ -6,7 +6,7 @@ This page teaches `@dirtytalk/structural` by doing. You will build a small state
 
 `@dirtytalk/structural` is a state container for **structural data** — plain objects and arrays whose consumers care about specific named paths (`user.name`, `items`, `count`). When you mutate the state, it works out which paths actually changed and wakes only the consumers that read those paths. A component that read `state.count` will not re-render because `state.label` changed.
 
-It is built on [`@dirtytalk/engine`](/dirtytalk/engine/getting-started), which provides the dirty-tracking channel and the schedulers that decide *when* notifications fire. The engine is a runtime dependency — you will import schedulers from it directly.
+It is built on [`@dirtytalk/engine`](/dirtytalk/engine/getting-started), which provides the dirty-tracking channel and the schedulers that decide _when_ notifications fire. The engine is a runtime dependency — you will import schedulers from it directly.
 
 ## Install
 
@@ -62,9 +62,12 @@ class Counter extends StructuralContainer<CounterState> {
 
 // The constructor takes (initial, options). For deterministic, synchronous
 // behaviour (tests, SSR, this walkthrough) pass a SyncScheduler from the engine.
-const counter = new Counter({ count: 0, label: 'clicks' }, {
-  scheduler: new SyncScheduler(),
-});
+const counter = new Counter(
+  { count: 0, label: 'clicks' },
+  {
+    scheduler: new SyncScheduler(),
+  },
+);
 ```
 
 ::: warning Schedulers come from the engine
@@ -73,7 +76,7 @@ You import `SyncScheduler` from `@dirtytalk/engine`, and you pass it as `options
 
 ### 2. Subscribe through the channel using `ALL_PATHS`
 
-Every container exposes a `subscribe(interest, cb)` method that passes straight through to the underlying [`DirtyChannel`](/dirtytalk/engine/concepts). `interest` is a thunk returning the set of paths this subscriber cares about. For a devtools-style subscriber that wants to hear about *every* change, return the `ALL_PATHS` sentinel.
+Every container exposes a `subscribe(interest, cb)` method that passes straight through to the underlying [`DirtyChannel`](/dirtytalk/engine/concepts). `interest` is a thunk returning the set of paths this subscriber cares about. For a devtools-style subscriber that wants to hear about _every_ change, return the `ALL_PATHS` sentinel.
 
 ```ts
 import { ALL_PATHS } from '@dirtytalk/structural';
@@ -96,7 +99,7 @@ unsubscribe(); // stop listening
 ```
 
 ::: info Single-consumer shortcut
-With at most one registered consumer, `emit`/`update` skip diffing and mark `ALL_PATHS` — the lone consumer wakes on any change. Raw `subscribe` callers like the one above do not count toward that registry (they never call `registerConsumerPaths`), so a `subscribe` returning `ALL_PATHS` always hears every change regardless. Fine-grained, path-level isolation kicks in once there are two or more *registered* consumers, which is exactly what the React hook does for you.
+With at most one registered consumer, `emit`/`update` skip diffing and mark `ALL_PATHS` — the lone consumer wakes on any change. Raw `subscribe` callers like the one above do not count toward that registry (they never call `registerConsumerPaths`), so a `subscribe` returning `ALL_PATHS` always hears every change regardless. Fine-grained, path-level isolation kicks in once there are two or more _registered_ consumers, which is exactly what the React hook does for you.
 :::
 
 ### 3. Observe a microtask flush
@@ -109,7 +112,12 @@ import { StructuralContainer, ALL_PATHS } from '@dirtytalk/structural';
 const c = new Counter({ count: 0, label: 'clicks' }); // default: MicrotaskScheduler
 
 let flushes = 0;
-c.subscribe(() => ALL_PATHS, () => { flushes += 1; });
+c.subscribe(
+  () => ALL_PATHS,
+  () => {
+    flushes += 1;
+  },
+);
 
 c.increment();
 c.increment();
@@ -126,7 +134,7 @@ This is the same flush/coalescing model the engine documents in [Engine: Concept
 
 ## A React walkthrough
 
-The React adapter lives at the `@dirtytalk/structural/react` subpath and exposes a single hook, `useStructural`. It returns `[state, container]`, where `state` is a recording proxy: reading a field off it during render registers *that path* as this component's interest, so only changes to paths it read trigger a re-render.
+The React adapter lives at the `@dirtytalk/structural/react` subpath and exposes a single hook, `useStructural`. It returns `[state, container]`, where `state` is a recording proxy: reading a field off it during render registers _that path_ as this component's interest, so only changes to paths it read trigger a re-render.
 
 ```tsx
 import { useStructural } from '@dirtytalk/structural/react';

@@ -3,7 +3,9 @@
 > Do this before any implementation phase. Mostly orchestrator/human-driven; small + low-risk.
 
 ## Context
+
 The working tree currently has **two unrelated change sets** mixed together:
+
 1. **This migration's seed**: `packages/blac-core/src/registry/borrow.ts` (`BorrowTarget` + args
    support) and the `BorrowTarget` exports in `registry/index.ts` + `index.ts`. **Keep** — Phase 1 finalizes.
 2. **Unrelated devtools session work**: `packages/devtools-ui/src/components/*` (StateViewer,
@@ -12,7 +14,8 @@ The working tree currently has **two unrelated change sets** mixed together:
    `apps/examples/vite.config.ts` + `apps/examples/tsconfig.json` (devtools-connect/devtools-ui aliases),
    and the temporary `[WS DIAG]` logs in `apps/examples/src/messenger/services/WebSocketMock.ts`.
 
-## Task 0.1 — Isolate the in-flight devtools work  **(Sonnet / low)**
+## Task 0.1 — Isolate the in-flight devtools work **(Sonnet / low)**
+
 - **Check:** `git status`, `git diff --stat`. Identify the devtools files (list above).
 - **Implement:** Move the devtools changes onto their own branch/commit so the migration starts clean.
   `git stash` is **banned** — instead:
@@ -27,18 +30,21 @@ The working tree currently has **two unrelated change sets** mixed together:
   `index.ts`) + the `[WS DIAG]` logs left in `WebSocketMock.ts`.
 - **Commit:** as above (the devtools commit lives on its own branch).
 
-## Task 0.2 — Create the migration branch  **(Haiku / low)**
+## Task 0.2 — Create the migration branch **(Haiku / low)**
+
 - From the clean state (migration seed only), create `feat/instanceid-to-args`.
 - Commit the migration seed as the first migration commit:
   `git add -- packages/blac-core/src/registry/borrow.ts packages/blac-core/src/registry/index.ts packages/blac-core/src/index.ts`
   → `git commit -m "refactor(core): add args-form BorrowTarget (seed)"`.
 
-## Task 0.3 — Baseline snapshot  **(Haiku / low)**
+## Task 0.3 — Baseline snapshot **(Haiku / low)**
+
 - Run `pnpm typecheck` and `pnpm test` once; record any **pre-existing** failures in
   `plans/instanceid-to-args/baseline.md` so later phases don't get blamed for them.
 - Do **not** fix unrelated failures here.
 
 ## Exit criteria
+
 - `feat/instanceid-to-args` exists, devtools work is off on its own branch.
 - Tree contains only migration-relevant changes (+ the `[WS DIAG]` logs awaiting Phase 4a removal).
 - Baseline recorded.

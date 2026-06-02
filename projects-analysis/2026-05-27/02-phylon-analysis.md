@@ -55,7 +55,7 @@ Components call `useBloc(SomeCubit)` and overwhelmingly pass `{ autoTrack: false
 
 Two sub-patterns, both telling:
 
-- **Action-only access:** `const [, treeBloc] = useBloc(TreeSourceCubit, { autoTrack: false })` — they want the instance to call methods and explicitly do *not* want to subscribe (`TopBar.tsx:23-26`). For this case `autoTrack:false` is semantically wrong: it still subscribes to the *whole* state and re-renders on any change; they just don't read fields. The library has no "give me the instance, don't subscribe" mode, so they reach for the closest thing.
+- **Action-only access:** `const [, treeBloc] = useBloc(TreeSourceCubit, { autoTrack: false })` — they want the instance to call methods and explicitly do _not_ want to subscribe (`TopBar.tsx:23-26`). For this case `autoTrack:false` is semantically wrong: it still subscribes to the _whole_ state and re-renders on any change; they just don't read fields. The library has no "give me the instance, don't subscribe" mode, so they reach for the closest thing.
 - **Reading nested/derived data the tracker can't see through:** `TreeSourceCubit`'s `analysis` is a deep parsed object; components read `tree.analysis?.parsed?.tree` etc. They turn off auto-track because the proxy either over-triggers on the giant object or they don't trust it through optional-chained deep reads (`StructuralExplorer.tsx:58-60`, `Viewport.tsx:156`, `HoverTooltip.tsx:40-45`).
 
 **Why it matters for the library:** when a real-world app's dominant pattern is "turn the headline feature off," the headline feature isn't fitting the workload. The two missing affordances are (1) a subscribe-less "actions handle" and (2) confidence/ergonomics for deep/large objects. They never once use the `dependencies:` selector that exists for exactly the second case (see Unused Features) — which suggests they didn't know it was there, or tried auto-track, found it noisy, and bailed to the blunt instrument.
@@ -63,6 +63,7 @@ Two sub-patterns, both telling:
 ### B. The "watch + unsubs[] + dispose" boilerplate is copy-pasted into every derived cubit
 
 The identical block recurs verbatim:
+
 ```ts
 private unsubs: Array<() => void> = [];
 constructor() {
@@ -71,15 +72,17 @@ constructor() {
   this.onSystemEvent("dispose", () => { for (const u of this.unsubs) u(); this.unsubs = []; });
 }
 ```
-See `AnnotationsCubit.ts:94-104`, `MissingAttrsCubit.ts:28-43`, `StyleCubit.ts:39-48`, `SearchCubit.ts:24-42`, `PlaybackCubit.ts:21-43`, `SceneCubit.ts:49,103-127`. The comment at `MissingAttrsCubit.ts:32-36` spells out *why* they must collect and detach: "without that, listeners outlive the cubit and the next upstream emit calls recompute() on a disposed instance and throws." That is a sharp edge of `watch()`: **a `watch()` registered inside a bloc is not auto-tied to that bloc's lifecycle.** The library should either auto-dispose watches created during a bloc's construction or provide `this.watch(...)` that's lifecycle-bound. Today every author must rediscover this and write the cleanup by hand (and remember the `isDisposed` guards in A4 above).
+
+See `AnnotationsCubit.ts:94-104`, `MissingAttrsCubit.ts:28-43`, `StyleCubit.ts:39-48`, `SearchCubit.ts:24-42`, `PlaybackCubit.ts:21-43`, `SceneCubit.ts:49,103-127`. The comment at `MissingAttrsCubit.ts:32-36` spells out _why_ they must collect and detach: "without that, listeners outlive the cubit and the next upstream emit calls recompute() on a disposed instance and throws." That is a sharp edge of `watch()`: **a `watch()` registered inside a bloc is not auto-tied to that bloc's lifecycle.** The library should either auto-dispose watches created during a bloc's construction or provide `this.watch(...)` that's lifecycle-bound. Today every author must rediscover this and write the cleanup by hand (and remember the `isDisposed` guards in A4 above).
 
 ### C. `watch()` fires immediately + on every upstream emit, so derived cubits re-derive too often and must self-debounce
 
-`SceneCubit` subscribes six upstreams (`SceneCubit.ts:121-126`); each fires on *any* field change of that upstream, so it hand-rolls identity guards (pattern in Good#5) to avoid pushing to the GPU on irrelevant changes. `AnnotationsCubit.recompute` is invoked from `watch` *and* manually re-invoked after every mutator (`AnnotationsCubit.ts:257,265,297,314,324`) — there's no notion of "this derived value depends on X, recompute when X changes" so they both subscribe and imperatively poke. The missing affordance: a **computed/selector primitive** (derive value from chosen slices of upstream blocs, recompute only when those slices change identity). Right now "derived cubit" = full manual subscription + manual change detection + manual recompute calls.
+`SceneCubit` subscribes six upstreams (`SceneCubit.ts:121-126`); each fires on _any_ field change of that upstream, so it hand-rolls identity guards (pattern in Good#5) to avoid pushing to the GPU on irrelevant changes. `AnnotationsCubit.recompute` is invoked from `watch` _and_ manually re-invoked after every mutator (`AnnotationsCubit.ts:257,265,297,314,324`) — there's no notion of "this derived value depends on X, recompute when X changes" so they both subscribe and imperatively poke. The missing affordance: a **computed/selector primitive** (derive value from chosen slices of upstream blocs, recompute only when those slices change identity). Right now "derived cubit" = full manual subscription + manual change detection + manual recompute calls.
 
 ### D. Cross-component signaling via `window` CustomEvents instead of a bloc
 
 UI coordination that crosses the component tree is done with DOM events, not state:
+
 - `phylon:focus-search` — `LeftSidebar.tsx:45` dispatches, `SearchPanel.tsx:66` listens (focus the search input).
 - `phylon:reveal-attribute` — `StylePanel.tsx:51` dispatches, `SidebarAnnotationsSection.tsx:135` listens.
 - `phylon:reveal-style-section` — `SidebarAnnotationsSection.tsx:323` dispatches.

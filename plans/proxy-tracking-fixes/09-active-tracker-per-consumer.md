@@ -25,7 +25,10 @@ files:
 `tracking-proxy.ts:494-499`:
 
 ```ts
-const blocProxyCache = new WeakMap<StateContainerInstance, StateContainerInstance>();
+const blocProxyCache = new WeakMap<
+  StateContainerInstance,
+  StateContainerInstance
+>();
 const activeTrackerMap = new WeakMap<StateContainerInstance, GetterState>();
 ```
 
@@ -57,7 +60,7 @@ Replace the global active tracker with a **consumer-scoped** tracker. The cleane
        manualDepsCache: null,
        getterState,
        proxiedBloc: createBlocProxy(instance, getterState),
-       lastSnapshotState: undefined,  // from task 02
+       lastSnapshotState: undefined, // from task 02
      };
    }
    ```
@@ -85,7 +88,9 @@ Replace the global active tracker with a **consumer-scoped** tracker. The cleane
 6. `autoTrackSnapshot` no longer calls `setActiveTracker` — it just flips `adapterState.getterState.isTracking = true` and commits. `disableGetterTracking` in `useEffect` flips it back to `false`.
 
    ```ts
-   export function disableGetterTracking<TBloc extends StateContainerConstructor>(
+   export function disableGetterTracking<
+     TBloc extends StateContainerConstructor,
+   >(
      adapterState: AdapterState<TBloc>,
      // rawInstance no longer needed
    ): void {
@@ -195,6 +200,7 @@ Body: "Replaced module-level activeTrackerMap and blocProxyCache with per-adapte
 
 **Commit SHA:** (to be filled after commit)
 **Files touched:**
+
 - `packages/blac-core/src/tracking/tracking-proxy.ts` — removed `blocProxyCache`, `activeTrackerMap`, `setActiveTracker`, `clearActiveTracker`, `getActiveTracker`; rewrote `createBlocProxy(bloc, tracker)` to close over a per-consumer tracker.
 - `packages/blac-core/src/tracking/index.ts` — dropped re-exports of the removed helpers.
 - `packages/blac-core/src/tracking/getter-tracker.test.ts` — updated `createBlocProxy` callers to pass tracker; removed obsolete `tracker management` describe; replaced shared-cache assertion with a fresh-proxy-per-call assertion.
@@ -208,6 +214,7 @@ Body: "Replaced module-level activeTrackerMap and blocProxyCache with per-adapte
 **Typecheck result:** All four targeted typechecks pass: `@blac/core`, `@blac/adapter`, `@blac/react`, `@blac/preact` (`tsc --noEmit` clean).
 
 **Test result:**
+
 - `pnpm --filter @blac/core test -- getter-tracker.test.ts`: 527/527 pass (27 files).
 - `pnpm --filter @blac/core test -- tracking.edge-cases.test.ts`: 527/527 pass (27 files).
 - `pnpm --filter @blac/adapter test`: 34/34 pass (2 files), including the two new `per-consumer active tracker` regression tests.

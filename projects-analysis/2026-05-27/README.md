@@ -4,12 +4,12 @@ Analysis of how `@blac/core` and `@blac/react` v2 are used in two production cod
 
 ## Documents
 
-| File | What's in it |
-|---|---|
-| [`00-library-capabilities.md`](./00-library-capabilities.md) | Complete reference of the v2 public API — every exported capability, signature, intended use, and the library's own internal gaps. The baseline of "what's possible." |
-| [`01-user-fe-reviews-analysis.md`](./01-user-fe-reviews-analysis.md) | `user-fe-reviews` — mid-migration (v1→v2 compat shim). Prop-driven, per-instance cubits. Render-time mutation anti-patterns. Leans on the team's own migration docs. |
-| [`02-phylon-analysis.md`](./02-phylon-analysis.md) | `phylon` — clean-slate v2. 21 global-singleton cubits in a dependency DAG. `depend()` + `watch()` boilerplate, `autoTrack:false` as the default, `window` events as an escape hatch. |
-| [`03-synthesis-and-recommendations.md`](./03-synthesis-and-recommendations.md) | **Start here for conclusions.** Cross-references the two projects against library capabilities; separates "didn't know it existed" from "doesn't exist"; prioritized roadmap. |
+| File                                                                           | What's in it                                                                                                                                                                         |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`00-library-capabilities.md`](./00-library-capabilities.md)                   | Complete reference of the v2 public API — every exported capability, signature, intended use, and the library's own internal gaps. The baseline of "what's possible."                |
+| [`01-user-fe-reviews-analysis.md`](./01-user-fe-reviews-analysis.md)           | `user-fe-reviews` — mid-migration (v1→v2 compat shim). Prop-driven, per-instance cubits. Render-time mutation anti-patterns. Leans on the team's own migration docs.                 |
+| [`02-phylon-analysis.md`](./02-phylon-analysis.md)                             | `phylon` — clean-slate v2. 21 global-singleton cubits in a dependency DAG. `depend()` + `watch()` boilerplate, `autoTrack:false` as the default, `window` events as an escape hatch. |
+| [`03-synthesis-and-recommendations.md`](./03-synthesis-and-recommendations.md) | **Start here for conclusions.** Cross-references the two projects against library capabilities; separates "didn't know it existed" from "doesn't exist"; prioritized roadmap.        |
 
 ## TL;DR
 

@@ -53,10 +53,7 @@ If you find you need to widen the `Space<R>` interface or change `Scheduler`, **
 class DirtyChannel<Region> {
   constructor(space: Space<Region>, scheduler: Scheduler);
   mark(r: Region): void;
-  subscribe(
-    interest: () => Region,
-    cb: (dirty: Region) => void,
-  ): () => void;
+  subscribe(interest: () => Region, cb: (dirty: Region) => void): () => void;
 }
 ```
 
@@ -67,6 +64,7 @@ class DirtyChannel<Region> {
 ### State
 
 The channel owns:
+
 - `space: Space<Region>` (immutable after construction).
 - `scheduler: Scheduler` (immutable after construction).
 - `accumulated: Region` — initialised to `space.empty()`; reset to `empty()` at the start of each flush.
@@ -76,7 +74,7 @@ The channel owns:
 
 ### `mark(r)`
 
-1. **Re-entrant case:** if `flushing` is true (mark called from inside a subscriber callback during this channel's own flush), accumulate into a `nextAccumulated` buffer (i.e., into the post-flush `accumulated`). The current flush does not see this region. Implementation hint: keep one `accumulated` field but only request the scheduler again on the *next* mark after `flushing` clears. Either approach is fine — describe yours in a code comment.
+1. **Re-entrant case:** if `flushing` is true (mark called from inside a subscriber callback during this channel's own flush), accumulate into a `nextAccumulated` buffer (i.e., into the post-flush `accumulated`). The current flush does not see this region. Implementation hint: keep one `accumulated` field but only request the scheduler again on the _next_ mark after `flushing` clears. Either approach is fine — describe yours in a code comment.
 2. **Normal case:**
    - `accumulated = space.union(accumulated, r)`.
    - If `!scheduled`, set `scheduled = true` and call `scheduler.request(() => this.#flush())`. Pass a bound reference so the scheduler holds a stable function.
@@ -137,9 +135,17 @@ For scheduling, build a hand-rolled `ManualScheduler`-shaped test scheduler **in
 ```ts
 class TestScheduler {
   private pending: (() => void) | null = null;
-  request(flush: () => void) { this.pending = flush; }
-  pump() { const f = this.pending; this.pending = null; f?.(); }
-  get isPending() { return this.pending != null; }
+  request(flush: () => void) {
+    this.pending = flush;
+  }
+  pump() {
+    const f = this.pending;
+    this.pending = null;
+    f?.();
+  }
+  get isPending() {
+    return this.pending != null;
+  }
 }
 ```
 

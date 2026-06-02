@@ -151,10 +151,18 @@ export class PointerRouter {
   private _invoke(node: SceneNode, e: SpatialPointerEvent): void {
     const handler = node as Partial<PointerHandler>;
     switch (e.type) {
-      case 'down': handler.onPointerDown?.(e); break;
-      case 'move': handler.onPointerMove?.(e); break;
-      case 'up': handler.onPointerUp?.(e); break;
-      case 'cancel': handler.onPointerCancel?.(e); break;
+      case 'down':
+        handler.onPointerDown?.(e);
+        break;
+      case 'move':
+        handler.onPointerMove?.(e);
+        break;
+      case 'up':
+        handler.onPointerUp?.(e);
+        break;
+      case 'cancel':
+        handler.onPointerCancel?.(e);
+        break;
     }
   }
 }
@@ -196,10 +204,18 @@ export {
 class InteractiveNode extends SceneNode implements PointerHandler {
   events: SpatialPointerEvent[] = [];
   paint(_layer: unknown): void {}
-  onPointerDown(e: SpatialPointerEvent) { this.events.push(e); }
-  onPointerMove(e: SpatialPointerEvent) { this.events.push(e); }
-  onPointerUp(e: SpatialPointerEvent) { this.events.push(e); }
-  onPointerCancel(e: SpatialPointerEvent) { this.events.push(e); }
+  onPointerDown(e: SpatialPointerEvent) {
+    this.events.push(e);
+  }
+  onPointerMove(e: SpatialPointerEvent) {
+    this.events.push(e);
+  }
+  onPointerUp(e: SpatialPointerEvent) {
+    this.events.push(e);
+  }
+  onPointerCancel(e: SpatialPointerEvent) {
+    this.events.push(e);
+  }
 }
 ```
 
@@ -269,7 +285,7 @@ Required cases:
 
 ## Pitfalls
 
-- **`hitTest` walks children in *reverse* adoption order.** Painters paint front-to-back from index 0 → end; hit-test walks back-to-front so the topmost wins. Reverse the loop.
+- **`hitTest` walks children in _reverse_ adoption order.** Painters paint front-to-back from index 0 → end; hit-test walks back-to-front so the topmost wins. Reverse the loop.
 - **A grandchild outside a child's bounds is unreachable.** This is correct — bounds-clipping for hit-testing matches the visual occlusion model. If a child's bounds don't contain (x,y), recursion stops at that subtree.
 - **Don't `return null` when the child contains (x,y) but no grandchild does.** Return the child itself — that's the hit. The implementation has it correctly; flag for code reviewers.
 - **Capture on `down` is per-`pointerId`.** Multi-touch needs independent captures. Don't use a single `_captured: SceneNode | null` field.

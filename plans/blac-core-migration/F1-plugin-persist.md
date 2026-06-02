@@ -81,6 +81,7 @@ packages/plugin-persist/src/**
    ```
 
    Body (optional, if partial writes added):
+
    ```
    - Plugin signature aligned with @blac/core C2 changes.
    - Partial-write optimization: when paths is a small set, only the

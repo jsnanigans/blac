@@ -10,25 +10,25 @@ Two unrelated problems turn out to be the same problem. A WebGPU renderer mutate
 2. **Who cares?** — the subscribers whose interest overlaps that region.
 3. **When do we tell them?** — the scheduling window in which we batch and deliver.
 
-The naive answer pushes all the work down to each consumer. A renderer with a single dirty bit repaints the whole canvas because the bit lost the information about *where* the change was. A state container re-walks the entire state tree once per subscriber — N consumers means N separate tree walks doing the same equality checks. Both approaches throw away the structure of the change and pay for it on every read.
+The naive answer pushes all the work down to each consumer. A renderer with a single dirty bit repaints the whole canvas because the bit lost the information about _where_ the change was. A state container re-walks the entire state tree once per subscriber — N consumers means N separate tree walks doing the same equality checks. Both approaches throw away the structure of the change and pay for it on every read.
 
 DirtyTalk's answer is to compute "what changed" **once, at the source**, and express it as a **Region** — a value in an algebra with `empty`, `union`, and `intersects`. The source accumulates a single dirty region per scheduling window. Each subscriber declares an interest region. Deciding who to wake is then just one cheap `intersects` check per subscriber against the one shared dirty region — work proportional to the number of subscribers, not to the size of the state or the scene multiplied by the number of subscribers.
 
 ::: info Why "Region" is the right abstraction
-A single dirty bit is a Region too — but a degenerate one that only answers "did *anything* change?" By keeping the Region rich (damage rectangles, or a set of changed paths), the source preserves exactly the information each subscriber needs to do less work: skip an undamaged screen area, or skip a re-render when an unread field changed.
+A single dirty bit is a Region too — but a degenerate one that only answers "did _anything_ change?" By keeping the Region rich (damage rectangles, or a set of changed paths), the source preserves exactly the information each subscriber needs to do less work: skip an undamaged screen area, or skip a re-render when an unread field changed.
 :::
 
 ## The layering
 
 DirtyTalk separates the **abstract algebra** from its **concrete instantiations**. The engine defines the shape of the problem; the two domain packages fill in what a `Region` actually is.
 
-| Package | Role | What a `Region` is | Built for |
-| --- | --- | --- | --- |
-| `@dirtytalk/engine` | The abstract algebra + scheduling glue. Defines the `Space<Region>` interface (`empty` / `isEmpty` / `union` / `intersects`), the `Scheduler` interface (with `SyncScheduler`, `ManualScheduler`, `MicrotaskScheduler`, `RAFScheduler`), and `DirtyChannel<Region>` — the core that accumulates marks within a window and fans out to interested subscribers in one flush. Ships **no** concrete `Region`. | abstract — you supply one | The shared core both domains depend on |
-| `@dirtytalk/spatial` | The concrete instantiation for 2D rendering. `RectSpace` implements `Space<DirtyRegion>` where a `Region` is a list of damage rects (`Damage` entries carrying a `Rect` and a `kind`). Adds a `SceneNode` / `SceneRoot` tree, a three-stage `data → layout → paint` pipeline, and a `PointerRouter`. | a list of damage rects | canvas / GPU renderers |
-| `@dirtytalk/structural` | The concrete instantiation for state containers. `PathSetSpace` implements `Space<PathSet>` where a `Region` is a set of interned path IDs. Adds a `PathInterner`, a `trackRender` proxy recorder, diff helpers, and an abstract `StructuralContainer`. | a set of interned path IDs | observable state / data stores |
+| Package                 | Role                                                                                                                                                                                                                                                                                                                                                                                                       | What a `Region` is         | Built for                              |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | -------------------------------------- |
+| `@dirtytalk/engine`     | The abstract algebra + scheduling glue. Defines the `Space<Region>` interface (`empty` / `isEmpty` / `union` / `intersects`), the `Scheduler` interface (with `SyncScheduler`, `ManualScheduler`, `MicrotaskScheduler`, `RAFScheduler`), and `DirtyChannel<Region>` — the core that accumulates marks within a window and fans out to interested subscribers in one flush. Ships **no** concrete `Region`. | abstract — you supply one  | The shared core both domains depend on |
+| `@dirtytalk/spatial`    | The concrete instantiation for 2D rendering. `RectSpace` implements `Space<DirtyRegion>` where a `Region` is a list of damage rects (`Damage` entries carrying a `Rect` and a `kind`). Adds a `SceneNode` / `SceneRoot` tree, a three-stage `data → layout → paint` pipeline, and a `PointerRouter`.                                                                                                       | a list of damage rects     | canvas / GPU renderers                 |
+| `@dirtytalk/structural` | The concrete instantiation for state containers. `PathSetSpace` implements `Space<PathSet>` where a `Region` is a set of interned path IDs. Adds a `PathInterner`, a `trackRender` proxy recorder, diff helpers, and an abstract `StructuralContainer`.                                                                                                                                                    | a set of interned path IDs | observable state / data stores         |
 
-Each domain package answers the *same* algebra in its own terms. "Union two dirty regions" means "bounding-box-concatenate two damage lists" in spatial and "set-union two path-ID sets" in structural. "Does this interest intersect the dirty region?" means "do any rects overlap?" in spatial and "do the sets share an ID?" in structural. The `DirtyChannel` machinery — coalescing, selective fan-out, lazy interest thunks, re-entrancy handling, error isolation — is written once in the engine and reused by both.
+Each domain package answers the _same_ algebra in its own terms. "Union two dirty regions" means "bounding-box-concatenate two damage lists" in spatial and "set-union two path-ID sets" in structural. "Does this interest intersect the dirty region?" means "do any rects overlap?" in spatial and "do the sets share an ID?" in structural. The `DirtyChannel` machinery — coalescing, selective fan-out, lazy interest thunks, re-entrancy handling, error isolation — is written once in the engine and reused by both.
 
 ::: details The engine ships zero `Region` implementations — on purpose
 `@dirtytalk/engine` never references React, the DOM, or a GPU, and it ships no concrete `Space`. `RectSpace` lives in spatial; `PathSetSpace` lives in structural. The engine only `union`s and `intersects` whatever Regions you hand it — producing a Region from a mutation is the consumer's job. There is no dependency graph, no auto-tracking, and no diffing at the engine layer.
@@ -73,13 +73,13 @@ Both `@dirtytalk/spatial` and `@dirtytalk/structural` depend on `@dirtytalk/engi
 
 ## Which package do I want?
 
-| If you want to… | Use | Start at |
-| --- | --- | --- |
-| Track changes to a 2D scene and repaint only what moved (canvas / WebGPU) | `@dirtytalk/spatial` | [Spatial getting started](/dirtytalk/spatial/getting-started) |
-| Observe a state container and wake only the consumers that read the changed fields | `@dirtytalk/structural` | [Structural getting started](/dirtytalk/structural/getting-started) |
-| Use BlaC's state management in a React app | `@blac/core` + `@blac/react` | [BlaC introduction](/guide/introduction) |
-| Apply the "compute changes once, fan out cheaply" pattern to a **new** domain with your own `Region` | `@dirtytalk/engine` | [Engine getting started](/dirtytalk/engine/getting-started) |
-| Understand the algebra and scheduling model before picking a domain | `@dirtytalk/engine` | [Engine concepts](/dirtytalk/engine/concepts) |
+| If you want to…                                                                                      | Use                          | Start at                                                            |
+| ---------------------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------- |
+| Track changes to a 2D scene and repaint only what moved (canvas / WebGPU)                            | `@dirtytalk/spatial`         | [Spatial getting started](/dirtytalk/spatial/getting-started)       |
+| Observe a state container and wake only the consumers that read the changed fields                   | `@dirtytalk/structural`      | [Structural getting started](/dirtytalk/structural/getting-started) |
+| Use BlaC's state management in a React app                                                           | `@blac/core` + `@blac/react` | [BlaC introduction](/guide/introduction)                            |
+| Apply the "compute changes once, fan out cheaply" pattern to a **new** domain with your own `Region` | `@dirtytalk/engine`          | [Engine getting started](/dirtytalk/engine/getting-started)         |
+| Understand the algebra and scheduling model before picking a domain                                  | `@dirtytalk/engine`          | [Engine concepts](/dirtytalk/engine/concepts)                       |
 
 ::: tip Not sure?
 If your changes have a position on screen, you want **spatial**. If your changes are fields in an object graph, you want **structural**. If you are building neither but recognize the "what changed / who cares / when" pattern, you want the **engine** plus a `Space` of your own.

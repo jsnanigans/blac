@@ -187,10 +187,11 @@ The plugin automatically checks IndexedDB availability on install and disables i
 ## Common mistakes
 
 ::: warning Watch for these
+
 - **Persisting non-serializable state.** Functions, class instances, `Map`/`Set`, and DOM nodes do not round-trip through IndexedDB. Keep persisted state to plain JSON-compatible data, or use `stateToDb`/`dbToState` to project to and from a serializable shape.
 - **Expecting persistence without `.persist()`.** Installing the plugin alone does nothing — a class is only saved and hydrated after you register it. Register before any instance of that class is acquired so hydration runs on first create.
 - **Key collisions across instances.** The default key is `ClassName:instanceId`, which keeps multiple instances of the same class separate. If you set a static `key` string, every instance of that class shares one record and overwrites the others. For per-instance persistence, use a [dynamic key](#dynamic-keys) function instead.
-:::
+  :::
 
 ## See also
 

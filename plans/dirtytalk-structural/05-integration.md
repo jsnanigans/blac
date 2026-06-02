@@ -113,7 +113,6 @@ Container + tracker + diff + channel, no React.
    If anything is missing, edit the relevant barrel and document in the commit body.
 
 7. **Commit(s).**
-
    - **Main commit:**
      ```
      test(dirtytalk-structural): add cross-unit integration test

@@ -148,12 +148,13 @@ packages/blac-core/src/core/StateContainerRegistry.ts     (signatures only — l
 ```
 
 **Coordination with parallel agents:**
+
 - C1 (registry) reads the `StateContainerRegistry.ts` shape you leave. Don't change its public method signatures without coordination.
 - C2 (plugin system) reads `SystemEvent` shape. If you change it, document the change in this commit.
 - C3 (watch+tracked) deletes `tracking/`. Don't import from `tracking/` in your rewrite.
 - C4 (decorator+config) reads `configureBlac` shape. If you wire scheduler through it, communicate via a TODO comment.
 
-**Do not touch:** `package.json`, `tsconfig*.json`, plugin directory, watch directory, tracking directory (C3 deletes it), decorator directory, registry/* (the registry directory under `registry/`, *not* the registry class — different things; C1 owns the `registry/` dir).
+**Do not touch:** `package.json`, `tsconfig*.json`, plugin directory, watch directory, tracking directory (C3 deletes it), decorator directory, registry/* (the registry directory under `registry/`, *not\* the registry class — different things; C1 owns the `registry/` dir).
 
 ---
 
@@ -181,7 +182,7 @@ packages/blac-core/src/core/StateContainerRegistry.ts     (signatures only — l
    - `vp run format:check`.
 
 4. **Test.**
-   - **C5 owns the full test port.** For this commit, run only the tests that *don't* depend on tracking internals:
+   - **C5 owns the full test port.** For this commit, run only the tests that _don't_ depend on tracking internals:
      - `vp run test src/core/StateContainer.init.test.ts`
      - `vp run test src/core/StateContainer.disposal.test.ts`
      - `vp run test src/core/StateContainer.lifecycle-events.test.ts`
@@ -195,6 +196,7 @@ packages/blac-core/src/core/StateContainerRegistry.ts     (signatures only — l
    ```
 
    Body (required — this is the keystone):
+
    ```
    - StateContainer<S> now extends StructuralContainer<S>
    - emit / patch / update inherited from structural
@@ -222,10 +224,10 @@ packages/blac-core/src/core/StateContainerRegistry.ts     (signatures only — l
 
 - **`super.emit` and listeners.** `StructuralContainer.emit` schedules a flush via the channel. The old `StateContainer.emit` synchronously notified listeners. Your `onSystemEvent('stateChanged')` handler must run **after** the flush, not on the emit call. Wire it via `subscribe(ALL_PATHS, cb)`.
 - **`isDisposed`** — structural doesn't expose this concept. Add it as a private field flipped in `dispose()`. Tests heavily rely on it.
-- **Test isolation under per-class interner.** Tests that create ad-hoc subclasses get fresh interners — good. Tests that re-import the same class across files share the interner — also good. Tests that *clear* state between cases via mutation may be surprised. C5 deals with this; you just need to leave the path clean.
+- **Test isolation under per-class interner.** Tests that create ad-hoc subclasses get fresh interners — good. Tests that re-import the same class across files share the interner — also good. Tests that _clear_ state between cases via mutation may be surprised. C5 deals with this; you just need to leave the path clean.
 - **`depend()` recursion.** `dep.subscribe(...)` callback calls `this.emit(this.state)`, which schedules another flush. If two blocs `depend()` on each other, this can loop. The structural channel coalesces same-tick emits to one flush, so a single-loop is fine; a true cycle is a user bug. Document the limitation in a code comment; don't add cycle detection.
 - **`APPLY_DEPS` / `REMOVE_DEPS_OWNER`.** These are read by `@blac/react` (and `@blac/adapter`, which dies in E0). The audit will tell you. **Don't delete them in this commit** even if you think you can — wait for D0 to confirm the new `useBloc` doesn't need them.
-- **Symbol identity** — if you keep `APPLY_DEPS` etc., re-export the *same Symbol* from `core/symbols.ts`. Re-creating the symbol breaks identity-based dispatch.
+- **Symbol identity** — if you keep `APPLY_DEPS` etc., re-export the _same Symbol_ from `core/symbols.ts`. Re-creating the symbol breaks identity-based dispatch.
 - **`Cubit` ABI.** Some callers do `instance instanceof Cubit`. Keep `Cubit` a real class (not a type alias) even if it adds nothing structurally.
 - **Scheduler config.** Don't add a global `configureBlac({ scheduler })` knob unless the audit shows callers need it. Per-instance via constructor options is enough.
 - **Hydration in StrictMode.** If `setHydrationStatus` fires during construction in StrictMode's double-invoke, the second instance gets a fresh `_hydrationStatus` field — that's fine. Just don't share it across instances via a static.

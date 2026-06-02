@@ -25,16 +25,19 @@ This flips every `[GAP]` test in `useBloc.cross-bloc-getter-tracking.test.tsx`.
 ## Design
 
 ### 1. Per-consumer session
+
 Add a ref: `sessionRef = useRef<Map<StateContainer, { paths: PathSet; trackingProxy: unknown }>>(new Map())`.
 Cleared/rebuilt at the **start of each render** (in the snapshot section, same
 place `trackRender` runs for the primary bloc). The primary bloc is just the
 first entry — register it into the session too, so the reconcile loop is uniform.
 
 ### 2. `thisProxy` detects dep handles
+
 Extend the `thisProxy` get trap (from `buildTrackedProxy`) so that when a read
 returns a value carrying `DEP_BRAND`, it returns a **per-consumer wrapper** for
 that handle (cache wrappers in a `Map<DepHandle, Wrapped>` in the memo to avoid
 re-alloc). The wrapper:
+
 - is itself callable → delegates to the original `handle()` (live instance, back-compat);
 - `.track()`:
   - resolve dep via `handle[DEP_BRAND]` (`{Type, key, args}`) using the registry;
@@ -54,8 +57,10 @@ optional `onDepHandle?(handle): wrapped` callback (or expose `thisProxy` and let
 `DEP_BRAND` symbol imported from `@blac/core`.
 
 ### 3. Reconcile (generalize the existing layout effect, ~347-365)
+
 Today the layout effect registers ONE container's paths + builds
 `expandedInterestRef`. Generalize:
+
 - For **every** container in `sessionRef.current`: `registerConsumerPaths(consumerId, paths)` and compute its expanded interest.
 - Maintain a `Map<container, unsubscribe>` of active channel subscriptions in a
   ref. Diff the new session container set vs the previous:
@@ -65,12 +70,13 @@ Today the layout effect registers ONE container's paths + builds
     a per-container interest ref so it stays fresh, mirroring `expandedInterestRef`).
 - The primary bloc's existing single subscription (the `useEffect` ~232-283)
   should be folded into this per-container map, OR kept for the primary and the
-  reconcile only manages *deps* — choose the simpler correct option, but the
+  reconcile only manages _deps_ — choose the simpler correct option, but the
   primary must keep working identically. Prefer: keep the primary's existing
   effect untouched and have the reconcile manage **dep** containers only. This
   minimizes risk to the primary path.
 
 ### 4. Unmount
+
 On unmount: unsubscribe all dep channels, `unregisterConsumer` for each,
 `release` every dep ref held (`refId` `useBloc@${consumerId}:dep`). Must be
 idempotent and exactly-once per ref.
@@ -105,6 +111,7 @@ pnpm exec vp test run src/__tests__/useBloc.cross-bloc-edge-cases.test.tsx
 pnpm exec vp test run src/__tests__/useBloc.proxyTracking.test.tsx
 pnpm exec vp test run src/__tests__/useBloc.getter-tracking.test.tsx
 ```
+
 Note: the `[GAP]` assertions in `useBloc.cross-bloc-getter-tracking.test.tsx`
 will now FAIL (they assert stale behavior). Task 04 rewrites them. For THIS
 task, it is acceptable to update only the `[GAP]` assertions to the new

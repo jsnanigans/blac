@@ -197,11 +197,11 @@ user.value = { id: 2, name: 'b' }; // => "user: { id: 2, name: 'b' }"
 
 If you are working in an already-modeled domain, reach for a higher-level package instead:
 
-| You want to... | Use |
-| --- | --- |
-| A scene graph with rect-level damage, a render pipeline, and pointer routing | [`@dirtytalk/spatial`](/dirtytalk/spatial/getting-started) |
-| Path-set tracking over structured state (interned path IDs, skeletons) | [`@dirtytalk/structural`](/dirtytalk/structural/getting-started) |
-| The raw region/scheduler/channel machinery, with your own `Space` | `@dirtytalk/engine` (this package) |
+| You want to...                                                               | Use                                                              |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| A scene graph with rect-level damage, a render pipeline, and pointer routing | [`@dirtytalk/spatial`](/dirtytalk/spatial/getting-started)       |
+| Path-set tracking over structured state (interned path IDs, skeletons)       | [`@dirtytalk/structural`](/dirtytalk/structural/getting-started) |
+| The raw region/scheduler/channel machinery, with your own `Space`            | `@dirtytalk/engine` (this package)                               |
 
 Both `spatial` and `structural` are built on this engine — they supply the concrete `Space` (rect unions, path-ID sets) and the ergonomics. If one of them fits your domain, start there and drop down to the engine only when you need something neither provides.
 

@@ -1,5 +1,46 @@
 # @blac/core
 
+## 2.0.17
+
+### Patch Changes
+
+- Fix per-index array tracking and out-of-render getter reads. Bloc getters are
+  proxied so state reads during render subscribe correctly, array iteration tracks
+  per-index access (pinning the array path), and array identity-search no longer
+  over-tracks. Resolves stale-closure antipatterns in cross-bloc reads.
+- de8c31d: `depend()` now returns a `DepHandle` object with `.track()` / `.untracked()` accessors instead of a callable getter, and resolves dependency `args` at call time.
+
+  **Breaking changes**
+  - `this.depend(Type)` no longer returns a callable. Replace `handle()` with `handle.untracked()` for plain (non-reactive) reads and method calls:
+
+    ```ts
+    // before
+    private getAuth = this.depend(AuthCubit);
+    this.getAuth().state.user;
+    this.getAuth().login();
+
+    // after
+    private auth = this.depend(AuthCubit);
+    this.auth.untracked().state.user;
+    this.auth.untracked().login();
+    ```
+
+  - Reactive cross-bloc reads use `handle.track()`, which returns `[state, depProxy]` and subscribes the reading React consumer (no second `useBloc` needed):
+
+    ```ts
+    get summary() {
+      const [authState] = this.auth.track();
+      return authState.user?.name ?? 'Guest';
+    }
+    ```
+
+  - Dependency `args` resolve at call time. `depend(Type, defaultArgs?)` keeps `defaultArgs` as the fallback; pass `{ args }` to `.track({ args })` / `.untracked({ args })` to resolve a specific keyed instance per call (the args can derive from current state).
+
+  - The `DEP_BRAND` payload changed from `{ Type, key, args }` to `{ Type, defaultArgs }` (internal; only relevant to framework adapters).
+
+- Updated dependencies
+  - @dirtytalk/structural@0.0.5
+
 ## 2.0.16
 
 ### Patch Changes
@@ -7,7 +48,6 @@
 - 0a3fa8c: Remove the `instanceId` option and all explicit string-key arguments from the public API. Instance identity is now derived entirely from `args` — via a class's `static key(args)`, the structural hash of `args`, or the `'default'` sentinel.
 
   **Breaking changes**
-
   - `useBloc` / `BlocProvider`: the `instanceId` prop/option is removed. Key instances with `args` and a `static key`; for a private per-mount instance, pass a synthetic value such as `args: { _id: useId() }`.
   - Registry functions take an options object instead of positional string keys:
     - `acquire(Bloc, { args?, refId? })`

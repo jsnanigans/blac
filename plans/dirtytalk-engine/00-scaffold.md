@@ -142,12 +142,22 @@ export interface Observable<T> {
 
 export class Signal<T> implements Observable<T> {
   constructor(_initial: T, _equals?: (a: T, b: T) => boolean) {
-    throw new Error('Signal: not implemented (see plans/dirtytalk-engine/01-signal.md)');
+    throw new Error(
+      'Signal: not implemented (see plans/dirtytalk-engine/01-signal.md)',
+    );
   }
-  get value(): T { throw new Error('not implemented'); }
-  set value(_next: T) { throw new Error('not implemented'); }
-  peek(): T { throw new Error('not implemented'); }
-  subscribe(_cb: (value: T) => void): () => void { throw new Error('not implemented'); }
+  get value(): T {
+    throw new Error('not implemented');
+  }
+  set value(_next: T) {
+    throw new Error('not implemented');
+  }
+  peek(): T {
+    throw new Error('not implemented');
+  }
+  subscribe(_cb: (value: T) => void): () => void {
+    throw new Error('not implemented');
+  }
 }
 ```
 
@@ -181,25 +191,40 @@ export interface Scheduler {
   cancel?(): void;
 }
 
-const NOT_IMPLEMENTED = 'not implemented (see plans/dirtytalk-engine/01-schedulers.md)';
+const NOT_IMPLEMENTED =
+  'not implemented (see plans/dirtytalk-engine/01-schedulers.md)';
 
 export class SyncScheduler implements Scheduler {
-  request(_flush: () => void): void { throw new Error(NOT_IMPLEMENTED); }
+  request(_flush: () => void): void {
+    throw new Error(NOT_IMPLEMENTED);
+  }
 }
 
 export class ManualScheduler implements Scheduler {
-  request(_flush: () => void): void { throw new Error(NOT_IMPLEMENTED); }
-  pump(): void { throw new Error(NOT_IMPLEMENTED); }
+  request(_flush: () => void): void {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+  pump(): void {
+    throw new Error(NOT_IMPLEMENTED);
+  }
 }
 
 export class MicrotaskScheduler implements Scheduler {
-  request(_flush: () => void): void { throw new Error(NOT_IMPLEMENTED); }
-  cancel(): void { throw new Error(NOT_IMPLEMENTED); }
+  request(_flush: () => void): void {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+  cancel(): void {
+    throw new Error(NOT_IMPLEMENTED);
+  }
 }
 
 export class RAFScheduler implements Scheduler {
-  request(_flush: () => void): void { throw new Error(NOT_IMPLEMENTED); }
-  cancel(): void { throw new Error(NOT_IMPLEMENTED); }
+  request(_flush: () => void): void {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+  cancel(): void {
+    throw new Error(NOT_IMPLEMENTED);
+  }
 }
 ```
 
@@ -211,15 +236,16 @@ import type { Scheduler } from './scheduler';
 
 export class DirtyChannel<Region> {
   constructor(_space: Space<Region>, _scheduler: Scheduler) {
-    throw new Error('DirtyChannel: not implemented (see plans/dirtytalk-engine/01-dirty-channel.md)');
+    throw new Error(
+      'DirtyChannel: not implemented (see plans/dirtytalk-engine/01-dirty-channel.md)',
+    );
   }
 
-  mark(_r: Region): void { throw new Error('not implemented'); }
+  mark(_r: Region): void {
+    throw new Error('not implemented');
+  }
 
-  subscribe(
-    _interest: () => Region,
-    _cb: (dirty: Region) => void,
-  ): () => void {
+  subscribe(_interest: () => Region, _cb: (dirty: Region) => void): () => void {
     throw new Error('not implemented');
   }
 }

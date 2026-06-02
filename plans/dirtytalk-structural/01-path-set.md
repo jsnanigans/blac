@@ -45,12 +45,14 @@ packages/dirtytalk-structural/src/path-set.test.ts   (create)
 import type { PathId } from './types';
 import type { Space } from '@dirtytalk/engine';
 
-export const ALL_PATHS: unique symbol = Symbol.for('@dirtytalk/structural/ALL_PATHS');
+export const ALL_PATHS: unique symbol = Symbol.for(
+  '@dirtytalk/structural/ALL_PATHS',
+);
 export type AllPaths = typeof ALL_PATHS;
 export type PathSet = Set<PathId> | AllPaths;
 ```
 
-`ALL_PATHS` is a sentinel that means *"everything is dirty"* — used by `emit`/`update` when there's a single consumer (skipping the source-diff is the win) and as a fast-path for any caller that wants to declare blanket interest.
+`ALL_PATHS` is a sentinel that means _"everything is dirty"_ — used by `emit`/`update` when there's a single consumer (skipping the source-diff is the win) and as a fast-path for any caller that wants to declare blanket interest.
 
 ### Helper functions
 

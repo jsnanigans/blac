@@ -28,6 +28,7 @@
 **Default: delete.** Unless you find substantive Preact-specific demos that aren't covered by `apps/examples/`, delete the app and remove it from `pnpm-workspace.yaml`.
 
 **Alternative: rewire.** If demos are non-trivial:
+
 - Repoint `@blac/preact` → `@blac/react` (Preact ships with `preact/compat` aliasing in Vite/Vitest).
 - Add a Vite alias in the app's config: `react` → `preact/compat`, `react-dom` → `preact/compat`.
 - Confirm `vp run build` succeeds.
@@ -56,7 +57,7 @@ pnpm-workspace.yaml             (only if removing app)
 
 2. **Implement.**
    - Delete path: `rm -rf apps/preact-examples`, edit `pnpm-workspace.yaml` to remove the entry.
-   - Rewire path: edit `apps/preact-examples/package.json` to swap `@blac/preact` for `@blac/react` (workspace:*), add `preact` + `preact/compat` aliasing in `vite.config.ts`. Update imports in `src/`.
+   - Rewire path: edit `apps/preact-examples/package.json` to swap `@blac/preact` for `@blac/react` (workspace:\*), add `preact` + `preact/compat` aliasing in `vite.config.ts`. Update imports in `src/`.
 
 3. **Verify.**
    - `vp install` at repo root — must succeed.

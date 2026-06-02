@@ -6,10 +6,10 @@ The exhaustive surface of `@dirtytalk/engine`, organized by export. Every signat
 
 The package has two entry points:
 
-| Import path | Exports |
-| --- | --- |
-| `@dirtytalk/engine` | `Observable`, `Signal`, `Space`, `Scheduler`, `SyncScheduler`, `ManualScheduler`, `MicrotaskScheduler`, `RAFScheduler`, `DirtyChannel` |
-| `@dirtytalk/engine/primitives` | `Observable`, `Signal` |
+| Import path                    | Exports                                                                                                                                |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `@dirtytalk/engine`            | `Observable`, `Signal`, `Space`, `Scheduler`, `SyncScheduler`, `ManualScheduler`, `MicrotaskScheduler`, `RAFScheduler`, `DirtyChannel` |
+| `@dirtytalk/engine/primitives` | `Observable`, `Signal`                                                                                                                 |
 
 `Observable`, `Space`, and `Scheduler` are **type-only** exports (interfaces). The rest are runtime classes.
 
@@ -43,9 +43,9 @@ interface Observable<T> {
 }
 ```
 
-| Member | Signature | Description |
-| --- | --- | --- |
-| `peek` | `(): T` | Read the current value without subscribing. |
+| Member      | Signature                              | Description                                                                                |
+| ----------- | -------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `peek`      | `(): T`                                | Read the current value without subscribing.                                                |
 | `subscribe` | `(cb: (value: T) => void): () => void` | Register a callback invoked with the new value on change. Returns an unsubscribe function. |
 
 ---
@@ -60,12 +60,12 @@ interface Observable<T> {
 constructor(initial: T, equals?: (a: T, b: T) => boolean)
 ```
 
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `initial` | `T` | yes | Starting value. |
-| `equals` | `(a: T, b: T) => boolean` | no | Equality predicate used to short-circuit notifications. Defaults to `Object.is`. |
+| Parameter | Type                      | Required | Description                                                                      |
+| --------- | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `initial` | `T`                       | yes      | Starting value.                                                                  |
+| `equals`  | `(a: T, b: T) => boolean` | no       | Equality predicate used to short-circuit notifications. Defaults to `Object.is`. |
 
-Because the default is `Object.is`: `NaN` is considered equal to `NaN` (so writing `NaN` over `NaN` does not notify), and `+0`/`-0` are considered distinct (so writing one over the other *does* notify).
+Because the default is `Object.is`: `NaN` is considered equal to `NaN` (so writing `NaN` over `NaN` does not notify), and `+0`/`-0` are considered distinct (so writing one over the other _does_ notify).
 
 ### Members
 
@@ -76,16 +76,16 @@ peek(): T
 subscribe(cb: (value: T) => void): () => void
 ```
 
-| Member | Signature | Returns | Description |
-| --- | --- | --- | --- |
-| `value` (get) | `get value(): T` | `T` | The current value. |
-| `value` (set) | `set value(next: T)` | `void` | Assign with an equality guard (see below). |
-| `peek` | `peek(): T` | `T` | Read without subscribing. Identical result to the `value` getter; provided for `Observable` conformance and intent clarity. |
-| `subscribe` | `subscribe(cb: (value: T) => void): () => void` | unsubscribe `() => void` | Add `cb` to the subscriber set. Returns an idempotent unsubscribe closure. |
+| Member        | Signature                                       | Returns                  | Description                                                                                                                 |
+| ------------- | ----------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `value` (get) | `get value(): T`                                | `T`                      | The current value.                                                                                                          |
+| `value` (set) | `set value(next: T)`                            | `void`                   | Assign with an equality guard (see below).                                                                                  |
+| `peek`        | `peek(): T`                                     | `T`                      | Read without subscribing. Identical result to the `value` getter; provided for `Observable` conformance and intent clarity. |
+| `subscribe`   | `subscribe(cb: (value: T) => void): () => void` | unsubscribe `() => void` | Add `cb` to the subscriber set. Returns an idempotent unsubscribe closure.                                                  |
 
 **`set value` behavior.** If `equals(current, next)` is true, the setter returns immediately — no store, no notify. Otherwise it stores `next`, snapshots the current subscribers (`Array.from`), and invokes each with `next`. Subscribers are stored in a `Set`, so they run in registration (insertion) order. Errors thrown by callbacks are collected, not aborted on; after all subscribers run, a single error is re-thrown as-is, and multiple errors are thrown as `new AggregateError(errors, 'Signal: multiple subscriber errors')`.
 
-**`subscribe` behavior.** Adds `cb` to the internal set and returns a closure that removes it. The closure is idempotent (guarded by a local flag) — calling it more than once is safe. Because subscribers are snapshotted before a notify, unsubscribing during a notify still lets the already-snapshotted callback run on the *current* set, but not on the next.
+**`subscribe` behavior.** Adds `cb` to the internal set and returns a closure that removes it. The closure is idempotent (guarded by a local flag) — calling it more than once is safe. Because subscribers are snapshotted before a notify, unsubscribing during a notify still lets the already-snapshotted callback run on the _current_ set, but not on the next.
 
 ::: tip Re-entrant writes recurse
 Setting `value` from inside a subscriber triggers a fresh, fully synchronous notify cycle — unlike `DirtyChannel`, whose re-entrant marks defer to the next flush.
@@ -124,11 +124,11 @@ interface Space<Region> {
 }
 ```
 
-| Member | Signature | Description |
-| --- | --- | --- |
-| `empty` | `(): Region` | The identity/zero region — "nothing changed". |
-| `isEmpty` | `(r: Region): boolean` | True iff `r` is the empty region. Used for the no-op flush fast-path. |
-| `union` | `(a: Region, b: Region): Region` | Accumulate two dirty regions. |
+| Member       | Signature                                    | Description                                                                       |
+| ------------ | -------------------------------------------- | --------------------------------------------------------------------------------- |
+| `empty`      | `(): Region`                                 | The identity/zero region — "nothing changed".                                     |
+| `isEmpty`    | `(r: Region): boolean`                       | True iff `r` is the empty region. Used for the no-op flush fast-path.             |
+| `union`      | `(a: Region, b: Region): Region`             | Accumulate two dirty regions.                                                     |
 | `intersects` | `(interest: Region, dirty: Region): boolean` | The delivery predicate: does this subscriber's interest overlap the dirty region? |
 
 **Contracts (required):**
@@ -162,10 +162,10 @@ interface Scheduler {
 }
 ```
 
-| Member | Signature | Required | Description |
-| --- | --- | --- | --- |
-| `request` | `(flush: () => void): void` | yes | Ask for `flush` to be invoked. Must be idempotent within a scheduling window: N requests before the first flush produce one flush. (`SyncScheduler` is the deliberate exception.) Implementations store the latest `flush` passed. |
-| `cancel` | `(): void` | optional | Teardown that prevents a pending flush. Implemented by `MicrotaskScheduler` and `RAFScheduler`; **not** implemented by `SyncScheduler` or `ManualScheduler`. |
+| Member    | Signature                   | Required | Description                                                                                                                                                                                                                        |
+| --------- | --------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `request` | `(flush: () => void): void` | yes      | Ask for `flush` to be invoked. Must be idempotent within a scheduling window: N requests before the first flush produce one flush. (`SyncScheduler` is the deliberate exception.) Implementations store the latest `flush` passed. |
+| `cancel`  | `(): void`                  | optional | Teardown that prevents a pending flush. Implemented by `MicrotaskScheduler` and `RAFScheduler`; **not** implemented by `SyncScheduler` or `ManualScheduler`.                                                                       |
 
 ---
 
@@ -179,8 +179,8 @@ class SyncScheduler implements Scheduler {
 }
 ```
 
-| Member | Signature | Description |
-| --- | --- | --- |
+| Member    | Signature                   | Description                                                                                                          |
+| --------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `request` | `(flush: () => void): void` | Calls `flush()` immediately and synchronously, before `request` returns. Every request flushes — there is no dedupe. |
 
 No constructor arguments. No `cancel`. Intended for tests and synchronous-emit compatibility. Because each request flushes at once, every `mark` on a channel using `SyncScheduler` flushes immediately.
@@ -189,7 +189,10 @@ No constructor arguments. No `cancel`. Intended for tests and synchronous-emit c
 import { DirtyChannel, SyncScheduler } from '@dirtytalk/engine';
 
 const ch = new DirtyChannel(BitsetSpace, new SyncScheduler());
-ch.subscribe(() => 0b1, (d) => console.log('dirty =', d));
+ch.subscribe(
+  () => 0b1,
+  (d) => console.log('dirty =', d),
+);
 ch.mark(0b1); // => "dirty = 1" (synchronous)
 ```
 
@@ -206,12 +209,12 @@ class ManualScheduler implements Scheduler {
 }
 ```
 
-| Member | Signature | Description |
-| --- | --- | --- |
-| `request` | `(flush: () => void): void` | Marks a flush pending and stores `flush` as the latest pending callback. Does **not** invoke it. |
-| `pump` | `(): void` | If nothing is pending, returns immediately (no-op). Otherwise clears the pending and stored-flush state **first**, then invokes the stored callback. |
+| Member    | Signature                   | Description                                                                                                                                          |
+| --------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `request` | `(flush: () => void): void` | Marks a flush pending and stores `flush` as the latest pending callback. Does **not** invoke it.                                                     |
+| `pump`    | `(): void`                  | If nothing is pending, returns immediately (no-op). Otherwise clears the pending and stored-flush state **first**, then invokes the stored callback. |
 
-No constructor arguments. No `cancel`. Because `pump` clears state before invoking, a re-entrant `request` made during the flush is preserved for the *next* `pump` rather than cascading synchronously. Intended for tests, replay, and SSR.
+No constructor arguments. No `cancel`. Because `pump` clears state before invoking, a re-entrant `request` made during the flush is preserved for the _next_ `pump` rather than cascading synchronously. Intended for tests, replay, and SSR.
 
 ```ts
 import { DirtyChannel, ManualScheduler } from '@dirtytalk/engine';
@@ -220,7 +223,10 @@ const sched = new ManualScheduler();
 const ch = new DirtyChannel(BitsetSpace, sched);
 
 const calls: number[] = [];
-ch.subscribe(() => 0b1, (d) => calls.push(d));
+ch.subscribe(
+  () => 0b1,
+  (d) => calls.push(d),
+);
 
 ch.mark(0b1);
 ch.mark(0b1); // nothing has run yet
@@ -242,10 +248,10 @@ class MicrotaskScheduler implements Scheduler {
 }
 ```
 
-| Member | Signature | Description |
-| --- | --- | --- |
+| Member    | Signature                   | Description                                                                                                                                                                       |
+| --------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `request` | `(flush: () => void): void` | Stores `flush` as the latest. If not already pending, schedules a drain via `queueMicrotask`. All requests within a tick coalesce into one microtask; the last stored flush wins. |
-| `cancel` | `(): void` | Clears pending state and the stored flush, preventing the scheduled drain from running anything. After `cancel`, a fresh `request` works normally. |
+| `cancel`  | `(): void`                  | Clears pending state and the stored flush, preventing the scheduled drain from running anything. After `cancel`, a fresh `request` works normally.                                |
 
 No constructor arguments. Drains at the end of the current microtask queue. The intended default for `blac`.
 
@@ -253,7 +259,10 @@ No constructor arguments. Drains at the end of the current microtask queue. The 
 import { DirtyChannel, MicrotaskScheduler } from '@dirtytalk/engine';
 
 const ch = new DirtyChannel(BitsetSpace, new MicrotaskScheduler());
-ch.subscribe(() => 0b011, (dirty) => console.log('flush dirty =', dirty));
+ch.subscribe(
+  () => 0b011,
+  (dirty) => console.log('flush dirty =', dirty),
+);
 
 ch.mark(0b001);
 ch.mark(0b010); // both coalesce into ONE flush
@@ -274,23 +283,26 @@ class RAFScheduler implements Scheduler {
 }
 ```
 
-| Member | Signature | Description |
-| --- | --- | --- |
-| `constructor` | `()` | Takes no arguments. Captures whether `requestAnimationFrame` is available **once**, at construction (`typeof globalThis.requestAnimationFrame === 'function'`). |
-| `request` | `(flush: () => void): void` | Stores `flush` as the latest. If no drain is currently scheduled, schedules one via `requestAnimationFrame` when available, otherwise `setTimeout(fn, 16)`. Coalesces to one flush per frame/tick; last flush wins. |
-| `cancel` | `(): void` | If a drain is pending, unschedules it (`cancelAnimationFrame` or `clearTimeout`), nulls the handle, and clears the stored flush. |
+| Member        | Signature                   | Description                                                                                                                                                                                                         |
+| ------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `constructor` | `()`                        | Takes no arguments. Captures whether `requestAnimationFrame` is available **once**, at construction (`typeof globalThis.requestAnimationFrame === 'function'`).                                                     |
+| `request`     | `(flush: () => void): void` | Stores `flush` as the latest. If no drain is currently scheduled, schedules one via `requestAnimationFrame` when available, otherwise `setTimeout(fn, 16)`. Coalesces to one flush per frame/tick; last flush wins. |
+| `cancel`      | `(): void`                  | If a drain is pending, unschedules it (`cancelAnimationFrame` or `clearTimeout`), nulls the handle, and clears the stored flush.                                                                                    |
 
 Intended for `insomni` (frame-aligned repaints).
 
 ::: warning rAF detection is one-time
-The rAF-vs-`setTimeout` choice is fixed at construction. Polyfilling `requestAnimationFrame` *after* the instance is built will not change its behavior.
+The rAF-vs-`setTimeout` choice is fixed at construction. Polyfilling `requestAnimationFrame` _after_ the instance is built will not change its behavior.
 :::
 
 ```ts
 import { DirtyChannel, RAFScheduler } from '@dirtytalk/engine';
 
 const ch = new DirtyChannel(BitsetSpace, new RAFScheduler());
-ch.subscribe(() => 0b1, (dirty) => repaint(dirty));
+ch.subscribe(
+  () => 0b1,
+  (dirty) => repaint(dirty),
+);
 ch.mark(0b1);
 ch.mark(0b1); // coalesced; one repaint next frame
 ```
@@ -315,10 +327,10 @@ class DirtyChannel<Region> {
 constructor(space: Space<Region>, scheduler: Scheduler)
 ```
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `space` | `Space<Region>` | The region algebra. |
-| `scheduler` | `Scheduler` | Controls when flush runs. |
+| Parameter   | Type            | Description               |
+| ----------- | --------------- | ------------------------- |
+| `space`     | `Space<Region>` | The region algebra.       |
+| `scheduler` | `Scheduler`     | Controls when flush runs. |
 
 On construction the channel initializes its accumulator to `space.empty()` and allocates a single stable bound flush function once (to avoid GC churn and let identity-keying schedulers dedupe). Construction does **not** call `scheduler.request`.
 
@@ -328,9 +340,9 @@ On construction the channel initializes its accumulator to `space.empty()` and a
 mark(r: Region): void
 ```
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `r` | `Region` | The region that just changed. |
+| Parameter | Type     | Description                   |
+| --------- | -------- | ----------------------------- |
+| `r`       | `Region` | The region that just changed. |
 
 **Returns:** `void`.
 
@@ -342,10 +354,10 @@ mark(r: Region): void
 subscribe(interest: () => Region, cb: (dirty: Region) => void): () => void
 ```
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `interest` | `() => Region` | A thunk returning the region this subscriber cares about. Re-evaluated lazily, once per flush per subscriber — not snapshotted at subscribe time. Skipped entirely on empty-dirty flushes. |
-| `cb` | `(dirty: Region) => void` | Invoked with the accumulated dirty region when `space.intersects(interest(), dirty)` is true. |
+| Parameter  | Type                      | Description                                                                                                                                                                                |
+| ---------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `interest` | `() => Region`            | A thunk returning the region this subscriber cares about. Re-evaluated lazily, once per flush per subscriber — not snapshotted at subscribe time. Skipped entirely on empty-dirty flushes. |
+| `cb`       | `(dirty: Region) => void` | Invoked with the accumulated dirty region when `space.intersects(interest(), dirty)` is true.                                                                                              |
 
 **Returns:** an unsubscribe function `() => void`.
 

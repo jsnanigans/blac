@@ -2,10 +2,10 @@
 
 Some behavior does not belong to any single bloc — logging every state change, mirroring state into DevTools, persisting to IndexedDB, sending analytics. Wiring that into each bloc by hand would scatter the same concern across your codebase and couple your domain logic to infrastructure.
 
-A **plugin** is the escape hatch: it installs once, globally, and observes lifecycle events across *every* state container in the registry. Write the cross-cutting concern once; it applies everywhere automatically.
+A **plugin** is the escape hatch: it installs once, globally, and observes lifecycle events across _every_ state container in the registry. Write the cross-cutting concern once; it applies everywhere automatically.
 
 ::: info Plugins vs system events — which do I reach for?
-[System events](/core/system-events) (`this.onSystemEvent(...)`) are for logic that belongs to **one bloc** ("when *this* cart changes, recompute *this* total"). Plugins are for behavior that applies **across all blocs** ("log every state change in the app"). If you find yourself adding the same `onSystemEvent` handler to many blocs, that is the signal to lift it into a plugin.
+[System events](/core/system-events) (`this.onSystemEvent(...)`) are for logic that belongs to **one bloc** ("when _this_ cart changes, recompute _this_ total"). Plugins are for behavior that applies **across all blocs** ("log every state change in the app"). If you find yourself adding the same `onSystemEvent` handler to many blocs, that is the signal to lift it into a plugin.
 :::
 
 ## The BlacPlugin interface
@@ -50,14 +50,14 @@ Every per-container hook receives the focal bloc as `ctx.container`, not as a se
 
 ### Hook signatures (verbatim)
 
-| Hook | Signature | When it fires |
-| --- | --- | --- |
-| `onInstall` | `(ctx)` | Once at install. `ctx.container` is `undefined`. |
-| `onUninstall` | `()` | Once at uninstall. No context. |
-| `onCreated` | `(ctx)` | Synchronously when a container is first acquired. |
-| `onStateChange` | `(ctx, prev, next, paths)` | Once per microtask flush after a state change. |
-| `onDestroyed` | `(ctx)` | Synchronously after a container is disposed. |
-| `onHydrationChange` | `(ctx, status, previousStatus)` | On each hydration status transition. |
+| Hook                | Signature                       | When it fires                                     |
+| ------------------- | ------------------------------- | ------------------------------------------------- |
+| `onInstall`         | `(ctx)`                         | Once at install. `ctx.container` is `undefined`.  |
+| `onUninstall`       | `()`                            | Once at uninstall. No context.                    |
+| `onCreated`         | `(ctx)`                         | Synchronously when a container is first acquired. |
+| `onStateChange`     | `(ctx, prev, next, paths)`      | Once per microtask flush after a state change.    |
+| `onDestroyed`       | `(ctx)`                         | Synchronously after a container is disposed.      |
+| `onHydrationChange` | `(ctx, status, previousStatus)` | On each hydration status transition.              |
 
 ::: details Internal devtools-only hooks
 The interface also declares `onRefAcquired(ctx, refId)`, `onRefReleased(ctx, refId)`, and `onDepsChanged(ctx, previousDeps, currentDeps)`. These are marked `@internal` and exist to support the DevTools connector; they are not part of the stable plugin contract and may change. Avoid them in application plugins.
@@ -66,12 +66,12 @@ The interface also declares `onRefAcquired(ctx, refId)`, `onRefReleased(ctx, ref
 ::: warning Breaking change from v1
 Hook names were renamed for clarity and consistency. The `ctx` (context) parameter is now **first** on every hook. Update any existing plugins:
 
-| v1 name               | v2 name         | Notes                        |
-| --------------------- | --------------- | ---------------------------- |
-| `onInstanceCreated`   | `onCreated`     | `ctx` is now the first param |
-| `onInstanceDisposed`  | `onDestroyed`   | `ctx` is now the first param |
-| `onStateChanged`      | `onStateChange` | New `paths` 4th param; `ctx` first |
-| _(not present)_       | `onHydrationChange` | New in v2               |
+| v1 name              | v2 name             | Notes                              |
+| -------------------- | ------------------- | ---------------------------------- |
+| `onInstanceCreated`  | `onCreated`         | `ctx` is now the first param       |
+| `onInstanceDisposed` | `onDestroyed`       | `ctx` is now the first param       |
+| `onStateChanged`     | `onStateChange`     | New `paths` 4th param; `ctx` first |
+| _(not present)_      | `onHydrationChange` | New in v2                          |
 
 For the full v1 → v2 migration (including non-plugin changes), see [Migrating from v1](/guide/migration-from-v1).
 :::
@@ -89,18 +89,19 @@ getPluginManager().install(myPlugin, {
 });
 ```
 
-| Config option | Default | Meaning |
-| --- | --- | --- |
-| `enabled` | `true` | Set `false` to register the plugin but skip all hook dispatch. |
+| Config option | Default | Meaning                                                                                                                                              |
+| ------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`     | `true`  | Set `false` to register the plugin but skip all hook dispatch.                                                                                       |
 | `environment` | `'all'` | Active only when `process.env.NODE_ENV` matches (`'development'`, `'production'`, `'test'`) or `'all'`. A mismatch logs a skip and installs nothing. |
 
 The `environment` gate is a runtime check against `NODE_ENV`, not tree-shaking. Use `'development'` for debug-only plugins (logging, DevTools) so they add zero overhead in production; use `'all'` for plugins you genuinely want everywhere, like persistence.
 
 ::: warning Common mistakes
+
 - **`install` throws if a plugin with the same `name` is already installed.** Names are the unique key; pick a stable, unique `name`.
 - **If `onInstall` throws, the plugin is rolled back** (removed) and the error rethrown — a failed install leaves nothing half-registered.
 - **Forgetting `environment` means a debug plugin runs in production.** A noisy logging plugin left at the default `'all'` will log in prod. Gate it to `'development'`.
-:::
+  :::
 
 ## Uninstalling
 
@@ -120,27 +121,27 @@ The `ctx` parameter (always first) carries the focal container plus safe, read-o
 
 The methods below take an `instance` argument so a plugin can also reach blocs other than the focal one (e.g. via `queryInstances`):
 
-| Method                                | Returns                                                      |
-| ------------------------------------- | ------------------------------------------------------------ |
+| Method                                | Returns                                                                             |
+| ------------------------------------- | ----------------------------------------------------------------------------------- |
 | `getInstanceMetadata(instance)`       | `{ id, className, isDisposed, name, state, createdAt, args, hydrationStatus, ... }` |
-| `getState(instance)`                  | Current state of the instance                                |
-| `getHydrationStatus(instance)`        | Current `HydrationStatus` of the instance                    |
-| `startHydration(instance)`            | Begin hydration for the instance                             |
-| `applyHydratedState(instance, state)` | Apply restored state during hydration                        |
-| `finishHydration(instance)`           | Mark hydration as complete                                   |
-| `failHydration(instance, error)`      | Mark hydration as failed                                     |
-| `waitForHydration(instance)`          | `Promise<void>` that resolves when hydration completes       |
-| `queryInstances(Type)`                | All instances of a given class                               |
-| `getAllTypes()`                       | All registered state container classes                       |
-| `getStats()`                          | `{ registeredTypes, totalInstances, typeBreakdown }`         |
-| `getRefIds(instanceId)`               | Array of ref holder IDs for an instance                      |
+| `getState(instance)`                  | Current state of the instance                                                       |
+| `getHydrationStatus(instance)`        | Current `HydrationStatus` of the instance                                           |
+| `startHydration(instance)`            | Begin hydration for the instance                                                    |
+| `applyHydratedState(instance, state)` | Apply restored state during hydration                                               |
+| `finishHydration(instance)`           | Mark hydration as complete                                                          |
+| `failHydration(instance, error)`      | Mark hydration as failed                                                            |
+| `waitForHydration(instance)`          | `Promise<void>` that resolves when hydration completes                              |
+| `queryInstances(Type)`                | All instances of a given class                                                      |
+| `getAllTypes()`                       | All registered state container classes                                              |
+| `getStats()`                          | `{ registeredTypes, totalInstances, typeBreakdown }`                                |
+| `getRefIds(instanceId)`               | Array of ref holder IDs for an instance                                             |
 
 The five hydration methods — `startHydration`, `applyHydratedState`, `finishHydration`, `failHydration`, and `waitForHydration` — exist so a plugin can drive the [hydration lifecycle](/core/system-events) from the outside. The [Persistence plugin](/plugins/persistence) is their real-world consumer: it begins hydration, restores saved state, and finishes (or fails) hydration through exactly these methods.
 
 ## PathSet and the path interner
 
 ::: tip You probably do not need this
-Most plugins act on the whole `next` state and ignore `paths` entirely. Reach for the interner only when you are building field-level tooling — structured logs or DevTools integrations that report *which* property changed.
+Most plugins act on the whole `next` state and ignore `paths` entirely. Reach for the interner only when you are building field-level tooling — structured logs or DevTools integrations that report _which_ property changed.
 :::
 
 `onStateChange` receives `paths: PathSet` as its fourth argument: a `Set<PathId>` of the property paths that changed in the flush — **or the `ALL_PATHS` sentinel** when the change spans every path (for example a full `emit` replacing the whole state, or a single-consumer container that skips path diffing). It is never `undefined`.
@@ -219,10 +220,11 @@ getPluginManager().install(auditPlugin, { environment: 'development' });
 ```
 
 ::: warning Common mistakes
+
 - **Mutating state inside `onStateChange`.** Calling `ctx.container.emit(...)` (or `patch`/`update`) from this hook triggers another flush, which fires `onStateChange` again — an infinite loop. Plugins observe; they do not write back.
 - **Skipping the `ALL_PATHS` check.** See the warning above — iterating the sentinel throws.
 - **Leaving a debug plugin at `environment: 'all'`.** It will run (and log, and cost) in production. Gate noisy plugins to `'development'`.
-:::
+  :::
 
 ::: details Performance note: plugins defeat the single-consumer skip
 To deliver `onStateChange` for every flush, the manager subscribes to each container's channel with `ALL_PATHS` interest. That subscription counts as a consumer, which disables the single-consumer fast path in the structural container (where `emit` would otherwise skip path diffing entirely). The trade-off is intentional — DevTools and persistence genuinely need every change — but it is why a plugin you do not need should stay uninstalled or `environment`-gated rather than installed-but-disabled.

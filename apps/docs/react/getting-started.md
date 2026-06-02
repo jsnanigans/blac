@@ -63,16 +63,17 @@ There is no `<Provider>` to add at the root and nothing to register. The first c
 
 A Cubit exposes three mutation methods. Most code uses `emit`; reach for the others when they read better:
 
-| Method   | Shape                          | Use when                                                  |
-| -------- | ------------------------------ | --------------------------------------------------------- |
-| `emit`   | `emit(nextState)`              | You're replacing the whole state object.                  |
-| `update` | `update((prev) => nextState)`  | The next state derives from the previous one.             |
-| `patch`  | `patch(partial)`               | You want to deep-merge a few fields and leave the rest.   |
+| Method   | Shape                         | Use when                                                |
+| -------- | ----------------------------- | ------------------------------------------------------- |
+| `emit`   | `emit(nextState)`             | You're replacing the whole state object.                |
+| `update` | `update((prev) => nextState)` | The next state derives from the previous one.           |
+| `patch`  | `patch(partial)`              | You want to deep-merge a few fields and leave the rest. |
 
 ::: warning Common mistakes
+
 - **Regular methods lose `this`.** `increment() { ... }` (a normal method) loses its `this` binding when passed as `onClick={counter.increment}`. Use arrow-function class fields (`increment = () => { ... }`) as every example here does — they capture `this` at construction.
 - **`emit` replaces, it does not merge.** `emit({ count: 1 })` on a state of `{ count, name }` drops `name`. To change only some fields, use `patch({ count: 1 })` (deep-merge) or spread inside `update((s) => ({ ...s, count: 1 }))`.
-:::
+  :::
 
 ::: details Where does the state live?
 The instance is held in a global registry and reference-counted by `useBloc`. The "what just happened" details — acquire on mount, release on unmount, automatic disposal at zero refs — are covered in [Instance Management](/core/instance-management), and the reasoning behind the design is in [Mental Model](/guide/mental-model).
@@ -82,10 +83,10 @@ The instance is held in a global registry and reference-counted by `useBloc`. Th
 
 Auto-tracking is on by default and needs no configuration. The only knob is per call: pass a `select` function to `useBloc` to choose exactly what drives re-renders instead.
 
-| Mode          | How to enable                  | Re-renders when                       |
-| ------------- | ------------------------------ | ------------------------------------- |
-| Auto-tracking | Default (no `select`)          | A state path you read during render changes |
-| Manual select | `select: (s) => [s.count]`     | A selected value changes (per-index `Object.is`) |
+| Mode          | How to enable              | Re-renders when                                  |
+| ------------- | -------------------------- | ------------------------------------------------ |
+| Auto-tracking | Default (no `select`)      | A state path you read during render changes      |
+| Manual select | `select: (s) => [s.count]` | A selected value changes (per-index `Object.is`) |
 
 ::: tip There is no `autoTrack` flag and no required config
 Tracking is automatic and structural — driven by a render-time proxy, not by decorating fields or flipping a switch. `configureBlacReact` exists but currently has no options. To opt out of auto-tracking for one component, use `select`. See [Dependency Tracking](/react/dependency-tracking) for the full model.
@@ -95,12 +96,12 @@ Tracking is automatic and structural — driven by a render-time proxy, not by d
 
 By default all components calling `useBloc(SameCubit)` share one instance. You can scope instances by `args` values or per mount:
 
-| Mode                    | How to enable                                          | Behavior                                              |
-| ----------------------- | ------------------------------------------------------ | ----------------------------------------------------- |
-| Shared                  | Default (no `args`)                                    | All components share one instance                     |
-| Per-args (default hash) | `{ args: { id } }`                                     | Each distinct `args` value gets its own instance      |
-| Per-args (custom key)   | `{ args: { id } }` + `static key = (a) => a.id`       | Only the keyed field forks instances; others ride along |
-| Per-mount               | `{ args: { _id: useId() } }` + `static key = (a) => a._id` | Each component mount gets a private instance     |
+| Mode                    | How to enable                                              | Behavior                                                |
+| ----------------------- | ---------------------------------------------------------- | ------------------------------------------------------- |
+| Shared                  | Default (no `args`)                                        | All components share one instance                       |
+| Per-args (default hash) | `{ args: { id } }`                                         | Each distinct `args` value gets its own instance        |
+| Per-args (custom key)   | `{ args: { id } }` + `static key = (a) => a.id`            | Only the keyed field forks instances; others ride along |
+| Per-mount               | `{ args: { _id: useId() } }` + `static key = (a) => a._id` | Each component mount gets a private instance            |
 
 See [Passing Inputs](/guide/inputs) for the full identity model and precedence.
 

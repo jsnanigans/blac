@@ -456,9 +456,9 @@ protected depend<T extends StateContainerConstructor>(
 ): DepHandle<T>
 ```
 
-| Parameter     | Type                                  | Required | Description                                                                                |
-| ------------- | ------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
-| `Type`        | `T extends StateContainerConstructor` | yes      | The state-container class to depend on.                                                    |
+| Parameter     | Type                                  | Required | Description                                                                                         |
+| ------------- | ------------------------------------- | -------- | --------------------------------------------------------------------------------------------------- |
+| `Type`        | `T extends StateContainerConstructor` | yes      | The state-container class to depend on.                                                             |
 | `defaultArgs` | `ExtractArgs<T>`                      | no       | Args identifying which keyed instance to resolve when an accessor is called without its own `args`. |
 
 **Returns:** a `DepHandle<T>` with two accessors — `handle.untracked()` resolves the dep against the registry lazily on each call (`this.user.untracked()`), and `handle.track()` does the same _plus_ subscribes the reading React consumer. Both take an optional `{ args }` to override `defaultArgs` per call. See [Auto-tracking with `.track()`](/core/bloc-communication#auto-tracking-with-track).

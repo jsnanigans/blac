@@ -57,10 +57,12 @@ Per Decision 11, `@blac/compat`'s existing tests at `packages/blac-compat/src/__
 ## Acceptance criteria
 
 **Happy path:**
+
 - [ ] `vp run test` from `packages/blac-compat/` is fully green.
 - [ ] Status board entry updated.
 
 **Sad path (failures):**
+
 - [ ] Failures documented at `plans/blac-core-migration/_compat-failures.md`.
 - [ ] No source edits to `packages/blac-compat/`.
 - [ ] Escalation flagged in the commit body and reported back.

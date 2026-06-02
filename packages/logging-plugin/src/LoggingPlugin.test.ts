@@ -1,13 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
+import { ALL_PATHS } from '@blac/core';
 import type { PluginContext, InstanceMetadata } from '@blac/core';
 import { LoggingPlugin } from './LoggingPlugin';
-
-// ALL_PATHS is Symbol.for('@dirtytalk/structural/ALL_PATHS') — use the symbol
-// directly here to avoid a dist-level import gap (the re-export exists in
-// @blac/core source but not yet in the published dist at lint time).
-const ALL_PATHS: unique symbol = Symbol.for(
-  '@dirtytalk/structural/ALL_PATHS',
-) as any;
 
 // ---------------------------------------------------------------------------
 // Minimal test doubles

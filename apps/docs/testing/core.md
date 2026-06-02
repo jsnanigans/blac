@@ -19,17 +19,17 @@ import {
 ::: tip Which helper do I reach for?
 These tools overlap, so start from the question you are answering:
 
-| Goal | Helper |
-| --- | --- |
-| Isolate **every** test in a file (the default) | `blacTestSetup()` |
-| Isolate **one block** of code, sync or async | `withTestRegistry(fn)` |
-| Use a **real** instance, just with starting state | `withBlocState(Cubit, state)` |
-| Replace **one method** on a real instance | `withBlocMethod(Cubit, name, impl)` |
-| Build an instance with state, mocked methods, args, or deps | `createCubitStub(Cubit, options)` |
-| Force the registry to return **your** instance (e.g. a stub) | `registerOverride(Cubit, instance)` |
-| Override the registry for a **single expression** | `overrideEnsure(Cubit, instance, fn)` |
+| Goal                                                         | Helper                                |
+| ------------------------------------------------------------ | ------------------------------------- |
+| Isolate **every** test in a file (the default)               | `blacTestSetup()`                     |
+| Isolate **one block** of code, sync or async                 | `withTestRegistry(fn)`                |
+| Use a **real** instance, just with starting state            | `withBlocState(Cubit, state)`         |
+| Replace **one method** on a real instance                    | `withBlocMethod(Cubit, name, impl)`   |
+| Build an instance with state, mocked methods, args, or deps  | `createCubitStub(Cubit, options)`     |
+| Force the registry to return **your** instance (e.g. a stub) | `registerOverride(Cubit, instance)`   |
+| Override the registry for a **single expression**            | `overrideEnsure(Cubit, instance, fn)` |
 
-Rule of thumb: prefer real instances (`withBlocState`, `withBlocMethod`) so you exercise real logic; reach for stubs and overrides only to control a bloc's *dependencies* or to intercept side effects.
+Rule of thumb: prefer real instances (`withBlocState`, `withBlocMethod`) so you exercise real logic; reach for stubs and overrides only to control a bloc's _dependencies_ or to intercept side effects.
 :::
 
 ## Registry isolation
@@ -199,12 +199,12 @@ function createCubitStub<T extends StateContainerConstructor>(
 
 Creates a real instance of the cubit with optional pre-set state and method overrides. The stub is a fully functional instance — subscriptions, `emit`, `patch`, and `dispose` all work normally. Only the explicitly overridden methods are replaced.
 
-| Option | Effect |
-| --- | --- |
-| `state` | Seeds starting state. Merged via `patch()` for object state (provide only the fields you care about); replaced via `emit()` for non-object state. |
-| `methods` | Replaces specific methods on the instance. Everything else stays real. |
-| `args` | Runs the bloc's `init(args)` once via the same `initConfig` path the registry uses, so `init` and lifecycle hooks fire. Only allowed when the bloc declares a non-`void` `Args`. |
-| `deps` | Pre-wires a [`deps`](/guide/inputs) slice so `onDepsChanged` fires during the test. |
+| Option    | Effect                                                                                                                                                                           |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `state`   | Seeds starting state. Merged via `patch()` for object state (provide only the fields you care about); replaced via `emit()` for non-object state.                                |
+| `methods` | Replaces specific methods on the instance. Everything else stays real.                                                                                                           |
+| `args`    | Runs the bloc's `init(args)` once via the same `initConfig` path the registry uses, so `init` and lifecycle hooks fire. Only allowed when the bloc declares a non-`void` `Args`. |
+| `deps`    | Pre-wires a [`deps`](/guide/inputs) slice so `onDepsChanged` fires during the test.                                                                                              |
 
 The options apply in source order: `args` runs `init` first, then `state` overrides on top, then `methods` are swapped, then `deps` are wired (which may itself emit via `onDepsChanged`).
 
@@ -340,7 +340,7 @@ it('propagates async state', async () => {
 ```
 
 ::: info Reading `state` directly does not need a flush
-`flush()` is about *propagation*. The instance's own `state` getter is synchronous — `data.state` is up to date the instant `emit`/`patch` returns. You only need `await flush()` when asserting on something downstream of the channel flush (a `subscribe` listener, a `stateChanged` handler, a re-rendered component, a plugin).
+`flush()` is about _propagation_. The instance's own `state` getter is synchronous — `data.state` is up to date the instant `emit`/`patch` returns. You only need `await flush()` when asserting on something downstream of the channel flush (a `subscribe` listener, a `stateChanged` handler, a re-rendered component, a plugin).
 :::
 
 ::: warning `flush()` drains microtasks, not timers
@@ -353,6 +353,7 @@ it('propagates async state', async () => {
 ```ts
 import { flush } from '@blac/core/testing';
 ```
+
 :::
 
 ## Combining helpers
@@ -442,9 +443,10 @@ it('includes shipping in total', () => {
 The stub is a real `ShippingCubit` instance, so `cart`'s `.shipping.untracked()` resolves it exactly as it would in production — no special mocking framework needed. (For the production-side picture of how `depend()` resolves from the registry, see [Bloc Communication](/core/bloc-communication).)
 
 ::: danger Common mistakes
-- **Overriding a dependency *after* the dependent bloc has already read it.** `depend()` resolves lazily on each call, but if your dependent bloc cached a value in `init()` from the dependency, register the override *before* you `ensure` the dependent bloc.
+
+- **Overriding a dependency _after_ the dependent bloc has already read it.** `depend()` resolves lazily on each call, but if your dependent bloc cached a value in `init()` from the dependency, register the override _before_ you `ensure` the dependent bloc.
 - **Forgetting that `depend()` uses `ensure` (no ref).** Within a test the registry is isolated, so this rarely bites — but in app code a depended-on bloc can be disposed if nothing holds a ref. See [Bloc Communication](/core/bloc-communication).
-:::
+  :::
 
 ## Testing keyed instances
 

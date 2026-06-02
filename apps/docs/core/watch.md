@@ -62,9 +62,9 @@ function instance<T extends StateContainerConstructor>(
 ): BlocRef<T>;
 ```
 
-| Parameter   | Type                                  | Required | Description                                                          |
-| ----------- | ------------------------------------- | -------- | -------------------------------------------------------------------- |
-| `BlocClass` | `T extends StateContainerConstructor` | yes      | The bloc class to reference.                                         |
+| Parameter   | Type                                  | Required | Description                                                                                                                  |
+| ----------- | ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `BlocClass` | `T extends StateContainerConstructor` | yes      | The bloc class to reference.                                                                                                 |
 | `args`      | `ExtractArgs<T>`                      | no       | The args identifying the instance — the same args you pass to `useBloc`. Resolved to a key via `static key`/structural hash. |
 
 **Returns:** a `BlocRef<T>` — a lightweight reference object that tells `watch` which keyed instance to resolve.

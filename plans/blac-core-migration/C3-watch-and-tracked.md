@@ -35,7 +35,10 @@ Per Decisions 4 + 5 in the README:
 ```ts
 import { ALL_PATHS } from '@dirtytalk/structural';
 import { acquire, release } from '../registry';
-import type { StateContainerConstructor, InstanceState } from '../types/utilities';
+import type {
+  StateContainerConstructor,
+  InstanceState,
+} from '../types/utilities';
 
 export type WatchFn<T extends StateContainerConstructor> = (
   state: InstanceState<T>['state'],
@@ -57,12 +60,14 @@ export function watch<T extends StateContainerConstructor>(
     bloc,
     unsubscribe() {
       unsub();
-      release(BlocClass);  // match acquire
+      release(BlocClass); // match acquire
     },
   };
 }
 
-export function instance<T extends StateContainerConstructor>(BlocClass: T): InstanceState<T> {
+export function instance<T extends StateContainerConstructor>(
+  BlocClass: T,
+): InstanceState<T> {
   return acquire(BlocClass);
 }
 ```
@@ -123,6 +128,7 @@ packages/blac-core/src/tracking.ts                  (delete)
    ```
 
    Body:
+
    ```
    - watch() now wraps container.subscribe(ALL_PATHS, ...). Signature unchanged.
    - tracked() standalone API removed; trackRender from @dirtytalk/structural

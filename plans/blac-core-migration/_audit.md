@@ -11,6 +11,7 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 ## apps/examples
 
 ### Imports from `@blac/core`
+
 - `Cubit` — `src/router/RouterBloc.ts:1`; declared base class for `RouterBloc`.
 - `Cubit` — `src/examples/01-counter/CounterBloc.ts:1`.
 - `Cubit` — `src/examples/02-async/FeedCubit.ts:1`.
@@ -45,9 +46,11 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 - `Cubit` — `src/__tests__/testing-utils/cubit-stub.test.ts:2`.
 
 ### Imports from `@blac/core/tracking`
-*(no `@blac/core/tracking` imports found)*
+
+_(no `@blac/core/tracking` imports found)_
 
 ### Imports from `@blac/core/testing`
+
 - `blacTestSetup, withTestRegistry, registerOverride, createCubitStub, withBlocState, withBlocMethod` — `src/__tests__/testing-utils/integration.test.ts:3-10`.
 - `blacTestSetup, registerOverride, createCubitStub, withBlocState` — `src/__tests__/testing-utils/react-render.test.tsx:5-10`.
 - `blacTestSetup, createCubitStub` — `src/__tests__/testing-utils/cubit-stub.test.ts:3`.
@@ -56,19 +59,24 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 - `blacTestSetup, ...` — `src/__tests__/testing-utils/test-registry.test.ts:9-13`.
 
 ### Imports from `@blac/adapter`
-*(no `@blac/adapter` imports found)*
+
+_(no `@blac/adapter` imports found)_
 
 ### Imports from `@blac/react`
+
 - `useBloc` — 35 files across `src/router/`, `src/App.tsx`, `src/examples/01-counter/*`, `02-async/*`, `03-todo/*`, `04-form/*`, `05-dashboard/widgets/*`, `06-db-persist/*`, `07-registry/*`, `08-tracking/*`, `10-input-pattern/*`, `src/messenger/components/*`.
 - `useBloc` — `src/__tests__/testing-utils/fixtures-react.tsx:2`.
 
 ### Imports from `@blac/react/testing`
+
 - `renderWithBloc, renderWithRegistry` — `src/__tests__/testing-utils/react-render.test.tsx:11`.
 
 ### Imports from `@blac/compat`
-*(no `@blac/compat` imports found)*
+
+_(no `@blac/compat` imports found)_
 
 ### Notes
+
 - No `BlocProvider` usage in the app — `instanceId` is always passed inline to `useBloc`.
 - `useBloc(..., { select })` is used at 4 sites: `03-todo/TodoList.tsx:7`, `03-todo/TodoStats.tsx:7`, `04-form/FormProgress.tsx:8`, `04-form/FormSummary.tsx:8`.
 - `watch()` from `@blac/core` is used once (`TodoDemo.tsx:24`) for localStorage persistence.
@@ -80,25 +88,32 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 ## apps/devtools-extension
 
 ### Imports from `@blac/core`
+
 - `InstanceMetadata` (type-only) — `src/global.d.ts:5`.
 - `acquire` — `src/panel/index.tsx:7`.
 
 ### Imports from `@blac/core/tracking`
-*(no `@blac/core/tracking` imports found)*
+
+_(no `@blac/core/tracking` imports found)_
 
 ### Imports from `@blac/core/testing`
-*(no imports found)*
+
+_(no imports found)_
 
 ### Imports from `@blac/adapter`
-*(no `@blac/adapter` imports found)*
+
+_(no `@blac/adapter` imports found)_
 
 ### Imports from `@blac/react`
-*(no `@blac/react` imports found)*
+
+_(no `@blac/react` imports found)_
 
 ### Imports from `@blac/compat`
-*(no `@blac/compat` imports found)*
+
+_(no `@blac/compat` imports found)_
 
 ### Notes
+
 - Pulls `DevToolsCallback` type from `@blac/devtools-connect` (`src/global.d.ts:6`) and UI from `@blac/devtools-ui` (`src/panel/index.tsx`).
 
 ---
@@ -106,60 +121,73 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 ## apps/perf
 
 ### Imports from `@blac/core`
+
 - `Cubit, borrow` — `src/benchmarks/JSFrameworkBenchmark.tsx:1`.
 - `Cubit, borrow` — `src/libraries/blac/FrameworkBenchmark.tsx:1`.
 - `Cubit, acquire, release` — `src/libraries/blac/RerenderBenchmark.tsx:1`.
 - `Cubit, acquire, release` — `src/libraries/blac/pure-state.ts:1`.
 
 ### Imports from `@blac/core/tracking`
+
 - `createDependencyState, startDependency, createDependencyProxy, capturePaths, hasDependencyChanges, createGetterState, hasGetterChanges, setActiveTracker, clearActiveTracker, commitTrackedGetters` — `src/libraries/blac/pure-state.ts:2-13`; hand-rolled getSnapshot/subscribe used for benchmarks against the framework adapter layer.
 
 ### Imports from `@blac/core/testing`
-*(no imports found)*
+
+_(no imports found)_
 
 ### Imports from `@blac/adapter`
-*(no `@blac/adapter` imports found)*
+
+_(no `@blac/adapter` imports found)_
 
 ### Imports from `@blac/react`
+
 - `useBloc` — `src/benchmarks/JSFrameworkBenchmark.tsx:2`.
 - `useBloc` — `src/libraries/blac/FrameworkBenchmark.tsx:2`.
 - `useBloc` — `src/libraries/blac/RerenderBenchmark.tsx:2`.
 
 ### Imports from `@blac/compat`
-*(no `@blac/compat` imports found)*
+
+_(no `@blac/compat` imports found)_
 
 ### Notes
+
 - This is the **only** workspace consumer of `@blac/core/tracking` outside `packages/blac-adapter` itself. The benchmark literally re-implements the adapter's tracking flow inline (`setActiveTracker`/`clearActiveTracker`, `commitTrackedGetters`) — a Phase C/E breakage here is likely.
 
 ---
 
 ## apps/docs
 
-*(VitePress site — no `.ts`/`.tsx` source files import `@blac/*`.)*
+_(VitePress site — no `.ts`/`.tsx` source files import `@blac/_`.)\*
 
 ---
 
 ## packages/devtools-connect
 
 ### Imports from `@blac/core`
+
 - `BlacPlugin, PluginContext, InstanceMetadata` (type-only) — `src/plugin/DevToolsBrowserPlugin.ts:11`.
 - `Cubit, getPluginManager, acquire, clearAll` (test) — `src/getters/enumerateGetters.test.ts:9`.
 - `Cubit, getPluginManager, blac, acquire, release, clearAll` (test) — `src/plugin/DevToolsBrowserPlugin.test.ts:9-16`.
 - `Cubit, getPluginManager, acquire, release, clearAll` (test) — `src/plugin/DevToolsBrowserPlugin.consumers.test.ts:9-15`.
 
 ### Imports from `@blac/core/tracking`
-*(no `@blac/core/tracking` imports found)*
+
+_(no `@blac/core/tracking` imports found)_
 
 ### Imports from `@blac/adapter`
-*(no `@blac/adapter` imports found)*
+
+_(no `@blac/adapter` imports found)_
 
 ### Imports from `@blac/react`
-*(no `@blac/react` imports found)*
+
+_(no `@blac/react` imports found)_
 
 ### Imports from `@blac/compat`
-*(no `@blac/compat` imports found)*
+
+_(no `@blac/compat` imports found)_
 
 ### Notes
+
 - Plugin handlers used: `onInstanceCreated`, `onStateChanged`. Reads `metadata.id`, `metadata.className`, `metadata.hydrationError`.
 
 ---
@@ -167,6 +195,7 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 ## packages/devtools-ui
 
 ### Imports from `@blac/core`
+
 - `Cubit, blac` — `src/blocs/DevToolsSearchBloc.ts:1`.
 - `Cubit, blac` — `src/blocs/DevToolsDiffBloc.ts:1`.
 - `Cubit, blac` — `src/blocs/DevToolsLayoutBloc.ts:1`.
@@ -175,18 +204,23 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 - `acquire` — `src/DraggableOverlay.tsx:7`.
 
 ### Imports from `@blac/core/tracking`
-*(no `@blac/core/tracking` imports found)*
+
+_(no `@blac/core/tracking` imports found)_
 
 ### Imports from `@blac/adapter`
-*(no `@blac/adapter` imports found)*
+
+_(no `@blac/adapter` imports found)_
 
 ### Imports from `@blac/react`
+
 - `useBloc` — `src/components/DevToolsHeader.tsx:2`, `src/components/StateViewer.tsx:2`, `src/components/InstanceList.tsx:2`, `src/components/SearchBar.tsx:2`, `src/components/LogsView.tsx:3`, `src/DevToolsPanel.tsx:7`.
 
 ### Imports from `@blac/compat`
-*(no `@blac/compat` imports found)*
+
+_(no `@blac/compat` imports found)_
 
 ### Notes
+
 - All 5 internal devtools blocs use `blac({...})(class extends Cubit<...>)` factory form.
 
 ---
@@ -194,24 +228,30 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 ## packages/logging-plugin
 
 ### Imports from `@blac/core`
+
 - `StateContainer` (type-only) — `src/types.ts:1`.
 - `InstanceMetadata` (type-only) — `src/formatters/GroupedFormatter.ts:1`.
 - `InstanceMetadata` (type-only) — `src/formatters/SimpleFormatter.ts:1`.
 - `BlacPlugin, PluginContext, StateContainer` (type-only) — `src/LoggingPlugin.ts:1`.
 
 ### Imports from `@blac/core/tracking`
-*(no `@blac/core/tracking` imports found)*
+
+_(no `@blac/core/tracking` imports found)_
 
 ### Imports from `@blac/adapter`
-*(no `@blac/adapter` imports found)*
+
+_(no `@blac/adapter` imports found)_
 
 ### Imports from `@blac/react`
-*(no `@blac/react` imports found)*
+
+_(no `@blac/react` imports found)_
 
 ### Imports from `@blac/compat`
-*(no `@blac/compat` imports found)*
+
+_(no `@blac/compat` imports found)_
 
 ### Notes
+
 - Plugin handlers used: `onInstanceCreated`, `onStateChanged`.
 
 ---
@@ -219,22 +259,28 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 ## packages/plugin-persist
 
 ### Imports from `@blac/core`
+
 - `Cubit, PluginContext, StateContainer` (type-only) — `src/IndexedDbPersistPlugin.ts:1`.
 - `BlacPlugin, Cubit, StateContainer` (type-only) — `src/types.ts:1`.
 
 ### Imports from `@blac/core/tracking`
-*(no `@blac/core/tracking` imports found)*
+
+_(no `@blac/core/tracking` imports found)_
 
 ### Imports from `@blac/adapter`
-*(no `@blac/adapter` imports found)*
+
+_(no `@blac/adapter` imports found)_
 
 ### Imports from `@blac/react`
-*(no `@blac/react` imports found)*
+
+_(no `@blac/react` imports found)_
 
 ### Imports from `@blac/compat`
-*(no `@blac/compat` imports found)*
+
+_(no `@blac/compat` imports found)_
 
 ### Notes
+
 - Plugin handlers used: `onInstanceCreated`, `onStateChanged`, plus `onError` on its own definition object.
 - Reads `metadata.instanceId` in the key function (`src/IndexedDbPersistPlugin.ts:108`-ish).
 
@@ -243,6 +289,7 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 ## packages/blac-compat
 
 ### Imports from `@blac/core`
+
 - `Cubit as V2Cubit` — `src/Cubit.ts:1`.
 - `StateContainer` — `src/BlocBase.ts:1`.
 - `blac, StateContainerConstructor` — `src/statics.ts:1-2`.
@@ -255,22 +302,28 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 - `acquire, release, getRegistry` (test) — `src/__tests__/BlocObserver.test.ts:2`.
 
 ### Imports from `@blac/core/tracking`
-*(no `@blac/core/tracking` imports found)*
+
+_(no `@blac/core/tracking` imports found)_
 
 ### Imports from `@blac/core/testing`
+
 - `blacTestSetup` — `src/__tests__/Cubit.test.ts:2`, `Blac.test.ts:2`, `useBloc.test.tsx:3`, `BlocProvider.test.tsx:3`.
 
 ### Imports from `@blac/adapter`
-*(no `@blac/adapter` imports found)*
+
+_(no `@blac/adapter` imports found)_
 
 ### Imports from `@blac/react`
+
 - `useBloc as v2UseBloc, UseBlocOptions` — `src/useBloc.ts:2-3`.
 - `BlocProvider as V2BlocProvider` — `src/BlocProvider.tsx:2`.
 
 ### Imports from `@blac/compat`
-*(no self-imports of `@blac/compat` outside this package.)*
+
+_(no self-imports of `@blac/compat` outside this package.)_
 
 ### Notes
+
 - `src/useBloc.ts:50` maps v1 `dependencySelector` -> v2 `select`. This is the only mapping callsite in compat.
 - Adapter casts the v2 bloc to `{ initWithProps?, props? }` to emulate v1 props flow — purely runtime, no internal symbol use.
 
@@ -279,6 +332,7 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 ## packages/blac-react
 
 ### Imports from `@blac/core`
+
 - `StateContainerRegistry, getRegistry, setRegistry, StateContainerConstructor` — `src/testing.ts:3-4`.
 - `ExtractState, StateContainerConstructor, InstanceReadonlyState` — `src/types.ts:1-2`.
 - `isIsolatedClass` — `src/useBloc.ts:32`.
@@ -286,23 +340,29 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 - `Cubit`, `acquire`, `borrow`, `hasInstance`, `getRefCount`, `clearAll`, `blac` — across all 24 test files under `src/__tests__/`.
 
 ### Imports from `@blac/core/tracking`
-*(no `@blac/core/tracking` imports found)*
+
+_(no `@blac/core/tracking` imports found)_
 
 ### Imports from `@blac/core/testing`
+
 - `blacTestSetup` — `src/testing.ts:9`, plus every test file under `src/__tests__/` (24 files).
 
 ### Imports from `@blac/adapter`
+
 - `autoTrackSubscribe, autoTrackSnapshot, autoTrackInit, manualDepsSubscribe, manualDepsSnapshot, manualDepsInit, noTrackSubscribe, noTrackSnapshot, noTrackInit, disableGetterTracking, ExternalDepsManager, APPLY_DEPS, REMOVE_DEPS_OWNER, AdapterState, ManualDepsConfig` (multiline) — `src/useBloc.ts:1-31`.
 - `ExtractArgs, ExtractDeps` — `src/types.ts:3`.
 - (test) `src/__tests__/useBloc.ssr.test.tsx:5-11` pulls `autoTrackInit, autoTrackSnapshot, manualDepsInit, manualDepsSnapshot, noTrackInit, noTrackSnapshot` to assert SSR fallback behavior.
 
 ### Imports from `@blac/react`
-*(internal — own exports.)*
+
+_(internal — own exports.)_
 
 ### Imports from `@blac/compat`
-*(no `@blac/compat` imports found)*
+
+_(no `@blac/compat` imports found)_
 
 ### Notes
+
 - `useBloc.ts:246` constructs `dependencies: (state, bloc) => …` when `select` is set — this is the only callsite that actually feeds the v2 adapter's `manualDeps*` mode.
 - `EMIT` is NOT used in `@blac/react`; only `APPLY_DEPS` and `REMOVE_DEPS_OWNER` are.
 
@@ -311,25 +371,31 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 ## packages/blac-adapter
 
 ### Imports from `@blac/core`
+
 - `ExtractState, InstanceReadonlyState, InstanceState, StateContainerConstructor, StateContainerInstance` — `src/index.ts:10-16`.
 - `acquire, resolveInstanceKey, release, APPLY_DEPS, REMOVE_DEPS_OWNER` — `src/index.ts:47-53` (re-exported).
 - `Cubit, clearAll` (test) — `src/__tests__/adapter.test.ts:9`, `adapter.edge-cases.test.ts:9`.
 
 ### Imports from `@blac/core/tracking`
+
 - `DependencyState, GetterState` (type-only) — `src/index.ts:18`.
 - `createDependencyState, startDependency, createDependencyProxy, capturePaths, hasDependencyChanges, hasTrackedData, shallowEqual, createGetterState, createBlocProxy, hasGetterChanges, commitTrackedGetters, invalidateRenderCache, resolveDependencies, DependencyManager` — `src/index.ts:20-35`.
 - `createGetterState` (test) — `src/__tests__/adapter.edge-cases.test.ts:10`.
 
 ### Imports from `@blac/adapter`
+
 - `APPLY_DEPS, REMOVE_DEPS_OWNER` (test of own symbol re-exports) — `src/__tests__/adapter.types.test.ts:2`.
 
 ### Imports from `@blac/react`
-*(no `@blac/react` imports found)*
+
+_(no `@blac/react` imports found)_
 
 ### Imports from `@blac/compat`
-*(no `@blac/compat` imports found)*
+
+_(no `@blac/compat` imports found)_
 
 ### Notes
+
 - This package is the **only** consumer of the public-but-internal `@blac/core/tracking` subpath (apart from `apps/perf/src/libraries/blac/pure-state.ts`).
 - Re-exports the `@internal` symbols `APPLY_DEPS` and `REMOVE_DEPS_OWNER` — that re-export is asserted by `adapter.types.test.ts`.
 
@@ -338,6 +404,7 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 ## Cross-cutting findings
 
 ### `dependencies` option on `useBloc`
+
 - 0 callsites use the legacy `dependencies:` option name.
 - The active name is `select:` (renamed per project memory). 4 app callsites + many test callsites use `select:`.
 - App callsites: `apps/examples/src/examples/03-todo/TodoList.tsx:7`, `03-todo/TodoStats.tsx:7`, `04-form/FormProgress.tsx:8`, `04-form/FormSummary.tsx:8`.
@@ -345,15 +412,18 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 - Migration risk: **low** — `dependencies:` is purely adapter-internal; public surface is `select:` only.
 
 ### `tracked()` standalone API
+
 - 0 non-core callsites.
 - Only `packages/blac-core/src/tracking/tracked.ts` and `packages/blac-core/src/index.ts` export it; no test, app, or downstream package imports `tracked` directly.
 - Recommendation: **delete** — fully unreferenced outside the package that defines it.
 
 ### `watch()`
+
 - 1 callsite: `apps/examples/src/examples/03-todo/TodoDemo.tsx:24`.
 - Migration risk: **low** — single demo consumer.
 
 ### `@internal` symbols leaking (EMIT, APPLY_DEPS, REMOVE_DEPS_OWNER)
+
 - `EMIT`: 0 external consumers (only `packages/blac-core/src/**` produces and uses it).
 - `APPLY_DEPS`: re-exported by `@blac/adapter` (`packages/blac-adapter/src/index.ts:51`), consumed by `@blac/react`'s `useBloc.ts:29,305`. Test re-export covered by `adapter.types.test.ts:5`.
 - `REMOVE_DEPS_OWNER`: same pattern — `adapter` re-exports, `react` consumes at `useBloc.ts:30,345`.
@@ -361,23 +431,28 @@ Scope: workspace-local imports of `@blac/core`, `@blac/core/tracking`, `@blac/co
 - Migration risk: **medium** — the symbols can be made package-private once `@blac/adapter` is folded into core (E0), but the `adapter.types.test.ts` test will need to move.
 
 ### Plugin event consumers
+
 - `onInstanceCreated` — `packages/devtools-connect/src/plugin/DevToolsBrowserPlugin.ts:136`, `packages/logging-plugin/src/LoggingPlugin.ts:76`, `packages/plugin-persist/src/IndexedDbPersistPlugin.ts:105`, `apps/examples/src/examples/07-registry/RegistryPlugin.ts:35`, `apps/examples/src/examples/05-dashboard/AnalyticsPlugin.ts:44`.
 - `onStateChanged` — same packages (`DevToolsBrowserPlugin.ts:164`, `LoggingPlugin.ts:101`, `IndexedDbPersistPlugin.ts:140`).
 - All read `metadata.id` / `metadata.className` (typed by `InstanceMetadata`). `plugin-persist` additionally keys on `metadata.instanceId` via its `key:` function.
-- No plugin imports `onError`/`onAction`/`onTransition` from `@blac/core` — `onError` exists only on persist plugin's *own* definition surface (`packages/plugin-persist/src/types.ts:76`).
+- No plugin imports `onError`/`onAction`/`onTransition` from `@blac/core` — `onError` exists only on persist plugin's _own_ definition surface (`packages/plugin-persist/src/types.ts:76`).
 
 ### `BlocProvider` + `instanceId` callsites
+
 - No app uses `<BlocProvider>` — only `packages/blac-react/src/__tests__/BlocProvider.test.tsx` and `packages/blac-compat/src/__tests__/BlocProvider.test.tsx` reference it.
 - `instanceId` as a `useBloc` option is widespread in `apps/examples`: counter (`CounterView`, `CounterStats`), form (`FormFields`, `FormSummary`, `FormProgress`), db-persist (`DbPersistDemo`), input-pattern (`MultiSourceCanvas`), messenger components (`UserAvatar`, `Sidebar`, `MessageItem`), registry demo (`RegistryDemo`).
 
 ### `@blac/adapter` direct consumers (besides `@blac/react`)
+
 - `packages/blac-react/src/__tests__/useBloc.ssr.test.tsx:5-11` — imports raw adapter helpers (`autoTrackInit`, etc.) for SSR assertions.
 - No other workspace package or app imports from `@blac/adapter`.
 
 ### `@blac/core/testing` subpath consumers
+
 - Heavy usage: every test file in `packages/blac-core`, `packages/blac-react`, `packages/blac-compat`, and `apps/examples/src/__tests__/testing-utils/`. ~60 files total. Phase C must keep this subpath stable or migrate every test file in one go.
 
 ### `@blac/core/tracking` subpath consumers
+
 - Two files outside `packages/blac-core`:
   - `packages/blac-adapter/src/index.ts` (expected — adapter is the consumer).
   - `apps/perf/src/libraries/blac/pure-state.ts` (unexpected — benchmark inlines the adapter flow).

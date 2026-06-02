@@ -6,11 +6,11 @@ This is a **breaking, major-version** change. There is **no backwards-compat req
 
 ## The three lanes (locked design)
 
-| Lane | Purpose | Keys identity? | Lifetime |
-|---|---|---|---|
-| **`args`** | serializable identity + construction data | **yes** — `static key(args)` else structural hash | once, at `init(args)` |
-| **`deps`** | non-serializable handles (refs, callbacks, controllers) | **never** | live, per-consumer merged, `onDepsChanged` |
-| **events** | values that change over time / late-bound | n/a | ordinary methods called from one effect |
+| Lane       | Purpose                                                 | Keys identity?                                    | Lifetime                                   |
+| ---------- | ------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------ |
+| **`args`** | serializable identity + construction data               | **yes** — `static key(args)` else structural hash | once, at `init(args)`                      |
+| **`deps`** | non-serializable handles (refs, callbacks, controllers) | **never**                                         | live, per-consumer merged, `onDepsChanged` |
+| **events** | values that change over time / late-bound               | n/a                                               | ordinary methods called from one effect    |
 
 Key mechanics: zero-arg `new Type()` stays; framework calls **`init(args)`** once before first snapshot. Identity = `static key(args)` or structural hash of `args` (distinct args ⇒ distinct instance; same-key arg mismatch ⇒ **dev-warn**). `deps` are read lazily (`this.deps.x`) and merged per consumer; **`onDepsChanged(next, prev)`** fires post-merge for wait-for-handle init (canvas, RTE controller).
 
@@ -25,21 +25,21 @@ Key mechanics: zero-arg `new Type()` stays; framework calls **`init(args)`** onc
 
 ## Scope
 
-| # | Task | Package / files | Phase | Model / effort |
-|---|---|---|---|---|
-| 01 | `<S, Args, Deps>` generics + utility types | core: `StateContainer.ts`, `Cubit.ts`, `types/utilities.ts` | 1 | opus / high |
-| 02 | `init(args)` lifecycle + construction threading | core: `StateContainer.ts`, `StateContainerRegistry.ts`, `registry/*.ts` | 1 | sonnet / medium |
-| 03 | identity keying: `static key` + structural hasher | core: `constants.ts`, `static-props.ts`, `decorators/blac.ts`, `utils/structural-key.ts` (new), `StateContainerRegistry.ts` | 1 | sonnet / medium |
-| 04 | `deps` storage + per-owner merge + `onDepsChanged` | core: `StateContainer.ts`, `core/symbols.ts` | 1 | opus / high |
-| 05 | adapter type passthrough for new generics | adapter: `src/index.ts` | 2 | sonnet / low |
-| 06 | `useBloc` `args` option: typing + threading + keying precedence | react: `types.ts`, `useBloc.ts` | 3 | sonnet / medium |
-| 07 | `useBloc` `deps` lane: per-consumer merge + cleanup | react: `types.ts`, `useBloc.ts` | 3 | opus / high |
-| 08 | dev warnings + `dependencies`→`select` rename | react: `types.ts`, `useBloc.ts`, `config.ts` | 3 | sonnet / medium |
-| 09 | testing helpers: `args`/`deps` support | core: `testing.ts`; react: `testing.ts` | 4 | sonnet / medium |
-| 10 | example app: args + deps + onDepsChanged demo | `apps/examples/**` | 4 | sonnet / medium |
-| 11 | `@blac/preact` parity | preact: `src/**` | 4 | sonnet / medium |
-| 12 | docs: core + react READMEs | `packages/blac-{core,react}/README.md` | 4 | haiku / low |
-| 13 | final cross-package audit | all | 5 | sonnet / low |
+| #   | Task                                                            | Package / files                                                                                                             | Phase | Model / effort  |
+| --- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----- | --------------- |
+| 01  | `<S, Args, Deps>` generics + utility types                      | core: `StateContainer.ts`, `Cubit.ts`, `types/utilities.ts`                                                                 | 1     | opus / high     |
+| 02  | `init(args)` lifecycle + construction threading                 | core: `StateContainer.ts`, `StateContainerRegistry.ts`, `registry/*.ts`                                                     | 1     | sonnet / medium |
+| 03  | identity keying: `static key` + structural hasher               | core: `constants.ts`, `static-props.ts`, `decorators/blac.ts`, `utils/structural-key.ts` (new), `StateContainerRegistry.ts` | 1     | sonnet / medium |
+| 04  | `deps` storage + per-owner merge + `onDepsChanged`              | core: `StateContainer.ts`, `core/symbols.ts`                                                                                | 1     | opus / high     |
+| 05  | adapter type passthrough for new generics                       | adapter: `src/index.ts`                                                                                                     | 2     | sonnet / low    |
+| 06  | `useBloc` `args` option: typing + threading + keying precedence | react: `types.ts`, `useBloc.ts`                                                                                             | 3     | sonnet / medium |
+| 07  | `useBloc` `deps` lane: per-consumer merge + cleanup             | react: `types.ts`, `useBloc.ts`                                                                                             | 3     | opus / high     |
+| 08  | dev warnings + `dependencies`→`select` rename                   | react: `types.ts`, `useBloc.ts`, `config.ts`                                                                                | 3     | sonnet / medium |
+| 09  | testing helpers: `args`/`deps` support                          | core: `testing.ts`; react: `testing.ts`                                                                                     | 4     | sonnet / medium |
+| 10  | example app: args + deps + onDepsChanged demo                   | `apps/examples/**`                                                                                                          | 4     | sonnet / medium |
+| 11  | `@blac/preact` parity                                           | preact: `src/**`                                                                                                            | 4     | sonnet / medium |
+| 12  | docs: core + react READMEs                                      | `packages/blac-{core,react}/README.md`                                                                                      | 4     | haiku / low     |
+| 13  | final cross-package audit                                       | all                                                                                                                         | 5     | sonnet / low    |
 
 ## Ground rules for every agent
 
@@ -86,6 +86,7 @@ Phase 5 — FINAL
 ```
 
 **Dispatch waves:**
+
 - Wave 1: `01` → `02` → `03` → `04`, strictly serial (each commit lands before the next launches).
 - Wave 2: `05` after `04` is committed.
 - Wave 3: `06` → `07` → `08`, strictly serial.
@@ -94,17 +95,17 @@ Phase 5 — FINAL
 
 ## Model & effort guide
 
-| Model | When |
-|---|---|
-| `haiku` (Haiku 4.5) | Mechanical, exact-spec edits (docs). |
-| `sonnet` (Sonnet 4.6) | The workhorse: multi-file wiring, new tests, careful but specified edits. |
-| `opus` (Opus 4.7) | Type-level / behavioral design surface: `01` generics, `04` deps merge, `07` react deps wiring (StrictMode-correct lifecycle). |
+| Model                 | When                                                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `haiku` (Haiku 4.5)   | Mechanical, exact-spec edits (docs).                                                                                           |
+| `sonnet` (Sonnet 4.6) | The workhorse: multi-file wiring, new tests, careful but specified edits.                                                      |
+| `opus` (Opus 4.7)     | Type-level / behavioral design surface: `01` generics, `04` deps merge, `07` react deps wiring (StrictMode-correct lifecycle). |
 
 Effort (`low`/`medium`/`high`) is informational; pass it through in the agent prompt.
 
 ## Agent dispatch
 
-Use the `Agent` tool. `subagent_type: "quick-build"` for low/medium; `subagent_type: "claude"` for high (opus). Pass `model` from the task front matter. Paste the task file content verbatim into the prompt and add: *"Read the front matter. Do all of: check → implement → verify → test → commit. The plan is approved; don't ask for confirmation."* Parallel launches go in one message; serial launches wait for the prior commit.
+Use the `Agent` tool. `subagent_type: "quick-build"` for low/medium; `subagent_type: "claude"` for high (opus). Pass `model` from the task front matter. Paste the task file content verbatim into the prompt and add: _"Read the front matter. Do all of: check → implement → verify → test → commit. The plan is approved; don't ask for confirmation."_ Parallel launches go in one message; serial launches wait for the prior commit.
 
 See [`AGENT-INSTRUCTIONS.md`](./AGENT-INSTRUCTIONS.md) for the full dispatch reference.
 

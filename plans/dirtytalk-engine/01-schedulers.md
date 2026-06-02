@@ -64,7 +64,9 @@ export interface Scheduler {
 
 ```ts
 export class SyncScheduler implements Scheduler {
-  request(flush: () => void): void { /* invoke flush synchronously, now */ }
+  request(flush: () => void): void {
+    /* invoke flush synchronously, now */
+  }
 }
 ```
 
@@ -83,7 +85,7 @@ export class ManualScheduler implements Scheduler {
 
 - `request` **records** that a flush is wanted (sets a `pending` boolean and stores the latest `flush` callback). Does not call it.
 - `pump()` — if `pending`, clear the flag and invoke the stored callback. Otherwise no-op.
-- A `request` made *during* `pump()` (because `flush` synchronously called `request` again) re-sets `pending` for a future `pump`. **Do not** drain in a loop — one `pump` call drives at most one flush. This matches the "re-entrant mark defers to next flush" contract.
+- A `request` made _during_ `pump()` (because `flush` synchronously called `request` again) re-sets `pending` for a future `pump`. **Do not** drain in a loop — one `pump` call drives at most one flush. This matches the "re-entrant mark defers to next flush" contract.
 - No `cancel`. (Could add for symmetry, but spec doesn't require it.)
 
 ### `MicrotaskScheduler`
@@ -96,7 +98,7 @@ export class MicrotaskScheduler implements Scheduler {
 ```
 
 - On `request`: if no microtask is pending, `queueMicrotask(() => this.#drain())`; set `pending = true`; store the latest `flush`.
-- `#drain` clears `pending`, snapshots the stored `flush`, and invokes it. A `request` called *during* the flush sets `pending = true` again and queues a fresh microtask.
+- `#drain` clears `pending`, snapshots the stored `flush`, and invokes it. A `request` called _during_ the flush sets `pending = true` again and queues a fresh microtask.
 - `cancel()`: sets `pending = false` and clears the stored `flush`. (We can't actually un-queue a microtask once `queueMicrotask` returns — the cancel just makes the eventual drain a no-op via the `pending` check.)
 
 ### `RAFScheduler`
@@ -122,26 +124,30 @@ Use `vi.useFakeTimers()` plus `await Promise.resolve()` (or `await vi.runOnlyPen
 Required cases:
 
 ### `SyncScheduler`
+
 - `request` invokes `flush` synchronously before returning.
 - Three `request` calls invoke `flush` three times (no dedupe — that's intentional for sync; DirtyChannel won't call request again until after its own flush).
 
 ### `ManualScheduler`
+
 - `request` does not invoke `flush`.
 - `pump()` with no pending request is a no-op.
 - `pump()` after a request invokes `flush` once.
 - `request → request → pump`: `flush` runs once (idempotent within window).
 - `pump → pump`: second `pump` runs nothing (window already drained).
-- Re-entrant `request` from inside `flush` (during `pump`): does NOT cascade — the inner request schedules a future `pump`, doesn't run synchronously. After: a *second* `pump` runs the inner flush.
+- Re-entrant `request` from inside `flush` (during `pump`): does NOT cascade — the inner request schedules a future `pump`, doesn't run synchronously. After: a _second_ `pump` runs the inner flush.
 
 ### `MicrotaskScheduler`
+
 - `request` schedules but does not invoke synchronously.
 - `await Promise.resolve()` triggers `flush` once.
 - Two `request` calls in the same tick → one flush.
-- A `request` made *inside* `flush` schedules another microtask; after the next `await`, the inner flush runs.
+- A `request` made _inside_ `flush` schedules another microtask; after the next `await`, the inner flush runs.
 - `cancel()` after `request` (before microtask drains) prevents `flush` from running. After cancel, a new `request` works as fresh.
 - Latest-`flush`-wins: `request(cb1); request(cb2); await Promise.resolve()` → only `cb2` invoked.
 
 ### `RAFScheduler`
+
 - In Node (no RAF): fallback path. Use `vi.useFakeTimers()`; `request` schedules; `vi.advanceTimersByTime(20)` invokes `flush` once.
 - Coalescing: two requests → one flush per timer tick.
 - `cancel()` after `request` clears the timer; advancing time runs nothing.

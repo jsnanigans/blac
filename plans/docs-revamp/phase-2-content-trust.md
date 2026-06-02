@@ -8,11 +8,11 @@ parallelizable. One serial wiring task at the end.
 
 ## Parallelism map
 
-| Group | Tasks | Notes |
-|---|---|---|
-| **P2a** (parallel) | 2.14, 2.15, 2.12, 2.13 | disjoint new/edited files |
-| **P2b** (parallel) | 2.11, 2.10 | 2.10 edits many ref pages — see its note |
-| **Serial** | 2.W (wiring) | runs last; owns `config.ts` |
+| Group              | Tasks                  | Notes                                    |
+| ------------------ | ---------------------- | ---------------------------------------- |
+| **P2a** (parallel) | 2.14, 2.15, 2.12, 2.13 | disjoint new/edited files                |
+| **P2b** (parallel) | 2.11, 2.10             | 2.10 edits many ref pages — see its note |
+| **Serial**         | 2.W (wiring)           | runs last; owns `config.ts`              |
 
 > 2.10 touches many existing reference pages; do not run it in the same window
 > as 2.8 rollout (Phase 3) — they edit the same files. Sequence 2.10 → then
@@ -22,8 +22,8 @@ parallelizable. One serial wiring task at the end.
 
 ## Task 2.14 — Changelog page
 
-- **Model / effort:** Sonnet 4.6 / high. *Rationale: structured authoring from
-  existing changesets; needs judgment on grouping, no deep source archaeology.*
+- **Model / effort:** Sonnet 4.6 / high. _Rationale: structured authoring from
+  existing changesets; needs judgment on grouping, no deep source archaeology._
 - **Parallel group:** P2a.
 - **Owns:** `apps/docs/guide/changelog.md` (new). Does NOT edit `config.ts`.
 - **Context to read:** `.changeset/` and any `CHANGELOG.md` per package
@@ -48,8 +48,8 @@ Add a short intro explaining the per-package versioning. No `twoslash` needed
 
 ## Task 2.15 — Versioning & Stability page
 
-- **Model / effort:** Sonnet 4.6 / high. *Rationale: policy prose + a support
-  matrix; correctness matters but is verifiable from package.json/peerDeps.*
+- **Model / effort:** Sonnet 4.6 / high. _Rationale: policy prose + a support
+  matrix; correctness matters but is verifiable from package.json/peerDeps._
 - **Parallel group:** P2a.
 - **Owns:** `apps/docs/guide/versioning.md` (new). No `config.ts`.
 - **Context to read:** `package.json` peerDeps across packages (React version
@@ -74,10 +74,10 @@ pages. Prose + tables only.
 
 ## Task 2.12 — `channel.subscribe` reference
 
-- **Model / effort:** **Opus 4.8 / high.** *Rationale: a low-level API that must
+- **Model / effort:** **Opus 4.8 / high.** _Rationale: a low-level API that must
   be specified from source — interest/PathSet shape, callback signature,
   unsubscribe semantics, and the inside-React vs outside-React framing. Getting
-  the types wrong here is a trust bug; worth the heavier model.*
+  the types wrong here is a trust bug; worth the heavier model._
 - **Parallel group:** P2a.
 - **Owns:** `apps/docs/core/subscribe.md` (new). No `config.ts`.
 - **Context to read:** the channel/subscribe implementation in
@@ -103,9 +103,9 @@ framing section: inside-React = `useBloc`; outside-React = `watch` /
 
 ## Task 2.13 — Compat-shim honesty fix
 
-- **Model / effort:** Sonnet 4.6 / high. *Rationale: careful, right-sized
+- **Model / effort:** Sonnet 4.6 / high. _Rationale: careful, right-sized
   correctness — remove a denial and describe a pattern without promoting a
-  private external package. Mostly editing existing migration prose.*
+  private external package. Mostly editing existing migration prose._
 - **Parallel group:** P2a.
 - **Owns:** `apps/docs/guide/migration-from-v1.md` (edit) and any page that
   currently claims "no compat shim" (grep first). No `config.ts`.
@@ -115,7 +115,7 @@ framing section: inside-React = `useBloc`; outside-React = `watch` /
 
 **CHECK:** Find the exact sentence(s) denying a compat shim exists. Confirm the
 package is **private/internal** — the fix removes the false denial and documents
-the *alias pattern*, NOT a recommendation to depend on an internal package.
+the _alias pattern_, NOT a recommendation to depend on an internal package.
 
 **IMPLEMENT:** Replace the denial with an honest note: an internal
 `@9amhealth/blac-compat` alias pattern exists (private), describe the shimming
@@ -130,9 +130,9 @@ is not published for general use. Keep it tight.
 
 ## Task 2.11 — High-demand recipes
 
-- **Model / effort:** Sonnet 4.6 / high. *Rationale: substantial authoring (7
+- **Model / effort:** Sonnet 4.6 / high. _Rationale: substantial authoring (7
   recipes) but each follows a known pattern; the build verifies the snippets.
-  Cost-effective at Sonnet.*
+  Cost-effective at Sonnet._
 - **Parallel group:** P2b.
 - **Owns:** `apps/docs/guide/patterns.md` (extend) — or new files under
   `apps/docs/guide/recipes/` if the page grows too large (decide in CHECK). No
@@ -159,8 +159,8 @@ before shipping state to a sink). Keep the canonical counter/todo domain.
 
 ## Task 2.10 — Co-located troubleshooting blocks
 
-- **Model / effort:** Sonnet 4.6 / medium. *Rationale: repetitive, pattern-based
-  edits across known pages; low novelty.*
+- **Model / effort:** Sonnet 4.6 / medium. _Rationale: repetitive, pattern-based
+  edits across known pages; low novelty._
 - **Parallel group:** P2b — **but must not overlap Phase 3 rollout** (shared
   files). Run 2.10 fully, commit, before starting Phase 3 (or after it).
 - **Owns:** appends a "Troubleshooting" section to existing reference pages:
@@ -187,8 +187,8 @@ each page. Link back to the central FAQ for the long tail. Snippets as
 
 ## Task 2.W — Phase 2 nav/sidebar wiring (SERIAL, last)
 
-- **Model / effort:** Haiku 4.5 / medium. *Rationale: a focused `config.ts`
-  edit; mechanical but must be the sole editor of the shared file.*
+- **Model / effort:** Haiku 4.5 / medium. _Rationale: a focused `config.ts`
+  edit; mechanical but must be the sole editor of the shared file._
 - **Depends on:** all of 2.10–2.15 committed.
 - **Owns:** `apps/docs/.vitepress/config.ts` only.
 - **Context to read:** current `config.ts` sidebar/nav; the new page paths.

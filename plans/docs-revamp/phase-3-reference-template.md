@@ -7,26 +7,26 @@ rollout — design it once, well, then fan out.
 **Read README.md hard rules first.**
 
 > **Conflict warning:** the rollout edits the same reference pages as Phase 2's
-> 2.10 (troubleshooting). Do not run 3.R* concurrently with 2.10. Sequence:
+> 2.10 (troubleshooting). Do not run 3.R\* concurrently with 2.10. Sequence:
 > finish 2.10 → then this phase (the troubleshooting section becomes part of the
 > template), or this phase → then 2.10. Pick one order and serialize.
 
 ## Parallelism map
 
-| Group | Tasks | Notes |
-|---|---|---|
-| **Serial gate** | 3.T (template design) | must finish + commit first |
-| **P3** (parallel) | 3.R1, 3.R2, 3.R3 | each owns a disjoint set of pages |
+| Group             | Tasks                 | Notes                             |
+| ----------------- | --------------------- | --------------------------------- |
+| **Serial gate**   | 3.T (template design) | must finish + commit first        |
+| **P3** (parallel) | 3.R1, 3.R2, 3.R3      | each owns a disjoint set of pages |
 
 ---
 
 ## Task 3.T — Define the per-symbol template (gate)
 
-- **Model / effort:** **Opus 4.8 / high.** *Rationale: a design artifact every
+- **Model / effort:** **Opus 4.8 / high.** _Rationale: a design artifact every
   later page inherits; getting the structure, generics-fence convention, and
-  examples right once is high-leverage. Worth the heavy model.*
+  examples right once is high-leverage. Worth the heavy model._
 - **Depends on:** nothing (can overlap Phase 2 authoring, but its OUTPUT gates
-  3.R*).
+  3.R\*).
 - **Owns:** `plans/docs-revamp/reference-template.md` (the spec artifact) and a
   proof-of-template conversion of ONE page: `apps/docs/core/cubit.md`.
 - **Context to read:** `apps/docs/dirtytalk/engine/api-reference.md` (lift this
@@ -38,11 +38,12 @@ fence (full generics + return) → Parameter table → explicit **Returns** →
 Behavior → runnable example → (optional) co-located Troubleshooting.
 
 **IMPLEMENT:**
+
 1. Write `reference-template.md` — the canonical skeleton + rules (signature
    fence first, `ts twoslash` examples without JSX, self-contained imports,
    sentence-case headings) as a copy-paste checklist for rollout agents.
 2. Convert `core/cubit.md` to the template as the reference exemplar (covers
-   `emit`/`patch`/`update`/`init`/getters). This is what 3.R* agents mimic.
+   `emit`/`patch`/`update`/`init`/getters). This is what 3.R\* agents mimic.
 
 **VERIFY:** build exit 0; `vp fmt` + `format:check` on `core/cubit.md`.
 
@@ -53,8 +54,8 @@ Behavior → runnable example → (optional) co-located Troubleshooting.
 
 ## Task 3.R1 — Roll out: Core lifecycle pages
 
-- **Model / effort:** Sonnet 4.6 / medium. *Rationale: mechanical application of
-  3.T's template; the exemplar removes the design burden.*
+- **Model / effort:** Sonnet 4.6 / medium. _Rationale: mechanical application of
+  3.T's template; the exemplar removes the design burden._
 - **Depends on:** 3.T committed.
 - **Parallel group:** P3.
 - **Owns:** `apps/docs/core/instance-management.md`,

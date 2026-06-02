@@ -43,6 +43,7 @@ abstract class StructuralContainer<S> {
 Use a `WeakMap<Function, PathInterner>` so unmounted classes can be GC'd (matters for hot module reload).
 
 **Tests must cover:**
+
 1. Two instances of the same class share the same interner.
 2. Two instances of different subclasses get different interners.
 3. The base class itself doesn't accumulate paths from subclasses (each subclass keys independently).
@@ -93,6 +94,7 @@ packages/dirtytalk-structural/src/path-interner.test.ts (no change expected; ver
    ```
 
    Body (optional):
+
    ```
    Per dirtytalk/03-blac.md interner spec: paths interned per-class via
    WeakMap<Function, PathInterner>, not per-instance. Enables Bloc classes

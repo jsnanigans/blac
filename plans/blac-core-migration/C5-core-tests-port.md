@@ -32,16 +32,16 @@ This is the gate that proves the core migration didn't regress behavior. D0/D1/D
 
 For each test file, classify:
 
-| Test asserts | Verdict |
-|--------------|---------|
-| Public API behavior (emit, state, dispose, depend, watch, registry) | **Keep.** Update imports if symbol locations moved. |
-| `onSystemEvent('stateChanged')` fires once-per-flush | **Adjust.** May have asserted once-per-emit before; update to flush-coalesced expectation. Inject `SyncScheduler` for synchronous determinism. |
-| Manual deps array (`useBloc` deps option) | **Delete.** Decision 8 dropped the API. |
-| `tracked()` standalone | **Delete.** Decision 4. |
-| `shallowEqualState` | **Delete or keep** per C4's decision. |
-| Internal-only behavior (`EMIT` symbol dispatch, tracking internals) | **Delete or rewrite.** These tested the old internals. |
-| Circuit breaker | **Delete** if C1 removed circuit breaker. Keep if C1 kept it. |
-| Performance (`StateContainer.perf.test.ts`) | **Adjust expectations.** Microtask coalescing changes timing. Update budgets, don't delete. |
+| Test asserts                                                        | Verdict                                                                                                                                        |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public API behavior (emit, state, dispose, depend, watch, registry) | **Keep.** Update imports if symbol locations moved.                                                                                            |
+| `onSystemEvent('stateChanged')` fires once-per-flush                | **Adjust.** May have asserted once-per-emit before; update to flush-coalesced expectation. Inject `SyncScheduler` for synchronous determinism. |
+| Manual deps array (`useBloc` deps option)                           | **Delete.** Decision 8 dropped the API.                                                                                                        |
+| `tracked()` standalone                                              | **Delete.** Decision 4.                                                                                                                        |
+| `shallowEqualState`                                                 | **Delete or keep** per C4's decision.                                                                                                          |
+| Internal-only behavior (`EMIT` symbol dispatch, tracking internals) | **Delete or rewrite.** These tested the old internals.                                                                                         |
+| Circuit breaker                                                     | **Delete** if C1 removed circuit breaker. Keep if C1 kept it.                                                                                  |
+| Performance (`StateContainer.perf.test.ts`)                         | **Adjust expectations.** Microtask coalescing changes timing. Update budgets, don't delete.                                                    |
 
 When in doubt: keep + adjust. Deletion requires a one-line note in the commit body justifying it.
 
@@ -65,7 +65,7 @@ class TestCubit extends StateContainer<MyState> {
 Or, if construction is via decorator + registry, accept that some tests need a `await flushMicrotasks()` helper:
 
 ```ts
-const flush = () => new Promise<void>(r => queueMicrotask(r));
+const flush = () => new Promise<void>((r) => queueMicrotask(r));
 await flush();
 ```
 
@@ -116,6 +116,7 @@ packages/blac-core/src/__tests__/**         (if it exists at top level)
    ```
 
    Body (required — list non-trivial changes):
+
    ```
    - <N> tests adjusted for microtask flush semantics (SyncScheduler injected).
    - <N> tests deleted (manual deps, tracked(), <other reasons>).
@@ -138,7 +139,7 @@ packages/blac-core/src/__tests__/**         (if it exists at top level)
 
 - **`SyncScheduler` test isolation.** If you use a module-level scheduler, tests share state. Inject per-instance.
 - **`onSystemEvent('stateChanged')` once-per-flush.** A test that calls `emit` three times synchronously and expects three `stateChanged` events will fail under microtask coalescing. Update to expect **one**. If the test wanted three, it's testing `emit` count, not `stateChanged` count — rewrite to assert on a different signal.
-- **`StateContainer.perf.test.ts`**. Update budgets, don't delete. If the new model is *slower* for the tested case, escalate — don't loosen the budget.
+- **`StateContainer.perf.test.ts`**. Update budgets, don't delete. If the new model is _slower_ for the tested case, escalate — don't loosen the budget.
 - **Don't add `vi.useFakeTimers()`** as a workaround for microtask coalescing. Microtasks aren't timers; fake timers don't help. Use `await Promise.resolve()` or inject `SyncScheduler`.
 - **Don't move tests around the directory.** Keep names so blame is clean. New tests for the new behavior live in new files (e.g. `StateContainer.path-events.test.ts`).
 - **`testing.ts`** — this is `@blac/core`'s test-helper module. Update its helpers to use the new container; don't delete unless audit shows no consumer.

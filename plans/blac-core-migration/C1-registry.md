@@ -47,7 +47,7 @@ packages/blac-core/src/registry/**
 packages/blac-core/src/core/StateContainerRegistry.ts     (body — C0 left signatures locked)
 ```
 
-**Do not touch:** `core/StateContainer.ts` (C0), `core/Cubit.ts` (C0), `core/symbols.ts` (C0), plugin/* (C2), watch/* (C3), tracking/* (C3 deletes), decorators/* (C4), `src/index.ts` (C0/C5 own).
+**Do not touch:** `core/StateContainer.ts` (C0), `core/Cubit.ts` (C0), `core/symbols.ts` (C0), plugin/_ (C2), watch/_ (C3), tracking/_ (C3 deletes), decorators/_ (C4), `src/index.ts` (C0/C5 own).
 
 ---
 
@@ -82,6 +82,7 @@ packages/blac-core/src/core/StateContainerRegistry.ts     (body — C0 left sign
    ```
 
    Body (if circuit breaker removed):
+
    ```
    - Circuit-breaker emit-rate guard removed; MicrotaskScheduler coalesces.
    - Lifecycle event timing unchanged.

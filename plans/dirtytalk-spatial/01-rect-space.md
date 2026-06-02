@@ -27,6 +27,7 @@ Hot operations: `union` (called per `mark`), `intersects` (called per (subscribe
 **Note on cross-Phase-1 dependency:** `RectSpace.intersects` needs `rectOverlaps`. Since both `rect.ts` and `rect-space.ts` are Phase 1 parallel tasks, **import the helper anyway** — the stub already exists with a `throw`. Your tests will fail until `01-rect` lands, which is fine: the contract is that all Phase 1 commits land before Phase 2 starts.
 
 If `01-rect` has landed by the time you run, your tests pass. If not, your tests fail with "rectOverlaps: not implemented" — which is the correct signal that you're racing the other Phase 1 agent. Two options:
+
 - **Wait** for the other agent's commit before running tests (preferred — it's a Phase 1 parallel task, both should finish before Phase 2).
 - Implement `intersects` inline (inlined AABB test) and add a TODO to swap it once `rect.ts` lands.
 

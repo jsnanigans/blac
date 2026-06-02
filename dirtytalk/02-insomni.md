@@ -32,20 +32,21 @@ These live in `packages/insomni/src/reactive/` (or similar).
 ## `RectSpace`
 
 ```ts
-type Rect = { x: number; y: number; w: number; h: number }
-type Damage = { rect: Rect; kind: DamageKind; node?: SceneNode }
-type DirtyRegion = Damage[]  // v1: simple array. v2: spatial index.
+type Rect = { x: number; y: number; w: number; h: number };
+type Damage = { rect: Rect; kind: DamageKind; node?: SceneNode };
+type DirtyRegion = Damage[]; // v1: simple array. v2: spatial index.
 
 const RectSpace: Space<DirtyRegion> = {
   empty: () => [],
   isEmpty: (r) => r.length === 0,
-  union: (a, b) => a.length === 0 ? b : b.length === 0 ? a : [...a, ...b],
+  union: (a, b) => (a.length === 0 ? b : b.length === 0 ? a : [...a, ...b]),
   intersects: (interest, dirty) => {
-    if (interest.length === 0 || dirty.length === 0) return false
-    for (const i of interest) for (const d of dirty) if (rectOverlaps(i.rect, d.rect)) return true
-    return false
+    if (interest.length === 0 || dirty.length === 0) return false;
+    for (const i of interest)
+      for (const d of dirty) if (rectOverlaps(i.rect, d.rect)) return true;
+    return false;
   },
-}
+};
 ```
 
 **v1 representation:** plain array of `Damage` entries. Union concatenates. Intersection is O(N×M) — acceptable for small N (≤100 entries per frame, typical).
@@ -59,7 +60,7 @@ const RectSpace: Space<DirtyRegion> = {
 ## `DamageKind`
 
 ```ts
-type DamageKind = 'paint' | 'layout' | 'data'
+type DamageKind = 'paint' | 'layout' | 'data';
 ```
 
 - **`paint`** — pixel state stale within the rect. Re-rasterise. Most common; emitted by visual-only field changes (hover, pressed, value position).
@@ -105,27 +106,29 @@ abstract class SceneNode {
 
 ```ts
 class SceneRoot extends SceneNode {
-  channel: DirtyChannel<DirtyRegion>
-  renderer: Renderer2D
+  channel: DirtyChannel<DirtyRegion>;
+  renderer: Renderer2D;
 
   constructor(renderer: Renderer2D) {
-    this.channel = new DirtyChannel(RectSpace, new RAFScheduler())
+    this.channel = new DirtyChannel(RectSpace, new RAFScheduler());
     this.channel.subscribe(
-      () => [{ rect: this.bounds, kind: 'paint' }],   // root cares about everything
+      () => [{ rect: this.bounds, kind: 'paint' }], // root cares about everything
       (dirty) => this.renderFrame(dirty),
-    )
+    );
   }
 
   private renderFrame(dirty: DirtyRegion): void {
     // Stage 1: data
-    for (const d of dirty) if (d.kind === 'data' && d.node?.rebuildData) d.node.rebuildData()
+    for (const d of dirty)
+      if (d.kind === 'data' && d.node?.rebuildData) d.node.rebuildData();
     // Stage 2: layout
-    for (const d of dirty) if (d.kind !== 'paint' && d.node?.doLayout) d.node.doLayout()
+    for (const d of dirty)
+      if (d.kind !== 'paint' && d.node?.doLayout) d.node.doLayout();
     // Stage 3: paint
-    const paintRegion = unionRects(dirty.map(d => d.rect))
-    this.renderer.beginFrame(paintRegion)
-    this.walkAndPaint(paintRegion)
-    this.renderer.endFrame()
+    const paintRegion = unionRects(dirty.map((d) => d.rect));
+    this.renderer.beginFrame(paintRegion);
+    this.walkAndPaint(paintRegion);
+    this.renderer.endFrame();
   }
 }
 ```
@@ -182,11 +185,15 @@ Each mark layer is a `SceneNode`. The plot's viewport is a `Signal<ViewportState
 ```ts
 class MarkLayer extends SceneNode {
   constructor(private viewport: Signal<ViewportState>) {
-    super()
-    viewport.subscribe(() => this.markDamaged('paint'))
+    super();
+    viewport.subscribe(() => this.markDamaged('paint'));
   }
-  rebuildData() { /* re-bin against new data */ }
-  paint(layer: Layer) { /* push commands using current viewport */ }
+  rebuildData() {
+    /* re-bin against new data */
+  }
+  paint(layer: Layer) {
+    /* push commands using current viewport */
+  }
 }
 ```
 
@@ -230,7 +237,7 @@ Stages 0–5 are pure plumbing — same visual output, better foundation. Stage 
 
 ## What this design does NOT do
 
-- **Auto-track observable reads.** `paint()` reads any node's fields; the engine doesn't watch. Painting is invoked because *the node was damaged*, not because *its fields were read*. Different model from React/MobX.
+- **Auto-track observable reads.** `paint()` reads any node's fields; the engine doesn't watch. Painting is invoked because _the node was damaged_, not because _its fields were read_. Different model from React/MobX.
 - **Virtual scene diff.** Nodes don't produce a tree of intent that the engine diffs. Nodes mutate; they declare their own damage. The renderer trusts the declaration.
 - **Cross-frame animation scheduling.** Animation libraries (the existing `AnimatedValue`) integrate by calling `markDamaged('paint')` per step while active. The engine doesn't know what an "animation" is.
 - **Cull/culling.** Off-screen nodes are still painted if damaged. Culling is a renderer optimisation, layered above.

@@ -7,15 +7,12 @@
 - Add per-consumer watched paths to the instance detail panel and overhaul the connect protocol.
 
   **Features**
-
   - The detail panel now shows the structural paths each consumer is watching, surfacing exactly which slices of state drive a given component's re-renders.
 
   **Breaking changes**
-
   - The wire protocol no longer carries per-consumer (`C:n`) tracking or perf metrics. The `consumers-changed` message is renamed to `refs-changed`, and the perf-metrics producer is removed. UI and connect must be upgraded together.
 
   **Fixes**
-
   - `instance-updated` messages are now coalesced per animation frame instead of emitted per change, eliminating broadcast storms under rapid state updates.
   - The connect bridge broadcasts atomically and unconditionally, with added heartbeat tolerance so the panel no longer drops the connection during quiet periods.
   - The detail panel re-renders when a different instance is selected.

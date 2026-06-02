@@ -184,6 +184,7 @@ Body: "Aligns the iterator-returning array methods with Symbol.iterator (task 12
 
 **Commit SHA:** 07686dd9
 **Files touched:**
+
 - `packages/blac-core/src/tracking/tracking-proxy.ts` — added `ITERATOR_METHODS` set, `makeIteratorMethod` factory, extended get-trap dispatch
 - `packages/blac-core/src/tracking/proxy-tracker.edge-cases.test.ts` — added 5 regression tests under `values() / entries() / keys() — proxied iteration`
 

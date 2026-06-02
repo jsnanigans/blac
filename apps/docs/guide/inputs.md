@@ -3,18 +3,18 @@
 Blocs sometimes need external data — a user ID to load, an endpoint URL, a DOM ref for a canvas. Passing that data safely is trickier than it looks, because multiple components can share one instance and each wants to set something on it.
 
 ::: info Why this needs its own model
-A naive answer is "pass one `props`-style object into the bloc." That breaks the moment two components share an instance: if both write the same input, whoever rendered last wins, and the value flickers on every render — an *override race*. The fix is to recognise that "inputs" is really **three different needs**, each with its own lifetime and its own answer. Sorting an input into the right lane is what makes shared instances safe.
+A naive answer is "pass one `props`-style object into the bloc." That breaks the moment two components share an instance: if both write the same input, whoever rendered last wins, and the value flickers on every render — an _override race_. The fix is to recognise that "inputs" is really **three different needs**, each with its own lifetime and its own answer. Sorting an input into the right lane is what makes shared instances safe.
 :::
 
-The three lanes — `args`, `deps`, and events — and the [identity model](#identity-model-and-precedence) below are the whole story. The mechanics here are accurate as of v2; for the broader *why* behind shared, ref-counted instances see the [Mental Model](/guide/mental-model), and for the judgment of *which lane to reach for* see [Best Practices](/guide/best-practices).
+The three lanes — `args`, `deps`, and events — and the [identity model](#identity-model-and-precedence) below are the whole story. The mechanics here are accurate as of v2; for the broader _why_ behind shared, ref-counted instances see the [Mental Model](/guide/mental-model), and for the judgment of _which lane to reach for_ see [Best Practices](/guide/best-practices).
 
 ## The three input lanes
 
-| Lane | Purpose | Keys identity? | Lifetime | Example |
-|---|---|---|---|---|
-| **`args`** | Typed creation/config data | **Yes** (structural hash or `static key`) | Set once via `init(args)` | `userId`, `endpoint`, `filters` |
-| **`deps`** | Non-serializable handles | **Never** | Live, per-consumer merged | `inputRef`, stable callback, `emblaApi` |
-| **events** | Values that change over the instance's life | N/A | Called from effects | `cubit.slidesChanged(v)` |
+| Lane       | Purpose                                     | Keys identity?                            | Lifetime                  | Example                                 |
+| ---------- | ------------------------------------------- | ----------------------------------------- | ------------------------- | --------------------------------------- |
+| **`args`** | Typed creation/config data                  | **Yes** (structural hash or `static key`) | Set once via `init(args)` | `userId`, `endpoint`, `filters`         |
+| **`deps`** | Non-serializable handles                    | **Never**                                 | Live, per-consumer merged | `inputRef`, stable callback, `emblaApi` |
+| **events** | Values that change over the instance's life | N/A                                       | Called from effects       | `cubit.slidesChanged(v)`                |
 
 These map onto a familiar React split: `args` is like `defaultValue` (set at birth, identity-bearing), `events` is like `value`/`onChange` (a live channel owned by one component), and `deps` is the side channel for things that can't be serialized at all.
 
@@ -51,7 +51,10 @@ By default, identity is the **structural hash of all args** (the same principle 
 Override identity with a `static key` on the class when only a subset of args should key the instance, or when you want a human-readable key:
 
 ```ts
-class DocumentCubit extends Cubit<DocState, { docId: string; readonly: boolean }> {
+class DocumentCubit extends Cubit<
+  DocState,
+  { docId: string; readonly: boolean }
+> {
   static key = (args: DocumentCubit['args']) => args.docId;
   // `readonly` is config that rides along but does NOT fork instances
 }
@@ -75,7 +78,10 @@ To give each mount its own instance — disposed on unmount, never shared — in
 
 ```tsx
 // private instance, own lifecycle, seeded with args
-class FileUploadCubit extends Cubit<UploadState, { endpoint: string; _id: string }> {
+class FileUploadCubit extends Cubit<
+  UploadState,
+  { endpoint: string; _id: string }
+> {
   static key = (a: FileUploadCubit['args']) => a._id;
 }
 
@@ -111,15 +117,15 @@ import type { RefObject } from 'react';
 
 class FileUploadCubit extends Cubit<
   UploadState,
-  { endpoint: string },                       // args → keys identity
-  { inputRef?: RefObject<HTMLInputElement> }  // deps → never keyed, read lazily
+  { endpoint: string }, // args → keys identity
+  { inputRef?: RefObject<HTMLInputElement> } // deps → never keyed, read lazily
 > {
   protected init(args: { endpoint: string }) {
     this.endpoint = args.endpoint;
   }
 
   openPicker() {
-    this.deps.inputRef?.current?.click?.();   // guard for absence
+    this.deps.inputRef?.current?.click?.(); // guard for absence
   }
 }
 ```
@@ -137,12 +143,12 @@ import { useBloc } from '@blac/react';
 
 function UploadButton({ endpoint }: { endpoint: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const ownerId = useId();                       // identifies THIS consumer's slice
+  const ownerId = useId(); // identifies THIS consumer's slice
   // same endpoint → same instance, regardless of which ref is passed
   const [state, cubit] = useBloc(FileUploadCubit, { args: { endpoint } });
 
   useEffect(() => {
-    cubit[APPLY_DEPS](ownerId, { inputRef });    // contribute this consumer's slice
+    cubit[APPLY_DEPS](ownerId, { inputRef }); // contribute this consumer's slice
     return () => cubit[REMOVE_DEPS_OWNER](ownerId); // withdraw it on unmount
   }, [cubit, inputRef, ownerId]);
 
@@ -153,7 +159,7 @@ function UploadButton({ endpoint }: { endpoint: string }) {
 `ownerId` (a `useId()` value, stable per mount) tags the slice so the engine knows which consumer wrote it and can withdraw exactly that slice on unmount.
 
 ::: details Why an effect, not a render-time call
-Deps must be applied *after* commit so a freshly mounted `ref.current` is populated and so mid-render mutation never happens. The effect runs post-commit; its cleanup runs before the consumer's `useBloc` releases its ref, so the slice is withdrawn while the bloc is still alive. `APPLY_DEPS`/`REMOVE_DEPS_OWNER` are marked `@internal` today (a friendlier wrapper may land later), but this is the supported path.
+Deps must be applied _after_ commit so a freshly mounted `ref.current` is populated and so mid-render mutation never happens. The effect runs post-commit; its cleanup runs before the consumer's `useBloc` releases its ref, so the slice is withdrawn while the bloc is still alive. `APPLY_DEPS`/`REMOVE_DEPS_OWNER` are marked `@internal` today (a friendlier wrapper may land later), but this is the supported path.
 :::
 
 ### Multi-consumer merge
@@ -186,10 +192,10 @@ class CanvasRendererCubit extends Cubit<
 > {
   onDepsChanged(next: this['deps'], prev: this['deps']) {
     if (next.canvas && next.canvas !== prev.canvas) {
-      this.initRenderer(next.canvas);   // canvas arrived or changed → init GPU loop
+      this.initRenderer(next.canvas); // canvas arrived or changed → init GPU loop
     }
     if (!next.canvas && prev.canvas) {
-      this.disposeRenderer();           // canvas unmounted → tear down
+      this.disposeRenderer(); // canvas unmounted → tear down
     }
     if (next.controller !== prev.controller) {
       this.bindController(next.controller);
@@ -220,11 +226,12 @@ Prefer these patterns, best first:
 3. **Push via a bloc method from an effect** — `useEffect(() => cubit.setOnComplete(cb), [cb])`.
 
 ::: warning Common mistakes
-- **Non-serializable value in `args`** — a ref, callback, DOM node, or class instance makes the structural hash unstable, so you get a *new instance every render*. Put it in deps instead. (The structural-key hasher throws in dev if it sees a function in `args`.)
+
+- **Non-serializable value in `args`** — a ref, callback, DOM node, or class instance makes the structural hash unstable, so you get a _new instance every render_. Put it in deps instead. (The structural-key hasher throws in dev if it sees a function in `args`.)
 - **Capturing an inline callback in deps** — `{ onComplete: () => doThing() }` freezes the first render's closure. Stabilize with `useCallback`, or invert the callback (option 1 above).
 - **Two consumers writing the same deps key** — last write wins and the value flickers. Give each shared value exactly one owning component.
 - **Reaching for `deps:`, `instanceId:`, or `autoInstance:` as `useBloc` options** — none exist. Wire deps from an effect; key per-mount instances with a synthetic `args` value + `static key` (e.g. `args: { _id: useId() }`).
-:::
+  :::
 
 ---
 
@@ -261,11 +268,11 @@ function Carousel({ slides }: { slides: Slide[] }) {
 
 When `useBloc` resolves which instance to connect to, it consults sources in this order — **the first that yields a key wins**. This is the canonical ordering; [useBloc](/react/use-bloc) restates the same list.
 
-| Priority | Source | Resolved key |
-|---|---|---|
-| 1 | own `args` on the `useBloc` call | `static key(args)` if declared, else the structural hash of `args` |
-| 2 | `<BlocProvider>` context `args` | same resolution applied to inherited args, when the call passes no own `args` |
-| 3 | `'default'` | singleton fallback — no `args`, no `static key`, no provider |
+| Priority | Source                           | Resolved key                                                                  |
+| -------- | -------------------------------- | ----------------------------------------------------------------------------- |
+| 1        | own `args` on the `useBloc` call | `static key(args)` if declared, else the structural hash of `args`            |
+| 2        | `<BlocProvider>` context `args`  | same resolution applied to inherited args, when the call passes no own `args` |
+| 3        | `'default'`                      | singleton fallback — no `args`, no `static key`, no provider                  |
 
 `args`-derived identity is the **only** idiom for per-value instances. For an identity that can't be derived from real data — anonymous, opaque, externally managed, or deliberately per-mount — synthesize one by adding a value to `args` (e.g. `_id: useId()`) and keying on it with `static key`.
 
@@ -273,23 +280,23 @@ When `useBloc` resolves which instance to connect to, it consults sources in thi
 
 Two questions decide everything: **is this input identity (set once) or live (changes over the instance's life)?** and **is the instance private to one component or shared?**
 
-| | Input defines identity / set once | Input is live and changing |
-|---|---|---|
+|                              | Input defines identity / set once                                                                          | Input is live and changing                                                         |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | **Private to one component** | `useBloc(C, { args: { ...data, _id: useId() } })` + `static key` on `_id` — own instance, seeded from args | synthetic per-mount `args` + call `cubit.xChanged(v)` from that component's effect |
-| **Shared across consumers** | `useBloc(C, { args })` — args key the instance; override race impossible | call `cubit.xChanged(v)` from the **one owning component's** effect |
+| **Shared across consumers**  | `useBloc(C, { args })` — args key the instance; override race impossible                                   | call `cubit.xChanged(v)` from the **one owning component's** effect                |
 
-Non-serializable handles (refs, callbacks, controllers) sit *outside* this matrix entirely — they go through the [deps lane](#deps-non-serializable-handles) and never touch identity.
+Non-serializable handles (refs, callbacks, controllers) sit _outside_ this matrix entirely — they go through the [deps lane](#deps-non-serializable-handles) and never touch identity.
 
 ---
 
 ## A note on naming
 
-The `select` option (the per-consumer re-render selector) is unrelated to the `deps` lane on this page, despite both sounding "dependency"-ish. `select` opts a consumer *out* of auto-tracking; `deps` feeds *non-serializable handles* into the bloc. In v1 the selector was called `dependencies` — that name was retired precisely to remove this collision. The full rename is documented on the [migration page](/guide/migration-from-v1).
+The `select` option (the per-consumer re-render selector) is unrelated to the `deps` lane on this page, despite both sounding "dependency"-ish. `select` opts a consumer _out_ of auto-tracking; `deps` feeds _non-serializable handles_ into the bloc. In v1 the selector was called `dependencies` — that name was retired precisely to remove this collision. The full rename is documented on the [migration page](/guide/migration-from-v1).
 
 ## See also
 
-- [Best Practices](/guide/best-practices) — *which* lane to choose, and the judgment behind it
-- [Mental Model](/guide/mental-model) — *why* instances are shared and ref-counted
+- [Best Practices](/guide/best-practices) — _which_ lane to choose, and the judgment behind it
+- [Mental Model](/guide/mental-model) — _why_ instances are shared and ref-counted
 - [useBloc](/react/use-bloc) — the complete option list and identity precedence (canonical)
 - [Glossary](/guide/glossary) — definitions of `args`, `deps`, `static key`
 - [Patterns & Recipes](/guide/patterns) — concrete copy-paste recipes

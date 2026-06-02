@@ -4,22 +4,22 @@ Plan for landing `@dirtytalk/spatial`: the **rect-based damage-tracking** instan
 
 Spec source: [`dirtytalk/02-insomni.md`](../../dirtytalk/02-insomni.md). Cross-cutting overview: [`dirtytalk/00-overview.md`](../../dirtytalk/00-overview.md). Sibling plan: [`plans/dirtytalk-structural/`](../dirtytalk-structural/README.md).
 
-> **Why the name?** The space the engine operates over here is *spatial* — 2D regions on a drawing surface. Sister package `@dirtytalk/structural` operates over paths through state trees. Both name the algebra, not the host project. There is no existing `insomni` package in this repo; this is greenfield.
+> **Why the name?** The space the engine operates over here is _spatial_ — 2D regions on a drawing surface. Sister package `@dirtytalk/structural` operates over paths through state trees. Both name the algebra, not the host project. There is no existing `insomni` package in this repo; this is greenfield.
 
 ---
 
 ## Package decision (locked unless you say otherwise)
 
-| Item | Decision |
-|------|----------|
-| Package name | `@dirtytalk/spatial` |
-| Path | `packages/dirtytalk-spatial/` |
-| Layout | One package. Single entry export `.` (no React subpath — this is renderer-agnostic, framework-agnostic infrastructure). |
-| Build template | Copy from `packages/dirtytalk-engine/`. |
-| Test env | `vitest` via `vite-plus`, `environment: 'node'` — no DOM dependency. Hit-testing and damage are pure geometry. |
-| Runtime deps | `@dirtytalk/engine` (workspace `*`). |
-| Internal deps | `@dirtytalk/engine` only. **Must not import** `@blac/*` or `@dirtytalk/structural`. |
-| Versioning | `0.0.1`, no changeset, no publish. |
+| Item           | Decision                                                                                                                |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Package name   | `@dirtytalk/spatial`                                                                                                    |
+| Path           | `packages/dirtytalk-spatial/`                                                                                           |
+| Layout         | One package. Single entry export `.` (no React subpath — this is renderer-agnostic, framework-agnostic infrastructure). |
+| Build template | Copy from `packages/dirtytalk-engine/`.                                                                                 |
+| Test env       | `vitest` via `vite-plus`, `environment: 'node'` — no DOM dependency. Hit-testing and damage are pure geometry.          |
+| Runtime deps   | `@dirtytalk/engine` (workspace `*`).                                                                                    |
+| Internal deps  | `@dirtytalk/engine` only. **Must not import** `@blac/*` or `@dirtytalk/structural`.                                     |
+| Versioning     | `0.0.1`, no changeset, no publish.                                                                                      |
 
 If any of these need to change, edit this README and the affected task file. Don't let agents guess.
 
@@ -28,6 +28,7 @@ If any of these need to change, edit this README and the affected task file. Don
 ## Scope
 
 In scope:
+
 - `Rect` type + helpers (`rectOverlaps`, `rectEquals`, `unionRects`, `rectClamp`).
 - `DamageKind` type (`'paint' | 'layout' | 'data'`) and `Damage` entry record.
 - `RectSpace: Space<Damage[]>` engine binding.
@@ -37,6 +38,7 @@ In scope:
 - One cross-unit integration test proving the pieces compose.
 
 Out of scope (separate plans / future):
+
 - Concrete GPU renderer (`Renderer2D`, layer compositing, scissor/tile dispatch). `SceneRoot` calls `renderer.beginFrame(paintRegion)` / `endFrame()` as abstract hooks (and walks its own children to paint between them); the package ships an interface, not an implementation.
 - The plot library (`MountedPlot`, mark layers, viewport, axes) — covered conceptually in `02-insomni.md` but lives in the future `insomni` package.
 - `AnimatedValue` migration — references the spec's plan to swap `invalidator` for `node: SceneNode`, but the animator itself lives elsewhere.
@@ -92,16 +94,16 @@ Out of scope (separate plans / future):
 
 ## Model & effort guide
 
-| Task | Model | Effort | Why |
-|------|-------|--------|-----|
-| 00-scaffold | Sonnet 4.6 | low | Mechanical copy of engine skeleton + stub files. |
-| 01-rect | Haiku 4.5 | low | Pure geometry helpers. Trivial. |
-| 01-rect-space | Sonnet 4.6 | low | Small, but `Space` contracts and the `Damage[]` representation need care. |
-| 01-readme | Haiku 4.5 | low | Prose. |
-| 02-scene-node | Opus 4.7 | high | Bounds setter erase/fill discipline, parent chain walking, clip stack, `batch` deferring marks. Where most footguns live. |
-| 03-scene-root | Sonnet 4.6 | medium | Owns channel + scheduler + render pipeline stages. Spec is concrete; complexity is bounded. |
+| Task              | Model      | Effort | Why                                                                                                                                |
+| ----------------- | ---------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 00-scaffold       | Sonnet 4.6 | low    | Mechanical copy of engine skeleton + stub files.                                                                                   |
+| 01-rect           | Haiku 4.5  | low    | Pure geometry helpers. Trivial.                                                                                                    |
+| 01-rect-space     | Sonnet 4.6 | low    | Small, but `Space` contracts and the `Damage[]` representation need care.                                                          |
+| 01-readme         | Haiku 4.5  | low    | Prose.                                                                                                                             |
+| 02-scene-node     | Opus 4.7   | high   | Bounds setter erase/fill discipline, parent chain walking, clip stack, `batch` deferring marks. Where most footguns live.          |
+| 03-scene-root     | Sonnet 4.6 | medium | Owns channel + scheduler + render pipeline stages. Spec is concrete; complexity is bounded.                                        |
 | 04-pointer-router | Sonnet 4.6 | medium | Hit-test in z-order, event dispatch shape. DOM-listener attachment lives behind a thin interface to keep the package DOM-agnostic. |
-| 05-integration | Sonnet 4.6 | medium | Toolchain pass + one end-to-end test. |
+| 05-integration    | Sonnet 4.6 | medium | Toolchain pass + one end-to-end test.                                                                                              |
 
 Effort is advisory.
 
@@ -111,16 +113,16 @@ Effort is advisory.
 
 Each task owns a disjoint write set. The Phase 1 trio operate on independent files; sequential phases extend the barrel in their own commit.
 
-| Task | Owned files |
-|------|-------------|
-| 00-scaffold | `packages/dirtytalk-spatial/{package.json,tsconfig.json,tsconfig.build.json,vite.config.ts,README.md,.gitignore}`, `src/{index.ts,types.ts,rect.ts,rect-space.ts,scene-node.ts,scene-root.ts,pointer-router.ts}` (all stubs only). |
-| 01-rect | `src/rect.ts`, `src/rect.test.ts` |
-| 01-rect-space | `src/rect-space.ts`, `src/rect-space.test.ts` |
-| 01-readme | `README.md` |
-| 02-scene-node | `src/scene-node.ts`, `src/scene-node.test.ts` |
-| 03-scene-root | `src/scene-root.ts`, `src/scene-root.test.ts`, `src/index.ts` (barrel update only) |
-| 04-pointer-router | `src/pointer-router.ts`, `src/pointer-router.test.ts`, `src/index.ts` (barrel update only) |
-| 05-integration | `src/integration.test.ts`; `src/index.ts` only if exports missing |
+| Task              | Owned files                                                                                                                                                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 00-scaffold       | `packages/dirtytalk-spatial/{package.json,tsconfig.json,tsconfig.build.json,vite.config.ts,README.md,.gitignore}`, `src/{index.ts,types.ts,rect.ts,rect-space.ts,scene-node.ts,scene-root.ts,pointer-router.ts}` (all stubs only). |
+| 01-rect           | `src/rect.ts`, `src/rect.test.ts`                                                                                                                                                                                                  |
+| 01-rect-space     | `src/rect-space.ts`, `src/rect-space.test.ts`                                                                                                                                                                                      |
+| 01-readme         | `README.md`                                                                                                                                                                                                                        |
+| 02-scene-node     | `src/scene-node.ts`, `src/scene-node.test.ts`                                                                                                                                                                                      |
+| 03-scene-root     | `src/scene-root.ts`, `src/scene-root.test.ts`, `src/index.ts` (barrel update only)                                                                                                                                                 |
+| 04-pointer-router | `src/pointer-router.ts`, `src/pointer-router.test.ts`, `src/index.ts` (barrel update only)                                                                                                                                         |
+| 05-integration    | `src/integration.test.ts`; `src/index.ts` only if exports missing                                                                                                                                                                  |
 
 `src/types.ts` is written exclusively in Phase 0 and **must not** be touched after.
 

@@ -83,7 +83,11 @@ work unchanged. No codemod needed for tests.
 ### Preferred new-test pattern
 
 ```ts
-import { registerOverride, blacTestSetup, withTestRegistry } from '@blac/core/testing';
+import {
+  registerOverride,
+  blacTestSetup,
+  withTestRegistry,
+} from '@blac/core/testing';
 
 describe('feature', () => {
   blacTestSetup();

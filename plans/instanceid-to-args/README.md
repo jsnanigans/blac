@@ -6,22 +6,22 @@ the blac APIs. Instance identity is derived **entirely from `args`** via a class
 no args).
 
 The registry still keys its internal `Map` by a string — we are **not** removing that. We
-are removing the public ability to *supply* an arbitrary key. The internal resolved-key
+are removing the public ability to _supply_ an arbitrary key. The internal resolved-key
 tier stays as an `@internal` mechanism used by `useBloc`, `compat`, `watch`, and `depend`.
 
 ---
 
 ## Locked decisions (from planning Q&A)
 
-| Topic | Decision |
-| --- | --- |
-| Per-mount private instances | **Synthetic args.** `useBloc(Bloc, { args: { _id: useId() } })`. No new `isolate` API. |
-| Scope of removal | **Maximal.** Public functional API + `watch` go args-only. String key becomes internal-only. |
-| `BlocProvider` | **Convert to args-based scoping:** `<BlocProvider bloc={X} args={…}>`. |
-| `blac-compat` | **Freeze public v1 `id`**, rework internals to map `id` → key via the internal tier. |
+| Topic                       | Decision                                                                                     |
+| --------------------------- | -------------------------------------------------------------------------------------------- |
+| Per-mount private instances | **Synthetic args.** `useBloc(Bloc, { args: { _id: useId() } })`. No new `isolate` API.       |
+| Scope of removal            | **Maximal.** Public functional API + `watch` go args-only. String key becomes internal-only. |
+| `BlocProvider`              | **Convert to args-based scoping:** `<BlocProvider bloc={X} args={…}>`.                       |
+| `blac-compat`               | **Freeze public v1 `id`**, rework internals to map `id` → key via the internal tier.         |
 
 **Reconciliation note:** "maximal scope" and "freeze compat" are reconciled as: the
-*public* surface (incl. `watch`) is args-only; the *registry class methods* retain a
+_public_ surface (incl. `watch`) is args-only; the _registry class methods_ retain a
 `string` key parameter as the **internal tier**; `compat`'s public `id` stays and is
 implemented on top of that internal tier.
 
@@ -59,19 +59,23 @@ getRegistry().resolveKey(Type, /* no explicit key */ undefined, args)
 ```
 
 ### Key resolution after the change (`StateContainerRegistry.resolveKey`)
+
 ```
 static key(args)  →  structuralKey(args)  →  DEFAULT_STRUCTURAL_KEY ('default')
 ```
+
 The leading `if (instanceKey !== undefined) return instanceKey;` branch stays for the
 **internal** callers only; no public function passes a non-undefined `instanceKey`.
 
 ### KEEP (do not remove)
+
 - `StateContainer.instanceId` **instance property** (`${ClassName}:${resolvedKey}`) — read by
   PluginManager, DevTools, `watch`.
 - `StateContainerConfig.instanceId` internal config field (carries the resolved key into the instance).
 - `resolveInstanceKey` (public) — now `(Bloc, args?) => string`; the canonical way to compute a key.
 
 ### REMOVE (dead code, surfaced during audit)
+
 - `BLAC_STATIC_PROPS.ISOLATED`, `isIsolatedClass()` and their stale JSDoc (never wired in).
 - Stale `autoInstance` / `static isolated` mentions in comments/docs.
 
@@ -96,6 +100,7 @@ Phase 6  Full verify + cleanup + changeset  (serial, last)
 ```
 
 **Parallel groups** (file-disjoint, safe to run together):
+
 - After Phase 1: **Phase 2 ∥ Phase 3**.
 - Phase 4a example folders: **counter ∥ form ∥ registry ∥ db-persist ∥ input-pattern ∥ messenger**.
 - Phase 4b ∥ 4c ∥ (4a tasks).
@@ -115,11 +120,12 @@ don't capture each other's work. (Git's index lock is brief; disjoint staging ma
 interleaved commits safe.)
 
 ### Model / effort legend
-| Model | When |
-| --- | --- |
-| **Opus** | Foundational, type-heavy, high-risk design. (Phase 1.) |
-| **Sonnet** | Most implementation, multi-file refactors, docs prose. |
-| **Haiku** | Mechanical, low-ambiguity call-site swaps. (perf, devtools, simple example folders.) |
+
+| Model      | When                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------ |
+| **Opus**   | Foundational, type-heavy, high-risk design. (Phase 1.)                               |
+| **Sonnet** | Most implementation, multi-file refactors, docs prose.                               |
+| **Haiku**  | Mechanical, low-ambiguity call-site swaps. (perf, devtools, simple example folders.) |
 
 Effort = reasoning effort knob: **low / medium / high**. Each brief states `Model:` and `Effort:`.
 
@@ -136,16 +142,17 @@ Effort = reasoning effort knob: **low / medium / high**. Each brief states `Mode
 - **No `--no-verify`.** Never skip hooks.
 - **Pre-commit verify (run, in order, scoped to the task's package):**
   1. `pnpm --filter <pkg> typecheck`
-  2. `pnpm --filter <pkg> lint`  (oxlint)
+  2. `pnpm --filter <pkg> lint` (oxlint)
   3. `pnpm --filter <pkg> test` (vitest; test files import from `vite-plus/test`)
   4. `vp run format:check` (or `pnpm --filter <pkg> format:check`) — oxfmt; run **before** commit.
-- **Targeted validation only:** run the *task's package* tests, not the whole repo. Phase 6 runs the full sweep.
+- **Targeted validation only:** run the _task's package_ tests, not the whole repo. Phase 6 runs the full sweep.
 - One commit per task (or per cohesive sub-step). Leave the tree green.
 
 ---
 
 ## Out of scope / tracked separately
-- **Messenger "delivered" bug**: this migration does *not* fix it (keys already matched —
+
+- **Messenger "delivered" bug**: this migration does _not_ fix it (keys already matched —
   see investigation). The temporary `[WS DIAG]` logs in
   `apps/examples/src/messenger/services/WebSocketMock.ts` are **removed in Phase 4a (messenger)**.
 - **In-flight devtools fixes** (devtools-ui components, panel, comm, plugin gate/flushHandle,

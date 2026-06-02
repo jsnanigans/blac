@@ -30,17 +30,17 @@ This gate proves the React adapter migration didn't regress. E0 (adapter delete)
 
 ## Decision rubric (same shape as C5)
 
-| Test asserts | Verdict |
-|--------------|---------|
-| `useBloc(C)` returns `[state, bloc]` and re-renders on emit | **Keep.** |
-| `dependencies` option behavior | **Rewrite as `select`.** Per Decision 8 the option is gone. |
-| `onMount`/`onUnmount` lifecycle | **Keep.** |
-| `BlocProvider` context propagation | **Keep.** |
-| `instanceId` per-component instances | **Keep.** |
-| StrictMode double-invoke | **Keep.** `useStructural` handles it; verify your tests still pass. |
-| Internal `@blac/adapter` behavior | **Delete.** Adapter is gone in E0. |
-| Manual deps array passed to `useBloc` | **Delete or rewrite.** Migrate to `select`. |
-| Renders-per-update count | **Adjust.** Microtask coalescing may reduce render counts. Update expectations to reflect the new model. |
+| Test asserts                                                | Verdict                                                                                                  |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `useBloc(C)` returns `[state, bloc]` and re-renders on emit | **Keep.**                                                                                                |
+| `dependencies` option behavior                              | **Rewrite as `select`.** Per Decision 8 the option is gone.                                              |
+| `onMount`/`onUnmount` lifecycle                             | **Keep.**                                                                                                |
+| `BlocProvider` context propagation                          | **Keep.**                                                                                                |
+| `instanceId` per-component instances                        | **Keep.**                                                                                                |
+| StrictMode double-invoke                                    | **Keep.** `useStructural` handles it; verify your tests still pass.                                      |
+| Internal `@blac/adapter` behavior                           | **Delete.** Adapter is gone in E0.                                                                       |
+| Manual deps array passed to `useBloc`                       | **Delete or rewrite.** Migrate to `select`.                                                              |
+| Renders-per-update count                                    | **Adjust.** Microtask coalescing may reduce render counts. Update expectations to reflect the new model. |
 
 ---
 
@@ -65,7 +65,7 @@ import { act } from '@testing-library/react';
 
 await act(async () => {
   cubit.emit(next);
-  await Promise.resolve();  // drain microtasks
+  await Promise.resolve(); // drain microtasks
 });
 ```
 
@@ -114,6 +114,7 @@ If a real bug surfaces in `useBloc.ts`, **stop and report**. Fix in a follow-up 
    ```
 
    Body (required):
+
    ```
    - <N> tests rewritten from `dependencies` to `select`.
    - <N> tests deleted (manual deps, @blac/adapter internals, <other>).
@@ -138,5 +139,5 @@ If a real bug surfaces in `useBloc.ts`, **stop and report**. Fix in a follow-up 
 - **`getByText` race**. After `emit`, the DOM updates on next microtask. Use `findByText` (async) or wrap the `emit` in `await act(async () => { ... })`.
 - **`useId` and SSR snapshots.** If any test uses `renderToString`, the IDs are deterministic but the consumer ID changes between server and hydration. `useStructural` handles this; if a test breaks on hydration mismatch, that's a real bug — report.
 - **Don't use `vi.useFakeTimers()`** for microtasks.
-- **Re-render count assertions.** If a test asserted "renders exactly twice after two emits", microtask coalescing may make it render *once*. That's a win, not a regression — update the assertion.
+- **Re-render count assertions.** If a test asserted "renders exactly twice after two emits", microtask coalescing may make it render _once_. That's a win, not a regression — update the assertion.
 - **`select` reference stability in tests.** If a test passes `select={(s) => [s.foo]}` inline (new function each render), the hook may resubscribe each render. Wrap with `useCallback` or define outside the component.

@@ -20,12 +20,12 @@ user-fe-reviews/
 
 ## 2. Import-statement counts (verified by grep)
 
-| Source | File count |
-|---|---|
-| `from "blac"` (v0, bare) | **71** |
-| `from "blac-next"` (v1 core) | 236 |
-| `from "@blac/react"` (v1 react) | 328 |
-| Intersection (v0 AND v1) | **24** |
+| Source                          | File count |
+| ------------------------------- | ---------- |
+| `from "blac"` (v0, bare)        | **71**     |
+| `from "blac-next"` (v1 core)    | 236        |
+| `from "@blac/react"` (v1 react) | 328        |
+| Intersection (v0 AND v1)        | **24**     |
 
 The 71 v0 files split as ~41 user-app + ~30 pmp. v1 usage spans all three workspaces.
 
@@ -100,25 +100,25 @@ src/ui/components/UpdateLabOrderProviderDialog/UpdateLabOrderProviderCubit.tsx
 src/ui/components/UploadDocumentDialog/UploadDocumentCubit.ts
 ```
 
-**Pattern in every one of these:** `class X extends Cubit` is imported from `blac` (v0), but `Blac.getBloc(...)` is called from `blac-next` (v1) inside methods. There is no real v0↔v1 interop — the v0 `Cubit` base class and the v1 `Cubit` base class are *not* the same prototype, but the cubits never *interact* with v0 machinery beyond `extends Cubit + emit()`. That is what makes mechanical migration tractable.
+**Pattern in every one of these:** `class X extends Cubit` is imported from `blac` (v0), but `Blac.getBloc(...)` is called from `blac-next` (v1) inside methods. There is no real v0↔v1 interop — the v0 `Cubit` base class and the v1 `Cubit` base class are _not_ the same prototype, but the cubits never _interact_ with v0 machinery beyond `extends Cubit + emit()`. That is what makes mechanical migration tractable.
 
 ## 5. Patterns that exist in the codebase
 
-| Pattern | Count | Notes |
-|---|---|---|
-| `Blac.getBloc(X)` | 398 | The dominant lookup API |
-| `Blac.getBloc(X, { id })` | many in pmp | Scoped lookup (R4) |
-| `Blac.getBloc(X, { props })` | a few | Will need explicit init (R3) |
-| `static keepAlive = true` | 26 | Global singletons |
-| `static isolated = true` | 11 | Per-mount instances |
-| `static addons = [...]` | 0 | None in app code; Persist exists in framework only |
-| `<BlocProvider bloc={...}>` (v0 JSX) | 3 | PaymentContext, QuestionnaireStep, PharmacyInsuranceInformationDialog |
-| `BlocObserver` instances | 1 | user-app debug observer |
-| Custom plugins | 0 | |
-| `Bloc<E, S>` subclass (event-driven) | **0** | No event-based blocs in app code |
-| `useBloc` (v0 hook) | ~54 | |
-| `useBlocNext` (v1 hook) | ~260 | |
-| `useBloc as useBlocNext` alias | 15 | Signals migration-ready intent |
+| Pattern                              | Count       | Notes                                                                 |
+| ------------------------------------ | ----------- | --------------------------------------------------------------------- |
+| `Blac.getBloc(X)`                    | 398         | The dominant lookup API                                               |
+| `Blac.getBloc(X, { id })`            | many in pmp | Scoped lookup (R4)                                                    |
+| `Blac.getBloc(X, { props })`         | a few       | Will need explicit init (R3)                                          |
+| `static keepAlive = true`            | 26          | Global singletons                                                     |
+| `static isolated = true`             | 11          | Per-mount instances                                                   |
+| `static addons = [...]`              | 0           | None in app code; Persist exists in framework only                    |
+| `<BlocProvider bloc={...}>` (v0 JSX) | 3           | PaymentContext, QuestionnaireStep, PharmacyInsuranceInformationDialog |
+| `BlocObserver` instances             | 1           | user-app debug observer                                               |
+| Custom plugins                       | 0           |                                                                       |
+| `Bloc<E, S>` subclass (event-driven) | **0**       | No event-based blocs in app code                                      |
+| `useBloc` (v0 hook)                  | ~54         |                                                                       |
+| `useBlocNext` (v1 hook)              | ~260        |                                                                       |
+| `useBloc as useBlocNext` alias       | 15          | Signals migration-ready intent                                        |
 
 ## 6. What this means for migration
 

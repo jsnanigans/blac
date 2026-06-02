@@ -311,13 +311,13 @@ Required cases:
 
 ## Pitfalls
 
-- **`PathInterner` per *instance* in v1, not per *class*.** Spec calls for per-class for memory amortisation, but per-instance is simpler and avoids static-state mutation patterns that need careful lifetime handling. Document `// TODO: hoist to per-class for memory amortisation (see plans/.../README.md scope note)` in a single comment.
+- **`PathInterner` per _instance_ in v1, not per _class_.** Spec calls for per-class for memory amortisation, but per-instance is simpler and avoids static-state mutation patterns that need careful lifetime handling. Document `// TODO: hoist to per-class for memory amortisation (see plans/.../README.md scope note)` in a single comment.
 - **Don't try to make `subscribe` "smarter" than the channel.** It's a pass-through. The tracker-driven flow goes through `registerConsumerPaths` separately; `subscribe` is for manual/devtools/plugin use.
 - **Don't use deep equality in `emit`'s reference check.** `Object.is(this._state, next)` is the contract — the caller passes a new immutable next; if they hand the same ref, we no-op.
-- **`patch` must accumulate state mutations atomically.** Do the `deepMerge` *before* the `mark`, so `state` is observably up-to-date when consumers receive the dirty notification.
+- **`patch` must accumulate state mutations atomically.** Do the `deepMerge` _before_ the `mark`, so `state` is observably up-to-date when consumers receive the dirty notification.
 - **Don't preserve old skeleton entries on `unregister`** by trying to subtract paths — full recompute is the v1 choice. The optimisation in spec § "Incremental option" is post-MVP.
 - **`equality` map keys are intern'd at construction.** Don't intern lazily on each diff — that grows the interner with paths nobody actually reads.
 - **Don't import `useState`, `useEffect`, or anything React** in `container.ts`. This module is framework-agnostic. The React hook lives in Phase 4.
 - **Avoid `private #fields` (ECMAScript hash-private) vs `private` keyword.** Use TS `private` for now — `#fields` interact poorly with mocking in some test setups, and oxc may not yet have feature parity. Match the engine package's style.
 - **Don't add a `dispose()` method.** Out of scope. The channel's unsubscribe + dropping the container reference is sufficient lifecycle.
-- **Don't change the engine's behaviour by passing exotic schedulers.** The container is engine-agnostic *as far as scheduler choice goes*. If a caller wants a custom scheduler, they pass it via options.
+- **Don't change the engine's behaviour by passing exotic schedulers.** The container is engine-agnostic _as far as scheduler choice goes_. If a caller wants a custom scheduler, they pass it via options.

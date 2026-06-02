@@ -11,9 +11,9 @@ an explicit **`.track()`** on the dependency handle returned by `this.depend()`.
 class CartBloc extends Cubit<{ qty: number }> {
   private price = this.depend(PriceBloc);
   get total() {
-    const v = this.state.qty;              // own state (already tracked)
-    const [s, bloc] = this.price.track();  // opt-in cross-bloc tracking
-    return v * s.amount + bloc.someGetter;  // dep state + dep getter both tracked
+    const v = this.state.qty; // own state (already tracked)
+    const [s, bloc] = this.price.track(); // opt-in cross-bloc tracking
+    return v * s.amount + bloc.someGetter; // dep state + dep getter both tracked
   }
 }
 // Consumer:  const [, c] = useBloc(CartBloc);  <span>{c.total}</span>
@@ -36,12 +36,13 @@ This is why the API hangs off `this.depend(...)`'s handle.
 
 ## Architecture (what changes)
 
-**Core (`@blac/core`)** — `depend()` returns a *branded callable handle* instead
+**Core (`@blac/core`)** — `depend()` returns a _branded callable handle_ instead
 of a bare resolver. `handle()` keeps resolving the live instance (back-compat).
 `handle.track()` base impl (no active session) returns `[instance.state, instance]`
 live. Core stays framework-agnostic; it does NOT subscribe.
 
 **React (`@blac/react`)** — the meaty part:
+
 - Extract the proxy-builder in `useBloc` into a reusable `buildTrackedProxy`.
 - Per-consumer **session**: `Map<container, {paths, trackingProxy}>`.
 - `thisProxy` detects a branded handle and returns a per-consumer wrapper whose
@@ -53,6 +54,7 @@ live. Core stays framework-agnostic; it does NOT subscribe.
 - The primary bloc becomes "the first entry in the session" — one code path.
 
 Reference points (verify before editing — line numbers drift):
+
 - `packages/blac-core/src/core/StateContainer.ts` — `depend()` ~267-277; `dependencies` getter ~248; `_dependencies` field ~229.
 - `packages/blac-core/src/core/StateContainerRegistry.ts` — `ensure()` ~415 (= `acquire(..., {countRef:false})`); `acquire`/`release` for refcounted refs.
 - `packages/blac-react/src/useBloc.ts` — proxy builder ~156-201; `trackedStateRef` ~230; channel subscribe effect ~232-283; snapshot + `trackRender` ~309-336; layout-effect reconcile + `expandWithAncestors` ~347-428.
@@ -71,12 +73,12 @@ Reference points (verify before editing — line numbers drift):
 - **03** requires **01 + 02** committed.
 - **04** requires **03** committed.
 
-| Task | File | Depends on | Parallel with | Model | Thinking effort |
-|------|------|-----------|---------------|-------|-----------------|
-| 01 Core dep handle | `01-core-dep-handle.md` | — | 02 | **Sonnet 4.6** | high (branded-callable generics) |
-| 02 Extract proxy builder | `02-react-extract-proxy.md` | — | 01 | **Sonnet 4.6** | medium (mechanical refactor) |
-| 03 React wiring | `03-react-wiring.md` | 01, 02 | — | **Opus 4.8** | high (stateful + concurrency-sensitive) |
-| 04 Tests + docs | `04-tests-and-docs.md` | 03 | — | **Sonnet 4.6** | high (semantics-driven tests) |
+| Task                     | File                        | Depends on | Parallel with | Model          | Thinking effort                         |
+| ------------------------ | --------------------------- | ---------- | ------------- | -------------- | --------------------------------------- |
+| 01 Core dep handle       | `01-core-dep-handle.md`     | —          | 02            | **Sonnet 4.6** | high (branded-callable generics)        |
+| 02 Extract proxy builder | `02-react-extract-proxy.md` | —          | 01            | **Sonnet 4.6** | medium (mechanical refactor)            |
+| 03 React wiring          | `03-react-wiring.md`        | 01, 02     | —             | **Opus 4.8**   | high (stateful + concurrency-sensitive) |
+| 04 Tests + docs          | `04-tests-and-docs.md`      | 03         | —             | **Sonnet 4.6** | high (semantics-driven tests)           |
 
 Model rationale: 01/02 are well-specified and contained → Sonnet is the
 cost-effective fit (escalate 01 to Opus only if generic typing fights back).
@@ -88,6 +90,7 @@ about the reactive semantics to write meaningful tests → Sonnet high.
 ```fish
 git switch -c feat/cross-bloc-getter-tracking
 ```
+
 All agents commit to this branch. (PR base is `v1` per repo convention.)
 
 ## Agent protocol — every task is a self-contained cycle
@@ -100,9 +103,9 @@ Each agent runs **check → implement → verify → test → commit**. Hard rul
    numbers (they drift).
 2. **IMPLEMENT**: only the files your task lists. Match surrounding code style.
 3. **VERIFY** (targeted only — never whole-repo):
-   - `cd <package>; pnpm typecheck`  (package-scoped tsc --noEmit)
+   - `cd <package>; pnpm typecheck` (package-scoped tsc --noEmit)
    - `cd <package>; pnpm exec vp lint src`
-   - `cd <package>; pnpm exec vp fmt "." --check`  ← required; oxfmt is not caught by lint
+   - `cd <package>; pnpm exec vp fmt "." --check` ← required; oxfmt is not caught by lint
 4. **TEST**: run ONLY the test files your task names, e.g.
    `cd packages/blac-react; pnpm exec vp test run src/__tests__/<file>.test.tsx`
 5. **COMMIT**:

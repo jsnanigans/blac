@@ -112,7 +112,6 @@ Hint: adopting a child directly onto the root **does** emit an adopt-time `paint
    If missing, edit `src/index.ts` and document in commit body.
 
 7. **Commit(s).**
-
    - **Main commit:**
      ```
      test(dirtytalk-spatial): add end-to-end integration test

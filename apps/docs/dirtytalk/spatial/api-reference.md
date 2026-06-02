@@ -58,11 +58,11 @@ Classifies a damage entry and thereby selects which pipeline stages run.
 type DamageKind = 'paint' | 'layout' | 'data';
 ```
 
-| Value | Stages run |
-| --- | --- |
-| `'paint'` | Paint only. |
-| `'layout'` | Layout → paint. |
-| `'data'` | Data → layout → paint. |
+| Value      | Stages run             |
+| ---------- | ---------------------- |
+| `'paint'`  | Paint only.            |
+| `'layout'` | Layout → paint.        |
+| `'data'`   | Data → layout → paint. |
 
 ### `Damage`
 
@@ -87,7 +87,7 @@ type DirtyRegion = readonly Damage[];
 ```
 
 ::: warning Treat as immutable
-`RectSpace.union` may return one of its inputs *by reference* (the empty short-circuit). Never mutate an array obtained from `union` or `empty`; the `readonly` type enforces this at compile time.
+`RectSpace.union` may return one of its inputs _by reference_ (the empty short-circuit). Never mutate an array obtained from `union` or `empty`; the `readonly` type enforces this at compile time.
 :::
 
 ## Rect helpers
@@ -100,14 +100,14 @@ All five are pure, side-effect-free `const` arrow functions. Only `unionRects` a
 const rectOverlaps: (a: Rect, b: Rect) => boolean;
 ```
 
-Returns `true` iff the two rects share *positive* area. Uses half-open semantics: touching edges do not overlap. Returns `false` if either rect has `w <= 0` or `h <= 0`.
+Returns `true` iff the two rects share _positive_ area. Uses half-open semantics: touching edges do not overlap. Returns `false` if either rect has `w <= 0` or `h <= 0`.
 
-| Inputs | Result |
-| --- | --- |
-| Identical non-empty rects | `true` |
-| One fully contained in the other | `true` |
+| Inputs                                       | Result  |
+| -------------------------------------------- | ------- |
+| Identical non-empty rects                    | `true`  |
+| One fully contained in the other             | `true`  |
 | Right edge of A == left edge of B (touching) | `false` |
-| Either rect has `w = 0` or `h = 0` | `false` |
+| Either rect has `w = 0` or `h = 0`           | `false` |
 
 ```ts
 rectOverlaps({ x: 0, y: 0, w: 10, h: 10 }, { x: 5, y: 5, w: 10, h: 10 }); // true
@@ -154,7 +154,7 @@ unionRects([]); // { x: 0, y: 0, w: 0, h: 0 }
 const rectClamp: (inner: Rect, outer: Rect) => Rect;
 ```
 
-Returns the *geometric intersection* of `inner` and `outer`, with width and height floored at `0` via `Math.max(0, …)`. This is the function used to clip damage to clipping ancestors.
+Returns the _geometric intersection_ of `inner` and `outer`, with width and height floored at `0` via `Math.max(0, …)`. This is the function used to clip damage to clipping ancestors.
 
 - Non-overlapping inputs → a zero-area rect.
 - `inner` fully inside `outer` → a rect value-equal to `inner`.
@@ -193,11 +193,11 @@ const RectSpace: Space<DirtyRegion>;
 
 The `Space<DirtyRegion>` implementation that wires the rect algebra into the engine's `DirtyChannel`. `Space<Region>` (from `@dirtytalk/engine`) requires four pure methods, which `RectSpace` provides:
 
-| Method | Behaviour |
-| --- | --- |
-| `empty(): DirtyRegion` | Returns `[]`. A **fresh array on every call** (`empty() !== empty()`). |
-| `isEmpty(r): boolean` | `r.length === 0`. |
-| `union(a, b): DirtyRegion` | Identity short-circuit: if `a` is empty returns `b` by reference; if `b` is empty returns `a` by reference; otherwise returns `[...a, ...b]`. Never mutates. Concatenation only — no dedup, no geometric merge. |
+| Method                                 | Behaviour                                                                                                                                                                                                         |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `empty(): DirtyRegion`                 | Returns `[]`. A **fresh array on every call** (`empty() !== empty()`).                                                                                                                                            |
+| `isEmpty(r): boolean`                  | `r.length === 0`.                                                                                                                                                                                                 |
+| `union(a, b): DirtyRegion`             | Identity short-circuit: if `a` is empty returns `b` by reference; if `b` is empty returns `a` by reference; otherwise returns `[...a, ...b]`. Never mutates. Concatenation only — no dedup, no geometric merge.   |
 | `intersects(interest, dirty): boolean` | `false` if either side is empty. Otherwise a nested loop returning `true` as soon as any `interest` rect overlaps any `dirty` rect (via `rectOverlaps`). O(N×M). **`DamageKind` is ignored** — only rects matter. |
 
 You normally never call these directly; `SceneRoot` passes `RectSpace` to its `DirtyChannel`. They are public for advanced uses (e.g. building your own channel over the spatial region).
@@ -229,19 +229,19 @@ interface SceneNodeOptions {
 }
 ```
 
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `bounds` | `{ x: 0, y: 0, w: 0, h: 0 }` | The node's initial axis-aligned rectangle. |
-| `clipsOverflow` | `false` | When `true`, *descendants'* damage rects are clamped to this node's bounds. |
+| Option          | Default                      | Meaning                                                                     |
+| --------------- | ---------------------------- | --------------------------------------------------------------------------- |
+| `bounds`        | `{ x: 0, y: 0, w: 0, h: 0 }` | The node's initial axis-aligned rectangle.                                  |
+| `clipsOverflow` | `false`                      | When `true`, _descendants'_ damage rects are clamped to this node's bounds. |
 
 ### Public properties
 
-| Property | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `bounds` | `Rect` | from options or `{0,0,0,0}` | The node's rectangle. Mutable, but prefer `setBounds` for damage tracking. |
-| `parent` | `SceneNode \| null` | `null` | Parent in the tree; set by `adoptChild` / `removeChild`. |
-| `children` | `SceneNode[]` | `[]` | Direct children in adoption order (= z-order; later = topmost). |
-| `clipsOverflow` | `boolean` | `false` | When `true`, descendants' damage is clamped to this node's bounds. |
+| Property        | Type                | Default                     | Meaning                                                                    |
+| --------------- | ------------------- | --------------------------- | -------------------------------------------------------------------------- |
+| `bounds`        | `Rect`              | from options or `{0,0,0,0}` | The node's rectangle. Mutable, but prefer `setBounds` for damage tracking. |
+| `parent`        | `SceneNode \| null` | `null`                      | Parent in the tree; set by `adoptChild` / `removeChild`.                   |
+| `children`      | `SceneNode[]`       | `[]`                        | Direct children in adoption order (= z-order; later = topmost).            |
+| `clipsOverflow` | `boolean`           | `false`                     | When `true`, descendants' damage is clamped to this node's bounds.         |
 
 ### `abstract paint(layer)`
 
@@ -265,7 +265,7 @@ Optional hook for nodes that own a data pipeline (e.g. plot mark layers). Called
 doLayout?(): void;
 ```
 
-Optional hook for nodes that own layout. Called in **Stage 2** for any non-`paint` damage entry (`layout` *or* `data`) whose node defines it. Use it to position content within `this.bounds`.
+Optional hook for nodes that own layout. Called in **Stage 2** for any non-`paint` damage entry (`layout` _or_ `data`) whose node defines it. Use it to position content within `this.bounds`.
 
 ### `protected markDamaged(kind, rect?)`
 
@@ -319,7 +319,7 @@ class Panel extends SceneNode {
 ```
 
 ::: warning batch unions same-kind rects; a move does not
-`batch` collapses same-kind rects into one region. By contrast `setBounds` deliberately emits two *disjoint* `paint` rects (old + new footprint) that are not unioned, so a multi-rect-scissor renderer can skip the dead gap between them.
+`batch` collapses same-kind rects into one region. By contrast `setBounds` deliberately emits two _disjoint_ `paint` rects (old + new footprint) that are not unioned, so a multi-rect-scissor renderer can skip the dead gap between them.
 :::
 
 ### `setBounds(next)`
@@ -382,12 +382,12 @@ The concrete root node. Owns the `DirtyChannel<DirtyRegion>`, the scheduler, and
 constructor(renderer: Renderer2D, options: SceneRootOptions = {})
 ```
 
-| Parameter | Notes |
-| --- | --- |
-| `renderer` | Required. Stored on `this.renderer`. |
-| `options.scheduler` | Default `new RAFScheduler()`. Pass `SyncScheduler` or `ManualScheduler` in tests. |
-| `options.bounds` | Passed to `super`; defaults to `{0,0,0,0}`. Used as the default interest region. |
-| `options.onFrameTiming` | Optional. When set, every rendered frame is timed and reported. |
+| Parameter               | Notes                                                                             |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| `renderer`              | Required. Stored on `this.renderer`.                                              |
+| `options.scheduler`     | Default `new RAFScheduler()`. Pass `SyncScheduler` or `ManualScheduler` in tests. |
+| `options.bounds`        | Passed to `super`; defaults to `{0,0,0,0}`. Used as the default interest region.  |
+| `options.onFrameTiming` | Optional. When set, every rendered frame is timed and reported.                   |
 
 On construction it creates `this.channel = new DirtyChannel(RectSpace, scheduler ?? new RAFScheduler())` and subscribes once with `interest = () => [{ rect: this.bounds, kind: 'paint' }]` (a thunk, re-evaluated per flush so resizing is respected) and callback `(dirty) => this._renderFrame(dirty)`.
 
@@ -395,19 +395,19 @@ On construction it creates `this.channel = new DirtyChannel(RectSpace, scheduler
 
 ```ts
 interface SceneRootOptions {
-  scheduler?: Scheduler;                          // default: new RAFScheduler()
-  bounds?: Rect;                                  // default interest region
-  onFrameTiming?: (timing: FrameTiming) => void;  // opt-in timing hook
+  scheduler?: Scheduler; // default: new RAFScheduler()
+  bounds?: Rect; // default interest region
+  onFrameTiming?: (timing: FrameTiming) => void; // opt-in timing hook
 }
 ```
 
 ### Public properties
 
-| Property | Type | Notes |
-| --- | --- | --- |
-| `channel` | `readonly DirtyChannel<DirtyRegion>` | The owned dirty channel. You can push marks directly via `channel.mark([...])`. |
-| `renderer` | `readonly Renderer2D` | The renderer contract instance. |
-| `fullFrame` | `boolean` (default `false`) | When `true`, damage is ignored: every frame repaints `[this.bounds]` and the paint walk visits all children (no culling). The "damage tracking off" baseline for cost comparison — leave `false` in production. |
+| Property    | Type                                 | Notes                                                                                                                                                                                                           |
+| ----------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `channel`   | `readonly DirtyChannel<DirtyRegion>` | The owned dirty channel. You can push marks directly via `channel.mark([...])`.                                                                                                                                 |
+| `renderer`  | `readonly Renderer2D`                | The renderer contract instance.                                                                                                                                                                                 |
+| `fullFrame` | `boolean` (default `false`)          | When `true`, damage is ignored: every frame repaints `[this.bounds]` and the paint walk visits all children (no culling). The "damage tracking off" baseline for cost comparison — leave `false` in production. |
 
 ### `paint(_layer)`
 
@@ -460,7 +460,7 @@ interface Renderer2D {
 }
 ```
 
-The renderer contract the package ships (no implementation). `beginFrame(regions)` begins a frame clipped/scissored to the given damage regions; **the array is never empty when called**, and `regions` is the list of *individual* damage rects, not their union. A v1 renderer may `unionRects(regions)` and clip to the bounding box, or ignore `regions` and clear the whole canvas; a multi-rect renderer scissors to each. `endFrame()` takes no arguments (submit/flush).
+The renderer contract the package ships (no implementation). `beginFrame(regions)` begins a frame clipped/scissored to the given damage regions; **the array is never empty when called**, and `regions` is the list of _individual_ damage rects, not their union. A v1 renderer may `unionRects(regions)` and clip to the bounding box, or ignore `regions` and clear the whole canvas; a multi-rect renderer scissors to each. `endFrame()` takes no arguments (submit/flush).
 
 ```ts
 const renderer: Renderer2D = {
@@ -483,19 +483,21 @@ const renderer: Renderer2D = {
 
 ```ts
 interface FrameTiming {
-  layoutMs: number;     // ms in data + layout stages (rebuildData + doLayout)
-  paintMs: number;      // ms in paint stage (beginFrame -> paint walk -> endFrame)
+  layoutMs: number; // ms in data + layout stages (rebuildData + doLayout)
+  paintMs: number; // ms in paint stage (beginFrame -> paint walk -> endFrame)
   paintedNodes: number; // top-level nodes whose paint() actually ran this frame
 }
 ```
 
-Reported via `onFrameTiming` exactly once per *rendered* frame. `paintedNodes` is the headline cost signal — it scales with the damaged area (every child in full-frame mode), not the scene size. When `onFrameTiming` is omitted there is **zero overhead**: `performance.now()` is never called.
+Reported via `onFrameTiming` exactly once per _rendered_ frame. `paintedNodes` is the headline cost signal — it scales with the damaged area (every child in full-frame mode), not the scene size. When `onFrameTiming` is omitted there is **zero overhead**: `performance.now()` is never called.
 
 ```ts
 const root = new SceneRoot(renderer, {
   bounds: { x: 0, y: 0, w: 800, h: 600 },
   onFrameTiming: ({ layoutMs, paintMs, paintedNodes }) => {
-    console.log(`layout ${layoutMs}ms paint ${paintMs}ms nodes ${paintedNodes}`);
+    console.log(
+      `layout ${layoutMs}ms paint ${paintMs}ms nodes ${paintedNodes}`,
+    );
   },
 });
 ```
@@ -554,12 +556,12 @@ dispatch(e: SpatialPointerEvent): SceneNode | null;
 
 Dispatches an event and returns the receiving node (or `null`). Capture-based semantics:
 
-| Event | Behaviour |
-| --- | --- |
-| `down` | Hit-tests via `root.hitTest`. On a hit: captures the node for `e.pointerId`, invokes `onPointerDown`, returns it. On a miss: captures nothing, returns `null`. |
-| `move`/`up`/`cancel` **with capture** | Delivers to the captured node (even if the pointer drifted outside its bounds). On `up`/`cancel`, releases the capture. Returns the captured node. |
-| `move` **uncaptured** | Hit-tests by current position; invokes `onPointerMove` on the hit (if any); returns it or `null`. |
-| `up`/`cancel` **uncaptured** | Dropped — returns `null`, no handler invoked. |
+| Event                                 | Behaviour                                                                                                                                                      |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `down`                                | Hit-tests via `root.hitTest`. On a hit: captures the node for `e.pointerId`, invokes `onPointerDown`, returns it. On a miss: captures nothing, returns `null`. |
+| `move`/`up`/`cancel` **with capture** | Delivers to the captured node (even if the pointer drifted outside its bounds). On `up`/`cancel`, releases the capture. Returns the captured node.             |
+| `move` **uncaptured**                 | Hit-tests by current position; invokes `onPointerMove` on the hit (if any); returns it or `null`.                                                              |
+| `up`/`cancel` **uncaptured**          | Dropped — returns `null`, no handler invoked.                                                                                                                  |
 
 Multiple `pointerId`s are tracked independently. Hover is just `move` dispatch — a node repaints on hover by calling `markDamaged('paint')` inside `onPointerMove`.
 

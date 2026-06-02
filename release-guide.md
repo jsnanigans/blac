@@ -77,14 +77,14 @@ No manual diffing required.
 
 ## Reference
 
-| Command | Does |
-|---|---|
-| `pnpm changeset` | Create a changeset |
-| `pnpm release:status` | Preview pending bumps + dependents |
-| `pnpm release:check` | Build + verify + test + typecheck |
+| Command                | Does                                              |
+| ---------------------- | ------------------------------------------------- |
+| `pnpm changeset`       | Create a changeset                                |
+| `pnpm release:status`  | Preview pending bumps + dependents                |
+| `pnpm release:check`   | Build + verify + test + typecheck                 |
 | `pnpm release:version` | Apply changesets, bump versions, write changelogs |
-| `pnpm release:publish` | Build + publish changed packages |
-| `pnpm release` | Interactive menu for all of the above |
+| `pnpm release:publish` | Build + publish changed packages                  |
+| `pnpm release`         | Interactive menu for all of the above             |
 
 - Config: `.changeset/config.json` (`baseBranch: main`, `access: public`).
 - All `@blac/*` and `@dirtytalk/*` packages under `packages/*` publish publicly. Everything in `apps/*` and the `@9amhealth/blac-compat` shim are `private` **and** listed in the changeset `ignore` array, so they are never versioned or published to npm.

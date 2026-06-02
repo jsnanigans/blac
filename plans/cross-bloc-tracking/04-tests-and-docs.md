@@ -60,6 +60,7 @@ pnpm exec vp test run src/__tests__/useBloc.track-lifecycle.test.tsx   # if crea
 pnpm exec vp test run src/__tests__/useBloc.cross-bloc-react.test.tsx
 pnpm exec vp test run src/__tests__/useBloc.cross-bloc-edge-cases.test.tsx
 ```
+
 If docs touched: `cd apps/docs; pnpm build` (Twoslash = the typecheck for samples).
 
 ## Commit
@@ -67,6 +68,7 @@ If docs touched: `cd apps/docs; pnpm build` (Twoslash = the typecheck for sample
 ```
 test(blac-react): spec cross-bloc track() + docs
 ```
+
 (Split into two commits — `test(...)` and `docs(...)` — if docs are non-trivial.)
 
 ## Done when

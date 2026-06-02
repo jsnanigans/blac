@@ -8,11 +8,13 @@ This phase also edits `StateViewer.tsx`, so it must run **after Phase 2 commits*
 (they'd otherwise collide on that file).
 
 ## Goal
-Show *which state paths change most* over a rolling window, as a small per-path
+
+Show _which state paths change most_ over a rolling window, as a small per-path
 heatmap/bar list in the detail panel. Pairs with the existing 10s update-rate
-buffer: that tells you *how often* an instance changes; this tells you *what*.
+buffer: that tells you _how often_ an instance changes; this tells you _what_.
 
 ## Design
+
 - New **`DevToolsChurnBloc`** keeps, per instanceId, a rolling window
   (reuse the 10s window + ring-buffer approach from `DevToolsInstancesBloc`'s
   `updateTimestamps`) of `{ path, timestamp }` records. The changed paths per
@@ -28,14 +30,16 @@ buffer: that tells you *how often* an instance changes; this tells you *what*.
   `isChurnExpanded` toggle (added in Phase 0).
 
 ## Files
-- `packages/devtools-ui/src/blocs/DevToolsChurnBloc.ts` *(new)*
+
+- `packages/devtools-ui/src/blocs/DevToolsChurnBloc.ts` _(new)_
 - `packages/devtools-ui/src/blocs/index.ts` (export the new bloc)
-- `packages/devtools-ui/src/components/PathChurnView.tsx` *(new)*
+- `packages/devtools-ui/src/components/PathChurnView.tsx` _(new)_
 - `packages/devtools-ui/src/components/StateViewer.tsx` (insert section)
 - `apps/devtools-extension/src/panel/index.tsx` (feed churn bloc on `instance-updated`)
 - `packages/devtools-ui/src/DraggableOverlay.tsx` (feed churn bloc — overlay path)
 
 ## Key context (verify against current code)
+
 - `DevToolsInstancesBloc.updateInstanceState` already receives `lastPaths` and
   keeps a 10s `updateTimestamps` ring buffer (`UPDATE_RATE_WINDOW_MS = 10_000`,
   `UPDATE_RING_MAX = 200`) — **copy that pruning pattern** for per-path records.
@@ -48,19 +52,23 @@ buffer: that tells you *how often* an instance changes; this tells you *what*.
   `getUpdatesIn10s` is read in `StateViewer`).
 
 ## Tests (required for the bloc logic)
+
 Unit-test `DevToolsChurnBloc`: recording paths increments counts; entries outside
 the window are pruned; `getChurn` returns descending order; `'all'` handled per
 your documented choice. `import { describe, it, expect } from 'vite-plus/test'`.
 
 ## Cycle
+
 Shared protocol, scoped to `@blac/devtools-ui`:
 `format → format:check → lint → typecheck → test`.
+
 - Changeset: `@blac/devtools-ui` `patch` — "Per-path churn heatmap in detail panel."
 - Commit: `feat(devtools-ui): add per-path churn heatmap`
 - `panel/index.tsx` / `DraggableOverlay.tsx` edits in `@blac/devtools-ext`/`-ui`
   respectively; only `@blac/devtools-ui` is published → one changeset.
 
 ## Done when
+
 - Churn bloc tracks per-path frequency in a pruned rolling window with tests.
 - Detail panel shows a ranked, truncation-honest path heatmap for the selection.
 - Both the extension panel and in-app overlay feed the bloc. Listed files only.

@@ -1,5 +1,12 @@
 # @dirtytalk/structural
 
+## 0.0.5
+
+### Patch Changes
+
+- Add per-index array iteration tracking and fix array identity-search so that
+  iterating and reading array entries records the precise paths touched.
+
 ## 0.0.4
 
 ### Patch Changes

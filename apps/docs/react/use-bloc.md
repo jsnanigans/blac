@@ -222,7 +222,8 @@ A note on `<BlocProvider>`: it supplies `args` to descendant `useBloc` calls tha
 import { BlocProvider } from '@blac/react';
 
 <BlocProvider args={{ customerId: 'customer-42' }}>
-  <CustomerView /> {/* useBloc(CustomerCubit) here inherits args from the provider */}
+  <CustomerView />{' '}
+  {/* useBloc(CustomerCubit) here inherits args from the provider */}
 </BlocProvider>;
 ```
 
@@ -310,11 +311,11 @@ See [Instance Management](/core/instance-management) and [Passing Inputs](/guide
 
 **Fix:**
 
-| Old                         | Replacement                                                                        |
-| --------------------------- | ---------------------------------------------------------------------------------- |
-| `autoTrack` / no option     | Auto-tracking is the default; opt out with `select`                                |
+| Old                         | Replacement                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------ |
+| `autoTrack` / no option     | Auto-tracking is the default; opt out with `select`                                  |
 | `autoInstance` / `isolated` | Include a per-mount unique value in `args` with `static key` for per-mount instances |
-| `instanceId`                | Use `args`-derived identity; include a unique value in `args` + `static key`       |
-| `dependencies`              | Renamed to `select` in v2                                                          |
+| `instanceId`                | Use `args`-derived identity; include a unique value in `args` + `static key`         |
+| `dependencies`              | Renamed to `select` in v2                                                            |
 
 See [Migration from v1](/guide/migration-from-v1) for the full list of renamed/removed options.

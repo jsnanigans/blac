@@ -54,7 +54,7 @@ Tick every box for each symbol you document.
 - [ ] `## ` (H2) for each top-level symbol; `### ` (H3) for each member/method/
       getter/constructor under it.
 - [ ] **Sentence case** headings (`## Mutation methods`, not `## Mutation
-    Methods`). The H1 page title and proper nouns/code keep their casing.
+Methods`). The H1 page title and proper nouns/code keep their casing.
 - [ ] When the heading names code, wrap it in backticks: `### \`emit(next)\``.
 
 ### 2. Signature fence comes FIRST
@@ -83,7 +83,7 @@ Tick every box for each symbol you document.
 
 - [ ] An explicit **`Returns:`** line for every member — including `void`
       (`**Returns:** \`void\`.`). For a function-returning method, describe what
-    the returned function does (e.g. "a getter `() => InstanceType<T>` that
+the returned function does (e.g. "a getter `() => InstanceType<T>` that
       resolves the dep lazily").
 
 ### 5. Behavior

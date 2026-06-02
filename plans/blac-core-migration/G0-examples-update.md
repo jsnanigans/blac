@@ -76,6 +76,7 @@ apps/examples/package.json    (only if dep ranges need updating)
    ```
 
    Body:
+
    ```
    - `dependencies` → `select` in N callsites.
    - Removed `@blac/adapter` imports (now in @dirtytalk/structural).

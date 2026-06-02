@@ -111,7 +111,7 @@ export function useStructural<S, C extends StructuralContainer<S>>(
 - **`pathRef.current` updates before `registerConsumerPaths`** so the next channel flush sees the updated interest.
 - **`useEffect` subscribes once per `container`/`consumerId` pair.** It does not depend on `pathRef`; the thunk closure reads `pathRef.current` lazily at flush time, so the subscription survives every render with the latest paths.
 - **`force()` triggers React to re-render**, which re-runs `trackRender`, which updates the consumer's paths and the skeleton.
-- **StrictMode double-invoke is safe.** `useEffect` mounts twice in dev; the first cleanup runs `unregisterConsumer` and the second mount re-registers. Because `consumerId` from `useId` is stable across the double-invoke, the second registration happens before the first cleanup *might* run, depending on React's exact order. Verify in tests that no paths leak in the consumer registry after a StrictMode mount+unmount+remount.
+- **StrictMode double-invoke is safe.** `useEffect` mounts twice in dev; the first cleanup runs `unregisterConsumer` and the second mount re-registers. Because `consumerId` from `useId` is stable across the double-invoke, the second registration happens before the first cleanup _might_ run, depending on React's exact order. Verify in tests that no paths leak in the consumer registry after a StrictMode mount+unmount+remount.
 - **Unmount cleanly removes the consumer.** Unregister must run in the effect cleanup, not in a separate effect.
 
 ### `react.ts` barrel — final
@@ -219,7 +219,7 @@ Use `SyncScheduler` so React Testing Library's synchronous assertions see effect
 
 ## Pitfalls
 
-- **Don't `useRef(emptyPathSet())` without re-creating.** A ref initialised once means every consumer mounted in a SSR-then-hydrate cycle shares the same Set. The hook signature in the spec gets this right (`emptyPathSet()` is called *inside* `useRef`, which only uses the value on first render — but on subsequent renders the ref persists, which is what we want).
+- **Don't `useRef(emptyPathSet())` without re-creating.** A ref initialised once means every consumer mounted in a SSR-then-hydrate cycle shares the same Set. The hook signature in the spec gets this right (`emptyPathSet()` is called _inside_ `useRef`, which only uses the value on first render — but on subsequent renders the ref persists, which is what we want).
 - **Don't put `trackRender` inside `useEffect`.** It must run during render so the proxy is in scope for the JSX that reads it.
 - **Don't put `registerConsumerPaths` inside `useEffect`.** Same reason — by the time `useEffect` runs, the render is over and the subscription thunk has already been evaluated with stale paths.
 - **Don't subscribe inside render.** That double-subscribes on every render. Effect is the right place; the effect's `interest` thunk reads `pathRef.current` lazily so re-renders update what the channel sees without re-subscribing.

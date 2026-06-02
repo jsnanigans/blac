@@ -57,7 +57,7 @@ export interface Renderer2D {
 }
 ```
 
-`paintRegion` is the *bounding rect* of the frame's paint damages (computed via `unionRects`). Renderers that don't yet implement scissor/tile dispatch can ignore the region; the API is stable for the v2 partial-redraw transition.
+`paintRegion` is the _bounding rect_ of the frame's paint damages (computed via `unionRects`). Renderers that don't yet implement scissor/tile dispatch can ignore the region; the API is stable for the v2 partial-redraw transition.
 
 ### `SceneRootOptions`
 
@@ -153,12 +153,7 @@ export class SceneRoot extends SceneNode {
 
 ```ts
 export type { Rect, DamageKind, Damage, DirtyRegion } from './types';
-export {
-  rectOverlaps,
-  rectEquals,
-  unionRects,
-  rectClamp,
-} from './rect';
+export { rectOverlaps, rectEquals, unionRects, rectClamp } from './rect';
 export { RectSpace } from './rect-space';
 export { SceneNode } from './scene-node';
 export type { SceneNodeOptions } from './scene-node';
@@ -181,7 +176,9 @@ import { SceneNode } from './scene-node';
 import { SceneRoot } from './scene-root';
 import type { Renderer2D, Rect, DamageKind } from './types';
 
-const makeRenderer = (): Renderer2D & { calls: Array<['begin' | 'end', Rect?]> } => {
+const makeRenderer = (): Renderer2D & {
+  calls: Array<['begin' | 'end', Rect?]>;
+} => {
   const calls: Array<['begin' | 'end', Rect?]> = [];
   return {
     calls,

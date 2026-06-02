@@ -88,6 +88,7 @@ packages/devtools-ui/src/**
    ```
 
    Body:
+
    ```
    - Consumes paths field from devtools-connect (F2).
    - useBloc usages migrated from `dependencies` to `select` (D0).

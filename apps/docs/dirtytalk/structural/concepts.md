@@ -1,17 +1,17 @@
 # Concepts
 
-This page explains the model behind `@dirtytalk/structural`: the diffing-cost problem it solves, how paths become interned IDs, what the *skeleton* is, how the proxy recorder works, and how the React adapter ties it all together. Read it after [Getting Started](/dirtytalk/structural/getting-started) when you want to understand *why* the package is shaped the way it is.
+This page explains the model behind `@dirtytalk/structural`: the diffing-cost problem it solves, how paths become interned IDs, what the _skeleton_ is, how the proxy recorder works, and how the React adapter ties it all together. Read it after [Getting Started](/dirtytalk/structural/getting-started) when you want to understand _why_ the package is shaped the way it is.
 
 ## The problem: per-consumer diffing is quadratic
 
-State containers and UI renderers both ask the same question after a mutation: *what changed, who cares, and when do we tell them?* For structural state — objects and arrays whose consumers track named paths — the honest answer is a set of changed paths matched against each consumer's set of observed paths.
+State containers and UI renderers both ask the same question after a mutation: _what changed, who cares, and when do we tell them?_ For structural state — objects and arrays whose consumers track named paths — the honest answer is a set of changed paths matched against each consumer's set of observed paths.
 
 The naive way to compute this is **per-consumer diffing**: for each of `N` consumers, walk the previous and next state comparing the paths that consumer observes. When many consumers share one container and observe overlapping shapes, this is roughly `N` consumers × `N` redundant tree walks, doing the same equality checks over and over. The cost grows quadratically with consumer count exactly when you least want it to — a busy container with many subscribers.
 
 The fix this package implements is **one walk plus N intersections**:
 
-1. Maintain a single *skeleton* — the union of every live consumer's observed paths.
-2. On a mutation, do **one** diff walk bounded to that skeleton, producing a set of changed path IDs (the *dirty* set).
+1. Maintain a single _skeleton_ — the union of every live consumer's observed paths.
+2. On a mutation, do **one** diff walk bounded to that skeleton, producing a set of changed path IDs (the _dirty_ set).
 3. Decide who to wake with `N` cheap **set intersections**: a consumer wakes iff its observed path set intersects the dirty set.
 
 The expensive part (the tree walk) happens once per mutation instead of once per consumer. The per-consumer part collapses to set-membership checks. The saving is proportional to `N` when consumers share a container. This is the lineage of BlaC's per-consumer path tracking, extracted and built on top of [`@dirtytalk/engine`](/dirtytalk/engine/concepts)'s `DirtyChannel`, `Space`, and `Scheduler`.
@@ -41,7 +41,7 @@ IDs are only comparable within a single interner's namespace — `0` means `"use
 
 A `PathSet` is the unit of "interest" and "dirtiness." It is either a concrete `Set<PathId>` or the special `ALL_PATHS` sentinel.
 
-`ALL_PATHS` is a registered symbol (`Symbol.for('@dirtytalk/structural/ALL_PATHS')`), so its identity is stable even across module realms that share the symbol registry. It means "every possible path." Its key property is intersection behaviour: an `ALL_PATHS` interest intersects any non-empty dirty set, and any non-empty interest intersects an `ALL_PATHS` dirty set. (An *empty* interest never wakes, even against `ALL_PATHS` — empty means "I care about nothing.")
+`ALL_PATHS` is a registered symbol (`Symbol.for('@dirtytalk/structural/ALL_PATHS')`), so its identity is stable even across module realms that share the symbol registry. It means "every possible path." Its key property is intersection behaviour: an `ALL_PATHS` interest intersects any non-empty dirty set, and any non-empty interest intersects an `ALL_PATHS` dirty set. (An _empty_ interest never wakes, even against `ALL_PATHS` — empty means "I care about nothing.")
 
 `ALL_PATHS` shows up in two places:
 
@@ -50,12 +50,12 @@ A `PathSet` is the unit of "interest" and "dirtiness." It is either a concrete `
 
 The set algebra lives in a handful of pure functions:
 
-| Function | Meaning |
-|---|---|
-| `emptyPathSet()` | A fresh empty `Set<PathId>` (never `ALL_PATHS`). |
-| `pathSetUnion(a, b)` | Pure union; `ALL_PATHS` if either side is `ALL_PATHS`. Does not mutate inputs. |
-| `pathSetEquals(a, b)` | Value equality; both `ALL_PATHS`, or two Sets with the same members. |
-| `PathSetSpace` | The `Space<PathSet>` the engine's `DirtyChannel` consumes (provides `empty`, `isEmpty`, `union`, `intersects`). |
+| Function              | Meaning                                                                                                         |
+| --------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `emptyPathSet()`      | A fresh empty `Set<PathId>` (never `ALL_PATHS`).                                                                |
+| `pathSetUnion(a, b)`  | Pure union; `ALL_PATHS` if either side is `ALL_PATHS`. Does not mutate inputs.                                  |
+| `pathSetEquals(a, b)` | Value equality; both `ALL_PATHS`, or two Sets with the same members.                                            |
+| `PathSetSpace`        | The `Space<PathSet>` the engine's `DirtyChannel` consumes (provides `empty`, `isEmpty`, `union`, `intersects`). |
 
 These satisfy the engine's [`Space` contract](/dirtytalk/engine/concepts): `union(empty(), r)` equals `r` by value, `intersects(empty(), _)` is `false`, and every operation is pure.
 
@@ -67,7 +67,7 @@ Note that `patch` does **not** take this shortcut: it always value-diffs the pat
 
 ## The observed skeleton
 
-The **skeleton** is the union of all currently registered consumers' path sets. It is the bound on the diff walk: `emit`/`update` only check whether the paths *somebody* observes have changed, ignoring fields no live consumer reads.
+The **skeleton** is the union of all currently registered consumers' path sets. It is the bound on the diff walk: `emit`/`update` only check whether the paths _somebody_ observes have changed, ignoring fields no live consumer reads.
 
 It is maintained through the consumer registry:
 
@@ -78,35 +78,35 @@ Recompute is `O(consumers × paths)` — a full re-union on every registry chang
 
 ## `trackRender`: the Proxy recorder
 
-How does a consumer declare which paths it observes without writing a selector? It just *reads* the state, and a recording proxy notes what was read.
+How does a consumer declare which paths it observes without writing a selector? It just _reads_ the state, and a recording proxy notes what was read.
 
-`trackRender(state, interner)` wraps `state` in a `Proxy` and returns `{ value, paths }`. `value` is the proxy; `paths` is a **live** `Set<PathId>` that grows as you read properties off `value`. It is empty until you read, and it is mutated *after* `trackRender` returns. `paths` is always a concrete `Set` — never `ALL_PATHS`.
+`trackRender(state, interner)` wraps `state` in a `Proxy` and returns `{ value, paths }`. `value` is the proxy; `paths` is a **live** `Set<PathId>` that grows as you read properties off `value`. It is empty until you read, and it is mutated _after_ `trackRender` returns. `paths` is always a concrete `Set` — never `ALL_PATHS`.
 
 The recording rules are deliberate, and they are what make sibling isolation work:
 
-- **Leaf-only (maximal) recording.** Reading `a.b.c` records only `a.b.c`. As each deeper read descends, the immediate parent path is dropped from the set. So a consumer reading `user.name` records exactly `user.name` — not `user`. When an immutable update replaces the whole `user` object because a *sibling* (`user.address`) changed, the consumer of `user.name` does **not** wake: its recorded leaf still resolves to the same value. A consumer that reads the whole `user` object (no deeper key) keeps `user` as its leaf and wakes on any change to it.
+- **Leaf-only (maximal) recording.** Reading `a.b.c` records only `a.b.c`. As each deeper read descends, the immediate parent path is dropped from the set. So a consumer reading `user.name` records exactly `user.name` — not `user`. When an immutable update replaces the whole `user` object because a _sibling_ (`user.address`) changed, the consumer of `user.name` does **not** wake: its recorded leaf still resolves to the same value. A consumer that reads the whole `user` object (no deeper key) keeps `user` as its leaf and wakes on any change to it.
 - **Own, non-symbol reads only.** Symbol keys (`Symbol.iterator`, `Symbol.toStringTag`) and inherited/prototype properties never record. Re-reading a path does not re-record (idempotent via the Set). Conditional reads record only the branch actually taken.
 - **Primitives pass through.** Reading a field whose value is a primitive, `null`, or `undefined` returns it as-is — but reading the key still records that field's path.
 - **Nested plain objects and arrays return child proxies** recording into the same `paths` set, cached per target in a per-call `WeakMap` so `value.user === value.user` within one render. The cache dies with the call frame, so each `trackRender` call records independently.
-- **Iteration coarsens.** `for..of`, `.map`, `.find`, `.reduce` and friends on an array record the **entry path** (e.g. `items`) but **not** per-index paths (`items.0`) or `items.length`. Array prototype methods are bound to the raw target so their internal index reads bypass the proxy, and callbacks receive raw (un-proxied) values. Direct index access *does* record the leaf — `value.items[2].name` records `items.2.name`.
+- **Iteration coarsens.** `for..of`, `.map`, `.find`, `.reduce` and friends on an array record the **entry path** (e.g. `items`) but **not** per-index paths (`items.0`) or `items.length`. Array prototype methods are bound to the raw target so their internal index reads bypass the proxy, and callbacks receive raw (un-proxied) values. Direct index access _does_ record the leaf — `value.items[2].name` records `items.2.name`.
 - **Leaf collection types are not recursed.** `Map`, `Set`, `Date`, and class instances are returned raw (wrapping them would rebind receiver-checked built-ins like `Map.prototype.get` and throw). Reading the field records the field's path only; a reference change to the whole value still wakes the consumer. The wrappable predicate is: arrays, or objects whose prototype is `Object.prototype` or `null`.
 - **Own methods on non-array objects are bound to the proxy** so their internal `this.x` reads keep recording when invoked. Reading a method without calling it does not record (methods live on the prototype).
 
-This is why the React hook needs no selector: the JSX *is* the dependency declaration.
+This is why the React hook needs no selector: the JSX _is_ the dependency declaration.
 
 ## The diff helpers and when each applies
 
 Two questions, two helpers. "Did the paths somebody observes change?" is answered by walking the skeleton. "Which paths did this patch actually change?" is answered by walking the patch. `getAt` is the shared path-read primitive.
 
-| Helper | Walks | Used by | Question it answers |
-|---|---|---|---|
-| `getAt(state, path)` | one dotted path | the others, internally | What value lives at this path? (never throws) |
-| `diffAlongSkeleton(prev, next, skeleton, interner, equalsAt?)` | the skeleton | `emit` / `update` | Which observed paths changed value between `prev` and `next`? |
-| `pathsFromPatch(patch, interner)` | the patch shape | exported, not used by the container | Which paths does this patch *touch* (regardless of value)? |
-| `changedPathsFromPatch(prev, next, patch, interner, equalsAt?)` | the patch shape | `patch` | Which patched paths actually changed value? |
+| Helper                                                          | Walks           | Used by                             | Question it answers                                           |
+| --------------------------------------------------------------- | --------------- | ----------------------------------- | ------------------------------------------------------------- |
+| `getAt(state, path)`                                            | one dotted path | the others, internally              | What value lives at this path? (never throws)                 |
+| `diffAlongSkeleton(prev, next, skeleton, interner, equalsAt?)`  | the skeleton    | `emit` / `update`                   | Which observed paths changed value between `prev` and `next`? |
+| `pathsFromPatch(patch, interner)`                               | the patch shape | exported, not used by the container | Which paths does this patch _touch_ (regardless of value)?    |
+| `changedPathsFromPatch(prev, next, patch, interner, equalsAt?)` | the patch shape | `patch`                             | Which patched paths actually changed value?                   |
 
-- **`diffAlongSkeleton`** reads each skeleton path in both states and includes it iff the values differ under `equalsAt` (default `Object.is`). It short-circuits: `ALL_PATHS` skeleton returns `ALL_PATHS`, empty skeleton returns empty. It is pure. Because the default is reference equality, an intermediate path like `user` *is* flagged if the outer object got a new reference even when its leaves are unchanged — which is correct for a consumer that observes `user` as a leaf.
-- **`pathsFromPatch`** flattens a patch tree to interned paths with **tree-pulses-up** semantics: each plain-object branch contributes its own path *and* recurses, so `{ user: { email: 'x' } }` yields both `"user"` and `"user.email"`. Arrays, primitives, class instances, `Date`, `Map`, `Set` are leaves (recorded then stopped). It does not compare values — it is shape-based. The container does not use it for marking, but it is exported for callers who want shape-based marking.
+- **`diffAlongSkeleton`** reads each skeleton path in both states and includes it iff the values differ under `equalsAt` (default `Object.is`). It short-circuits: `ALL_PATHS` skeleton returns `ALL_PATHS`, empty skeleton returns empty. It is pure. Because the default is reference equality, an intermediate path like `user` _is_ flagged if the outer object got a new reference even when its leaves are unchanged — which is correct for a consumer that observes `user` as a leaf.
+- **`pathsFromPatch`** flattens a patch tree to interned paths with **tree-pulses-up** semantics: each plain-object branch contributes its own path _and_ recurses, so `{ user: { email: 'x' } }` yields both `"user"` and `"user.email"`. Arrays, primitives, class instances, `Date`, `Map`, `Set` are leaves (recorded then stopped). It does not compare values — it is shape-based. The container does not use it for marking, but it is exported for callers who want shape-based marking.
 - **`changedPathsFromPatch`** is `pathsFromPatch` with a value filter: it pulses up the same branches but compares `prev[key]` vs `next[key]` at each step and skips paths whose value did not change. Crucially it **prunes recursion** into unchanged branches — relying on the invariant that an unchanged subtree keeps its reference. This makes patch marking precise and skeleton-independent, so a raw channel subscriber wakes correctly while an over-spread patch (spreading a whole parent when one field changed) does not over-wake siblings.
 
 For example, an over-spread patch `{ user: { name: 'Grace', email: 'a@x.io' } }` where only `name` actually changed marks `['user', 'user.name']` — not `user.email`.

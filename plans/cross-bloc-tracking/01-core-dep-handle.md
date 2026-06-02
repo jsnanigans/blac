@@ -23,6 +23,7 @@ core only provides the type + the safe live fallback.
 ## Context
 
 Current (`StateContainer.ts` ~267-277):
+
 ```ts
 protected depend<T extends StateContainerConstructor>(
   Type: T,
@@ -34,6 +35,7 @@ protected depend<T extends StateContainerConstructor>(
   return () => this._registry.ensure(Type, key, args);
 }
 ```
+
 `ensure(Type, key, args)` = `acquire(..., {canCreate:true, countRef:false})`
 (`StateContainerRegistry.ts` ~415). It does NOT refcount — that's fine for the
 core fallback; refcounting tracked deps is Task 03's job in React.
@@ -67,6 +69,7 @@ core fallback; refcounting tracked deps is Task 03's job in React.
 ## Tests (write in the new file)
 
 Cover the **core** contract only (no React):
+
 - `handle()` returns the same instance as `borrow(Dep)` / `ensure(Dep)`.
 - `handle.track()` (no session) returns `[dep.state, depInstance]` with the live
   state object and the live instance (`===` checks).

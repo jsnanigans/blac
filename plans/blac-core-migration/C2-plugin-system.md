@@ -49,10 +49,19 @@ export interface BlacPlugin {
   onDestroyed?(ctx: PluginContext): void;
 
   // State (paths: PathSet — what changed in this flush)
-  onStateChange?(ctx: PluginContext, prev: unknown, next: unknown, paths: PathSet): void;
+  onStateChange?(
+    ctx: PluginContext,
+    prev: unknown,
+    next: unknown,
+    paths: PathSet,
+  ): void;
 
   // Hydration unchanged
-  onHydrationChange?(ctx: PluginContext, status: HydrationStatus, prev: HydrationStatus): void;
+  onHydrationChange?(
+    ctx: PluginContext,
+    status: HydrationStatus,
+    prev: HydrationStatus,
+  ): void;
 }
 ```
 
@@ -135,6 +144,7 @@ packages/blac-core/src/plugin/PluginManager.edge-cases.test.ts
    ```
 
    `!` marks breaking. Body:
+
    ```
    Per dirtytalk/03-blac.md, plugins now receive the changed PathSet on
    each flush. Lifecycle events (onCreated/onDestroyed) unchanged.
@@ -158,7 +168,7 @@ packages/blac-core/src/plugin/PluginManager.edge-cases.test.ts
 
 - **`prev`/`next` capture.** Structural's `DirtyChannel` callback gives you `(paths)`. To deliver `(prev, next, paths)`, you must either (a) snapshot `container.state` before the emit and after the flush, or (b) extend the channel callback shape. **Option (a)** is local to this task; **option (b)** ripples into structural. Pick (a) unless it's hopeless.
 - **Multiple plugins on one container.** Snapshot `prev` once per container per flush, not per plugin. Otherwise plugins see different `prev` values depending on dispatch order.
-- **`ALL_PATHS` interest cost.** A plugin manager that subscribes with `ALL_PATHS` to every container makes the single-consumer-skip optimization in structural ineffective (because the plugin counts as a consumer). Document this. F0 (logging-plugin) and F1 (persist) probably *want* this. F2/F3 (devtools) only attach when devtools are open.
+- **`ALL_PATHS` interest cost.** A plugin manager that subscribes with `ALL_PATHS` to every container makes the single-consumer-skip optimization in structural ineffective (because the plugin counts as a consumer). Document this. F0 (logging-plugin) and F1 (persist) probably _want_ this. F2/F3 (devtools) only attach when devtools are open.
 - **`PathInterner` per-class** means plugins can decode `PathId` → `string` via `container.interner.lookup(id)`. Document this in the plugin README.
 - **`unique symbol`** for `ALL_PATHS` — make sure your `instance.subscribe(ALL_PATHS, ...)` uses the same `ALL_PATHS` symbol exported from `@dirtytalk/structural`. Don't import from a stale path.
 - **Don't add a `paths` field to `PluginContext`.** Context is per-container; `paths` is per-event. They have different lifetimes.

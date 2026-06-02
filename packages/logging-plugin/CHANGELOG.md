@@ -1,5 +1,16 @@
 # @blac/logging-plugin
 
+## 2.0.18
+
+### Patch Changes
+
+- Dedup ancestor-watch ids when decoding dirty paths for display. A normal mark
+  and its ancestor-watch sibling can decode to the same path string, so the
+  human-facing path list is now deduplicated.
+- Updated dependencies
+- Updated dependencies [de8c31d]
+  - @blac/core@2.0.17
+
 ## 2.0.17
 
 ### Patch Changes

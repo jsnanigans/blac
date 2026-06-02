@@ -71,14 +71,26 @@ packages/dirtytalk-spatial/
   "exports": {
     ".": {
       "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
-      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": ["dist", "README.md", "LICENSE"],
   "sideEffects": false,
   "publishConfig": { "access": "public" },
-  "keywords": ["reactive", "dirty-tracking", "damage", "rect", "scene-graph", "spatial"],
-  "scripts": { /* copy verbatim from packages/dirtytalk-engine/package.json */ },
+  "keywords": [
+    "reactive",
+    "dirty-tracking",
+    "damage",
+    "rect",
+    "scene-graph",
+    "spatial"
+  ],
+  "scripts": {
+    /* copy verbatim from packages/dirtytalk-engine/package.json */
+  },
   "dependencies": {
     "@dirtytalk/engine": "workspace:*"
   },

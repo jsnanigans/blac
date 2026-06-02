@@ -4,10 +4,10 @@ The complete, export-by-export reference for `@dirtytalk/structural`. The packag
 
 ## Module map
 
-| Subpath | Exports |
-|---|---|
-| `@dirtytalk/structural` | `PathId`, `ConsumerId` (types); `PathInterner`; `ALL_PATHS`, `emptyPathSet`, `pathSetUnion`, `pathSetEquals`, `PathSetSpace`, `PathSet`, `AllPaths`; `trackRender`, `TrackResult`; `diffAlongSkeleton`, `pathsFromPatch`, `changedPathsFromPatch`, `getAt`; `StructuralContainer`, `StructuralContainerOptions`, `DeepPartial` |
-| `@dirtytalk/structural/react` | `useStructural` (the `UseStructuralOptions` and `UseStructuralResult` interfaces are declared alongside the hook and describe its parameter and return shapes) |
+| Subpath                       | Exports                                                                                                                                                                                                                                                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@dirtytalk/structural`       | `PathId`, `ConsumerId` (types); `PathInterner`; `ALL_PATHS`, `emptyPathSet`, `pathSetUnion`, `pathSetEquals`, `PathSetSpace`, `PathSet`, `AllPaths`; `trackRender`, `TrackResult`; `diffAlongSkeleton`, `pathsFromPatch`, `changedPathsFromPatch`, `getAt`; `StructuralContainer`, `StructuralContainerOptions`, `DeepPartial` |
+| `@dirtytalk/structural/react` | `useStructural` (the `UseStructuralOptions` and `UseStructuralResult` interfaces are declared alongside the hook and describe its parameter and return shapes)                                                                                                                                                                 |
 
 ::: warning Schedulers are not re-exported
 `SyncScheduler`, `ManualScheduler`, `MicrotaskScheduler`, and `RAFScheduler` are **not** exported from `@dirtytalk/structural`. Import them from [`@dirtytalk/engine`](/dirtytalk/engine/api-reference). The container takes a scheduler via `StructuralContainerOptions.scheduler`, not as a positional argument.
@@ -27,7 +27,7 @@ export type ConsumerId = string | symbol;
 
 ## `PathInterner`
 
-A bidirectional string ↔ `PathId` table. IDs are assigned monotonically from `0` in insertion order. One interner is shared per container *class*, but the class is standalone and directly instantiable.
+A bidirectional string ↔ `PathId` table. IDs are assigned monotonically from `0` in insertion order. One interner is shared per container _class_, but the class is standalone and directly instantiable.
 
 ```ts
 export class PathInterner {
@@ -39,29 +39,29 @@ export class PathInterner {
 
 ### `intern(path)`
 
-| | |
-|---|---|
+|           |                                |
+| --------- | ------------------------------ |
 | Signature | `intern(path: string): PathId` |
-| Returns | The `PathId` for `path` |
+| Returns   | The `PathId` for `path`        |
 
 Idempotent. Returns the existing ID if `path` was already interned; otherwise assigns the next sequential ID (`0, 1, 2, …`) and returns it. The same string always maps to the same ID.
 
 ### `lookup(id)`
 
-| | |
-|---|---|
-| Signature | `lookup(id: PathId): string` |
-| Returns | The dotted path string for `id` |
-| Throws | `RangeError` if `id < 0`, is not an integer, or `id >= size` |
+|           |                                                              |
+| --------- | ------------------------------------------------------------ |
+| Signature | `lookup(id: PathId): string`                                 |
+| Returns   | The dotted path string for `id`                              |
+| Throws    | `RangeError` if `id < 0`, is not an integer, or `id >= size` |
 
 Reverse lookup. The error message is `PathInterner.lookup: unknown PathId ${id} (size=${size})`.
 
 ### `get size()`
 
-| | |
-|---|---|
-| Signature | `get size(): number` |
-| Returns | Count of unique interned paths |
+|           |                                |
+| --------- | ------------------------------ |
+| Signature | `get size(): number`           |
+| Returns   | Count of unique interned paths |
 
 Re-interning an already-seen string does not increase `size`.
 
@@ -93,28 +93,28 @@ export type PathSet = Set<PathId> | AllPaths;
 
 ### `emptyPathSet()`
 
-| | |
-|---|---|
-| Signature | `emptyPathSet(): PathSet` |
-| Returns | A fresh empty `Set<PathId>` (never `ALL_PATHS`) |
+|           |                                                 |
+| --------- | ----------------------------------------------- |
+| Signature | `emptyPathSet(): PathSet`                       |
+| Returns   | A fresh empty `Set<PathId>` (never `ALL_PATHS`) |
 
 Allocates a new empty set on every call.
 
 ### `pathSetUnion(a, b)`
 
-| | |
-|---|---|
-| Signature | `pathSetUnion(a: PathSet, b: PathSet): PathSet` |
-| Returns | The union; `ALL_PATHS` if either side is `ALL_PATHS` |
+|           |                                                      |
+| --------- | ---------------------------------------------------- |
+| Signature | `pathSetUnion(a: PathSet, b: PathSet): PathSet`      |
+| Returns   | The union; `ALL_PATHS` if either side is `ALL_PATHS` |
 
 Pure. When both are Sets, allocates a new `Set` copy of `a` and adds all of `b`. Never mutates its inputs. `pathSetUnion(emptyPathSet(), r)` is a fresh set equal by value to `r` (not the same reference).
 
 ### `pathSetEquals(a, b)`
 
-| | |
-|---|---|
-| Signature | `pathSetEquals(a: PathSet, b: PathSet): boolean` |
-| Returns | `true` iff both are `ALL_PATHS`, or both Sets of equal size with the same IDs |
+|           |                                                                               |
+| --------- | ----------------------------------------------------------------------------- |
+| Signature | `pathSetEquals(a: PathSet, b: PathSet): boolean`                              |
+| Returns   | `true` iff both are `ALL_PATHS`, or both Sets of equal size with the same IDs |
 
 Order-independent. `ALL_PATHS` is never equal to any Set, including an empty one.
 
@@ -126,21 +126,21 @@ export const PathSetSpace: Space<PathSet>;
 
 The `Space<PathSet>` implementation consumed by the engine's `DirtyChannel`. Its members:
 
-| Member | Behaviour |
-|---|---|
-| `empty()` | `emptyPathSet()` |
-| `isEmpty(r)` | `r !== ALL_PATHS && r.size === 0` (so `isEmpty(ALL_PATHS)` is `false`) |
-| `union(a, b)` | `pathSetUnion(a, b)` |
-| `intersects(interest, dirty)` | See below |
+| Member                        | Behaviour                                                              |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| `empty()`                     | `emptyPathSet()`                                                       |
+| `isEmpty(r)`                  | `r !== ALL_PATHS && r.size === 0` (so `isEmpty(ALL_PATHS)` is `false`) |
+| `union(a, b)`                 | `pathSetUnion(a, b)`                                                   |
+| `intersects(interest, dirty)` | See below                                                              |
 
 `intersects` semantics (load-bearing for wake-up decisions):
 
-| `interest` | `dirty` | Result |
-|---|---|---|
-| `ALL_PATHS` | `ALL_PATHS` | `true` |
-| `ALL_PATHS` | Set | `true` iff `dirty` is non-empty |
-| Set | `ALL_PATHS` | `true` iff `interest` is non-empty |
-| Set | Set | iterates the smaller set, looks up in the larger; `true` on the first shared ID, else `false` |
+| `interest`  | `dirty`     | Result                                                                                        |
+| ----------- | ----------- | --------------------------------------------------------------------------------------------- |
+| `ALL_PATHS` | `ALL_PATHS` | `true`                                                                                        |
+| `ALL_PATHS` | Set         | `true` iff `dirty` is non-empty                                                               |
+| Set         | `ALL_PATHS` | `true` iff `interest` is non-empty                                                            |
+| Set         | Set         | iterates the smaller set, looks up in the larger; `true` on the first shared ID, else `false` |
 
 A consequence: `intersects(emptyPathSet(), ALL_PATHS)` is `false` — an empty interest never wakes.
 
@@ -169,12 +169,15 @@ export interface TrackResult<S> {
   paths: PathSet; // ALWAYS a Set<PathId>, NEVER ALL_PATHS
 }
 
-export const trackRender: <S>(state: S, interner: PathInterner) => TrackResult<S>;
+export const trackRender: <S>(
+  state: S,
+  interner: PathInterner,
+) => TrackResult<S>;
 ```
 
-| Param | Type | Meaning |
-|---|---|---|
-| `state` | `S` | The state to wrap and record reads on |
+| Param      | Type           | Meaning                                   |
+| ---------- | -------------- | ----------------------------------------- |
+| `state`    | `S`            | The state to wrap and record reads on     |
 | `interner` | `PathInterner` | Interner used to assign IDs to read paths |
 
 Returns `{ value, paths }`. `value` is a recording `Proxy` (or the raw value if `state` is not a wrappable object). `paths` is a **live** `Set<PathId>` that is empty on return and **grows as you read properties off `value`** — it is mutated after `trackRender` returns. `paths` is never `ALL_PATHS`.
@@ -243,7 +246,7 @@ Walks each `PathId` in `skeleton`, reads the value at its path in `prev` and `ne
 - `skeleton === ALL_PATHS` short-circuits to `ALL_PATHS`.
 - An empty skeleton short-circuits to a fresh empty set, regardless of states.
 - Pure — does not mutate `prev`, `next`, or `skeleton`.
-- With the default `Object.is`: `NaN` compares equal; shared sub-tree references compare equal (no entry). An intermediate path (e.g. `user`) *is* flagged if the outer object got a new reference, even when its leaves are unchanged.
+- With the default `Object.is`: `NaN` compares equal; shared sub-tree references compare equal (no entry). An intermediate path (e.g. `user`) _is_ flagged if the outer object got a new reference, even when its leaves are unchanged.
 - `equalsAt` is invoked as `(pathId, prevValue, nextValue)` — the per-path custom-equality seam.
 
 ```ts
@@ -265,7 +268,7 @@ dirty.has(interner.intern('user.email')); // false
 
 ### `pathsFromPatch(patch, interner, basePath?)`
 
-Flattens a patch tree into a `PathSet` of interned dotted paths with **tree-pulses-up** semantics: each plain-object branch contributes its own path *and* recurses. `{ user: { email: 'x' } }` records both `"user"` and `"user.email"`. Leaves — arrays, primitives, `null`, `undefined`, class instances, `Date`, `Map`, `Set` — record their path and stop (arrays are atomic). An empty patch yields an empty set with nothing interned. Does not mutate input. `basePath` is an internal recursion seed; callers omit it.
+Flattens a patch tree into a `PathSet` of interned dotted paths with **tree-pulses-up** semantics: each plain-object branch contributes its own path _and_ recurses. `{ user: { email: 'x' } }` records both `"user"` and `"user.email"`. Leaves — arrays, primitives, `null`, `undefined`, class instances, `Date`, `Map`, `Set` — record their path and stop (arrays are atomic). An empty patch yields an empty set with nothing interned. Does not mutate input. `basePath` is an internal recursion seed; callers omit it.
 
 ::: info Shape-based, not value-based
 `pathsFromPatch` is exported, but the container marks with `changedPathsFromPatch` instead. Use `pathsFromPatch` only when you want shape-based marking without value comparison.
@@ -315,11 +318,11 @@ export type DeepPartial<T> =
 constructor(initial: S, options?: StructuralContainerOptions)
 ```
 
-| Param | Type | Default | Meaning |
-|---|---|---|---|
-| `initial` | `S` | — | The starting state |
-| `options.scheduler` | `Scheduler` | `new MicrotaskScheduler()` (fresh per instance) | The scheduler for the underlying channel. Pass `SyncScheduler` for synchronous tests/SSR. |
-| `options.equality` | `ReadonlyMap<string, (a, b) => boolean>` | `undefined` | Exact dotted-path → equality fn map; each key is interned at construction into an internal `Map<PathId, eq>` |
+| Param               | Type                                     | Default                                         | Meaning                                                                                                      |
+| ------------------- | ---------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `initial`           | `S`                                      | —                                               | The starting state                                                                                           |
+| `options.scheduler` | `Scheduler`                              | `new MicrotaskScheduler()` (fresh per instance) | The scheduler for the underlying channel. Pass `SyncScheduler` for synchronous tests/SSR.                    |
+| `options.equality`  | `ReadonlyMap<string, (a, b) => boolean>` | `undefined`                                     | Exact dotted-path → equality fn map; each key is interned at construction into an internal `Map<PathId, eq>` |
 
 ### Static
 
@@ -331,12 +334,12 @@ Returns the lazily-created `PathInterner` for a constructor, creating one on fir
 
 ### Read accessors
 
-| Accessor | Type | Returns |
-|---|---|---|
-| `get state()` | `S` | Current state. Immutable — do not mutate in place. |
-| `get interner()` | `PathInterner` | `StructuralContainer.getInternerFor(this.constructor)` |
-| `get channel()` | `DirtyChannel<PathSet>` | The underlying engine channel |
-| `get consumerCount()` | `number` | Number of registered consumers (registry size) |
+| Accessor              | Type                    | Returns                                                |
+| --------------------- | ----------------------- | ------------------------------------------------------ |
+| `get state()`         | `S`                     | Current state. Immutable — do not mutate in place.     |
+| `get interner()`      | `PathInterner`          | `StructuralContainer.getInternerFor(this.constructor)` |
+| `get channel()`       | `DirtyChannel<PathSet>` | The underlying engine channel                          |
+| `get consumerCount()` | `number`                | Number of registered consumers (registry size)         |
 
 ### Mutations
 
@@ -461,10 +464,10 @@ export function useStructural<S, C extends StructuralContainer<S>>(
 ): readonly [S, C];
 ```
 
-| Param | Type | Meaning |
-|---|---|---|
-| `container` | `C extends StructuralContainer<S>` | The container instance to bind to |
-| `_options` | `UseStructuralOptions` | Reserved and currently inert (see note) |
+| Param       | Type                               | Meaning                                 |
+| ----------- | ---------------------------------- | --------------------------------------- |
+| `container` | `C extends StructuralContainer<S>` | The container instance to bind to       |
+| `_options`  | `UseStructuralOptions`             | Reserved and currently inert (see note) |
 
 Returns `[state, container]` (a readonly tuple). `state` is a recording proxy for this render: reading fields off it during render records this component's observed paths, and only those paths trigger re-renders.
 

@@ -4,7 +4,7 @@ The shared reactive engine. Provides:
 
 1. Notification primitives (`Observable<T>`, `Signal<T>`).
 2. A generic dirty-tracking channel (`DirtyChannel<Region>`) parameterised over a `Space<Region>`.
-3. A `Scheduler` interface for deciding *when* dirty notifications flush.
+3. A `Scheduler` interface for deciding _when_ dirty notifications flush.
 
 The engine has **no knowledge of rects, paths, React, the DOM, the GPU, or state containers**. Those are concerns of the consuming libraries.
 
@@ -24,16 +24,16 @@ The engine has **no knowledge of rects, paths, React, the DOM, the GPU, or state
 
 ```ts
 interface Observable<T> {
-  peek(): T                          // read without subscribing
-  subscribe(cb: (value: T) => void): () => void
+  peek(): T; // read without subscribing
+  subscribe(cb: (value: T) => void): () => void;
 }
 
 class Signal<T> implements Observable<T> {
-  constructor(initial: T, equals?: (a: T, b: T) => boolean)
-  get value(): T
-  set value(next: T): void           // skips notify if equals(prev, next)
-  peek(): T
-  subscribe(cb: (value: T) => void): () => void
+  constructor(initial: T, equals?: (a: T, b: T) => boolean);
+  get value(): T;
+  set value(next: T): void; // skips notify if equals(prev, next)
+  peek(): T;
+  subscribe(cb: (value: T) => void): () => void;
 }
 ```
 
@@ -44,7 +44,7 @@ class Signal<T> implements Observable<T> {
 - `subscribe` returns an unsubscribe function; idempotent (calling twice is a no-op).
 - Notification is **synchronous** by default at this layer. Coalescing is the `DirtyChannel`'s job.
 
-These primitives are *not* the dirty-tracking system; they are the building blocks. Both libraries use them directly for one-off observable values that don't need the full DirtyChannel ceremony (e.g., a viewport position, a current selection).
+These primitives are _not_ the dirty-tracking system; they are the building blocks. Both libraries use them directly for one-off observable values that don't need the full DirtyChannel ceremony (e.g., a viewport position, a current selection).
 
 ---
 
@@ -54,10 +54,10 @@ The algebra of "what changed" and "what I care about." Both are values of type `
 
 ```ts
 interface Space<Region> {
-  empty(): Region
-  isEmpty(r: Region): boolean
-  union(a: Region, b: Region): Region          // accumulate dirty
-  intersects(interest: Region, dirty: Region): boolean  // does this consumer care?
+  empty(): Region;
+  isEmpty(r: Region): boolean;
+  union(a: Region, b: Region): Region; // accumulate dirty
+  intersects(interest: Region, dirty: Region): boolean; // does this consumer care?
 }
 ```
 
@@ -79,8 +79,8 @@ interface Space<Region> {
 
 ```ts
 interface Scheduler {
-  request(flush: () => void): void   // ensure flush runs once, soon
-  cancel(): void                     // optional, for teardown
+  request(flush: () => void): void; // ensure flush runs once, soon
+  cancel(): void; // optional, for teardown
 }
 ```
 
@@ -99,13 +99,10 @@ interface Scheduler {
 
 ```ts
 class DirtyChannel<Region> {
-  constructor(space: Space<Region>, scheduler: Scheduler)
+  constructor(space: Space<Region>, scheduler: Scheduler);
 
-  mark(r: Region): void
-  subscribe(
-    interest: () => Region,
-    cb: (dirty: Region) => void,
-  ): () => void
+  mark(r: Region): void;
+  subscribe(interest: () => Region, cb: (dirty: Region) => void): () => void;
 }
 ```
 
@@ -130,7 +127,7 @@ The thunk is called at most once per flush per subscriber — cheap, and aligns 
 
 **Why does `cb` receive `dirty`?**
 
-So the subscriber can compute the *intersection* if it needs to know precisely which subset is dirty (e.g., a node that wants to only re-rasterise a sub-rect of itself). For most subscribers, knowing "yes you're dirty, here's the union" is enough; they ignore the payload.
+So the subscriber can compute the _intersection_ if it needs to know precisely which subset is dirty (e.g., a node that wants to only re-rasterise a sub-rect of itself). For most subscribers, knowing "yes you're dirty, here's the union" is enough; they ignore the payload.
 
 ---
 
@@ -192,7 +189,7 @@ That's the whole engine. Probably under 200 lines of implementation.
 
 ## Decisions
 
-1. **Re-entrancy during flush** — defer. `mark()` calls inside a subscriber callback are accumulated into the *next* flush, not the current one. Bounded work per flush, no infinite-loop risk. Cascading damage in insomni costs one extra frame.
+1. **Re-entrancy during flush** — defer. `mark()` calls inside a subscriber callback are accumulated into the _next_ flush, not the current one. Bounded work per flush, no infinite-loop risk. Cascading damage in insomni costs one extra frame.
 2. **Error handling in subscribers** — continue. If a callback throws, collect the error, keep invoking remaining subscribers, surface a single `AggregateError` at end of flush.
 3. **Per-Channel vs per-source accumulator** — one accumulator per `DirtyChannel`. Blac: one channel per Bloc instance. Insomni: one channel per render root. No channel composition in v1.
 4. **Backpressure** — none in the engine. `Space.union` must be cost-idempotent on repeated inputs (union of a rect with itself is the same rect); Space implementations enforce this.

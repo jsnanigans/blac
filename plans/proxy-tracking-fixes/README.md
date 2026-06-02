@@ -9,17 +9,17 @@ Original audit: see commit history / chat. Two of the bugs were verified with mi
 
 ## Scope (in priority order)
 
-| #   | Bug                                                                      | File                                              | Phase |
-| --- | ------------------------------------------------------------------------ | ------------------------------------------------- | ----- |
-| 1   | `boundFunctionsCache` collision (Array.prototype methods)                | `tracking-proxy.ts`                               | 2     |
-| 2   | Stale path baked into cached nested proxy                                | `tracking-proxy.ts`                               | 2     |
-| 3   | Global `activeTrackerMap` / `blocProxyCache` — multi-consumer cross-talk | `tracking-proxy.ts`, `adapter/index.ts`           | 3     |
-| 4   | `null` state → object transition never re-renders                        | `adapter/index.ts`                                | 1     |
-| 5   | `getValueAtPath` collapses null / missing / `undefined`                  | `path-utils.ts`                                   | 1     |
-| 6   | `pathCache` grows unboundedly + stale paths fire spurious re-renders     | `tracking-proxy.ts`                               | 2     |
-| 7   | Array index access on proxyable values doesn't track its own index       | `tracking-proxy.ts`                               | 2     |
-| 8   | `commitTrackedGetters` keeps stale getters when current render has none  | `tracking-proxy.ts`                               | 2     |
-| 9   | `resolveDependencies` cycle key uses non-unique `Type.name`              | `tracking/resolve-dependencies.ts`                | 1     |
+| #   | Bug                                                                      | File                                    | Phase |
+| --- | ------------------------------------------------------------------------ | --------------------------------------- | ----- |
+| 1   | `boundFunctionsCache` collision (Array.prototype methods)                | `tracking-proxy.ts`                     | 2     |
+| 2   | Stale path baked into cached nested proxy                                | `tracking-proxy.ts`                     | 2     |
+| 3   | Global `activeTrackerMap` / `blocProxyCache` — multi-consumer cross-talk | `tracking-proxy.ts`, `adapter/index.ts` | 3     |
+| 4   | `null` state → object transition never re-renders                        | `adapter/index.ts`                      | 1     |
+| 5   | `getValueAtPath` collapses null / missing / `undefined`                  | `path-utils.ts`                         | 1     |
+| 6   | `pathCache` grows unboundedly + stale paths fire spurious re-renders     | `tracking-proxy.ts`                     | 2     |
+| 7   | Array index access on proxyable values doesn't track its own index       | `tracking-proxy.ts`                     | 2     |
+| 8   | `commitTrackedGetters` keeps stale getters when current render has none  | `tracking-proxy.ts`                     | 2     |
+| 9   | `resolveDependencies` cycle key uses non-unique `Type.name`              | `tracking/resolve-dependencies.ts`      | 1     |
 
 ## Ground rules for every agent
 
@@ -74,11 +74,11 @@ Phase 4 — final
 
 Per-task front matter declares the model. Default mapping:
 
-| Model                 | When                                                                                                      |
-| --------------------- | --------------------------------------------------------------------------------------------------------- |
+| Model                 | When                                                                                                       |
+| --------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `haiku` (Haiku 4.5)   | Mechanical one-line / one-block fixes with an obvious form. Cheap & fast — use whenever the spec is exact. |
 | `sonnet` (Sonnet 4.6) | Multi-line edits, semantic care, new tests. The workhorse here.                                            |
-| `opus` (Opus 4.7)     | Architectural refactor (task 09 only): rewires lifetime of shared state across files.                     |
+| `opus` (Opus 4.7)     | Architectural refactor (task 09 only): rewires lifetime of shared state across files.                      |
 
 Effort levels (informational; pass through to `quick-build` / `claude` subagent):
 

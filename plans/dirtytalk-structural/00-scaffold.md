@@ -9,7 +9,7 @@
 
 ## Goal
 
-Create `packages/dirtytalk-structural/` with the same build/test toolchain as `packages/dirtytalk-engine/`. Lay down empty stub files for every source unit the Phase 1+ agents will fill, so each downstream agent only has to *fill bodies* in its owned file — never create the file from scratch in a checkout it's racing other agents on.
+Create `packages/dirtytalk-structural/` with the same build/test toolchain as `packages/dirtytalk-engine/`. Lay down empty stub files for every source unit the Phase 1+ agents will fill, so each downstream agent only has to _fill bodies_ in its owned file — never create the file from scratch in a checkout it's racing other agents on.
 
 This task ships a **package that builds and tests successfully with zero functional code.** No exports beyond type re-exports + empty class shells.
 
@@ -86,18 +86,26 @@ Mirror engine, replacing the name, description, and exports. Add the `@dirtytalk
   "exports": {
     ".": {
       "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
-      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./react": {
       "import": { "types": "./dist/react.d.ts", "default": "./dist/react.js" },
-      "require": { "types": "./dist/react.d.cts", "default": "./dist/react.cjs" }
+      "require": {
+        "types": "./dist/react.d.cts",
+        "default": "./dist/react.cjs"
+      }
     }
   },
   "files": ["dist", "README.md", "LICENSE"],
   "sideEffects": false,
   "publishConfig": { "access": "public" },
   "keywords": ["reactive", "dirty-tracking", "path", "state", "structural"],
-  "scripts": { /* copy from engine package.json verbatim */ },
+  "scripts": {
+    /* copy from engine package.json verbatim */
+  },
   "dependencies": {
     "@dirtytalk/engine": "workspace:*"
   },
@@ -171,7 +179,9 @@ import type { Space } from '@dirtytalk/engine';
 
 export type PathSet = Set<PathId> | typeof ALL_PATHS;
 
-export const ALL_PATHS: unique symbol = Symbol.for('@dirtytalk/structural/ALL_PATHS');
+export const ALL_PATHS: unique symbol = Symbol.for(
+  '@dirtytalk/structural/ALL_PATHS',
+);
 
 export const emptyPathSet = (): PathSet => {
   throw new Error('emptyPathSet: not implemented (Phase 1)');
@@ -210,7 +220,10 @@ export interface TrackResult<S> {
   paths: PathSet;
 }
 
-export const trackRender = <S>(_state: S, _interner: PathInterner): TrackResult<S> => {
+export const trackRender = <S>(
+  _state: S,
+  _interner: PathInterner,
+): TrackResult<S> => {
   throw new Error('trackRender: not implemented (Phase 2)');
 };
 ```
@@ -279,10 +292,14 @@ export abstract class StructuralContainer<S> {
   }
 
   registerConsumerPaths(_id: ConsumerId, _paths: PathSet): void {
-    throw new Error('StructuralContainer.registerConsumerPaths: not implemented (Phase 3)');
+    throw new Error(
+      'StructuralContainer.registerConsumerPaths: not implemented (Phase 3)',
+    );
   }
   unregisterConsumer(_id: ConsumerId): void {
-    throw new Error('StructuralContainer.unregisterConsumer: not implemented (Phase 3)');
+    throw new Error(
+      'StructuralContainer.unregisterConsumer: not implemented (Phase 3)',
+    );
   }
 }
 ```
@@ -381,6 +398,6 @@ Path-based dirty-tracking instantiation of @dirtytalk/engine. Implementation in 
 - **Do not pre-export the stubs** in `index.ts` / `react.ts` — only `types` for now. Later phases extend the barrel as they implement.
 - **Vite-plus `pack` config must declare both entries.** If only `index` is declared, the `react` build won't emit and the `exports` map in `package.json` will fail `publint`. Mirror the engine's two-entry config (engine uses `index` + `primitives`; structural uses `index` + `react`).
 - **`@dirtytalk/engine` import in stubs.** Make sure TS resolves it via the workspace (the dependency entry + `vp install` is the unlock). If you see "cannot find module", you skipped the install step.
-- **No catalog'd React?** If `react` isn't in the workspace catalog yet, omit it from devDependencies *and* delete the `react.ts` entry from `vite.config.ts` for now — leave a TODO comment on top of `react-hook.ts`. The Phase 4 agent will add it. (Verify by checking `pnpm-workspace.yaml` for a `catalog:` section.)
+- **No catalog'd React?** If `react` isn't in the workspace catalog yet, omit it from devDependencies _and_ delete the `react.ts` entry from `vite.config.ts` for now — leave a TODO comment on top of `react-hook.ts`. The Phase 4 agent will add it. (Verify by checking `pnpm-workspace.yaml` for a `catalog:` section.)
 - **`.d.cts` duplication.** The `build` script ends with `for f in dist/*.d.ts; do cp "$f" "${f%.d.ts}.d.cts"; done`. This must run after `tsc -p tsconfig.build.json`. Copy the engine's exact script line.
 - **Don't run `vp run test` across the whole repo.** Scope every command to `packages/dirtytalk-structural/` (per `~/.claude/CLAUDE.md`: targeted validation only).

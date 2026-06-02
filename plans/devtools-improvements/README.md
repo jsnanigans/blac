@@ -12,12 +12,14 @@ full **check → implement → verify → test → commit** cycle and stops.
 ## Scope
 
 **Originally flagged improvements**
+
 1. Path churn heatmap → **Phase 3**
 2. Select-mode / `all`-watcher over-render flagging → **Phase 1E** (insight)
 3. Stack-trace → component name → **Phase 1A** (backend) + **Phase 2** (display)
 4. Consumer vs ref-holder count distinction → **Phase 2**
 
 **Easy wins added after audit** (no TODO/FIXME debt exists — codebase is clean)
+
 - Copy-to-clipboard buttons (state / getters / consumer paths) → **Phase 2**
 - Collapse-all / Expand-all in the state tree → **Phase 2**
 - `createdFrom` stack trace is captured but never rendered → **Phase 2** (Debug Info)
@@ -26,6 +28,7 @@ full **check → implement → verify → test → commit** cycle and stops.
 - Logs: group/fold consecutive events + expand callstack + copy → **Phase 1D**
 
 **Explicitly out of scope** (too large for an easy-win pass — revisit later)
+
 - Cross-bloc dependency graph / `deps-changed` diff panel (force-directed DAG, ~200+ lines)
 - Consumer "impact dry-run" modal
 
@@ -58,15 +61,15 @@ only ever touch their own view/logic files. Phases 2 and 3 both edit
 
 ### Parallelization matrix (file ownership — verified disjoint)
 
-| Task | Primary files (writes) |
-|------|------------------------|
+| Task   | Primary files (writes)                                                                                                                                                 |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **0**  | `components/CopyButton.tsx` (new), `utils/clipboard.ts` (new), `types.ts`, `blocs/DevToolsLayoutBloc.ts`, devtools-connect `types/index.ts`, extension `panel/comm.ts` |
-| **1A** | `devtools-connect/src/plugin/DevToolsBrowserPlugin.ts` |
-| **1C** | `components/InstanceList.tsx`, `components/InstanceListItem.tsx`, `blocs/DevToolsInstancesBloc.ts`, `blocs/DevToolsSearchBloc.ts` |
-| **1D** | `components/LogsView.tsx`, `blocs/DevToolsLogsBloc.ts` |
-| **1E** | `components/computeInsights.ts` (+ `.test.ts`) |
-| **2**  | `components/StateViewer.tsx`, `components/CurrentStateView.tsx`, `components/EditableJsonTree.tsx` |
-| **3**  | `blocs/DevToolsChurnBloc.ts` (new), `components/PathChurnView.tsx` (new), `StateViewer.tsx`, `panel/index.tsx`, `DraggableOverlay.tsx` |
+| **1A** | `devtools-connect/src/plugin/DevToolsBrowserPlugin.ts`                                                                                                                 |
+| **1C** | `components/InstanceList.tsx`, `components/InstanceListItem.tsx`, `blocs/DevToolsInstancesBloc.ts`, `blocs/DevToolsSearchBloc.ts`                                      |
+| **1D** | `components/LogsView.tsx`, `blocs/DevToolsLogsBloc.ts`                                                                                                                 |
+| **1E** | `components/computeInsights.ts` (+ `.test.ts`)                                                                                                                         |
+| **2**  | `components/StateViewer.tsx`, `components/CurrentStateView.tsx`, `components/EditableJsonTree.tsx`                                                                     |
+| **3**  | `blocs/DevToolsChurnBloc.ts` (new), `components/PathChurnView.tsx` (new), `StateViewer.tsx`, `panel/index.tsx`, `DraggableOverlay.tsx`                                 |
 
 1A / 1C / 1D / 1E touch strictly disjoint files → safe to run concurrently.
 
@@ -77,9 +80,11 @@ only ever touch their own view/logic files. Phases 2 and 3 both edit
 > Read this once; each task file references it. Do **not** deviate.
 
 **Branch (one-time setup, before any agent runs):**
+
 ```fish
 git checkout -b feat/devtools-improvements
 ```
+
 All agents commit to this single branch. **Do not create git worktrees. Do not
 push, pull, merge, rebase, or stash.**
 
@@ -107,26 +112,32 @@ push, pull, merge, rebase, or stash.**
    passing existing suite is enough.
 5. **COMMIT** — Stage **only your own files by explicit path** (never `git add .`
    or `-A` — parallel siblings may have unstaged work in the same tree):
+
    ```fish
    git add packages/devtools-ui/src/components/LogsView.tsx ...
    git commit -m "feat(devtools-ui): <subject>"
    ```
+
    - Commit message: `<type>(<scope>): <subject>`, imperative, ≤50 char subject
      (matches `git log`; this branch carries no Jira ticket).
    - **Never** pass `--no-verify` or any hook-skipping flag.
-   - **Changeset:** if your task edits a *published* package, add one:
+   - **Changeset:** if your task edits a _published_ package, add one:
+
      ```fish
      # published: @blac/devtools-connect, @blac/devtools-ui, @dirtytalk/structural
      # NOT published (no changeset): @blac/devtools-extension (the panel/comm app)
      ```
+
      Create `.changeset/devtools-<short-name>.md`:
+
      ```markdown
      ---
-     "@blac/devtools-ui": patch
+     '@blac/devtools-ui': patch
      ---
 
      <one-line summary of the user-facing change>
      ```
+
      Commit the changeset together with the code.
 
 **Model & effort** are specified per task. Use the named model; "effort" is your

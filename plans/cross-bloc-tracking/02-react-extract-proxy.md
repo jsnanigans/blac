@@ -27,6 +27,7 @@ with `thisProxy` as `this`). It currently closes over the local `trackedStateRef
 defined at ~230.
 
 Key behaviors that MUST be preserved exactly:
+
 - Getter descriptors collected across the prototype chain, excluding
   `Object.prototype`; both string and symbol keys; first-wins on shadowing.
 - `thisProxy.get`: `state` → `trackedStateRef.current ?? Reflect.get`; everything
@@ -70,6 +71,7 @@ pnpm exec vp test run src/__tests__/useBloc.cross-bloc-react.test.tsx
 pnpm exec vp test run src/__tests__/useBloc.cross-bloc-edge-cases.test.tsx
 pnpm exec vp test run src/__tests__/useBloc.cross-bloc-getter-tracking.test.tsx
 ```
+
 All must pass with **identical** results to before (the `[GAP]` tests still
 "stale" — this task does NOT change behavior).
 

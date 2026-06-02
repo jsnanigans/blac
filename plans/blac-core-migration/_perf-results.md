@@ -41,18 +41,18 @@ N channel subscribers each waking on any path. Trigger:
 `cubit.patch({ items: [{ id: 5, name: 'updated' }] })`. Measure: time from
 `patch` call until all N callbacks have fired.
 
-| N consumers | Before (ms) | After (ms, median) | After range | Delta |
-|-------------|-------------|--------------------|-------------|-------|
-| 1           | n/a (no baseline) | 0.012 | 0.009 – 0.019 | n/a |
-| 10          | n/a (no baseline) | 0.005 | 0.005 – 0.007 | n/a |
-| 50          | n/a (no baseline) | 0.013 | 0.010 – 0.025 | n/a |
-| 100         | n/a (no baseline) | 0.018 | 0.018 – 0.021 | n/a |
-| 500         | n/a (no baseline) | 0.049 | 0.021 – 0.056 | n/a |
+| N consumers | Before (ms)       | After (ms, median) | After range   | Delta |
+| ----------- | ----------------- | ------------------ | ------------- | ----- |
+| 1           | n/a (no baseline) | 0.012              | 0.009 – 0.019 | n/a   |
+| 10          | n/a (no baseline) | 0.005              | 0.005 – 0.007 | n/a   |
+| 50          | n/a (no baseline) | 0.013              | 0.010 – 0.025 | n/a   |
+| 100         | n/a (no baseline) | 0.018              | 0.018 – 0.021 | n/a   |
+| 500         | n/a (no baseline) | 0.049              | 0.021 – 0.056 | n/a   |
 
 Shape: scales roughly linearly with N (per-callback dispatch cost is the
 dominant term once you're past JIT warmup). At N=100 the marquee figure is
 **~18µs** end-to-end. At N=500 it's ~49µs — about 10× the N=10 figure for
-50× more consumers, so the per-consumer cost is *dropping* slightly with N
+50× more consumers, so the per-consumer cost is _dropping_ slightly with N
 (better cache behaviour on the subscriber map iteration).
 
 N=10 dipping below N=1 is sample noise — the medians at this scale are
@@ -74,10 +74,10 @@ Same cubit + 100 subscribers as scenario 1. Loop 1000 patches with
 `await flush()` between each so every mark gets its own coalesced flush
 cycle (not all 1000 collapsed into one).
 
-| Metric            | Before        | After (median) | After range   |
-|-------------------|---------------|----------------|---------------|
-| Total wall-clock  | n/a (no baseline) | 2.39 ms     | 2.13 – 2.69 ms |
-| Ops/sec (derived) | n/a           | ~418 000       | —             |
+| Metric            | Before            | After (median) | After range    |
+| ----------------- | ----------------- | -------------- | -------------- |
+| Total wall-clock  | n/a (no baseline) | 2.39 ms        | 2.13 – 2.69 ms |
+| Ops/sec (derived) | n/a               | ~418 000       | —              |
 
 ~2.4ms for 1000 awaited emits × 100 consumer wakeups each = **~418k
 emit→fanout cycles per second**, ~24µs per emit-and-fan-out-to-100. This
@@ -91,10 +91,10 @@ microtask hop), which is good — the per-emit cost is dominated by the
 100 × `cubit.channel.subscribe(...)` immediately followed by `unsub()`.
 No emits in between. Measure: total wall-clock.
 
-| Metric            | Before        | After (median) | After range     |
-|-------------------|---------------|----------------|-----------------|
-| Total wall-clock  | n/a (no baseline) | 0.012 ms   | 0.011 – 0.016 ms |
-| Per cycle (derived) | n/a         | ~120 ns        | —               |
+| Metric              | Before            | After (median) | After range      |
+| ------------------- | ----------------- | -------------- | ---------------- |
+| Total wall-clock    | n/a (no baseline) | 0.012 ms       | 0.011 – 0.016 ms |
+| Per cycle (derived) | n/a               | ~120 ns        | —                |
 
 Subscribe+unsubscribe is essentially a `Map.set` + `Map.delete` plus a
 small closure allocation. Sub-microsecond per cycle. Headroom is enormous —
@@ -105,10 +105,10 @@ useBloc's React-side hook work dwarfs this in real apps.
 Synchronous burst of 100 `patch()` calls in a tight loop, then one
 microtask drain.
 
-| Metric            | Before        | After (median) | After range |
-|-------------------|---------------|----------------|-------------|
-| Flushes observed  | (would be 100 with no coalescing) | **1**          | 1 – 1       |
-| Time to drain     | n/a (no baseline) | 0.070 ms   | 0.066 – 0.177 ms |
+| Metric           | Before                            | After (median) | After range      |
+| ---------------- | --------------------------------- | -------------- | ---------------- |
+| Flushes observed | (would be 100 with no coalescing) | **1**          | 1 – 1            |
+| Time to drain    | n/a (no baseline)                 | 0.070 ms       | 0.066 – 0.177 ms |
 
 **This is the marquee win.** The `MicrotaskScheduler` in
 `@dirtytalk/engine` queues exactly one `queueMicrotask(drain)` no matter

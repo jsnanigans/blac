@@ -10,6 +10,7 @@
 ## Goal
 
 Confirm the four Phase 1 units integrate cleanly:
+
 1. The full `vp check` + `vp test` pass for the package.
 2. The build (`vp run build`) emits the expected dual ESM/CJS + dual `.d.ts`/`.d.cts` for both `index` and `primitives` entries.
 3. `publint` (via `vp run verify`) is clean.

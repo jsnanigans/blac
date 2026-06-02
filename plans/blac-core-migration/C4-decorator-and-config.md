@@ -76,6 +76,7 @@ packages/blac-core/src/constants.ts
    ```
 
    Body if symbols removed:
+
    ```
    - shallowEqualState removed (no consumers post-migration).
    - configureBlac({ equality }) option removed; per-path equality lives on
@@ -97,7 +98,7 @@ packages/blac-core/src/constants.ts
 ## Pitfalls
 
 - **`@blac()` is a class decorator** — TS decorator semantics changed between TC39 stage 2 and stage 3. Don't migrate decorator syntax versions in this commit; preserve whatever pattern blac-core uses today.
-- **Static fields set by decorator** — must be set on the *original* class, not on a wrapper. Verify the decorator doesn't return a subclass that hides static props from `instance.constructor` lookups.
+- **Static fields set by decorator** — must be set on the _original_ class, not on a wrapper. Verify the decorator doesn't return a subclass that hides static props from `instance.constructor` lookups.
 - **`isolated` was removed** — per the memory note. Don't reintroduce. If `apps/examples` still uses it, that's a G0 fix.
 - **`configureBlac` reset semantics** — `resetBlacConfig` is used between tests. Verify the reset clears whatever fields you kept.
 - **`shallowEqualState` deletion**. Check `@blac/compat/src/`. If compat imports it, keep + mark `@deprecated`. The "don't touch compat" rule applies to compat's source, but if compat needs this export, you must keep exporting it.

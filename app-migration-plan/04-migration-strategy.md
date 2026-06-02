@@ -6,15 +6,15 @@ Shim-first, per-app rollout. Approved by user.
 
 Goal: v2 has the tools needed for a clean shim before we touch user-fe.
 
-| Item | Scope | Status |
-|---|---|---|
+| Item   | Scope                                                                                                                         | Status                                    |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
 | **E1** | Lightweight `BlocProvider` that injects `instanceId` via React context; `useBloc` reads context if no `instanceId` is passed. | Approved (reduced from original proposal) |
-| **E2** | Registry / `ensure` / `acquire` reads `static keepAlive` on the class, equivalent to `@blac({ keepAlive: true })`. | Approved |
-| **E3** | `useBloc(C, { autoInstance: true })` and/or class-level `static isolated` recognition → auto-key per mount via `useId()`. | Approved |
-| ~~E4~~ | ~~Constructor-arg / props through `useBloc`.~~ | **Rejected** — see §R3 |
-| E5 | (later) v1-mock test adapter — skip for now, plain `vi.spyOn(Blac, 'getBloc')` keeps working through the shim. | Deferred |
-| E6 | (later) dual-registry boot warning. | Deferred |
-| E7 | (later) ESLint rule banning `Blac.getBloc` inside `StateContainer`. | Deferred to Phase 3 |
+| **E2** | Registry / `ensure` / `acquire` reads `static keepAlive` on the class, equivalent to `@blac({ keepAlive: true })`.            | Approved                                  |
+| **E3** | `useBloc(C, { autoInstance: true })` and/or class-level `static isolated` recognition → auto-key per mount via `useId()`.     | Approved                                  |
+| ~~E4~~ | ~~Constructor-arg / props through `useBloc`.~~                                                                                | **Rejected** — see §R3                    |
+| E5     | (later) v1-mock test adapter — skip for now, plain `vi.spyOn(Blac, 'getBloc')` keeps working through the shim.                | Deferred                                  |
+| E6     | (later) dual-registry boot warning.                                                                                           | Deferred                                  |
+| E7     | (later) ESLint rule banning `Blac.getBloc` inside `StateContainer`.                                                           | Deferred to Phase 3                       |
 
 Estimated effort: 2–3 days for E1+E2+E3 with tests.
 
@@ -49,6 +49,7 @@ Single-file. Convert the v0 debug observer into a `BlacPlugin` registered via `g
 Call `blacTestSetup()` in `beforeEach`/`afterEach`. Run full test suite. Fix anything that surfaces.
 
 **Exit criteria.**
+
 - `pnpm test` green in user-fe-reviews.
 - `pnpm dev` boots both apps. Smoke run: login, key flows in user-app; user search + lab order in pmp.
 - No v0/v1 import diff in app code.
@@ -77,6 +78,7 @@ A `jscodeshift` or `ts-morph` script at `scripts/migrate-blac-v0.ts`. Rules list
 Remove from both apps' `package.json`. Remove the `pnpm.overrides` entry. `pnpm install`.
 
 **Exit criteria.**
+
 - `grep "from \"blac\"" apps packages --include="*.ts" --include="*.tsx"` returns nothing.
 - `pnpm test` green.
 - Both apps boot and pass smoke.
@@ -88,21 +90,22 @@ Remove from both apps' `package.json`. Remove the `pnpm.overrides` entry. `pnpm 
 Goal: replace shim'd patterns with native v2 where it's worth it.
 
 Order:
+
 1. `packages/shared` (smallest, all-v1, clean baseline).
 2. `apps/pmp` (less complex than user-app).
 3. `apps/user-app`.
 
 Per-cubit-family rewrites:
 
-| Find | Replace | When |
-|---|---|---|
-| `Blac.getBloc(X)` inside a cubit method | `private getX = this.depend(X);` + `this.getX()` at call site | Cleanest wins |
-| `static keepAlive = true` | `@blac({ keepAlive: true })` (decorator) | Cosmetic, drop the static |
-| `static isolated = true` | Remove static, callers pass `{ instanceId: useId() }` (or use E3 marker) | Per family |
-| `useBloc(C, { id })` | `useBloc(C, { instanceId: id })` | Easy rename |
-| `useBloc(C, { dependencySelector })` | Decide: keep auto-track (default), or `{ dependencies }` if explicit array is needed | After audit |
-| `useBloc(C, { props })` | Already rewritten in Phase 2 — verify the `initWithProps` pattern is sensible |
-| v0 BlocProvider via shim | Native `<BlocProvider>` from v2 (E1) — same JSX | Once E1 is stable |
+| Find                                    | Replace                                                                              | When                      |
+| --------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------- |
+| `Blac.getBloc(X)` inside a cubit method | `private getX = this.depend(X);` + `this.getX()` at call site                        | Cleanest wins             |
+| `static keepAlive = true`               | `@blac({ keepAlive: true })` (decorator)                                             | Cosmetic, drop the static |
+| `static isolated = true`                | Remove static, callers pass `{ instanceId: useId() }` (or use E3 marker)             | Per family                |
+| `useBloc(C, { id })`                    | `useBloc(C, { instanceId: id })`                                                     | Easy rename               |
+| `useBloc(C, { dependencySelector })`    | Decide: keep auto-track (default), or `{ dependencies }` if explicit array is needed | After audit               |
+| `useBloc(C, { props })`                 | Already rewritten in Phase 2 — verify the `initWithProps` pattern is sensible        |
+| v0 BlocProvider via shim                | Native `<BlocProvider>` from v2 (E1) — same JSX                                      | Once E1 is stable         |
 
 Land E7 (ESLint rule for `Blac.getBloc` inside cubits) when starting Phase 3 so new code doesn't regress.
 
@@ -123,13 +126,13 @@ When Phase 3 is "good enough":
 
 ## Timeline estimate (rough)
 
-| Phase | Calendar time | Engineer time |
-|---|---|---|
-| Phase 0 (E1+E2+E3) | 2–3 days | 2–3 days |
-| Phase 1 (shim + alias swap) | 3–5 days | 3–4 days |
-| Phase 2 (codemod + both apps) | 1 week | 4–5 days |
-| Phase 3 (modernization) | over a few sprints | 8–16 days, parallelizable |
-| Phase 4 (shim delete) | 1 day | 1 day |
+| Phase                         | Calendar time      | Engineer time             |
+| ----------------------------- | ------------------ | ------------------------- |
+| Phase 0 (E1+E2+E3)            | 2–3 days           | 2–3 days                  |
+| Phase 1 (shim + alias swap)   | 3–5 days           | 3–4 days                  |
+| Phase 2 (codemod + both apps) | 1 week             | 4–5 days                  |
+| Phase 3 (modernization)       | over a few sprints | 8–16 days, parallelizable |
+| Phase 4 (shim delete)         | 1 day              | 1 day                     |
 
 Phases 0–2 are the critical path to "v0 is gone." Phases 3–4 can run in the background.
 
@@ -141,10 +144,10 @@ Phases 0–2 are the critical path to "v0 is gone." Phases 3–4 can run in the 
 
 ## Rollback strategy
 
-| Phase | Rollback |
-|---|---|
-| Phase 0 | Re-publish previous v2 build; no consumer impact. |
-| Phase 1 | Revert the alias swap PR. Single commit. |
+| Phase   | Rollback                                                             |
+| ------- | -------------------------------------------------------------------- |
+| Phase 0 | Re-publish previous v2 build; no consumer impact.                    |
+| Phase 1 | Revert the alias swap PR. Single commit.                             |
 | Phase 2 | Revert per-app PR. Codemod output is mechanical, diff is reviewable. |
-| Phase 3 | Per-family, per-commit. |
-| Phase 4 | Restore the shim package from git. |
+| Phase 3 | Per-family, per-commit.                                              |
+| Phase 4 | Restore the shim package from git.                                   |

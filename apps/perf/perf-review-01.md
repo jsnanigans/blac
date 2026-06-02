@@ -25,11 +25,11 @@ Scope: `apps/perf/report.md` scorecard — 5 critical items (>2x slower)
 
 ## Scorecard Context
 
-| Library | Wins | Slow (>1.5x) | Geometric Mean |
-|---|---|---|---|
-| Blac | 24 | 5 | 1.30x |
-| Zustand | 24 | 3 | 1.19x |
-| Redux Toolkit | 14 | 15 | 2.82x |
+| Library       | Wins | Slow (>1.5x) | Geometric Mean |
+| ------------- | ---- | ------------ | -------------- |
+| Blac          | 24   | 5            | 1.30x          |
+| Zustand       | 24   | 3            | 1.19x          |
+| Redux Toolkit | 14   | 15           | 2.82x          |
 
 Blac ties Zustand on wins (24) and beats RTK handily, but 5 operations are >2x slower than the fastest library. This review investigates each.
 
@@ -37,13 +37,13 @@ Blac ties Zustand on wins (24) and beats RTK handily, but 5 operations are >2x s
 
 ## Critical Items
 
-| Operation | Blac | Fastest | Gap |
-|---|---|---|---|
-| proxy track 20 fields | 5.8ms (Blac) | 500µs (RTK) | 11.6x |
-| proxy cache reuse | 3.4ms (Blac) | 500µs (RTK) | 6.8x |
-| multi-store coordination | 400µs (Blac) | 100µs (Zustand) | 4.0x |
-| proxy track 1 field | 300µs (Blac) | 100µs (Zustand) | 3.0x |
-| cross-store propagation | 200µs (Blac) | 100µs (Zustand) | 2.0x |
+| Operation                | Blac         | Fastest         | Gap   |
+| ------------------------ | ------------ | --------------- | ----- |
+| proxy track 20 fields    | 5.8ms (Blac) | 500µs (RTK)     | 11.6x |
+| proxy cache reuse        | 3.4ms (Blac) | 500µs (RTK)     | 6.8x  |
+| multi-store coordination | 400µs (Blac) | 100µs (Zustand) | 4.0x  |
+| proxy track 1 field      | 300µs (Blac) | 100µs (Zustand) | 3.0x  |
+| cross-store propagation  | 200µs (Blac) | 100µs (Zustand) | 2.0x  |
 
 ---
 
@@ -60,7 +60,7 @@ if (state.lastProxiedState === target && state.lastProxy) {
   return state.lastProxy; // fast path — same ref
 }
 state.proxyCache = new WeakMap<object, any>(); // DESTROYED
-state.boundFunctionsCache = null;              // DESTROYED
+state.boundFunctionsCache = null; // DESTROYED
 const proxy = createInternal(state, target, '', 0); // full rebuild
 ```
 
@@ -72,13 +72,13 @@ With immutable state patterns (`emit` / `patch` always produce new objects), the
 
 Every render cycle (triggered by `autoTrackSnapshot`) allocates multiple intermediate collections:
 
-| Allocation | Location | Trigger |
-|---|---|---|
-| `new Set(trackedPaths)` clone | `stopProxy()` line 75 | Every render |
-| `Array.from(paths).sort()` + `new Set()` | `optimizeTrackedPaths()` lines 311-314 | Every render |
-| `new Set(previousRenderPaths)` union | `capturePaths()` line 389 | Every render |
-| String concatenation per property access | `get` trap line 203 | Every field read through proxy |
-| `Object.getPrototypeOf()` per nested value | `isProxyable()` line 25 | Every nested object access |
+| Allocation                                 | Location                               | Trigger                        |
+| ------------------------------------------ | -------------------------------------- | ------------------------------ |
+| `new Set(trackedPaths)` clone              | `stopProxy()` line 75                  | Every render                   |
+| `Array.from(paths).sort()` + `new Set()`   | `optimizeTrackedPaths()` lines 311-314 | Every render                   |
+| `new Set(previousRenderPaths)` union       | `capturePaths()` line 389              | Every render                   |
+| String concatenation per property access   | `get` trap line 203                    | Every field read through proxy |
+| `Object.getPrototypeOf()` per nested value | `isProxyable()` line 25                | Every nested object access     |
 
 For `proxy track 20 fields`: 20 string concats + ~6 collection allocations per cycle × 1000 iterations.
 
@@ -134,11 +134,11 @@ The registry call at line 280 always executes even when there are no registry-le
 
 The proxy benchmarks are not measuring equivalent operations across libraries. For `proxy track 20 fields` and `proxy cache reuse`:
 
-| Library | What it does |
-|---|---|
-| Blac | Full tracking lifecycle: proxy creation → path interception → optimization → cache update → change detection |
-| Zustand | 20 plain property reads from a plain object (no tracking) |
-| Redux Toolkit | 20 plain property reads from a plain object (no tracking) |
+| Library       | What it does                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------------ |
+| Blac          | Full tracking lifecycle: proxy creation → path interception → optimization → cache update → change detection |
+| Zustand       | 20 plain property reads from a plain object (no tracking)                                                    |
+| Redux Toolkit | 20 plain property reads from a plain object (no tracking)                                                    |
 
 Zustand and RTK have no equivalent fine-grained reactivity feature. The comparison measures "tracking overhead vs no tracking," not "Blac tracking vs competitor tracking." That said, the overhead can still be reduced.
 
@@ -170,7 +170,10 @@ this[EMIT]({ ...this.state, ...partial } as S);
 const next = { ...this.state, ...partial } as S;
 let changed = false;
 for (const key in partial) {
-  if (!Object.is(next[key], this.state[key])) { changed = true; break; }
+  if (!Object.is(next[key], this.state[key])) {
+    changed = true;
+    break;
+  }
 }
 if (changed) this[EMIT](next);
 ```
@@ -227,12 +230,12 @@ Cache the prototype check result per constructor, or use a WeakSet of known-prox
 
 If P0 + P1 fixes are implemented:
 
-| Operation | Current | Target |
-|---|---|---|
-| proxy track 20 fields | 11.6x slower | <2x |
-| proxy cache reuse | 6.8x slower | <1.5x |
-| multi-store coordination | 4.0x slower | <2x |
-| proxy track 1 field | 3.0x slower | <1.5x |
-| cross-store propagation | 2.0x slower | ~1x |
+| Operation                | Current      | Target |
+| ------------------------ | ------------ | ------ |
+| proxy track 20 fields    | 11.6x slower | <2x    |
+| proxy cache reuse        | 6.8x slower  | <1.5x  |
+| multi-store coordination | 4.0x slower  | <2x    |
+| proxy track 1 field      | 3.0x slower  | <1.5x  |
+| cross-store propagation  | 2.0x slower  | ~1x    |
 
 Geometric mean target: <1.15x (matching Zustand's 1.19x).

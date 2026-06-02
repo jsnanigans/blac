@@ -41,12 +41,12 @@ docs build (`pnpm -F @blac/docs build`) is a hard type-check oracle, so authorin
 tasks have a safety net — Sonnet is the default workhorse. Reserve Opus for
 source-archaeology and design judgment; use Haiku for mechanical edits.
 
-| Tier | Model | Effort | Use for |
-|---|---|---|---|
-| **Heavy** | Opus 4.8 | high | Subtle source-verified correctness, API design, long narrative with internal consistency (template design, low-level `subscribe`, tutorial, internals). |
-| **Standard** | Sonnet 4.6 | high | Most page authoring where the build catches type errors (recipes, troubleshooting, changelog, versioning, compat fix, integrations, coming-from). |
-| **Standard-** | Sonnet 4.6 | medium | Mechanical-but-judgment authoring: reference-template rollout per page, recipes catalog entries. |
-| **Light** | Haiku 4.5 | medium | Pure mechanics: move/delete files, sidebar/nav wiring, `llms.txt` aggregation, snippet relocation. |
+| Tier          | Model      | Effort | Use for                                                                                                                                                 |
+| ------------- | ---------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Heavy**     | Opus 4.8   | high   | Subtle source-verified correctness, API design, long narrative with internal consistency (template design, low-level `subscribe`, tutorial, internals). |
+| **Standard**  | Sonnet 4.6 | high   | Most page authoring where the build catches type errors (recipes, troubleshooting, changelog, versioning, compat fix, integrations, coming-from).       |
+| **Standard-** | Sonnet 4.6 | medium | Mechanical-but-judgment authoring: reference-template rollout per page, recipes catalog entries.                                                        |
+| **Light**     | Haiku 4.5  | medium | Pure mechanics: move/delete files, sidebar/nav wiring, `llms.txt` aggregation, snippet relocation.                                                      |
 
 Every task below states its model + effort and the rationale.
 
@@ -140,6 +140,6 @@ Phase 4  Visual / interactive          (needs human in-browser/screenshot verify
 Phase 5  Tier 3 differentiators        (largest; mostly independent)
 ```
 
-Phases are mostly sequential, but Phase 2 and Phase 3's *template-design* task
+Phases are mostly sequential, but Phase 2 and Phase 3's _template-design_ task
 can overlap. Phase 4 has human-gated steps (screenshots, browser checks) — slot
 those whenever a human is available; the authoring halves can proceed earlier.

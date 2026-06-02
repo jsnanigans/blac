@@ -40,16 +40,16 @@ Paths are strings (`"users.5.email"`) but compared and stored as small integers.
 
 ```ts
 class PathInterner {
-  private next = 0
-  private byPath = new Map<string, number>()
+  private next = 0;
+  private byPath = new Map<string, number>();
 
   intern(path: string): PathId {
-    let id = this.byPath.get(path)
+    let id = this.byPath.get(path);
     if (id === undefined) {
-      id = this.next++
-      this.byPath.set(path, id)
+      id = this.next++;
+      this.byPath.set(path, id);
     }
-    return id
+    return id;
   }
 }
 ```
@@ -65,16 +65,21 @@ class PathInterner {
 The existing per-consumer Proxy tracker stays in place with one change: instead of (or in addition to) value comparison, it **records the access path as a `PathId`** into a per-consumer `PathSet`.
 
 ```ts
-function trackRender<S>(state: S, interner: PathInterner): { value: S; paths: PathSet } {
-  const paths = emptyPathSet()
-  const proxy = wrapState(state, '', (path) => paths.add(interner.intern(path)))
-  return { value: proxy, paths }
+function trackRender<S>(
+  state: S,
+  interner: PathInterner,
+): { value: S; paths: PathSet } {
+  const paths = emptyPathSet();
+  const proxy = wrapState(state, '', (path) =>
+    paths.add(interner.intern(path)),
+  );
+  return { value: proxy, paths };
 }
 ```
 
 Conditional/loop reads are handled correctly because the consumer always runs against the **real state** (via the Proxy), not a shim. Math, coercion, iteration, `.find(...)` — all behave as today. Path recording is a side effect of access, not a substitute for it.
 
-**Every render re-records.** The Proxy runs fresh per render, replaces the consumer's stored `PathSet`, and triggers the skeleton update. There is no cross-render caching of the consumer's `PathSet` — a re-render is the only signal that the consumer's access pattern might have changed, but it is *always* the signal that triggers refresh. (See [Conditional reads](#conditional-reads-and-the-every-render-rule) below.)
+**Every render re-records.** The Proxy runs fresh per render, replaces the consumer's stored `PathSet`, and triggers the skeleton update. There is no cross-render caching of the consumer's `PathSet` — a re-render is the only signal that the consumer's access pattern might have changed, but it is _always_ the signal that triggers refresh. (See [Conditional reads](#conditional-reads-and-the-every-render-rule) below.)
 
 ---
 
@@ -84,24 +89,24 @@ Per Bloc instance: a `PathSet` that is the union of all currently-live consumers
 
 ```ts
 class Bloc<S> {
-  private observedSkeleton: PathSet = emptyPathSet()
-  private consumerPaths = new Map<ConsumerId, PathSet>()
+  private observedSkeleton: PathSet = emptyPathSet();
+  private consumerPaths = new Map<ConsumerId, PathSet>();
 
   registerConsumerPaths(id: ConsumerId, paths: PathSet): void {
-    const prev = this.consumerPaths.get(id)
-    this.consumerPaths.set(id, paths)
-    if (prev) this.recomputeSkeleton()
-    else this.observedSkeleton = pathSetUnion(this.observedSkeleton, paths)
+    const prev = this.consumerPaths.get(id);
+    this.consumerPaths.set(id, paths);
+    if (prev) this.recomputeSkeleton();
+    else this.observedSkeleton = pathSetUnion(this.observedSkeleton, paths);
   }
 
   unregisterConsumer(id: ConsumerId): void {
-    if (this.consumerPaths.delete(id)) this.recomputeSkeleton()
+    if (this.consumerPaths.delete(id)) this.recomputeSkeleton();
   }
 
   private recomputeSkeleton(): void {
-    let s = emptyPathSet()
-    for (const p of this.consumerPaths.values()) s = pathSetUnion(s, p)
-    this.observedSkeleton = s
+    let s = emptyPathSet();
+    for (const p of this.consumerPaths.values()) s = pathSetUnion(s, p);
+    this.observedSkeleton = s;
   }
 }
 ```
@@ -116,7 +121,7 @@ Three mutation paths, two diffing strategies.
 
 ### `patch(partial)` — free, exact
 
-`patch` is the simplest case: the keys of `partial` *are* the changed paths. No diff needed.
+`patch` is the simplest case: the keys of `partial` _are_ the changed paths. No diff needed.
 
 ```ts
 patch(p: Partial<S>): void {
@@ -186,9 +191,9 @@ Why: the source-diff is only a win when the diff cost is amortised across multip
 The default scheduler for blac is `MicrotaskScheduler`. Multiple `patch`/`emit`/`update` calls within the same synchronous burst accumulate into one `PathSet` and produce one notification per consumer.
 
 ```ts
-cubit.patch({ a: 1 })
-cubit.patch({ b: 2 })
-cubit.patch({ c: 3 })
+cubit.patch({ a: 1 });
+cubit.patch({ b: 2 });
+cubit.patch({ c: 3 });
 // → one microtask-end flush → one consumer notification → state is { a:1, b:2, c:3 }
 ```
 
@@ -206,24 +211,27 @@ This also subsumes the existing circuit-breaker logic (`configureBlac` for emit-
 
 ```ts
 function useBloc<S>(BlocClass): [S, Bloc] {
-  const consumerId = useId()
-  const bloc = acquire(BlocClass)
-  const pathRef = useRef<PathSet>(emptyPathSet())
-  const [, force] = useReducer(x => x + 1, 0)
+  const consumerId = useId();
+  const bloc = acquire(BlocClass);
+  const pathRef = useRef<PathSet>(emptyPathSet());
+  const [, force] = useReducer((x) => x + 1, 0);
 
   useEffect(() => {
     const unsub = bloc.channel.subscribe(
-      () => pathRef.current,                  // lazy interest
-      (_dirty) => force(),                    // dirty: PathSet, but we just force re-render
-    )
-    return () => { unsub(); bloc.releaseConsumer(consumerId) }
-  }, [bloc])
+      () => pathRef.current, // lazy interest
+      (_dirty) => force(), // dirty: PathSet, but we just force re-render
+    );
+    return () => {
+      unsub();
+      bloc.releaseConsumer(consumerId);
+    };
+  }, [bloc]);
 
-  const recorded = trackRender(bloc.state, bloc.interner)
-  pathRef.current = recorded.paths
-  bloc.registerConsumerPaths(consumerId, recorded.paths)
+  const recorded = trackRender(bloc.state, bloc.interner);
+  pathRef.current = recorded.paths;
+  bloc.registerConsumerPaths(consumerId, recorded.paths);
 
-  return [recorded.value, bloc]
+  return [recorded.value, bloc];
 }
 ```
 
@@ -239,8 +247,8 @@ A consumer that reads state conditionally based on external triggers (props, oth
 
 ```tsx
 function Item({ showEmail }) {
-  const [state] = useBloc(UserBloc)
-  return showEmail ? <span>{state.email}</span> : <span>{state.name}</span>
+  const [state] = useBloc(UserBloc);
+  return showEmail ? <span>{state.email}</span> : <span>{state.name}</span>;
 }
 ```
 
@@ -250,7 +258,7 @@ Sequence:
 2. Parent changes `showEmail=true`. React re-renders `Item`. Proxy records `["email"]`. Consumer's `PathSet = {email}`. Skeleton update: remove `name` (if no other consumer holds it), add `email`.
 3. Later, `userBloc.patch({ email: "x" })`. Diff along skeleton (contains `email`) → marks `email` dirty → consumer notified → re-renders.
 
-The rule that makes this correct: **every render re-records** the consumer's `PathSet`. There is no cross-render path-cache to go stale. The skeleton is a *derived view* over current live recordings, refreshed as a byproduct of any render — including renders not caused by the Bloc itself.
+The rule that makes this correct: **every render re-records** the consumer's `PathSet`. There is no cross-render path-cache to go stale. The skeleton is a _derived view_ over current live recordings, refreshed as a byproduct of any render — including renders not caused by the Bloc itself.
 
 ---
 
@@ -260,11 +268,11 @@ Plugins receive `(prev, next, dirty: PathSet)` instead of just `(prev, next)`. D
 
 ```ts
 interface PluginEvent<S> {
-  bloc: Bloc<S>
-  prev: S
-  next: S
-  dirty: PathSet
-  interner: PathInterner   // for dirty → string[] translation in UI
+  bloc: Bloc<S>;
+  prev: S;
+  next: S;
+  dirty: PathSet;
+  interner: PathInterner; // for dirty → string[] translation in UI
 }
 ```
 

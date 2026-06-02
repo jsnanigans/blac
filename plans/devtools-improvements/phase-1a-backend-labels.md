@@ -4,15 +4,18 @@
 **Changeset:** ✔ (`@blac/devtools-connect`) · **Depends on:** Phase 0 (field exists)
 
 ## Goal
+
 Turn the opaque `useBloc-3` consumer ids and raw ref-holder stack traces into
 human-readable source labels (e.g. `CounterView` or `Counter.tsx:42`) so the
 Consumers and Ref Holders sections (Phase 2) read well. Populate the
 `componentLabel` field added in Phase 0.
 
 ## Files
+
 - `packages/devtools-connect/src/plugin/DevToolsBrowserPlugin.ts` **(only file)**
 
 ## Key context (verify against current code)
+
 - `onRefAcquired` (~line 368) captures `stackTrace = new Error().stack` **raw**
   (not run through `captureCallstack`), stored in `refHolders: Map<instanceId, Map<refId, RefHolderInfo>>`.
 - `refId` convention from blac-react: `refId === 'useBloc@' + consumerId` where
@@ -27,6 +30,7 @@ Consumers and Ref Holders sections (Phase 2) read well. Populate the
   second divergent filter.
 
 ## Implement
+
 1. Add a private helper `deriveComponentLabel(stackTrace?: string): string | undefined`:
    - Reuse the same skip-list used by `captureCallstack` to find the **first app
      frame** (the first line that isn't blac/react/node internals).
@@ -44,6 +48,7 @@ Consumers and Ref Holders sections (Phase 2) read well. Populate the
    to each holder (don't drop the raw `stackTrace`; add alongside).
 
 ## Tests
+
 Add a focused unit test in `packages/devtools-connect/src/plugin/` (new
 `*.test.ts` or extend the existing `DevToolsBrowserPlugin.test.ts`) for
 `deriveComponentLabel` covering: an app frame present, only-internal frames
@@ -52,13 +57,16 @@ via a tiny exported helper or a `// @internal` export — match how the package
 already tests internals (check existing test file first).
 
 ## Cycle
+
 Shared protocol, scoped to `@blac/devtools-connect`:
 `format → format:check → lint → typecheck → test`.
+
 - Changeset (`.changeset/devtools-component-labels.md`): `@blac/devtools-connect` `patch`
   — "Derive component-name labels for devtools consumers and ref holders."
 - Commit: `feat(devtools-connect): label consumers/refs with source frame`
 
 ## Done when
+
 - `ConsumerInfo` / `RefHolderInfo` emitted by the plugin carry `componentLabel`
   when a usable app frame exists; raw `stackTrace` is unchanged.
 - Frame-filter logic is shared with `captureCallstack` (single source of truth).

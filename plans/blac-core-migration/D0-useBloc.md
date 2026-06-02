@@ -86,7 +86,10 @@ export function useBloc<C extends StateContainerConstructor>(
 
   // Delegate to useStructural for tracking + dirty-channel subscription.
   // Pass `select` through if provided.
-  const [state, container] = useStructural(bloc, options?.select ? { select: options.select } : undefined);
+  const [state, container] = useStructural(
+    bloc,
+    options?.select ? { select: options.select } : undefined,
+  );
 
   return [state, container as InstanceState<C>] as const;
 }
@@ -146,6 +149,7 @@ packages/blac-react/src/config.ts
    ```
 
    Body (required):
+
    ```
    - `dependencies` option removed; use `select` instead (per migration plan
      Decision 8). Codemod: rename `dependencies` -> `select`; verify return

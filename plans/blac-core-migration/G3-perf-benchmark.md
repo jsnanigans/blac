@@ -71,7 +71,7 @@ Branch: <current branch name>
 ## Scenario 1 — N consumers, single emit
 
 | N consumers | Before (ms) | After (ms) | Delta |
-|-------------|-------------|------------|-------|
+| ----------- | ----------- | ---------- | ----- |
 | 1           | ...         | ...        | ...   |
 | 10          | ...         | ...        | ...   |
 | 50          | ...         | ...        | ...   |
@@ -89,6 +89,7 @@ Branch: <current branch name>
 ## Scenario 4 — Microtask coalescing
 
 Synchronous burst of 100 emit calls:
+
 - Before: N flushes
 - After: N flushes
 - (Expected: After = 1, Before = 100)
@@ -147,6 +148,7 @@ plans/blac-core-migration/_perf-results.md               (new)
    ```
 
    Body:
+
    ```
    - Added 4 benchmark scenarios per migration plan G3.
    - Results in plans/blac-core-migration/_perf-results.md.
@@ -170,5 +172,5 @@ plans/blac-core-migration/_perf-results.md               (new)
 - **`performance.now()` resolution** in Node is sub-ms; trust it. In browsers it's coarse-grained (~100µs) for security — node is the right environment.
 - **Microtask scheduling** in Node runs at the end of every PromiseJob batch. Benchmark code that uses `setImmediate` for batching may interact oddly — use `queueMicrotask` directly.
 - **Don't claim wins without baseline numbers.** If you don't have pre-migration data, say so honestly in the doc.
-- **Don't gate the merge on perf**. If perf is *worse*, escalate — write a follow-up task. Don't loosen the success criteria; record the truth.
+- **Don't gate the merge on perf**. If perf is _worse_, escalate — write a follow-up task. Don't loosen the success criteria; record the truth.
 - **Single-consumer skip** in structural means N=1 scenario won't show a clean win. The win shape is "constant time as N grows" not "always faster than before". Document this explicitly.

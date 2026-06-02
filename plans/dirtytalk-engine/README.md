@@ -8,16 +8,16 @@ This folder holds **one task file per agent unit**. Each task file is self-conta
 
 ## Package decision (locked unless you say otherwise)
 
-| Item | Decision |
-|------|----------|
-| Package name | `@dirtytalk/engine` |
-| Path | `packages/dirtytalk-engine/` |
-| Layout | **One** package with two subpath exports: `.` (everything) and `./primitives` (just `Signal`/`Observable`). |
+| Item            | Decision                                                                                                                                                                                                                                                                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Package name    | `@dirtytalk/engine`                                                                                                                                                                                                                                                                                                                         |
+| Path            | `packages/dirtytalk-engine/`                                                                                                                                                                                                                                                                                                                |
+| Layout          | **One** package with two subpath exports: `.` (everything) and `./primitives` (just `Signal`/`Observable`).                                                                                                                                                                                                                                 |
 | Why one not two | The 01-engine.md spec calls for `@reactive/primitives` + `@reactive/dirty-channel`. We collapse to one package now (single repo unit, single publish) but keep a `./primitives` subpath so small consumers can still import just the primitives. Splitting later is a `vp pack` entry change + `package.json` exports tweak — non-blocking. |
-| Build template | Copy from `packages/blac-core/` (vite-plus + tsc -p tsconfig.build.json + .d.cts dup pattern). |
-| Test env | `vitest` via `vite-plus`, `environment: 'node'` — engine has no DOM dependency. |
-| Runtime deps | **None.** The engine is zero-dependency. |
-| Workspace deps | None. (`@blac/core` and `insomni` will depend on this later; this package depends on nothing internal.) |
+| Build template  | Copy from `packages/blac-core/` (vite-plus + tsc -p tsconfig.build.json + .d.cts dup pattern).                                                                                                                                                                                                                                              |
+| Test env        | `vitest` via `vite-plus`, `environment: 'node'` — engine has no DOM dependency.                                                                                                                                                                                                                                                             |
+| Runtime deps    | **None.** The engine is zero-dependency.                                                                                                                                                                                                                                                                                                    |
+| Workspace deps  | None. (`@blac/core` and `insomni` will depend on this later; this package depends on nothing internal.)                                                                                                                                                                                                                                     |
 
 If any of these need to change, edit this README and the affected task file. Don't let agents guess.
 
@@ -56,14 +56,14 @@ If any of these need to change, edit this README and the affected task file. Don
 
 ## Model & effort guide
 
-| Task | Model | Reasoning effort | Why |
-|------|-------|------------------|-----|
-| 00-scaffold | Sonnet 4.6 | low | Mostly mechanical (copy build config, write interface stubs). Care matters more than depth. |
-| 01-signal | Haiku 4.5 | low | One field, one `Set`, equality short-circuit. Smallest unit in the engine. |
-| 01-schedulers | Sonnet 4.6 | medium | Four implementations. The `MicrotaskScheduler` and `RAFScheduler` have subtle re-entrancy traps (don't queue if a flush is already in flight; don't lose a `request` made *during* the flush). Easy to get 80% right, hard to get fully right — Sonnet earns its keep. |
-| 01-dirty-channel | Opus 4.7 | high | The hardest piece: snapshot semantics, lazy interest thunks, subscribe/unsubscribe during flush, `AggregateError` on subscriber throws, re-entrant `mark` deferred to next flush. Worth Opus. |
-| 01-readme | Haiku 4.5 | low | Prose. |
-| 02-integration | Sonnet 4.6 | medium | Run the toolchain, fix any cross-cutting issues, write one tiny end-to-end test. |
+| Task             | Model      | Reasoning effort | Why                                                                                                                                                                                                                                                                    |
+| ---------------- | ---------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 00-scaffold      | Sonnet 4.6 | low              | Mostly mechanical (copy build config, write interface stubs). Care matters more than depth.                                                                                                                                                                            |
+| 01-signal        | Haiku 4.5  | low              | One field, one `Set`, equality short-circuit. Smallest unit in the engine.                                                                                                                                                                                             |
+| 01-schedulers    | Sonnet 4.6 | medium           | Four implementations. The `MicrotaskScheduler` and `RAFScheduler` have subtle re-entrancy traps (don't queue if a flush is already in flight; don't lose a `request` made _during_ the flush). Easy to get 80% right, hard to get fully right — Sonnet earns its keep. |
+| 01-dirty-channel | Opus 4.7   | high             | The hardest piece: snapshot semantics, lazy interest thunks, subscribe/unsubscribe during flush, `AggregateError` on subscriber throws, re-entrant `mark` deferred to next flush. Worth Opus.                                                                          |
+| 01-readme        | Haiku 4.5  | low              | Prose.                                                                                                                                                                                                                                                                 |
+| 02-integration   | Sonnet 4.6 | medium           | Run the toolchain, fix any cross-cutting issues, write one tiny end-to-end test.                                                                                                                                                                                       |
 
 (Effort is advisory — Claude Code surfaces it via "fast mode" vs default. If you're scripting, hand the agent the task file and let it choose its own depth.)
 
@@ -82,6 +82,7 @@ Agent({
 ```
 
 Each task file already contains:
+
 - Goal + acceptance criteria
 - Inputs (files to read first)
 - **Owned files** (its exclusive write set)
@@ -97,12 +98,12 @@ Each task file already contains:
 
 ## File ownership matrix (Phase 1)
 
-| Task | Writes |
-|------|--------|
-| 01-signal | `packages/dirtytalk-engine/src/primitives.ts`, `packages/dirtytalk-engine/src/primitives.test.ts` |
-| 01-schedulers | `packages/dirtytalk-engine/src/scheduler.ts`, `packages/dirtytalk-engine/src/scheduler.test.ts` |
+| Task             | Writes                                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------- |
+| 01-signal        | `packages/dirtytalk-engine/src/primitives.ts`, `packages/dirtytalk-engine/src/primitives.test.ts`       |
+| 01-schedulers    | `packages/dirtytalk-engine/src/scheduler.ts`, `packages/dirtytalk-engine/src/scheduler.test.ts`         |
 | 01-dirty-channel | `packages/dirtytalk-engine/src/dirty-channel.ts`, `packages/dirtytalk-engine/src/dirty-channel.test.ts` |
-| 01-readme | `packages/dirtytalk-engine/README.md` |
+| 01-readme        | `packages/dirtytalk-engine/README.md`                                                                   |
 
 No overlap. `src/index.ts`, `src/space.ts`, `package.json`, `tsconfig*.json`, `vite.config.ts` are written by Phase 0 and **must not be modified** by Phase 1 agents.
 

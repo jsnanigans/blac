@@ -53,12 +53,12 @@ If you want an instance to survive even when nothing is using it, mark it with `
 
 In React, `useBloc` handles the registry for you. Outside React (tests, scripts, server-side), you interact with it directly. The headline verbs:
 
-| Function            | Creates? | Ref count | Use when                                        |
-| ------------------- | -------- | --------- | ----------------------------------------------- |
-| `acquire(Class)`    | Yes      | +1        | You own this reference (must `release` later)   |
-| `ensure(Class)`     | Yes      | No change | You need the instance but don't own a reference |
-| `borrow(Class)`     | No       | No change | Instance must already exist (throws if not)     |
-| `release(Class)`    | No       | -1        | Done with your reference                        |
+| Function         | Creates? | Ref count | Use when                                        |
+| ---------------- | -------- | --------- | ----------------------------------------------- |
+| `acquire(Class)` | Yes      | +1        | You own this reference (must `release` later)   |
+| `ensure(Class)`  | Yes      | No change | You need the instance but don't own a reference |
+| `borrow(Class)`  | No       | No change | Instance must already exist (throws if not)     |
+| `release(Class)` | No       | -1        | Done with your reference                        |
 
 This is the quick version. The complete function table (including `borrowSafe`, `getRefCount`, `clear`, and the keying rules) lives in [Instance Management](/core/instance-management).
 
@@ -84,7 +84,7 @@ With `@blac({ keepAlive: true })`, the instance survives even when all component
 
 Components rarely need a blank container — they need one seeded with data. BlaC keeps that data in two separate lanes so a shared instance with many consumers never races:
 
-- **`args`** — serializable data that *identifies* an instance (e.g. a document id). Same args resolve to the same instance; identity is derived from args alone.
+- **`args`** — serializable data that _identifies_ an instance (e.g. a document id). Same args resolve to the same instance; identity is derived from args alone.
 - **`deps`** — non-serializable handles (callbacks, services) injected per consumer, never used for identity.
 
 This is just the teaser; the full model, the precedence rules, and the failure modes live in [Inputs](/guide/inputs).
@@ -111,12 +111,12 @@ Only reads on the `state` proxy are recorded. Reading a getter on the `bloc` ins
 
 There are two tracking modes, chosen by whether you pass a `select` option — there is no separate on/off flag:
 
-| Mode                        | How                                          | Best for                            |
-| --------------------------- | -------------------------------------------- | ----------------------------------- |
-| **Auto-tracking** (default) | Proxy records property access during render  | Most components                     |
+| Mode                        | How                                                      | Best for                                           |
+| --------------------------- | -------------------------------------------------------- | -------------------------------------------------- |
+| **Auto-tracking** (default) | Proxy records property access during render              | Most components                                    |
 | **`select`** (manual)       | You return an array; re-render when it changes per-index | Complex conditions, computed values, or opting out |
 
-A component that wants to *never* re-render on state (an action-only button, say) is just the `select` mode with a constant array. See [Dependency Tracking](/react/dependency-tracking) for the full story, including the conditional-read caveat.
+A component that wants to _never_ re-render on state (an action-only button, say) is just the `select` mode with a constant array. See [Dependency Tracking](/react/dependency-tracking) for the full story, including the conditional-read caveat.
 
 ## Plugins
 

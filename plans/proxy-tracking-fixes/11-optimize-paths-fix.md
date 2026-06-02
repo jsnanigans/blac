@@ -16,7 +16,7 @@ files:
 
 ## Bug
 
-In `apps/examples/src/examples/08-tracking/` the `ItemTitleConsumer({ index: 1 })` re-renders when `toggleItem('a')` is invoked. The toggle replaces the entire `items` array via `.map`, producing a new array reference; but `items[1]` and `items[2]` are the **same object references** as before. Tracking *should* see no change at `items[1].title`.
+In `apps/examples/src/examples/08-tracking/` the `ItemTitleConsumer({ index: 1 })` re-renders when `toggleItem('a')` is invoked. The toggle replaces the entire `items` array via `.map`, producing a new array reference; but `items[1]` and `items[2]` are the **same object references** as before. Tracking _should_ see no change at `items[1].title`.
 
 Two bits of `tracking-proxy.ts` defeat this:
 
@@ -50,7 +50,7 @@ function isChildPath(child: string, parent: string): boolean {
 }
 ```
 
-Treats `'items[0].name'` as a child of `'items'`, so the dedup pass removes `'items'` whenever an indexed access is present. That's what *created* the need for Bug A in the first place.
+Treats `'items[0].name'` as a child of `'items'`, so the dedup pass removes `'items'` whenever an indexed access is present. That's what _created_ the need for Bug A in the first place.
 
 These two bugs cancel each other in the "user only accessed an index" case but combine to track too much. The right fix is to remove both: stop deduping `'items'` under `'items[N]'`, and stop re-adding the array parent.
 
@@ -67,7 +67,7 @@ function isChildPath(child: string, parent: string): boolean {
 
 Now `'items'` is only a parent of `'items.length'`, `'items.foo'`, etc. — not of `'items[0]'`. So if both `'items'` and `'items[0].name'` are accessed, both survive dedup.
 
-`'items.length'` is *still* deduped under `'items'`, which is fine: tracking the array ref subsumes tracking length.
+`'items.length'` is _still_ deduped under `'items'`, which is fine: tracking the array ref subsumes tracking length.
 
 ### 2. `optimizeTrackedPaths` — drop the array-parent recovery
 
@@ -81,17 +81,17 @@ The array trap adds `'items[N]'` and `'items.length'` for the inner accesses. Af
 
 ## Consequence
 
-| User code | Tracks (after fix) | Re-renders on `toggleItem('a')` |
-| --- | --- | --- |
-| `state.items[1].title` (no `state.items` read) | `'items[1].title'` | **No** ✓ |
-| `state.items[0].title` | `'items[0].title'` | Yes (items[0] is new ref) |
-| `state.items.length` | `'items.length'` | No (length unchanged) |
-| `state.items.map(...)` (current proxy returns raw-bound method) | `'items'` (from object trap) | Yes (array ref changed) |
-| `state.items[1].title` plus inadvertent `state.items` read | both — `'items'` re-renders, `'items[1].title'` doesn't | Yes |
+| User code                                                       | Tracks (after fix)                                      | Re-renders on `toggleItem('a')` |
+| --------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------- |
+| `state.items[1].title` (no `state.items` read)                  | `'items[1].title'`                                      | **No** ✓                        |
+| `state.items[0].title`                                          | `'items[0].title'`                                      | Yes (items[0] is new ref)       |
+| `state.items.length`                                            | `'items.length'`                                        | No (length unchanged)           |
+| `state.items.map(...)` (current proxy returns raw-bound method) | `'items'` (from object trap)                            | Yes (array ref changed)         |
+| `state.items[1].title` plus inadvertent `state.items` read      | both — `'items'` re-renders, `'items[1].title'` doesn't | Yes                             |
 
 The `.map` case is unchanged by this task; it's what task 13 will solve.
 
-**Important** for the demo: consumers in `TrackingConsumers.tsx` that read `state.items[index]` (lines 144, 163, 215) destructure or call `.find` — verify after the fix that they don't *also* touch `state.items` somewhere that adds `'items'` back. If they do, this task only partially fixes the demo; that's expected.
+**Important** for the demo: consumers in `TrackingConsumers.tsx` that read `state.items[index]` (lines 144, 163, 215) destructure or call `.find` — verify after the fix that they don't _also_ touch `state.items` somewhere that adds `'items'` back. If they do, this task only partially fixes the demo; that's expected.
 
 ## Check (before editing)
 
@@ -124,7 +124,7 @@ describe('per-index isolation across immutable array updates', () => {
     const tracker = createDependencyState();
     const item1 = { id: 'a', title: 'Wire up', done: true };
     const item2 = { id: 'b', title: 'Survive', done: false };
-    const item3 = { id: 'c', title: 'Track',   done: false };
+    const item3 = { id: 'c', title: 'Track', done: false };
     const state1 = { items: [item1, item2, item3] };
 
     // Render 1: a consumer reads items[1].title (and nothing else)
@@ -147,7 +147,12 @@ describe('per-index isolation across immutable array updates', () => {
 
   it('does re-render an items[N] consumer when items[N] is replaced', () => {
     const tracker = createDependencyState();
-    const state1 = { items: [{ id: 'a', title: 'old' }, { id: 'b', title: 'unchanged' }] };
+    const state1 = {
+      items: [
+        { id: 'a', title: 'old' },
+        { id: 'b', title: 'unchanged' },
+      ],
+    };
 
     startDependency(tracker);
     const p1 = createDependencyProxy(tracker, state1);
@@ -219,6 +224,7 @@ Body: "Path optimization re-added the array reference for any indexed access, wh
 
 **Commit SHA:** 2cf289d8
 **Files touched:**
+
 - `packages/blac-core/src/tracking/tracking-proxy.ts` — removed `getArrayParentPath` helper and the array-parent re-add block in `optimizeTrackedPaths`; `isChildPath` bracket case retained (see implementation note below)
 - `packages/blac-core/src/tracking/dependency-tracker.test.ts` — added four regression tests under `per-index isolation across immutable array updates`; updated two existing `optimizeTrackedPaths` tests that were asserting old recovery behavior
 

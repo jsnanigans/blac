@@ -4,14 +4,14 @@ Decisions made by the user are captured in the README. This file tracks remainin
 
 ## Decided
 
-| # | Question | Decision |
-|---|---|---|
-| 1 | Shim or big-bang? | **Shim first.** Hand-cleanup later. |
-| 2a | E2 (static `keepAlive` honored)? | **Yes.** |
-| 2b | E3 (auto-instance / static `isolated`)? | **Yes.** |
-| 2c | E4 (constructor-args / props via hook)? | **No.** Pattern: `useBloc(C)` + `useEffect(() => bloc.initWithProps(p), [])`. |
-| 2d | E1 (BlocProvider) shape? | **Reduced.** Provider injects `instanceId` via React context; `useBloc` reads it. |
-| 3 | Single big PR or per-app PRs in Phase 2? | **Per-app.** PMP first, user-app second. |
+| #   | Question                                 | Decision                                                                          |
+| --- | ---------------------------------------- | --------------------------------------------------------------------------------- |
+| 1   | Shim or big-bang?                        | **Shim first.** Hand-cleanup later.                                               |
+| 2a  | E2 (static `keepAlive` honored)?         | **Yes.**                                                                          |
+| 2b  | E3 (auto-instance / static `isolated`)?  | **Yes.**                                                                          |
+| 2c  | E4 (constructor-args / props via hook)?  | **No.** Pattern: `useBloc(C)` + `useEffect(() => bloc.initWithProps(p), [])`.     |
+| 2d  | E1 (BlocProvider) shape?                 | **Reduced.** Provider injects `instanceId` via React context; `useBloc` reads it. |
+| 3   | Single big PR or per-app PRs in Phase 2? | **Per-app.** PMP first, user-app second.                                          |
 
 ## Still open
 
@@ -26,7 +26,7 @@ User answered "not sure." This affects how aggressively we run Phase 3.
 `packages/shared` is the smallest (32 files, all v1) and is consumed by both apps. Two options:
 
 - **(a) Shared first.** Forces a brief window where shared uses v2 native APIs and apps use the shim. The shim is forward-compatible (shim → v2 is fine), so this works.
-- **(b) Apps first.** Risk: shared keeps depending on shim names; if the shim is deleted (Phase 4), shared breaks. So shared *must* migrate at some point before Phase 4.
+- **(b) Apps first.** Risk: shared keeps depending on shim names; if the shim is deleted (Phase 4), shared breaks. So shared _must_ migrate at some point before Phase 4.
 
 **Recommendation.** (a) shared first — smallest, clean test bed for the native v2 pattern before tackling the apps.
 

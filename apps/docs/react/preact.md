@@ -58,7 +58,7 @@ The hook signature, return tuple, and options are identical to the React version
 
 ```ts
 const [state, bloc, ref] = useBloc(MyCubit, {
-  args: { id },                       // typed; required when the bloc declares Args; derives identity
+  args: { id }, // typed; required when the bloc declares Args; derives identity
   select: (state, bloc) => [bloc.someGetter], // re-render selector (opts out of auto-track)
   onMount: (bloc) => {
     /* runs after acquire */
@@ -86,7 +86,7 @@ configureBlacPreact({
 ## Differences from React
 
 - The hook is built against Preact's hook implementations rather than React's; the subscription and tracking model is otherwise identical.
-- Everything else — `@blac/core`, the registry, ref-counting, plugins, and the tracking engine in `@dirtytalk/structural` — is shared between the two bindings. State containers themselves are framework-agnostic: the *same* Cubit class works under React, Preact, or no framework at all (via [watch](/core/watch)).
+- Everything else — `@blac/core`, the registry, ref-counting, plugins, and the tracking engine in `@dirtytalk/structural` — is shared between the two bindings. State containers themselves are framework-agnostic: the _same_ Cubit class works under React, Preact, or no framework at all (via [watch](/core/watch)).
 
 ## See also
 

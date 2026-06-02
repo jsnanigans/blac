@@ -36,22 +36,28 @@ For each downstream package and app, produce one section listing:
 ## <package or app path>
 
 ### Imports from `@blac/core`
+
 - <symbol> — used in `<file>:<line>` for `<purpose, 1 sentence>`
 - ...
 
 ### Imports from `@blac/core/tracking`
+
 - <symbol> — ...
 
 ### Imports from `@blac/adapter`
+
 - <symbol> — ...
 
 ### Imports from `@blac/react`
+
 - <symbol> — ...
 
 ### Imports from `@blac/compat`
+
 - <symbol> — ...
 
 ### Notes
+
 - <anything surprising — e.g. uses an `@internal` export like `EMIT`, monkey-patches a registry method, relies on `tracked()` directly>
 ```
 
@@ -77,27 +83,34 @@ packages/blac-react          (for completeness — it's getting rewritten in D0)
 ## Cross-cutting findings
 
 ### `dependencies` option on `useBloc`
+
 - N callsites total, listed by file path.
 - Sample patterns: ...
 - Migration risk: low / medium / high
 
 ### `tracked()` standalone API
+
 - N callsites total.
 - Recommendation: delete / port
 
 ### `watch()`
+
 - N callsites.
 
 ### `@internal` symbols leaking (EMIT, APPLY_DEPS, REMOVE_DEPS_OWNER)
+
 - ...
 
 ### Plugin event consumers
+
 - Which plugins register what handlers; what shape they expect.
 
 ### `BlocProvider` + `instanceId` callsites
+
 - ...
 
 ### `@blac/adapter` direct consumers (besides @blac/react)
+
 - ...
 ```
 
@@ -134,7 +147,7 @@ plans/blac-core-migration/_audit.md     (new)
 
 3. **Verify.**
    - The doc compiles in a Markdown preview without broken links.
-   - Every section listed under "Targets" is present in the doc, even if the section is empty (just write `*(no `@blac/*` imports found)*`).
+   - Every section listed under "Targets" is present in the doc, even if the section is empty (just write `*(no `@blac/_` imports found)_`).
 
 4. **Test.**
    - No tests. This is a documentation task.

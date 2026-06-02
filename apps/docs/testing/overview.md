@@ -47,7 +47,7 @@ yarn add -D @testing-library/react
 
 ## Why registry isolation matters
 
-BlaC stores every bloc instance in a single global [registry](/core/instance-management). That is what lets any component call `useBloc(CounterCubit)` and reach the *same* instance without prop drilling. In tests, that same shared-by-default behavior works against you: a bloc created or mutated in one test is still in the registry when the next test runs, so tests leak state into each other and fail depending on execution order.
+BlaC stores every bloc instance in a single global [registry](/core/instance-management). That is what lets any component call `useBloc(CounterCubit)` and reach the _same_ instance without prop drilling. In tests, that same shared-by-default behavior works against you: a bloc created or mutated in one test is still in the registry when the next test runs, so tests leak state into each other and fail depending on execution order.
 
 The mental model for testing BlaC is therefore simple: **give every test its own registry.** Once each test starts from an empty registry, the shared-instance model becomes a feature again — you seed exactly the instances a test needs and nothing carries over.
 
@@ -128,13 +128,14 @@ Tests still run if you import bare globals, but linting fails. If you use a diff
 :::
 
 ::: danger Common mistakes
+
 - **Forgetting `blacTestSetup()`** (or another isolation helper). Without it, a bloc mutated in one test survives into the next and you get order-dependent, flaky failures — exactly the problem isolation exists to prevent. See [Core Testing API](/testing/core) for the lower-level alternatives.
 - **Asserting on async state too early.** State changes are flushed on a microtask, so a value set inside an async action may not be visible on the very next line. `await flushBlocUpdates()` (or React Testing Library's `findBy*` queries) before asserting. See [System Events](/core/system-events) for the batching model.
-:::
+  :::
 
 ## See also
 
 - [Core Testing API](/testing/core) — the full helper reference (`blacTestSetup`, stubs, overrides, seeding)
 - [React Testing API](/testing/react) — rendering components with controlled bloc state
 - [Instance Management](/core/instance-management) — the registry these helpers isolate
-- [Glossary](/guide/glossary) — definitions for *registry*, *stub*, *override*, *instance key*
+- [Glossary](/guide/glossary) — definitions for _registry_, _stub_, _override_, _instance key_

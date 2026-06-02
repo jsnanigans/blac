@@ -109,7 +109,10 @@ Overrides how the registry derives an instance key from `args`. The function rec
 // Two consumers passing { userId: 'u1', highlight: true/false }
 // should share ONE instance keyed only by userId.
 @blac({ key: (args: { userId: string }) => args.userId })
-class UserCardCubit extends Cubit<UserState, { userId: string; highlight?: boolean }> {
+class UserCardCubit extends Cubit<
+  UserState,
+  { userId: string; highlight?: boolean }
+> {
   constructor() {
     super({ user: null });
   }
@@ -155,11 +158,11 @@ The config object has four keys: the default `equality` function and three **cir
 
 Circuit breakers are guardrails for the two failure modes that quietly destroy a BlaC app: leaks (instances or refs that are created but never disposed) and emit storms (a tight loop pushing high-frequency data through state). They cost nothing on the happy path and turn a silent freeze into a loud, actionable error.
 
-| Option | Guards against | Behavior when exceeded |
-| ------ | -------------- | ---------------------- |
-| `maxInstancesPerType` | Too many **live instances** of one class — almost always an unstable instance key (a fresh object/array passed as `args` every render, or a missing `static key`) leaking one instance per render | `acquire` **throws** |
-| `maxRefsPerInstance` | Too many **distinct refs** on one instance — consumer cleanup (e.g. a `useBloc` unmount `release`) never firing, so refs pile up without bound | `acquire` **throws** |
-| `maxEmitsPerSecond` | An **emit storm** — a tight loop (RAF/animation, or an effect emitting on every commit) pushing high-frequency changes that saturate subscribers, plugins, and the main thread | Dev-only `console.warn` once per instance; **never throws**; no-op in production |
+| Option                | Guards against                                                                                                                                                                                    | Behavior when exceeded                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `maxInstancesPerType` | Too many **live instances** of one class — almost always an unstable instance key (a fresh object/array passed as `args` every render, or a missing `static key`) leaking one instance per render | `acquire` **throws**                                                             |
+| `maxRefsPerInstance`  | Too many **distinct refs** on one instance — consumer cleanup (e.g. a `useBloc` unmount `release`) never firing, so refs pile up without bound                                                    | `acquire` **throws**                                                             |
+| `maxEmitsPerSecond`   | An **emit storm** — a tight loop (RAF/animation, or an effect emitting on every commit) pushing high-frequency changes that saturate subscribers, plugins, and the main thread                    | Dev-only `console.warn` once per instance; **never throws**; no-op in production |
 
 A few details that matter when tuning these:
 
@@ -184,12 +187,12 @@ configureBlac({ equality: (a, b) => Object.is(a, b) });
 
 ### Defaults
 
-| Option | Type | Default | What it does |
-| ------ | ---- | ------- | ------------ |
-| `equality` | `EqualityFn` | `shallowEqualState` | App-wide default equality for `emit`/`update`; return `true` to skip the emit |
-| `maxInstancesPerType` | `number` | `1000` | Max live instances per class before `acquire` throws |
-| `maxRefsPerInstance` | `number` | `1000` | Max distinct refs per instance before `acquire` throws |
-| `maxEmitsPerSecond` | `number` | `100` | Dev-only soft limit; real emits/sec per instance before a one-time `console.warn` |
+| Option                | Type         | Default             | What it does                                                                      |
+| --------------------- | ------------ | ------------------- | --------------------------------------------------------------------------------- |
+| `equality`            | `EqualityFn` | `shallowEqualState` | App-wide default equality for `emit`/`update`; return `true` to skip the emit     |
+| `maxInstancesPerType` | `number`     | `1000`              | Max live instances per class before `acquire` throws                              |
+| `maxRefsPerInstance`  | `number`     | `1000`              | Max distinct refs per instance before `acquire` throws                            |
+| `maxEmitsPerSecond`   | `number`     | `100`               | Dev-only soft limit; real emits/sec per instance before a one-time `console.warn` |
 
 ::: details Reading the current config (advanced)
 `getBlacConfig()` returns the live config object and `resetBlacConfig()` restores defaults. Both are marked `@internal` — `resetBlacConfig()` is handy in test teardown to undo a `configureBlac` from a previous test, but neither belongs in application code.

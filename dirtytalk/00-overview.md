@@ -5,7 +5,7 @@ A reactive engine shared by two libraries that solve the same problem in differe
 - **insomni** — a WebGPU renderer + UI/plot library. The "what changed" space is **geometric** (rects on a canvas). Consumers (the renderer) want to know what region to repaint.
 - **blac** — a state container library with React bindings. The "what changed" space is **structural** (paths through an object tree). Consumers (React components) want to know whether their tracked slice was touched.
 
-Both libraries ask the same question — *"what changed, who cares, when do we tell them"* — and both want the answer computed **once at the source** and consumed **cheaply by N subscribers**. The Space they operate over differs; the engine does not.
+Both libraries ask the same question — _"what changed, who cares, when do we tell them"_ — and both want the answer computed **once at the source** and consumed **cheaply by N subscribers**. The Space they operate over differs; the engine does not.
 
 ## Documents
 
@@ -17,7 +17,7 @@ Both libraries ask the same question — *"what changed, who cares, when do we t
 
 Today, both libraries do diffing **at the consumer**:
 
-- insomni's `Invalidator` is a single dirty bit; each frame, the renderer asks "are you dirty?" — but there's no information about *what* is dirty, so the entire canvas is repainted. Widgets that mutate fields outside pointer handlers don't dirty anything at all.
+- insomni's `Invalidator` is a single dirty bit; each frame, the renderer asks "are you dirty?" — but there's no information about _what_ is dirty, so the entire canvas is repainted. Widgets that mutate fields outside pointer handlers don't dirty anything at all.
 - blac's per-consumer Proxy tracker re-walks state on every emit, once per consumer. With N consumers, each emit does N traversals.
 
 The shared move is: **compute "what changed" once at the source, in a format that subscribers can intersect against cheaply.** insomni's "format" is a rect (or union of rects). blac's is a `Set<PathId>`. Both are members of the same algebra: a set/region with `empty`, `union`, `intersects`.

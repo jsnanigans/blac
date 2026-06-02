@@ -147,11 +147,11 @@ There is also no `instanceId` or `autoInstance` option in v2 (neither shipped in
 
 v1's static `Blac` facade (`Blac.getBloc(C, { id })`, `Blac.getAllBlocs(C)`) is replaced by tree-shakeable functions from `@blac/core`:
 
-| v1                                | v2                                                                            |
-| --------------------------------- | ----------------------------------------------------------------------------- |
+| v1                                | v2                                                                                        |
+| --------------------------------- | ----------------------------------------------------------------------------------------- |
 | `Blac.getBloc(C, { id })`         | `ensure(C, { args })` (create if missing, no ref) or `acquire(C, { args })` (ref-counted) |
-| `Blac.getAllBlocs(C)`             | `getAll(C)`                                                                   |
-| `Blac.clearAll()` (test teardown) | `clearAll()`                                                                  |
+| `Blac.getAllBlocs(C)`             | `getAll(C)`                                                                               |
+| `Blac.clearAll()` (test teardown) | `clearAll()`                                                                              |
 
 See [Instance Management](/core/instance-management) for the full registry surface and how `acquire`/`ensure`/`borrow` differ in ref-counting.
 

@@ -50,6 +50,7 @@ patch(partial: DeepPartial<S>): void
 Runtime behavior unchanged — `pathsFromPatch` already walks plain-object branches and treats class instances / arrays / Date / Map / Set as leaves.
 
 **Tests must cover:**
+
 1. Nested object patch type-checks without cast: `container.patch({ user: { name: 'x' } })`.
 2. Array replacement type-checks: `container.patch({ items: [1, 2] })`.
 3. Top-level primitive patch type-checks: `container.patch({ count: 5 })`.

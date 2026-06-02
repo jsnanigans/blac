@@ -8,21 +8,21 @@ independent pages; several are L-effort. Do these once Phases 1–4 land. Mermai
 
 ## Parallelism map
 
-| Group | Tasks | Notes |
-|---|---|---|
-| **P5a** (parallel) | 3.3 (integrations tree), 3.7 (coming-from) | new disjoint trees |
-| **P5b** (parallel) | 3.9 (recipes catalog), 3.10 (llms.txt) | disjoint |
-| **Heavy/serial-ish** | 3.1 (tutorial), 3.2 (internals) | large narrative; own windows |
-| **Optional** | 3.4 (auto-API), 3.8 (unified sidebar) | gated — see notes |
-| **Serial** | 5.W (wiring) | owns `config.ts` |
+| Group                | Tasks                                      | Notes                        |
+| -------------------- | ------------------------------------------ | ---------------------------- |
+| **P5a** (parallel)   | 3.3 (integrations tree), 3.7 (coming-from) | new disjoint trees           |
+| **P5b** (parallel)   | 3.9 (recipes catalog), 3.10 (llms.txt)     | disjoint                     |
+| **Heavy/serial-ish** | 3.1 (tutorial), 3.2 (internals)            | large narrative; own windows |
+| **Optional**         | 3.4 (auto-API), 3.8 (unified sidebar)      | gated — see notes            |
+| **Serial**           | 5.W (wiring)                               | owns `config.ts`             |
 
 ---
 
 ## Task 3.1 — End-to-end Tutorial
 
-- **Model / effort:** **Opus 4.8 / high.** *Rationale: long single-narrative
+- **Model / effort:** **Opus 4.8 / high.** _Rationale: long single-narrative
   with numbered diffs that must stay internally consistent and all compile;
-  payoff = undo/time-travel. Highest authoring-judgment task in the plan.*
+  payoff = undo/time-travel. Highest authoring-judgment task in the plan._
 - **Owns:** `apps/docs/guide/tutorial.md` (new), `apps/docs/demos/tutorial/*.ts`
   (Sandpack checkpoints). No `config.ts`.
 - **Context to read:** `apps/docs/guide/getting-started.md`, `concepts.md`,
@@ -45,8 +45,8 @@ plain `tsx` for components; Sandpack checkpoints at milestones. Keep one domain.
 
 ## Task 3.2 — "How BlaC works internally" chapter
 
-- **Model / effort:** **Opus 4.8 / high.** *Rationale: deep source synthesis
-  (reactivity engine staged rebuild); accuracy is the whole value.*
+- **Model / effort:** **Opus 4.8 / high.** _Rationale: deep source synthesis
+  (reactivity engine staged rebuild); accuracy is the whole value._
 - **Owns:** `apps/docs/guide/internals.md` (new). No `config.ts`.
 - **Context to read:** `apps/docs/dirtytalk/structural/concepts.md` (raw
   material to surface), the tracking/channel source in `packages/blac-core/src`,
@@ -64,8 +64,8 @@ stage. ASCII diagrams stay (Mermaid deferred) but with clear captions.
 
 ## Task 3.3 — Integrations tree
 
-- **Model / effort:** Sonnet 4.6 / high. *Rationale: several framework pages;
-  SSR already exists (2.6) as the model to match. Pattern-following authoring.*
+- **Model / effort:** Sonnet 4.6 / high. _Rationale: several framework pages;
+  SSR already exists (2.6) as the model to match. Pattern-following authoring._
 - **Parallel group:** P5a (each page is disjoint; could itself fan out per page).
 - **Owns (new files):** `apps/docs/integrations/nextjs.md`,
   `integrations/remix.md`, `integrations/react-native.md`,
@@ -75,6 +75,7 @@ stage. ASCII diagrams stay (Mermaid deferred) but with clear captions.
   IndexedDB-only → RN needs an AsyncStorage adapter note).
 
 **CHECK / IMPLEMENT per page:**
+
 - nextjs: App + Pages Router, `'use client'`, RSC "don't read/write blocs" rule,
   store-per-request placement.
 - remix: seed `init(args)` from loader data for matching server/client snapshots.
@@ -115,8 +116,8 @@ lib.
 
 ## Task 3.9 — Recipes/utilities plugin catalog
 
-- **Model / effort:** Sonnet 4.6 / medium. *Rationale: copy-paste plugin
-  snippets following the plugin-authoring API; repetitive.*
+- **Model / effort:** Sonnet 4.6 / medium. _Rationale: copy-paste plugin
+  snippets following the plugin-authoring API; repetitive._
 - **Parallel group:** P5b.
 - **Owns:** `apps/docs/plugins/recipes.md` (new). No `config.ts`.
 - **Context to read:** `apps/docs/core/plugins.md` (authoring API),
@@ -134,8 +135,8 @@ sync, Sentry sink, audit log — each a self-contained `ts twoslash` plugin with
 
 ## Task 3.10 — `llms.txt` / `llms-full.txt`
 
-- **Model / effort:** Haiku 4.5 / medium. *Rationale: mechanical aggregation of
-  existing markdown into the standard format.*
+- **Model / effort:** Haiku 4.5 / medium. _Rationale: mechanical aggregation of
+  existing markdown into the standard format._
 - **Parallel group:** P5b.
 - **Owns:** `apps/docs/public/llms.txt`, `apps/docs/public/llms-full.txt` (or a
   build hook if VitePress needs one — prefer static files in `public/`). No
@@ -156,8 +157,8 @@ note in TODO that it needs regeneration on content changes (or add a small scrip
 
 ## Task 3.4 — Auto-generated API reference (OPTIONAL / gated)
 
-- **Model / effort:** Opus 4.8 / high IF pursued. *Rationale: an api-extractor +
-  script mini-initiative, not a doc page.*
+- **Model / effort:** Opus 4.8 / high IF pursued. _Rationale: an api-extractor +
+  script mini-initiative, not a doc page._
 - **Gate:** only do this if `core/types.md` (already shipped) does NOT capture
   ~80% of the symbol-reference value. Evaluate first; likely **skip**. The README
   promises a nonexistent `pnpm docs:api` — if skipped, remove that promise from

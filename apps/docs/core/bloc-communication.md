@@ -19,9 +19,9 @@ protected depend<T extends StateContainerConstructor>(
 ): DepHandle<T>
 ```
 
-| Parameter     | Type                                  | Required | Description                                                                                                                                                              |
-| ------------- | ------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Type`        | `T extends StateContainerConstructor` | yes      | The state-container class to depend on.                                                                                                                                  |
+| Parameter     | Type                                  | Required | Description                                                                                                                                                                |
+| ------------- | ------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Type`        | `T extends StateContainerConstructor` | yes      | The state-container class to depend on.                                                                                                                                    |
 | `defaultArgs` | `ExtractArgs<T>`                      | no       | The `args` that identify which [keyed instance](/core/instance-management) to resolve when an accessor is called without its own `args`. Defaults to the default instance. |
 
 **Returns:** a [`DepHandle<T>`](#what-track-returns) — a branded handle with two methods:

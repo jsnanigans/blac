@@ -6,7 +6,7 @@ This page explains the model behind `@dirtytalk/engine`: why a region carries "w
 
 The naive way to track change is a boolean: "something is dirty, re-run everything." It is cheap to set and useless to act on. When a single value changes, every subscriber wakes up, recomputes, and most of them discover they did not care. A renderer with one dirty bit repaints the whole canvas. A state container with one dirty bit walks the entire tree once per consumer.
 
-The fix is to make the dirty signal carry information: not *that* something changed, but *what* changed. If "what changed" is a value subscribers can cheaply test their own interest against, then a flush can skip every subscriber that does not overlap. That value is the **`Region`** — and the engine's only opinion is that "what changed" and "what I care about" are the same kind of value, so they can be intersected.
+The fix is to make the dirty signal carry information: not _that_ something changed, but _what_ changed. If "what changed" is a value subscribers can cheaply test their own interest against, then a flush can skip every subscriber that does not overlap. That value is the **`Region`** — and the engine's only opinion is that "what changed" and "what I care about" are the same kind of value, so they can be intersected.
 
 This is not a hypothetical generalization. Two real libraries motivated it: `insomni`, a WebGPU renderer whose region is a union of damage rectangles, and `blac`, a state-container library whose region is a set of interned path IDs. Different domains, identical algebra. The engine is that algebra plus the scheduling glue, and nothing else.
 
@@ -35,7 +35,7 @@ Read it as a small algebra over regions:
 Two laws are non-negotiable:
 
 1. **`union(empty(), r)` equals `r`.** `empty()` is the identity for `union`. The channel starts each window with `empty()` and folds every mark into it; if `empty()` were not the identity, the first mark of every window would be corrupted.
-2. **`intersects(empty(), _)` returns `false`.** An empty interest is interest in nothing. A subscriber whose thunk returns `empty()` must never be called. (The channel separately skips the *whole* loop when the *dirty* region is empty, but this law covers the per-subscriber case.)
+2. **`intersects(empty(), _)` returns `false`.** An empty interest is interest in nothing. A subscriber whose thunk returns `empty()` must never be called. (The channel separately skips the _whole_ loop when the _dirty_ region is empty, but this law covers the per-subscriber case.)
 
 On top of those, every operation must be **pure**: same inputs produce the same output, with no side effects. The channel calls `union`, `intersects`, `isEmpty`, and `empty` many times across a flush and relies on stable results. A `Space` that mutates its arguments, caches statefully, or returns different answers for the same inputs will produce undefined behavior. Do not, for example, put logging or lazy initialization inside `intersects`.
 
@@ -63,23 +63,23 @@ Check the laws: `union(new Set(), r)` is a fresh set with exactly `r`'s elements
 
 ## The four schedulers
 
-The `Space` decides *what* and *who*. The `Scheduler` decides *when*. A scheduler receives a `flush` callback via `request(flush)` and is responsible for invoking it. The contract: within a scheduling window, `request` is idempotent — N calls before the first flush produce **one** flush, not N. (`SyncScheduler` is the deliberate exception: each `request` is its own window and flushes immediately.) An optional `cancel()` prevents a pending flush.
+The `Space` decides _what_ and _who_. The `Scheduler` decides _when_. A scheduler receives a `flush` callback via `request(flush)` and is responsible for invoking it. The contract: within a scheduling window, `request` is idempotent — N calls before the first flush produce **one** flush, not N. (`SyncScheduler` is the deliberate exception: each `request` is its own window and flushes immediately.) An optional `cancel()` prevents a pending flush.
 
 The engine ships four implementations:
 
-| Scheduler | When it flushes | Coalesces? | `cancel()`? | Use it for |
-| --- | --- | --- | --- | --- |
-| `SyncScheduler` | Immediately, inside `request` | No (every request flushes) | No | Tests, synchronous-emit compatibility |
-| `ManualScheduler` | Only when you call `pump()` | Yes (until pumped) | No | Tests, replay, SSR — deterministic timing |
-| `MicrotaskScheduler` | End of the current microtask queue | Yes (one per tick) | Yes | `blac` (the default) — batch within a JS turn |
-| `RAFScheduler` | Next `requestAnimationFrame`, else `setTimeout(fn, 16)` | Yes (one per frame) | Yes | `insomni` — frame-aligned repaints |
+| Scheduler            | When it flushes                                         | Coalesces?                 | `cancel()`? | Use it for                                    |
+| -------------------- | ------------------------------------------------------- | -------------------------- | ----------- | --------------------------------------------- |
+| `SyncScheduler`      | Immediately, inside `request`                           | No (every request flushes) | No          | Tests, synchronous-emit compatibility         |
+| `ManualScheduler`    | Only when you call `pump()`                             | Yes (until pumped)         | No          | Tests, replay, SSR — deterministic timing     |
+| `MicrotaskScheduler` | End of the current microtask queue                      | Yes (one per tick)         | Yes         | `blac` (the default) — batch within a JS turn |
+| `RAFScheduler`       | Next `requestAnimationFrame`, else `setTimeout(fn, 16)` | Yes (one per frame)        | Yes         | `insomni` — frame-aligned repaints            |
 
 A few details worth internalizing:
 
 - **`SyncScheduler` does not coalesce at the scheduler level.** Every `request` flushes synchronously. With `SyncScheduler`, each `mark` therefore flushes immediately. Coalescing of marks within a window — when it happens at all — comes from the `DirtyChannel`'s own scheduled-flag guard, not from this scheduler.
-- **`ManualScheduler.pump()` clears its pending state *before* invoking the flush.** A re-entrant `request` made during that flush is preserved for the *next* `pump`, not cascaded synchronously. A `pump` with nothing pending is a harmless no-op.
+- **`ManualScheduler.pump()` clears its pending state _before_ invoking the flush.** A re-entrant `request` made during that flush is preserved for the _next_ `pump`, not cascaded synchronously. A `pump` with nothing pending is a harmless no-op.
 - **`MicrotaskScheduler` and `RAFScheduler` store the latest flush and coalesce.** Multiple requests within the same tick/frame collapse to one drain; the last stored flush wins. Both implement `cancel()` to drop a pending drain.
-- **`RAFScheduler` chooses rAF-vs-setTimeout once, at construction.** It captures `typeof globalThis.requestAnimationFrame === 'function'` in the constructor. If you polyfill `requestAnimationFrame` *after* building the instance, it will keep using `setTimeout`.
+- **`RAFScheduler` chooses rAF-vs-setTimeout once, at construction.** It captures `typeof globalThis.requestAnimationFrame === 'function'` in the constructor. If you polyfill `requestAnimationFrame` _after_ building the instance, it will keep using `setTimeout`.
 
 ## The DirtyChannel lifecycle
 
@@ -91,7 +91,7 @@ A `DirtyChannel<Region>` ties a `Space` and a `Scheduler` together. Here is the 
 channel.mark(region);
 ```
 
-Every `mark` folds the region into the channel's internal accumulator via `space.union(accumulated, region)` — once per mark, regardless of whether a flush is in progress. Then, *only if* the channel is not already flushing and has not already scheduled, it sets a scheduled flag and calls `scheduler.request(flush)`. This guard is what turns N marks into one flush request: the second through Nth marks see the flag already set and just accumulate.
+Every `mark` folds the region into the channel's internal accumulator via `space.union(accumulated, region)` — once per mark, regardless of whether a flush is in progress. Then, _only if_ the channel is not already flushing and has not already scheduled, it sets a scheduled flag and calls `scheduler.request(flush)`. This guard is what turns N marks into one flush request: the second through Nth marks see the flag already set and just accumulate.
 
 ### scheduler window → flush
 
@@ -101,13 +101,13 @@ The scheduler decides when to invoke the flush callback (immediately, on `pump`,
 
 When the flush finally runs, it executes in a fixed order:
 
-1. **Snapshot and reset.** The accumulated region is captured into a local `dirty`, the accumulator is reset to `empty()`, and the scheduled flag is cleared — all *before* any callback runs. This is what lets re-entrant marks land cleanly in the fresh accumulator.
+1. **Snapshot and reset.** The accumulated region is captured into a local `dirty`, the accumulator is reset to `empty()`, and the scheduled flag is cleared — all _before_ any callback runs. This is what lets re-entrant marks land cleanly in the fresh accumulator.
 2. **Empty fast-path.** If `space.isEmpty(dirty)`, the flush returns immediately. The subscriber loop is skipped entirely and **interest thunks are not even called**. A no-op flush fires nothing.
 3. **Enter flushing mode** — a flag the channel uses to recognize re-entrant marks.
 4. **Snapshot the subscriber list.** Subscribers added during this flush are not in the snapshot and will not run this cycle.
-5. **Iterate in registration order.** For each entry: skip it if it has been unsubscribed (an `alive` flag checked on the entry, so unsubscribing a *later* subscriber from an *earlier* callback works); evaluate its interest thunk; if `space.intersects(interest, dirty)` is false, skip; otherwise invoke its callback with `dirty`.
+5. **Iterate in registration order.** For each entry: skip it if it has been unsubscribed (an `alive` flag checked on the entry, so unsubscribing a _later_ subscriber from an _earlier_ callback works); evaluate its interest thunk; if `space.intersects(interest, dirty)` is false, skip; otherwise invoke its callback with `dirty`.
 6. **Exit flushing mode.**
-7. **Schedule any follow-up.** If a mark arrived during dispatch, the accumulator is now non-empty, so the channel re-sets the scheduled flag and requests the next flush — done *after* clearing the flushing flag so `mark`'s guard does not double-schedule.
+7. **Schedule any follow-up.** If a mark arrived during dispatch, the accumulator is now non-empty, so the channel re-sets the scheduled flag and requests the next flush — done _after_ clearing the flushing flag so `mark`'s guard does not double-schedule.
 8. **Surface errors** (described below).
 
 ### Coalescing
@@ -116,10 +116,10 @@ Many marks in one window → one flush, carrying the single unioned `dirty` regi
 
 ### Re-entrant marks defer to the next flush
 
-If a subscriber callback calls `mark` during a flush, that region accumulates into the *next* flush's payload — it never re-enters the current dispatch synchronously. The follow-up is scheduled at step 7 once the current flush is fully done. This bounds the work per tick and makes infinite synchronous loops impossible within a single flush.
+If a subscriber callback calls `mark` during a flush, that region accumulates into the _next_ flush's payload — it never re-enters the current dispatch synchronously. The follow-up is scheduled at step 7 once the current flush is fully done. This bounds the work per tick and makes infinite synchronous loops impossible within a single flush.
 
 ::: warning Signal does the opposite
-A re-entrant *write* inside a `Signal` subscriber recurses synchronously — a fresh, fully synchronous notify cycle. `DirtyChannel` defers; `Signal` recurses. Do not assume one behaves like the other.
+A re-entrant _write_ inside a `Signal` subscriber recurses synchronously — a fresh, fully synchronous notify cycle. `DirtyChannel` defers; `Signal` recurses. Do not assume one behaves like the other.
 :::
 
 ### Error isolation and AggregateError
@@ -134,11 +134,11 @@ One subscriber throwing never starves the others. If you want per-callback isola
 
 ### Subscribe / unsubscribe during a flush is safe
 
-Because the subscriber list is snapshotted at step 4, a `subscribe` during a callback adds an entry that runs on the *next* flush, not the current one. An `unsubscribe` during a callback flips the entry's `alive` flag and removes it from the map immediately, so a not-yet-visited subscriber in the snapshot is skipped this cycle. Unsubscribe is idempotent — safe to call any number of times, including mid-flush.
+Because the subscriber list is snapshotted at step 4, a `subscribe` during a callback adds an entry that runs on the _next_ flush, not the current one. An `unsubscribe` during a callback flips the entry's `alive` flag and removes it from the map immediately, so a not-yet-visited subscriber in the snapshot is skipped this cycle. Unsubscribe is idempotent — safe to call any number of times, including mid-flush.
 
 ### Interest is a thunk
 
-The interest passed to `subscribe` is a function, re-evaluated lazily once per flush per subscriber — never snapshotted at subscribe time, and skipped entirely on empty-dirty flushes. This lets a subscriber move, resize, or reconfigure between flushes and always be matched against its *current* interest. The flip side: do not put load-bearing side effects in an interest thunk (it may not run on a given flush), and keep it pure-ish — a throw is swallowed-as-error and skips that subscriber for that flush.
+The interest passed to `subscribe` is a function, re-evaluated lazily once per flush per subscriber — never snapshotted at subscribe time, and skipped entirely on empty-dirty flushes. This lets a subscriber move, resize, or reconfigure between flushes and always be matched against its _current_ interest. The flip side: do not put load-bearing side effects in an interest thunk (it may not run on a given flush), and keep it pure-ish — a throw is swallowed-as-error and skips that subscriber for that flush.
 
 ## The Signal / Observable layer
 
@@ -155,14 +155,14 @@ interface Observable<T> {
 
 How it differs from `DirtyChannel`:
 
-| | `Signal<T>` | `DirtyChannel<Region>` |
-| --- | --- | --- |
-| Carries | one value `T` | a region of "what changed" |
-| Notification | synchronous on set | deferred to a scheduler window |
-| Coalescing | none | many marks → one flush |
-| Selective delivery | none (every subscriber notified) | interest ∩ dirty per subscriber |
-| Re-entrancy | recurses synchronously | defers to next flush |
-| Error surfacing | single re-thrown / `AggregateError('Signal: multiple subscriber errors')` | single re-thrown / `AggregateError('DirtyChannel: subscriber errors during flush')` |
+|                    | `Signal<T>`                                                               | `DirtyChannel<Region>`                                                              |
+| ------------------ | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Carries            | one value `T`                                                             | a region of "what changed"                                                          |
+| Notification       | synchronous on set                                                        | deferred to a scheduler window                                                      |
+| Coalescing         | none                                                                      | many marks → one flush                                                              |
+| Selective delivery | none (every subscriber notified)                                          | interest ∩ dirty per subscriber                                                     |
+| Re-entrancy        | recurses synchronously                                                    | defers to next flush                                                                |
+| Error surfacing    | single re-thrown / `AggregateError('Signal: multiple subscriber errors')` | single re-thrown / `AggregateError('DirtyChannel: subscriber errors during flush')` |
 
 Reach for `Signal` when you have "one value, tell everyone now". Reach for `DirtyChannel` when you have "many things, tell the right people once, when the moment is right".
 

@@ -93,7 +93,7 @@ Required cases (minimum):
 4. **Custom `equals`.** Pass `(a, b) => a.id === b.id`; writes with same id don't notify.
 5. **Unsubscribe.** Calling the returned unsub removes the callback; further writes don't reach it.
 6. **Unsubscribe is idempotent.** Calling unsub twice does not throw and does not double-remove some other subscriber.
-7. **Subscriber unsubscribes during notify.** First subscriber's callback unsubscribes the second; the second still runs *this* tick (snapshot semantics) but does not run on the next write.
+7. **Subscriber unsubscribes during notify.** First subscriber's callback unsubscribes the second; the second still runs _this_ tick (snapshot semantics) but does not run on the next write.
 8. **Subscriber throws.** With two subscribers (first throws, second works): the second still runs; the error surfaces (re-thrown or via `AggregateError`).
 9. **Re-entrant write.** A subscriber that writes a new value during notify causes a fresh notify cycle; assert subscribers see all writes.
 10. **`peek()` does not subscribe.** This is mostly a typing / no-side-effect smoke check.

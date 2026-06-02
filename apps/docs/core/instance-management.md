@@ -56,11 +56,11 @@ function acquire<T extends StateContainerConstructor>(
 ): InstanceType<T>;
 ```
 
-| Parameter     | Type                                  | Required | Description                                                                                    |
-| ------------- | ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
-| `BlocClass`   | `T extends StateContainerConstructor` | yes      | The state-container class to acquire an instance of.                                           |
-| `opts.args`   | `ExtractArgs<T>`                      | no       | Serializable construction data passed to `init(args)`. Derives the instance key.               |
-| `opts.refId`  | `string`                              | no       | Caller-supplied ref identifier. Used by `useBloc` to pair with `release`. Rarely set manually. |
+| Parameter    | Type                                  | Required | Description                                                                                    |
+| ------------ | ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `BlocClass`  | `T extends StateContainerConstructor` | yes      | The state-container class to acquire an instance of.                                           |
+| `opts.args`  | `ExtractArgs<T>`                      | no       | Serializable construction data passed to `init(args)`. Derives the instance key.               |
+| `opts.refId` | `string`                              | no       | Caller-supplied ref identifier. Used by `useBloc` to pair with `release`. Rarely set manually. |
 
 **Returns:** `InstanceType<T>` — the live instance (newly created or existing).
 
@@ -130,10 +130,10 @@ function borrow<T extends StateContainerConstructor>(
 ): InstanceType<T>;
 ```
 
-| Parameter   | Type                                  | Required | Description                                                       |
-| ----------- | ------------------------------------- | -------- | ---------------------------------------------------------------- |
-| `BlocClass` | `T extends StateContainerConstructor` | yes      | The state-container class.                                       |
-| `opts.args` | `ExtractArgs<T>`                      | no       | Args identifying the instance. Defaults to the `'default'` key.  |
+| Parameter   | Type                                  | Required | Description                                                     |
+| ----------- | ------------------------------------- | -------- | --------------------------------------------------------------- |
+| `BlocClass` | `T extends StateContainerConstructor` | yes      | The state-container class.                                      |
+| `opts.args` | `ExtractArgs<T>`                      | no       | Args identifying the instance. Defaults to the `'default'` key. |
 
 **Returns:** `InstanceType<T>` — the live instance.
 
@@ -168,7 +168,7 @@ function borrowSafe<T extends StateContainerConstructor>(
   | { error: null; instance: InstanceType<T> };
 ```
 
-| Parameter   | Type                                  | Required | Description                                                      |
+| Parameter   | Type                                  | Required | Description                                                     |
 | ----------- | ------------------------------------- | -------- | --------------------------------------------------------------- |
 | `BlocClass` | `T extends StateContainerConstructor` | yes      | The state-container class.                                      |
 | `opts.args` | `ExtractArgs<T>`                      | no       | Args identifying the instance. Defaults to the `'default'` key. |
@@ -206,12 +206,12 @@ function release<T extends StateContainerConstructor>(
 ): void;
 ```
 
-| Parameter          | Type                                  | Required | Description                                                                       |
-| ------------------ | ------------------------------------- | -------- | --------------------------------------------------------------------------------- |
-| `BlocClass`        | `T extends StateContainerConstructor` | yes      | The state-container class.                                                        |
-| `opts.args`        | `ExtractArgs<T>`                      | no       | The args used when `acquire` was called. **Must resolve to the same key.**        |
-| `opts.refId`       | `string`                              | no       | The ref identifier passed to `acquire`. Rarely set manually.                      |
-| `opts.forceDispose`| `boolean`                             | no       | When `true`, dispose immediately even if `keepAlive` is set. Default `false`.     |
+| Parameter           | Type                                  | Required | Description                                                                   |
+| ------------------- | ------------------------------------- | -------- | ----------------------------------------------------------------------------- |
+| `BlocClass`         | `T extends StateContainerConstructor` | yes      | The state-container class.                                                    |
+| `opts.args`         | `ExtractArgs<T>`                      | no       | The args used when `acquire` was called. **Must resolve to the same key.**    |
+| `opts.refId`        | `string`                              | no       | The ref identifier passed to `acquire`. Rarely set manually.                  |
+| `opts.forceDispose` | `boolean`                             | no       | When `true`, dispose immediately even if `keepAlive` is set. Default `false`. |
 
 **Returns:** `void`.
 
@@ -266,7 +266,7 @@ const [state] = useBloc(EditorCubit, { args: { docId: 'doc-42' } });
 
 ### Args derive identity
 
-`args` are the **only** way to get distinct instances — the meaningful value keys the instance *and* feeds `init(args)`, so you never pass the same id twice:
+`args` are the **only** way to get distinct instances — the meaningful value keys the instance _and_ feeds `init(args)`, so you never pass the same id twice:
 
 ```tsx
 // The meaningful value keys the instance AND feeds init(args)

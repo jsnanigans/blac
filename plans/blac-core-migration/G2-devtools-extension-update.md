@@ -85,6 +85,7 @@ apps/devtools-extension/**
    ```
 
    Body:
+
    ```
    - Migrated useBloc usages to `select`.
    - Smoke-tested against apps/examples: panel lists blocs, highlights

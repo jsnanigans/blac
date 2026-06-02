@@ -3,6 +3,7 @@
 Operator reference for running this plan with subagents.
 
 ## Prerequisites
+
 - Working tree clean enough to commit per task (the plan commits to the current branch). Optionally create one feature branch for the whole effort first.
 - Read [`README.md`](./README.md) for the design and ground rules. The authoritative design rationale is [`../../projects-analysis/2026-05-27/04-input-pattern-design.md`](../../projects-analysis/2026-05-27/04-input-pattern-design.md).
 
@@ -30,19 +31,21 @@ Set `subagent_type: "quick-build"` for low/medium effort, `subagent_type: "claud
 
 ## Dispatch order
 
-| Wave | Tasks | Mode | subagent_type / model |
-|---|---|---|---|
-| 1 | 01 → 02 → 03 → 04 | **serial** (wait for each commit) | claude/opus, quick-build/sonnet, quick-build/sonnet, claude/opus |
-| 2 | 05 | after 04 | quick-build/sonnet |
-| 3 | 06 → 07 → 08 | **serial** | quick-build/sonnet, claude/opus, quick-build/sonnet |
-| 4 | 09, 10, 11, 12 | **parallel** (one message) | quick-build (sonnet ×3), quick-build/haiku |
-| 5 | 13 | after all | quick-build/sonnet |
+| Wave | Tasks             | Mode                              | subagent_type / model                                            |
+| ---- | ----------------- | --------------------------------- | ---------------------------------------------------------------- |
+| 1    | 01 → 02 → 03 → 04 | **serial** (wait for each commit) | claude/opus, quick-build/sonnet, quick-build/sonnet, claude/opus |
+| 2    | 05                | after 04                          | quick-build/sonnet                                               |
+| 3    | 06 → 07 → 08      | **serial**                        | quick-build/sonnet, claude/opus, quick-build/sonnet              |
+| 4    | 09, 10, 11, 12    | **parallel** (one message)        | quick-build (sonnet ×3), quick-build/haiku                       |
+| 5    | 13                | after all                         | quick-build/sonnet                                               |
 
 ## Why the serial chains
+
 - **Phase 1** tasks all edit `StateContainer.ts` and/or `StateContainerRegistry.ts`. With no worktrees, concurrent edits collide. 01 (generics) is the foundation; 02–04 build on its types.
 - **Phase 3** tasks all edit `useBloc.ts` / `types.ts`. Same reason. 06 (args) lands the option plumbing 07/08 extend.
 
 ## Things to watch for
+
 - **`dependencies` vs `deps`**: there is an EXISTING `dependencies` option (manual re-render selector). Task 08 renames it to `select`. Until 08 lands, do not repurpose `dependencies`. The new injected-handles option is `deps`.
 - **Zero-arg constructor invariant stays**: the registry still does `new Type()`. `args` reach the bloc via `init(args)`, never the constructor. Don't add constructor params.
 - **`init(args)` runs once per instance**, before the first snapshot, NOT per consumer. Same-key second consumer attaches without re-running `init` (dev-warn on arg mismatch).
@@ -51,6 +54,7 @@ Set `subagent_type: "quick-build"` for low/medium effort, `subagent_type: "claud
 - **Line numbers** in task files are from the planning snapshot; if a prior task shifted them, locate by symbol, not line.
 
 ## If something goes wrong
+
 - A `## Check` mismatch → the agent stops and reports; reconcile the task file against the current code before relaunching.
 - A serial task fails verify → fix forward in the same task; do not launch the next until it's green and committed.
 - Cross-package type breakage after a core task → expected to surface in Phase 2 (adapter) and Phase 3 (react); that's why those phases follow. If it blocks earlier, note it in the task Completion.

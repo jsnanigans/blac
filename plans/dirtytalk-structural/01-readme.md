@@ -99,7 +99,7 @@ Keep it ≤ ~250 lines. Engine README is the size target.
 
 ## Pitfalls
 
-- **Don't write API docs that go stale.** Function signatures and parameter explanations belong in TSDoc comments on the source. The README is for *concepts and quickstarts.* If the same content lives in two places, the README will lie within a month.
+- **Don't write API docs that go stale.** Function signatures and parameter explanations belong in TSDoc comments on the source. The README is for _concepts and quickstarts._ If the same content lives in two places, the README will lie within a month.
 - **Don't claim performance numbers you haven't measured.** "Cheap intersection vs N walks" is fine because it's algorithmic; "10× faster than X" is not.
 - **Don't mention `@blac/core`** or the migration plan. This README is for users of the new package; the migration is internal project chronology.
 - **Don't include an "Architecture" diagram in ASCII.** The engine README doesn't. Defer that to `dirtytalk/03-blac.md`.

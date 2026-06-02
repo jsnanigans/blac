@@ -47,11 +47,13 @@ same machine**, not as absolute per-operation latencies.
 ## Scenarios
 
 ### `@dirtytalk/engine`
+
 - `signal-set-notify` — `Signal.value` set + notify, 1 subscriber.
 - `channel-broadcast` — `DirtyChannel` mark+flush, 100 subscribers all interested.
 - `channel-selective` — mark+flush, 1000 subscribers, 1 intersects per mark.
 
 ### `@dirtytalk/structural`
+
 - `patch` — `patch()` no-diff path.
 - `emit-diff` — `emit()` diff-along-skeleton with 50 consumers.
 - `track-render` — `trackRender` proxy recording of nested reads.

@@ -48,12 +48,12 @@ We don't assert exact numbers (they vary by machine). We **do** assert:
 
 Concrete budgets (per-iteration overhead, not full runtime):
 
-| Scenario | Acceptable `tracked / baseline` ratio |
-| --- | --- |
-| for-of over N items, dereferencing 1 prop | ≤ 4.0 |
-| `.map` over N items | ≤ 4.0 |
-| `.reduce` over N items | ≤ 4.0 |
-| `.find` short-circuit at mid-array | ≤ 4.0 |
+| Scenario                                  | Acceptable `tracked / baseline` ratio |
+| ----------------------------------------- | ------------------------------------- |
+| for-of over N items, dereferencing 1 prop | ≤ 4.0                                 |
+| `.map` over N items                       | ≤ 4.0                                 |
+| `.reduce` over N items                    | ≤ 4.0                                 |
+| `.find` short-circuit at mid-array        | ≤ 4.0                                 |
 
 If a ratio exceeds the budget, **fail the bench** (don't auto-tune the budget — the budget is the contract).
 
@@ -113,7 +113,7 @@ describe('.find short-circuit', () => {
 
 ### Important details
 
-- **Reuse the same proxied object across bench iterations.** `createForTarget` is called once in `beforeAll` / module scope; `tracked.items` is dereferenced inside the bench function (it'll hit the per-state proxy cache). Otherwise we're benchmarking proxy *creation*, not iteration.
+- **Reuse the same proxied object across bench iterations.** `createForTarget` is called once in `beforeAll` / module scope; `tracked.items` is dereferenced inside the bench function (it'll hit the per-state proxy cache). Otherwise we're benchmarking proxy _creation_, not iteration.
 - **Run with `vitest bench`**, not `vitest run`. The script entry is usually `pnpm --filter @blac/core test:bench` or `vitest bench`. If no script exists, document the invocation in the task completion notes.
 - **`@blac/core` already uses vitest** — `import { bench, describe } from 'vitest'` works without extra installs.
 - **Ratio assertion:** the simplest approach is a follow-up `describe` block using `it` (not `bench`) that runs each scenario N times with `performance.now()` and asserts the ratio. Bench output gives us the headline numbers; `it` gives us the CI-enforced gate. Both in the same file is fine.
@@ -157,7 +157,7 @@ describe('iteration overhead — ratio gate', () => {
 
 ### Caveats
 
-- **CI flakiness:** time-based ratios are noisy. Use `n=50` minimum, take median or just multi-run trimmed mean. If a ratio gate flakes, raise budgets *slightly* but flag for investigation.
+- **CI flakiness:** time-based ratios are noisy. Use `n=50` minimum, take median or just multi-run trimmed mean. If a ratio gate flakes, raise budgets _slightly_ but flag for investigation.
 - **Don't run cross-package tests.** This is `@blac/core` only.
 
 ## Check (before editing)
@@ -206,6 +206,7 @@ Body: "Adds vitest bench + a CI-enforced ratio gate (tracked ≤ 4x baseline) fo
 
 **Commit SHA:** 54ab95d3
 **Files touched:**
+
 - `packages/blac-core/src/tracking/iteration-perf.bench.ts` (new)
 - `packages/blac-core/vite.config.ts` (added `*.bench.[jt]s?(x)` to test `include`)
 
@@ -224,9 +225,9 @@ numbers are from the `performance.now()` gate below.
 
 **Bench headlines (Apple Silicon M-series, V8/jsdom, 100 iterations):**
 
-| Scenario | baseline (ms/100 iters) | tracked (ms/100 iters) | ratio | budget |
-| --- | --- | --- | --- | --- |
-| for-of 1k | 0.93ms | 24.24ms | 26x | ≤ 60x |
-| .map 1k | 0.65ms | 22.69ms | 35x | ≤ 70x |
-| .reduce 10k | 5.29ms | 245.35ms | 46x | ≤ 120x |
-| .find mid-1k | 0.30ms | 10.62ms | 35x | ≤ 100x |
+| Scenario     | baseline (ms/100 iters) | tracked (ms/100 iters) | ratio | budget |
+| ------------ | ----------------------- | ---------------------- | ----- | ------ |
+| for-of 1k    | 0.93ms                  | 24.24ms                | 26x   | ≤ 60x  |
+| .map 1k      | 0.65ms                  | 22.69ms                | 35x   | ≤ 70x  |
+| .reduce 10k  | 5.29ms                  | 245.35ms               | 46x   | ≤ 120x |
+| .find mid-1k | 0.30ms                  | 10.62ms                | 35x   | ≤ 100x |

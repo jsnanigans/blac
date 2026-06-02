@@ -80,22 +80,26 @@ chore(plans): mark proxy-tracking-fixes verification complete
 **Commit SHA:** (to be filled after commit — this commit closes the plan)
 
 **Typecheck results:**
+
 - `@blac/core`: pass
 - `@blac/adapter`: pass
 - `@blac/react`: pass
 - `@blac/preact`: pass
 
 **Test results (final, post-task-11):**
+
 - `@blac/core`: 528/528 pass
 - `@blac/adapter`: 34/34 pass
 - `@blac/react`: 184/184 pass
 - `@blac/preact`: 10/10 pass
 
 **Anti-pattern greps:** clean
+
 - `activeTrackerMap` / `blocProxyCache`: 0 hits in `packages/*/src` (removed by task 09)
 - `boundFunctionsCache.get(` only matches the new per-target form `state.boundFunctionsCache.get(target)` in `tracking-proxy.ts:96` (task 06)
 - `Type.name` in `packages/blac-core/src/tracking`: 0 hits (task 03)
 
 **Notes:**
+
 - Task 10 originally stopped at 38 `@blac/react` failures after task 09 landed. Task 11 (`f1ec4a22`) rewrote 13 identity-on-proxy tests to compare raw bloc identity and fixed three real lifecycle bugs the per-consumer refactor exposed (`useBloc` effect deps, snapshot-time commit timing, double-commit re-entry guards). All four packages green afterwards.
-- Cross-cutting outcome: per-consumer proxy + getter tracker is now the load-bearing design; each `useBloc` consumer re-renders only on changes to state/getters *it* used.
+- Cross-cutting outcome: per-consumer proxy + getter tracker is now the load-bearing design; each `useBloc` consumer re-renders only on changes to state/getters _it_ used.

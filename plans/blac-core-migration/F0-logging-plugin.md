@@ -88,6 +88,7 @@ packages/logging-plugin/src/**
    ```
 
    Body:
+
    ```
    - Plugin signature aligned with @blac/core C2 changes.
    - New config `logPaths` (default false) opts into path-name logging.

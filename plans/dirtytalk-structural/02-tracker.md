@@ -58,7 +58,7 @@ export const trackRender = <S>(state: S, interner: PathInterner): TrackResult<S>
 1. Returns a fresh `paths: Set<PathId>` (never `ALL_PATHS` from this function — that sentinel is for source-side signalling).
 2. `value` is a `Proxy` over `state`. The proxy is recursive: reading a nested object/array returns a proxy that records into the same `paths` set with the longer path.
 3. Path strings use **dot notation** with array indices as numeric strings: `"users.5.email"`, `"items.0"`, `"settings.theme"`. The root has no prefix; a top-level read of `state.count` records `"count"`.
-4. Path recording happens on the `get` trap, **only for own enumerable properties** of the underlying object. Method calls (`.find`, `.map`, etc.) read the method off the prototype and don't record; what they then read off `this` *does* record (because it's a `get` on the proxy).
+4. Path recording happens on the `get` trap, **only for own enumerable properties** of the underlying object. Method calls (`.find`, `.map`, etc.) read the method off the prototype and don't record; what they then read off `this` _does_ record (because it's a `get` on the proxy).
 5. Iteration via `for…of` / `Symbol.iterator` records the collection root (e.g., reading `state.users` for iteration records `"users"`).
 6. Dynamic-access patterns coarsen. `state.users.find(u => u.active)` records `"users"` (the entry point); the per-element reads inside the callback go through unwrapped values, so individual indices aren't recorded. This is the documented limitation.
 7. Primitives are returned as-is (no proxy). Reading `state.count` records `"count"` and returns the number.
@@ -107,7 +107,11 @@ const { value, paths } = trackRender(
   interner,
 );
 void value.user.profile.email;
-expect(asPathStrings(paths, interner)).toEqual(['user', 'user.profile', 'user.profile.email']);
+expect(asPathStrings(paths, interner)).toEqual([
+  'user',
+  'user.profile',
+  'user.profile.email',
+]);
 ```
 
 Each intermediate read records its own path; this is intentional — a change at any level of the ancestry must wake the consumer.
@@ -159,7 +163,10 @@ expect(value.count).toBe(state.count); // identity for primitives
 ### 8. `null` / `undefined` don't trap
 
 ```ts
-const { value } = trackRender({ maybe: null as null | { x: number } }, interner);
+const { value } = trackRender(
+  { maybe: null as null | { x: number } },
+  interner,
+);
 expect(value.maybe).toBeNull();
 // `value.maybe.x` would throw; that's caller error, same as plain JS.
 ```
@@ -200,7 +207,7 @@ Each `it` block exercises one edge case. Use real `PathInterner` instances (one 
 Additional tests:
 
 10. **Read after consumer-returned proxy escapes scope.** Returning the proxy from `trackRender` and reading it later (e.g., inside a `useEffect`) still records into the same `paths` set. Verify that timing — paths grow as reads happen, not at `trackRender` call time.
-11. **Reading a method without invoking** (e.g., `value.items.map`) does *not* record `items.map` as a path — `map` lives on the prototype, not on the array itself.
+11. **Reading a method without invoking** (e.g., `value.items.map`) does _not_ record `items.map` as a path — `map` lives on the prototype, not on the array itself.
 
 ---
 
@@ -245,11 +252,11 @@ Additional tests:
 
 - **Don't pre-walk `state` at `trackRender` call time** to populate the proxy cache. Lazy on-access is the contract; eager walking explodes for deep state and would record paths the consumer never reads.
 - **Don't return the underlying object on `get`** if it's an object — wrap it. Otherwise nested reads escape tracking.
-- **Don't wrap arrays of primitives differently from arrays of objects.** A `for (const x of value.tags)` where `tags: string[]` should still record `"tags"` and *not* `"tags.0"`, `"tags.1"`. (Iteration coarsens — entries are unwrapped.)
+- **Don't wrap arrays of primitives differently from arrays of objects.** A `for (const x of value.tags)` where `tags: string[]` should still record `"tags"` and _not_ `"tags.0"`, `"tags.1"`. (Iteration coarsens — entries are unwrapped.)
 - **`Proxy` `ownKeys`/`getOwnPropertyDescriptor` traps:** don't bother. Default behaviour is correct unless you're handling `Object.keys` recording — and that's an over-record case we don't want to introduce (would mark every key dirty when the consumer just iterates).
 - **Don't record `Symbol(...)` paths.** Filter `typeof key === 'symbol'` in `get`. Affects `Symbol.iterator`, `Symbol.toStringTag`, etc.
 - **Don't share the per-call cache between `trackRender` calls.** It must die with the function frame — module-global caching causes recordings to bleed across renders.
 - **Don't use a `Map` for the per-call cache.** Use `WeakMap` so the proxy GC'd when the target goes out of scope.
 - **Don't try to handle in-place mutation correctness.** If a caller mutates state through the proxy, behaviour is undefined — this is consistent with `03-blac.md` § "Caveats" and matches today's tracker.
 - **Don't optimise for "selectors" yet.** No `select(fn)` API here; that's a container-level concern.
-- **Don't write a value-comparison path.** This module records *what was read*. The diff happens elsewhere. Keep recording orthogonal to diffing.
+- **Don't write a value-comparison path.** This module records _what was read_. The diff happens elsewhere. Keep recording orthogonal to diffing.

@@ -39,7 +39,9 @@ F3 (devtools-ui) consumes the new wire format.
 The current message for a state change probably looks like:
 
 ```ts
-{ type: 'state', instanceId, name, state }
+{
+  type: ('state', instanceId, name, state);
+}
 ```
 
 Add:
@@ -116,6 +118,7 @@ packages/devtools-connect/src/**
    ```
 
    Body:
+
    ```
    - DevToolsBrowserPlugin.onStateChange aligned with @blac/core C2.
    - Wire messages now include `paths: string[] | 'all'` field.

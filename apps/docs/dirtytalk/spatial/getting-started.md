@@ -1,12 +1,12 @@
 # Getting Started
 
-This page gets you from an empty file to a live scene graph that paints only what changed. It is hands-on: you will build a stub renderer, a tiny `Button` node, wire up a `SceneRoot`, mutate state, and watch the exact damaged region flow through the pipeline. Then you will route a DOM `PointerEvent` into the scene. If you want the *why* behind the design, read [Concepts](/dirtytalk/spatial/concepts); for the exhaustive surface, see the [API Reference](/dirtytalk/spatial/api-reference).
+This page gets you from an empty file to a live scene graph that paints only what changed. It is hands-on: you will build a stub renderer, a tiny `Button` node, wire up a `SceneRoot`, mutate state, and watch the exact damaged region flow through the pipeline. Then you will route a DOM `PointerEvent` into the scene. If you want the _why_ behind the design, read [Concepts](/dirtytalk/spatial/concepts); for the exhaustive surface, see the [API Reference](/dirtytalk/spatial/api-reference).
 
 ## What this package is for
 
-`@dirtytalk/spatial` is the 2D-spatial instantiation of the DirtyTalk thesis: compute *what changed* once, at the source, as a list of rectangle-carrying damage entries, so every subscriber can do less work. A renderer normally has to choose between repainting the whole canvas (cheap to write, expensive to run) or hand-rolling per-widget invalidation (fast, but bespoke and bug-prone). This package gives you the second outcome with the first amount of effort: nodes declare their own damage, the root coalesces it through a scheduler, and the paint walk is culled to the damaged area.
+`@dirtytalk/spatial` is the 2D-spatial instantiation of the DirtyTalk thesis: compute _what changed_ once, at the source, as a list of rectangle-carrying damage entries, so every subscriber can do less work. A renderer normally has to choose between repainting the whole canvas (cheap to write, expensive to run) or hand-rolling per-widget invalidation (fast, but bespoke and bug-prone). This package gives you the second outcome with the first amount of effort: nodes declare their own damage, the root coalesces it through a scheduler, and the paint walk is culled to the damaged area.
 
-It is a *compute layer*, not a rendering engine. It tells you which rectangles to redraw and in what order to run data/layout/paint work. You supply the actual rasteriser behind the `Renderer2D` contract.
+It is a _compute layer_, not a rendering engine. It tells you which rectangles to redraw and in what order to run data/layout/paint work. You supply the actual rasteriser behind the `Renderer2D` contract.
 
 ## Install
 
@@ -38,7 +38,7 @@ We will build the smallest scene that demonstrates the whole loop: a renderer th
 
 ### Step 1 — a stub renderer
 
-The package ships the `Renderer2D` *contract*, not an implementation. A renderer is just an object with `beginFrame(regions)` and `endFrame()`. For learning, log the regions you are handed.
+The package ships the `Renderer2D` _contract_, not an implementation. A renderer is just an object with `beginFrame(regions)` and `endFrame()`. For learning, log the regions you are handed.
 
 ```ts
 import type { Renderer2D, Rect } from '@dirtytalk/spatial';
@@ -53,7 +53,7 @@ const stubRenderer: Renderer2D = {
 };
 ```
 
-`beginFrame` receives the frame's *individual* damage rects (never an empty array). `endFrame` takes no arguments and is where a real renderer would submit or flush.
+`beginFrame` receives the frame's _individual_ damage rects (never an empty array). `endFrame` takes no arguments and is where a real renderer would submit or flush.
 
 ### Step 2 — a node that damages itself
 
@@ -98,7 +98,7 @@ const root = new SceneRoot(stubRenderer, {
 });
 ```
 
-The `bounds` you pass become the root's *interest region*: any damage overlapping that rectangle triggers a frame.
+The `bounds` you pass become the root's _interest region_: any damage overlapping that rectangle triggers a frame.
 
 ### Step 4 — set bounds and adopt the child
 
@@ -197,7 +197,7 @@ canvas.addEventListener('pointerdown', (e) => {
 });
 ```
 
-`dispatch` returns the node that received the event (or `null` if nothing was hit). A `down` *captures* the hit node for that `pointerId`: subsequent `move`/`up`/`cancel` events for the same pointer are delivered to the captured node even if the pointer has drifted off its bounds — exactly the drag behaviour you want. Route every pointer phase through the same `dispatch`.
+`dispatch` returns the node that received the event (or `null` if nothing was hit). A `down` _captures_ the hit node for that `pointerId`: subsequent `move`/`up`/`cancel` events for the same pointer are delivered to the captured node even if the pointer has drifted off its bounds — exactly the drag behaviour you want. Route every pointer phase through the same `dispatch`.
 
 ```ts
 for (const [domType, spatialType] of [
@@ -240,9 +240,9 @@ Use `@dirtytalk/spatial` when you have a 2D scene where repainting everything on
 
 - A canvas/WebGPU UI with many widgets where most frames touch a small area.
 - A chart or plot surface where data updates should re-bin and re-layout, but a hover should only repaint.
-- Any retained-mode 2D tree that needs ordered data → layout → paint stages keyed off *what* changed.
+- Any retained-mode 2D tree that needs ordered data → layout → paint stages keyed off _what_ changed.
 
-Reach for something else when you only ever full-frame repaint (then you do not need damage tracking), when you need a full GPU renderer out of the box (this ships only the contract), or when you want auto-tracked reactive reads — this is a *declared-damage* model, not a dependency graph. The sibling [`@dirtytalk/structural`](/dirtytalk/structural/concepts) package applies the same engine to state-shaped (path-set) domains.
+Reach for something else when you only ever full-frame repaint (then you do not need damage tracking), when you need a full GPU renderer out of the box (this ships only the contract), or when you want auto-tracked reactive reads — this is a _declared-damage_ model, not a dependency graph. The sibling [`@dirtytalk/structural`](/dirtytalk/structural/concepts) package applies the same engine to state-shaped (path-set) domains.
 
 ## See also
 

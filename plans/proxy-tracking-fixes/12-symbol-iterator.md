@@ -64,7 +64,7 @@ Keep the existing symbol passthrough for any other symbol props (`Symbol.toStrin
 ### Subtleties
 
 - **Eager length read:** for-of needs `length` to know when to stop, and standard array iteration captures length once at the start (see ECMAScript `%ArrayIteratorPrototype%.next`). Mirroring this is correct.
-- **Eager index tagging:** the design decision is *eager* — every yielded index records a tracked path, even if the user doesn't dereference. This is simpler and matches "iteration depends on every yielded slot."
+- **Eager index tagging:** the design decision is _eager_ — every yielded index records a tracked path, even if the user doesn't dereference. This is simpler and matches "iteration depends on every yielded slot."
 - **Holes in sparse arrays:** native iterator yields `undefined` for holes. `arr[i]` on a hole returns `undefined`; the generator yields `undefined`. Consistent.
 - **`depth + 1`:** preserves the depth-limit guard (the depth-10 warning still applies to items reached via iteration).
 - **Closure-captured `len`:** we snapshot length at iteration start. If state is mutated during iteration (shouldn't happen on read-only state), we still respect the snapshot.
@@ -95,7 +95,10 @@ describe('Symbol.iterator — proxied iteration', () => {
     const state = createProxyState<unknown>();
     state.isTracking = true;
     const obj = {
-      items: [{ id: 'a', title: 'first' }, { id: 'b', title: 'second' }],
+      items: [
+        { id: 'a', title: 'first' },
+        { id: 'b', title: 'second' },
+      ],
     };
     const proxy = createForTarget(state, obj) as typeof obj;
 
@@ -204,6 +207,7 @@ Body: "for-of, destructuring and Array.from over a proxied array now record per-
 
 **Commit SHA:** 39f143cf
 **Files touched:**
+
 - `packages/blac-core/src/tracking/tracking-proxy.ts` — `Symbol.iterator` interception added before the generic symbol passthrough in `createArrayProxy`
 - `packages/blac-core/src/tracking/proxy-tracker.edge-cases.test.ts` — six regression tests added under `describe('Symbol.iterator — proxied iteration', ...)`
 - `plans/proxy-tracking-fixes/12-symbol-iterator.md` — completion block filled

@@ -26,7 +26,7 @@ records only `'items'` (from the upstream `state.items` access), not `'items[0].
 
 ## Fix
 
-Intercept the **callback-iterating** methods in the array trap *before* the `getBoundFunction` fallback. Wrap each so the callback receives a **proxied** item at path `path[i]`. Pass the array **proxy itself** (captured at trap creation time) as the third callback argument.
+Intercept the **callback-iterating** methods in the array trap _before_ the `getBoundFunction` fallback. Wrap each so the callback receives a **proxied** item at path `path[i]`. Pass the array **proxy itself** (captured at trap creation time) as the third callback argument.
 
 ### Methods in scope
 
@@ -187,7 +187,7 @@ This preserves identity stability across renders (task 06) for both vanilla-boun
 grep -n "getBoundFunction\|createArrayProxy" packages/blac-core/src/tracking/tracking-proxy.ts
 ```
 
-Confirm the helper is at line ~86 (post task 06). If task 12 already touched the array trap (added `Symbol.iterator` wrapper), preserve that wrapper — insert the new method dispatch *after* the iterator check but *before* the generic symbol passthrough.
+Confirm the helper is at line ~86 (post task 06). If task 12 already touched the array trap (added `Symbol.iterator` wrapper), preserve that wrapper — insert the new method dispatch _after_ the iterator check but _before_ the generic symbol passthrough.
 
 ## Implement
 
@@ -265,7 +265,9 @@ describe('array iterating methods — proxied callbacks', () => {
   });
 
   it('some / every: respect short-circuit', () => {
-    const { state, p } = makeProxy({ items: [{ ok: false }, { ok: true }, { ok: false }] });
+    const { state, p } = makeProxy({
+      items: [{ ok: false }, { ok: true }, { ok: false }],
+    });
     expect(p.items.some((it) => it.ok)).toBe(true);
     expect(state.trackedPaths.has('items[0].ok')).toBe(true);
     expect(state.trackedPaths.has('items[1].ok')).toBe(true);
@@ -273,7 +275,9 @@ describe('array iterating methods — proxied callbacks', () => {
   });
 
   it('findLast / findLastIndex: iterate from the end', () => {
-    const { state, p } = makeProxy({ items: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] });
+    const { state, p } = makeProxy({
+      items: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+    });
     const last = p.items.findLast((it) => it.id === 'b');
     expect(last?.id).toBe('b');
     // Index 2 visited first; index 1 matches; index 0 not visited
@@ -326,7 +330,7 @@ describe('array iterating methods — proxied callbacks', () => {
     const tracker = createDependencyState();
     const item1 = { id: 'a', title: 'Wire up', done: true };
     const item2 = { id: 'b', title: 'Survive', done: false };
-    const item3 = { id: 'c', title: 'Track',   done: false };
+    const item3 = { id: 'c', title: 'Track', done: false };
     const state1 = { items: [item1, item2, item3] };
 
     startDependency(tracker);
@@ -382,12 +386,14 @@ Body: "map, filter, forEach, find, findIndex, findLast, findLastIndex, some, eve
 
 **Commit SHA:** d9956789
 **Files touched:**
+
 - `packages/blac-core/src/tracking/tracking-proxy.ts` — added `getOrCacheBound` helper (`getBoundFunction` rewritten on top of it); added module-level `ITERATING_METHODS` set; in `createArrayProxy` forward-declared `proxyRef`, added `makeIteratingWrapper(methodName)` factory, dispatched iterating methods through `getOrCacheBound` in the get trap's function branch (preserving the task 12 `Symbol.iterator` wrapper).
 - `packages/blac-core/src/tracking/proxy-tracker.edge-cases.test.ts` — imported dependency-tracker helpers (`createDependencyState`, `startDependency`, `createDependencyProxy`, `capturePaths`, `hasDependencyChanges`); added `describe('array iterating methods — proxied callbacks', ...)` with all 13 regression tests; updated the stale "should NOT track array iteration methods" test to assert per-index paths ARE tracked now.
 - `plans/proxy-tracking-fixes/13-iterating-methods.md` — completion block filled.
 
 **Typecheck result:** clean (`pnpm --filter @blac/core typecheck`, `pnpm --filter @blac/adapter typecheck`)
 **Test result:**
+
 - `pnpm --filter @blac/core test -- proxy-tracker.edge-cases.test.ts` — 551 passed
 - `pnpm --filter @blac/core test -- dependency-tracker.test.ts` — 551 passed
 - `pnpm --filter @blac/core test -- tracking.edge-cases.test.ts` — 551 passed

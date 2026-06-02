@@ -10,18 +10,18 @@ the DevTools UI in a browser. Each such task is split into an **authoring half**
 
 ## Parallelism map
 
-| Group | Tasks | Notes |
-|---|---|---|
-| **P4** (parallel authoring) | 3.6, 3.11, 3.5 | disjoint new demo files + pages |
-| **Split** | 2.9 | authoring (agent) + screenshot capture (human) |
-| **Serial** | 4.W (wiring) | owns `config.ts` |
+| Group                       | Tasks          | Notes                                          |
+| --------------------------- | -------------- | ---------------------------------------------- |
+| **P4** (parallel authoring) | 3.6, 3.11, 3.5 | disjoint new demo files + pages                |
+| **Split**                   | 2.9            | authoring (agent) + screenshot capture (human) |
+| **Serial**                  | 4.W (wiring)   | owns `config.ts`                               |
 
 ---
 
 ## Task 2.9 — DevTools screenshots + logging output
 
-- **Authoring — Model / effort:** Sonnet 4.6 / medium. *Rationale: prose +
-  captions + sample console output; the visual assets are human-captured.*
+- **Authoring — Model / effort:** Sonnet 4.6 / medium. _Rationale: prose +
+  captions + sample console output; the visual assets are human-captured._
 - **Owns (agent):** `apps/docs/plugins/devtools.md`,
   `apps/docs/plugins/logging.md`; image files land in `apps/docs/public/`.
 - **Context to read:** current `plugins/devtools.md`/`logging.md`,
@@ -51,9 +51,9 @@ acceptable interim, flagged in TODO.
 
 ## Task 3.11 — Interactive before/after on Performance page
 
-- **Model / effort:** Sonnet 4.6 / high. *Rationale: authoring a new Sandpack
+- **Model / effort:** Sonnet 4.6 / high. _Rationale: authoring a new Sandpack
   demo (two variants) + integrating into an existing page; pattern is known from
-  Phase 0.5 but the comparison harness is new logic.*
+  Phase 0.5 but the comparison harness is new logic._
 - **Parallel group:** P4.
 - **Owns:** `apps/docs/demos/perf-before-after.ts` (new demo source),
   edits to `apps/docs/react/performance.md`. No `config.ts`.
@@ -78,8 +78,8 @@ re-renders fewer counters than "before".
 
 ## Task 3.5 — Persistent playground page
 
-- **Model / effort:** Sonnet 4.6 / medium. *Rationale: one editable REPL page
-  reusing the wrapper; mostly assembly.*
+- **Model / effort:** Sonnet 4.6 / medium. _Rationale: one editable REPL page
+  reusing the wrapper; mostly assembly._
 - **Parallel group:** P4.
 - **Owns:** `apps/docs/playground.md` (new), optionally
   `apps/docs/demos/playground-starter.ts`. No `config.ts`.
@@ -99,14 +99,14 @@ re-render counter wired in and a generous starter file. Taller `editor-height`.
 
 ## Task 3.6 — Showcase gallery
 
-- **Model / effort:** Sonnet 4.6 / high. *Rationale: several new bespoke demos
+- **Model / effort:** Sonnet 4.6 / high. _Rationale: several new bespoke demos
   (counter→todo→form→dashboard→messenger) authored fresh in `apps/docs/demos/`;
-  volume + each must compile.*
+  volume + each must compile._
 - **Parallel group:** P4 (its demo files are disjoint, but this is the largest
   P4 task — consider its own window).
 - **Owns:** `apps/docs/showcase.md` (new), `apps/docs/demos/showcase/*.ts` (new).
   No `config.ts`.
-- **Context to read:** `apps/examples/` for scenario *inspiration only* (do NOT
+- **Context to read:** `apps/examples/` for scenario _inspiration only_ (do NOT
   reuse/iframe — author fresh per the maintainer decision), the demo string-
   export pattern.
 

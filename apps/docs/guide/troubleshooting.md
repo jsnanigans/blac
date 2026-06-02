@@ -1,6 +1,6 @@
 # Troubleshooting & FAQ
 
-This page is a fast lookup table for the problems that actually bite. Each entry is **symptom → cause → fix**, with a link into the reference page that owns the full explanation. If you are new and want the *why* behind these behaviours, read the [Mental Model](/guide/mental-model) first — this page assumes you just want the answer.
+This page is a fast lookup table for the problems that actually bite. Each entry is **symptom → cause → fix**, with a link into the reference page that owns the full explanation. If you are new and want the _why_ behind these behaviours, read the [Mental Model](/guide/mental-model) first — this page assumes you just want the answer.
 
 ::: tip How to use this page
 Scan the **Symptom** column for the thing you are seeing, expand the matching detail block, apply the fix, and follow the link if you need depth. Nothing here invents new API — every fix uses the surface documented in [`useBloc`](/react/use-bloc), [Instance management](/core/instance-management), and [Configuration](/core/configuration).
@@ -10,13 +10,13 @@ Scan the **Symptom** column for the thing you are seeing, expand the matching de
 
 ### Re-rendering
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| Component never re-renders when state changes | State was read **outside** the render body | Read the value during render, not in an effect/callback |
-| Component never re-renders | State was **destructured/copied before** the tracked read | Read leaf properties off the live `state` proxy during render |
-| Component never re-renders | A `select` selector is present and never returns the changed value | Add the value to the selector array (or remove `select` to auto-track) |
-| Component never re-renders | State was **mutated in place** instead of replaced | Use `emit` / `update` / `patch` so a new reference is published |
-| Component re-renders too often | Reading a coarse path (whole array/object) instead of the leaf | Read the specific leaf you render; see [dependency tracking](/react/dependency-tracking) |
+| Symptom                                       | Likely cause                                                       | Fix                                                                                      |
+| --------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Component never re-renders when state changes | State was read **outside** the render body                         | Read the value during render, not in an effect/callback                                  |
+| Component never re-renders                    | State was **destructured/copied before** the tracked read          | Read leaf properties off the live `state` proxy during render                            |
+| Component never re-renders                    | A `select` selector is present and never returns the changed value | Add the value to the selector array (or remove `select` to auto-track)                   |
+| Component never re-renders                    | State was **mutated in place** instead of replaced                 | Use `emit` / `update` / `patch` so a new reference is published                          |
+| Component re-renders too often                | Reading a coarse path (whole array/object) instead of the leaf     | Read the specific leaf you render; see [dependency tracking](/react/dependency-tracking) |
 
 ::: details "My component does not re-render" — full walk-through
 Auto-tracking records a state path **only when you read it on the `state` proxy during render**. Four things break that contract:
@@ -63,7 +63,10 @@ const [state] = useBloc(CartCubit);
 
 ```ts
 // ✗ same reference — emit no-ops
-update((s) => { s.count++; return s; });
+update((s) => {
+  s.count++;
+  return s;
+});
 
 // ✓ new reference
 update((s) => ({ ...s, count: s.count + 1 }));
@@ -82,10 +85,10 @@ The tracker wraps **plain objects and arrays** only. A `Map`, `Set`, `Date`, or 
 
 ### Stale values in callbacks
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| A callback fires with an old value | Closure captured a render-time snapshot | Read off the bloc inside the callback, or invert the callback into the bloc |
-| `deps` callback sees stale variables | Inline arrow re-created each render but captured stale closure | Make the handle stable; put the *logic* in the bloc |
+| Symptom                              | Likely cause                                                   | Fix                                                                         |
+| ------------------------------------ | -------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| A callback fires with an old value   | Closure captured a render-time snapshot                        | Read off the bloc inside the callback, or invert the callback into the bloc |
+| `deps` callback sees stale variables | Inline arrow re-created each render but captured stale closure | Make the handle stable; put the _logic_ in the bloc                         |
 
 ::: details "Stale value in a callback" — callback inversion
 A callback you define in the component closes over the variables that existed **when that render ran**. If it fires later, it still sees those old values.
@@ -109,7 +112,9 @@ const onClick = () => console.log(bloc.state.count); // always current
 
 ```ts
 class CounterCubit extends Cubit<{ count: number }> {
-  constructor() { super({ count: 0 }); }
+  constructor() {
+    super({ count: 0 });
+  }
   logCount = () => console.log(this.state.count); // `this.state` is live
 }
 ```
@@ -126,12 +131,12 @@ If you must pass a callback **into** a bloc, route it through the `deps` lane (a
 
 ### Instance identity (too many / too few)
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| Two instances when you expected one | `args` differ structurally between consumers (or a fresh object that hashes differently) | Ensure args are equal; narrow identity with `static key` |
-| A **new** instance every render | A function or non-serializable value is in `args` | Move it to `deps`; `args` must be JSON-serializable |
-| Everyone shares one instance, but you wanted one per item | All consumers use the same key (default, or same `args`) | Pass distinct `args` (e.g. a name field, or `_id: useId()` + `static key` for per-mount) |
-| Per-item components leak into each other | Same `args` key reused across items | Give each item distinct `args` (e.g. the row id) |
+| Symptom                                                   | Likely cause                                                                             | Fix                                                                                      |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Two instances when you expected one                       | `args` differ structurally between consumers (or a fresh object that hashes differently) | Ensure args are equal; narrow identity with `static key`                                 |
+| A **new** instance every render                           | A function or non-serializable value is in `args`                                        | Move it to `deps`; `args` must be JSON-serializable                                      |
+| Everyone shares one instance, but you wanted one per item | All consumers use the same key (default, or same `args`)                                 | Pass distinct `args` (e.g. a name field, or `_id: useId()` + `static key` for per-mount) |
+| Per-item components leak into each other                  | Same `args` key reused across items                                                      | Give each item distinct `args` (e.g. the row id)                                         |
 
 ::: details "I got two instances when I expected one"
 Identity is resolved from, in precedence order: own **`args`** (via `static key(args)`, else the **structural hash of `args`**) → `<BlocProvider>` context args → the `'default'` sentinel. Two consumers land on the same instance only when their resolved key matches.
@@ -142,7 +147,10 @@ Common causes of an unexpected split:
 - **You only want a subset of args to key the instance.** Use `static key` so config that "rides along" does not fork instances:
 
   ```ts
-  class DocumentCubit extends Cubit<DocState, { docId: string; readonly: boolean }> {
+  class DocumentCubit extends Cubit<
+    DocState,
+    { docId: string; readonly: boolean }
+  > {
     static key = (args: DocumentCubit['args']) => args.docId; // `readonly` does not fork
   }
   ```
@@ -164,18 +172,21 @@ In production the hash will differ each render and you get a brand-new instance 
 useBloc(ListCubit, { args: { onSelect: () => {} } });
 
 // ✓ identity data in args, handle in deps (deps never key identity)
-useBloc(ListCubit, { args: { listId } /* , deps: { onSelect } via your deps wiring */ });
+useBloc(ListCubit, {
+  args: { listId } /* , deps: { onSelect } via your deps wiring */,
+});
 ```
+
 :::
 
 ::: details "Everyone shares one instance when I wanted per-item"
-By default, a bloc with `void` args resolves to the single `'default'` key — every consumer shares it. To get one instance per item, give each consumer distinct `args`. Identity always comes from `args`; differ by intent only in *what* you put there:
+By default, a bloc with `void` args resolves to the single `'default'` key — every consumer shares it. To get one instance per item, give each consumer distinct `args`. Identity always comes from `args`; differ by intent only in _what_ you put there:
 
-| Want | Use |
-|---|---|
-| One instance per **data identity** (e.g. per `userId`) | `args: { userId }` — same args share, different args split |
-| One instance per **caller-chosen key** | a name field in args, e.g. `args: { row: row.id }` + `static key` |
-| One **fresh** instance per component mount | `args: { _id: useId() }` + `static key` |
+| Want                                                   | Use                                                               |
+| ------------------------------------------------------ | ----------------------------------------------------------------- |
+| One instance per **data identity** (e.g. per `userId`) | `args: { userId }` — same args share, different args split        |
+| One instance per **caller-chosen key**                 | a name field in args, e.g. `args: { row: row.id }` + `static key` |
+| One **fresh** instance per component mount             | `args: { _id: useId() }` + `static key`                           |
 
 ```tsx
 // per data identity
@@ -202,12 +213,12 @@ You may see `autoInstance` or an `instanceId` option in old notes or stale comme
 
 ### Lifecycle (disposed too early / never disposed)
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| Instance disposed while still in use | A `depend()`/`ensure` reference holds no ref count | Hold a real ref (a `useBloc` consumer), or mark the source `keepAlive` |
-| Instance never disposed | A ref was acquired without a matching release | Pair every `acquire` with a `release` (outside React) |
-| State unexpectedly resets | Last consumer unmounted → auto-dispose → fresh instance on remount | Mark the class `@blac({ keepAlive: true })` if it should outlive its consumers |
-| State persists when you wanted a clean slate | `keepAlive` is on, so refcount 0 never disposes | Drop `keepAlive`, or `release(..., forceDispose)` / `clear` in teardown |
+| Symptom                                      | Likely cause                                                       | Fix                                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Instance disposed while still in use         | A `depend()`/`ensure` reference holds no ref count                 | Hold a real ref (a `useBloc` consumer), or mark the source `keepAlive`         |
+| Instance never disposed                      | A ref was acquired without a matching release                      | Pair every `acquire` with a `release` (outside React)                          |
+| State unexpectedly resets                    | Last consumer unmounted → auto-dispose → fresh instance on remount | Mark the class `@blac({ keepAlive: true })` if it should outlive its consumers |
+| State persists when you wanted a clean slate | `keepAlive` is on, so refcount 0 never disposes                    | Drop `keepAlive`, or `release(..., forceDispose)` / `clear` in teardown        |
 
 ::: details "Instance disposed too early / never disposed" — ref counting
 The registry ref-counts instances. Each `useBloc` consumer acquires one ref on mount and releases it on unmount. When the ref count reaches **0**, the instance is auto-disposed (unless it is `keepAlive`), and the dispose **cascades** to `ensure`-created dependencies that now also have zero refs.
@@ -222,7 +233,9 @@ private user = this.depend(UserCubit);
 ```ts
 // keep a shared, long-lived source alive
 @blac({ keepAlive: true })
-class SessionCubit extends Cubit<SessionState> { /* … */ }
+class SessionCubit extends Cubit<SessionState> {
+  /* … */
+}
 ```
 
 **Never disposed.** Outside React you manage refs yourself: every `acquire` must be paired with a `release`. A missing `release` leaks the instance forever.
@@ -241,17 +254,18 @@ release(JobCubit, { refId });
 
 ### Type errors
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| `args` is **required** but you did not pass it | The bloc declares a non-`void` `Args` | Pass `{ args: … }` — it is mandatory and type-checked |
-| `args` is **forbidden** (`never`) | The bloc's `Args` is the default `void` | Remove `args` from the `useBloc` call |
-| `select` "must be stable" re-keys constantly | A fresh selector function each render | Wrap the selector in `useCallback` |
+| Symptom                                        | Likely cause                            | Fix                                                   |
+| ---------------------------------------------- | --------------------------------------- | ----------------------------------------------------- |
+| `args` is **required** but you did not pass it | The bloc declares a non-`void` `Args`   | Pass `{ args: … }` — it is mandatory and type-checked |
+| `args` is **forbidden** (`never`)              | The bloc's `Args` is the default `void` | Remove `args` from the `useBloc` call                 |
+| `select` "must be stable" re-keys constantly   | A fresh selector function each render   | Wrap the selector in `useCallback`                    |
 
 ::: details "Property 'args' is required / 'args' does not exist"
 `useBloc`'s `args` option is **conditional on the bloc's type**:
 
 ```ts
-type ArgsOption<T> = ExtractArgs<T> extends void ? { args?: never } : { args: ExtractArgs<T> };
+type ArgsOption<T> =
+  ExtractArgs<T> extends void ? { args?: never } : { args: ExtractArgs<T> };
 ```
 
 - If the bloc extends `Cubit<S, SomeArgs>`, `args` is **required** — omitting it is a compile error.
@@ -259,12 +273,12 @@ type ArgsOption<T> = ExtractArgs<T> extends void ? { args?: never } : { args: Ex
 
 ```tsx
 // bloc: class UserCubit extends Cubit<S, { userId: string }>
-useBloc(UserCubit);                          // ✗ Property 'args' is missing
-useBloc(UserCubit, { args: { userId } });    // ✓
+useBloc(UserCubit); // ✗ Property 'args' is missing
+useBloc(UserCubit, { args: { userId } }); // ✓
 
 // bloc: class CounterCubit extends Cubit<S>  (void args)
-useBloc(CounterCubit, { args: {} });         // ✗ 'args' does not exist on type
-useBloc(CounterCubit);                        // ✓
+useBloc(CounterCubit, { args: {} }); // ✗ 'args' does not exist on type
+useBloc(CounterCubit); // ✓
 ```
 
 If you genuinely need to pass data to a `void`-args bloc, give the bloc an `Args` type. Owner page: [Passing inputs](/guide/inputs).
@@ -274,11 +288,11 @@ If you genuinely need to pass data to a `void`-args bloc, give the bloc an `Args
 
 ### DevTools not showing
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| DevTools panel empty / nothing appears | The DevTools plugin is not installed | `install` the DevTools plugin via `getPluginManager()` |
-| A specific bloc is missing from DevTools | The class is `excludeFromDevTools` | Remove `@blac({ excludeFromDevTools: true })` from that class |
-| DevTools loaded but no live updates | Plugin installed only for the wrong environment | Check the plugin's `environment` config matches `NODE_ENV` |
+| Symptom                                  | Likely cause                                    | Fix                                                           |
+| ---------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------- |
+| DevTools panel empty / nothing appears   | The DevTools plugin is not installed            | `install` the DevTools plugin via `getPluginManager()`        |
+| A specific bloc is missing from DevTools | The class is `excludeFromDevTools`              | Remove `@blac({ excludeFromDevTools: true })` from that class |
+| DevTools loaded but no live updates      | Plugin installed only for the wrong environment | Check the plugin's `environment` config matches `NODE_ENV`    |
 
 ::: details "DevTools not showing my blocs"
 Two independent gates control DevTools visibility:
@@ -295,7 +309,9 @@ getPluginManager().install(devtoolsPlugin, { environment: 'development' });
 
 ```ts
 @blac({ excludeFromDevTools: true })
-class NoiseCubit extends Cubit<NoiseState> { /* … */ }
+class NoiseCubit extends Cubit<NoiseState> {
+  /* … */
+}
 ```
 
 If you want this bloc visible, drop that option. The option is documented in [Configuration](/core/configuration); usage lives in [the DevTools plugin](/plugins/devtools).
@@ -305,11 +321,11 @@ If you want this bloc visible, drop that option. The option is documented in [Co
 
 ### SSR & hydration
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| Hydration mismatch warning from React | Server and client produced different first snapshots | Seed initial state from `args` in `init(args)` so both render the same |
-| Persisted state appears, then vanishes | State changed *while* hydrating → discarded | Hold writes until `isHydrated`; observe `hydrationChanged` |
-| Instance key differs between server and client | Relying on internal auto-ids for stable identity | Key off stable `args` (or a `BlocProvider`) for SSR-stable identity |
+| Symptom                                        | Likely cause                                         | Fix                                                                    |
+| ---------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------- |
+| Hydration mismatch warning from React          | Server and client produced different first snapshots | Seed initial state from `args` in `init(args)` so both render the same |
+| Persisted state appears, then vanishes         | State changed _while_ hydrating → discarded          | Hold writes until `isHydrated`; observe `hydrationChanged`             |
+| Instance key differs between server and client | Relying on internal auto-ids for stable identity     | Key off stable `args` (or a `BlocProvider`) for SSR-stable identity    |
 
 ::: details "SSR / hydration notes"
 A few facts that matter when rendering on the server:
@@ -359,7 +375,7 @@ You hit `maxInstancesPerType` or `maxRefsPerInstance` from the global config —
 
 ## See also
 
-- [Mental Model](/guide/mental-model) — the *why* behind tracking, identity, and disposal
+- [Mental Model](/guide/mental-model) — the _why_ behind tracking, identity, and disposal
 - [Passing inputs](/guide/inputs) — `args` and `deps` in depth
 - [`useBloc`](/react/use-bloc) — the canonical options and precedence reference
 - [Instance management](/core/instance-management) — acquire/release, ref counting, `keepAlive`

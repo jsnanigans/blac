@@ -12,6 +12,7 @@ Each rule below is a deterministic rewrite. Rules are applied in order. After ru
 **Action.** Change source to `"blac-next"`. (The workspace `blac-next` is already the shim re-export per Phase 1.)
 
 **Special cases.**
+
 - `BlacReact` → keep imported from `"blac-next"` (the shim still exports it).
 - `BlocObserver` → keep imported from `"blac-next"`.
 
@@ -22,6 +23,7 @@ Each rule below is a deterministic rewrite. Rules are applied in order. After ru
 **Match.** `useBloc(C, { ... })` call where any of `id` / `dependencySelector` / `props` is present.
 
 **Action.**
+
 - `id` → `instanceId` (string).
 - `dependencySelector` → `dependencies`. Add a `// MIGRATE-AUDIT-R8: verify re-render behavior` line comment above the call. See R8.
 - `props` → handled by Rule C-3.
@@ -40,7 +42,9 @@ const [state, bloc] = useBloc(C, { props });
 
 // after
 const [state, bloc] = useBloc(C);
-useEffect(() => { bloc.initWithProps(props); }, []);  // MIGRATE-AUDIT-R3
+useEffect(() => {
+  bloc.initWithProps(props);
+}, []); // MIGRATE-AUDIT-R3
 ```
 
 For `Blac.getBloc`:
@@ -68,6 +72,7 @@ initWithProps(props: any) {
 Add `props: any = null;` to the class body if not present.
 
 Add a top-of-file TODO marker so the cleanup pass finds it:
+
 ```ts
 // TODO(migrate-blac-r3): hand-finalize init API for this cubit.
 ```
@@ -97,6 +102,7 @@ Verify only. The shim's `BlocProvider` is API-compatible; we leave the JSX alone
 ## Rule C-8 — Drop `blac@^0.4.1` from `package.json`
 
 Once C-1 has zero matches and CI is green:
+
 - Remove `"blac": "^0.4.1"` from `apps/user-app/package.json` and `apps/pmp/package.json`.
 - Remove the `pnpm.overrides` entry for `blac`.
 - `pnpm install`.
@@ -115,21 +121,22 @@ C-3 is the riskiest. Run it last among the transforms so its diffs are visible a
 
 The script ships with a `__tests__/` folder of input/output pairs:
 
-| Test | Input | Expected output |
-|---|---|---|
-| simple `useBloc({ id })` | `useBloc(C, { id: 'x' })` | `useBloc(C, { instanceId: 'x' })` |
-| `useBloc({ props })` | `useBloc(C, { props: p })` | tuple + `useEffect(() => bloc.initWithProps(p), [])` |
-| existing `initWithProps` | cubit already has the method | no stub generated |
+| Test                          | Input                                  | Expected output                                             |
+| ----------------------------- | -------------------------------------- | ----------------------------------------------------------- |
+| simple `useBloc({ id })`      | `useBloc(C, { id: 'x' })`              | `useBloc(C, { instanceId: 'x' })`                           |
+| `useBloc({ props })`          | `useBloc(C, { props: p })`             | tuple + `useEffect(() => bloc.initWithProps(p), [])`        |
+| existing `initWithProps`      | cubit already has the method           | no stub generated                                           |
 | `Blac.getBloc({ id, props })` | `Blac.getBloc(C, { id: u, props: p })` | `const x = Blac.getBloc(C, { id: u }); x.initWithProps(p);` |
-| `BlocObserver` | unchanged source-side | only annotation added |
-| `BlocProvider` JSX | unchanged | only annotation added |
-| `dependencySelector` rename | `{ dependencySelector: fn }` | `{ dependencies: fn }` + audit comment |
+| `BlocObserver`                | unchanged source-side                  | only annotation added                                       |
+| `BlocProvider` JSX            | unchanged                              | only annotation added                                       |
+| `dependencySelector` rename   | `{ dependencySelector: fn }`           | `{ dependencies: fn }` + audit comment                      |
 
 Run with `pnpm vitest run scripts/migrate-blac-v0.test.ts` before applying to either app.
 
 ## Manual cleanup commit (after codemod)
 
 Per app, expect a small manual diff:
+
 - The 3 `BlocProvider` sites: confirm the descendant `useBloc` chain works against the shim.
 - `user-app/state/state.ts`: remove the `new BlacReact(...)` line and replace with a thin `export { useBloc } from 'blac-next';` + `export { BlocProvider } from 'blac-next';`. The observer install moves to a top-level `getPluginManager().install(myObserverAsPlugin)` (or stays as `new BlocObserver(...)` since the shim auto-installs).
 - `apps/pmp/src/state/state.ts`: same.
@@ -141,4 +148,4 @@ Per app, expect a small manual diff:
 - [ ] App boots in dev.
 - [ ] Smoke test for the app passes:
   - user-app: login, dashboard renders, payment flow opens (covers PaymentContext shim).
-  - pmp: user search, open user detail (covers DataSource* scoping), lab order list (covers PharmacyInsurance shim).
+  - pmp: user search, open user detail (covers DataSource\* scoping), lab order list (covers PharmacyInsurance shim).
