@@ -91,16 +91,16 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
 
   get selectedInstance(): InstanceData | null {
     if (!this.state.selectedId) return null;
-    return this.instancesBloc().getInstance(this.state.selectedId);
+    return this.instancesBloc.untracked().getInstance(this.state.selectedId);
   }
 
   get selectedDiff(): DiffResult {
     if (!this.state.selectedId) return null;
-    return this.diffBloc().getDiff(this.state.selectedId);
+    return this.diffBloc.untracked().getDiff(this.state.selectedId);
   }
 
   get selectedHistory(): StateSnapshot[] {
     if (!this.state.selectedId) return [];
-    return this.diffBloc().getHistory(this.state.selectedId);
+    return this.diffBloc.untracked().getHistory(this.state.selectedId);
   }
 }

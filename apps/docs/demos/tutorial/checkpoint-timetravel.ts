@@ -43,7 +43,7 @@ export class TodoCubit extends Cubit<TodoState> {
   }
 
   // Single funnel for every mutation. It takes the next todo list, drops any
-  // \"future\" snapshots we had undone past, appends the new one, and points the
+  // "future" snapshots we had undone past, appends the new one, and points the
   // cursor at it. Every action below goes through here.
   private commit = (next: Todo[]) => {
     const { past, cursor } = this.state;

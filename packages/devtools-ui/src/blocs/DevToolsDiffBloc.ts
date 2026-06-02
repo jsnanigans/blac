@@ -156,7 +156,7 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
     // Get most recent snapshot (first in array)
     const previousSnapshot = history[0];
 
-    const instance = this.instancesBloc().getInstance(instanceId);
+    const instance = this.instancesBloc.untracked().getInstance(instanceId);
     if (!instance) return null;
 
     const previous = previousSnapshot.state ?? null;

@@ -54,7 +54,10 @@ export const PathChips: FC<{
       title={paths.join(', ')}
     >
       {visible.map((p) => (
-        <span key={p} style={!highlight || highlight.has(p) ? chipStyle : dimStyle}>
+        <span
+          key={p}
+          style={!highlight || highlight.has(p) ? chipStyle : dimStyle}
+        >
           {p}
         </span>
       ))}

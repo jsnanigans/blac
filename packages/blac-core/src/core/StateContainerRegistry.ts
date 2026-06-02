@@ -267,7 +267,7 @@ export class StateContainerRegistry {
    */
   acquire<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
-    instanceKey: string | undefined = undefined,
+    instanceKey?: string,
     options: {
       canCreate?: boolean;
       countRef?: boolean;
@@ -414,7 +414,7 @@ export class StateContainerRegistry {
    */
   ensure<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
-    instanceKey: string | undefined = undefined,
+    instanceKey?: string,
     args?: unknown,
   ): InstanceType<T> {
     return this.acquire(Type, instanceKey, {

@@ -1,4 +1,5 @@
 import { createIndexedDbPersistPlugin } from '@blac/plugin-persist';
+import { Cubit } from '@blac/core';
 import {
   persistedDraftInitialState,
   PersistedDraftCubit,
@@ -13,7 +14,9 @@ export const draftPersistPlugin = createIndexedDbPersistPlugin({
   // Cast needed: plugin-persist's persist() types Cubit<S> (no args),
   // but PersistedDraftCubit is Cubit<S, PersistedDraftArgs>. The runtime
   // behaviour is unchanged; only identity-key derivation differs.
-  PersistedDraftCubit as any,
+  PersistedDraftCubit as unknown as new (
+    ...args: unknown[]
+  ) => Cubit<PersistedDraftState>,
   {
     key: ({ instanceId }) => `examples:draft:${instanceId}`,
     debounceMs: 120,

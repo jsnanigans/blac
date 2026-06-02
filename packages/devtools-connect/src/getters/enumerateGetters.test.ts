@@ -65,7 +65,7 @@ class CubitWithDependency extends Cubit<{ revenue: number }> {
   }
 
   get formatted(): string {
-    const target = this.getTarget();
+    const target = this.getTarget.untracked();
     return `${target.state.mode}: $${this.state.revenue}`;
   }
 

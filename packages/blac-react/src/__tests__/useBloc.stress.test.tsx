@@ -116,7 +116,12 @@ describe('useBloc — stress tests', () => {
     // Per-consumer design: each useBloc returns its own proxy. The shared
     // raw bloc is the source of truth — both proxies forward to it.
     const raw = borrow(CounterBloc);
+    // parentBloc/childBloc are assigned inside render closures, so TS's
+    // control-flow analysis narrows them back to `null` here; `?.` would
+    // yield `never`. The toBeNull assertions above guarantee they are set.
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- set during render, asserted above
     expect(parentBloc!.state).toBe(raw.state);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- set during render, asserted above
     expect(childBloc!.state).toBe(raw.state);
 
     await act(async () => {

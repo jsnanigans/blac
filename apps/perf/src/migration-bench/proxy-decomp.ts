@@ -13,8 +13,7 @@
  */
 import { performance } from 'node:perf_hooks';
 import { Cubit } from '@blac/core';
-import { trackRender, PathInterner } from '@dirtytalk/structural';
-import type { PathId } from '@dirtytalk/structural';
+import { PathInterner, type PathId, trackRender } from '@dirtytalk/structural';
 import { createWideState, type WideState } from '../shared/types';
 
 const SAMPLES = 600;
@@ -68,7 +67,9 @@ function makeReusableTracker(bloc: WideBloc) {
       get(_t, key) {
         if (typeof key === 'symbol') return undefined;
         paths.add(interner.intern(key as string));
-        return (bloc.state as Record<string, unknown>)[key as string];
+        return (bloc.state as unknown as Record<string, unknown>)[
+          key as string
+        ];
       },
     },
   ) as WideState;

@@ -37,7 +37,7 @@ export class DevToolsSearchBloc extends Cubit<SearchState> {
    */
   getFilteredInstances = (): InstanceData[] => {
     const { query } = this.state;
-    const instances = this.instancesBloc().sortedInstances;
+    const instances = this.instancesBloc.untracked().sortedInstances;
 
     if (!query.trim()) {
       return instances;

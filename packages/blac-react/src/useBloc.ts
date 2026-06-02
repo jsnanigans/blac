@@ -446,13 +446,15 @@ export function useBloc<
   });
 
   // Unmount: tear down every dep subscription + ref exactly once. Kept in its
-  // own effect (empty deps) so it only runs on final unmount, not on every
-  // reconcile. depSubsRef is mutated in place by the reconcile, so reading it
-  // here at unmount yields the live set.
-  // oxlint-disable-next-line react-hooks/exhaustive-deps
+  // own effect (consumerId is stable for the component's lifetime, so this only
+  // runs on final unmount, not on every reconcile). depSubsRef is mutated in
+  // place by the reconcile, so the captured Map reference still holds the live
+  // set at unmount.
   useEffect(() => {
+    // Capture the ref's Map (mutated in place across renders) so the cleanup
+    // reads the captured reference rather than depSubsRef.current directly.
+    const subs = depSubsRef.current;
     return () => {
-      const subs = depSubsRef.current;
       for (const [depContainer, sub] of subs) {
         sub.unsubscribe();
         depContainer.unregisterConsumer(consumerId);
@@ -460,7 +462,7 @@ export function useBloc<
       }
       subs.clear();
     };
-  }, []);
+  }, [consumerId]);
 
   return [
     state,
@@ -562,7 +564,11 @@ function makeDepWrapper(
   const resolve = (options?: DepAccessOptionsLike) => {
     const args = options?.args ?? brand.defaultArgs;
     const key = registry.resolveKey(brand.Type, undefined, args);
-    const dep = registry.ensure(brand.Type, key, args) as unknown as StateContainer;
+    const dep = registry.ensure(
+      brand.Type,
+      key,
+      args,
+    ) as unknown as StateContainer;
     return { dep, key, args };
   };
 

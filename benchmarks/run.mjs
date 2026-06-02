@@ -13,7 +13,13 @@
 //   pnpm --filter @dirtytalk/structural build
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -27,9 +33,21 @@ const PACKAGES = {
     pkgJson: join(ROOT, 'packages/dirtytalk-engine/package.json'),
     dist: join(ROOT, 'packages/dirtytalk-engine/dist/index.js'),
     scenarios: [
-      { id: 'signal-set-notify', file: 'engine/signal.mjs', desc: 'Signal `.value` set + synchronous notify, 1 subscriber (2,000,000 sets)' },
-      { id: 'channel-broadcast', file: 'engine/channel-broadcast.mjs', desc: 'DirtyChannel mark+flush, 100 subscribers all interested (50,000 marks)' },
-      { id: 'channel-selective', file: 'engine/channel-selective.mjs', desc: 'DirtyChannel mark+flush, 1000 subscribers, 1 intersects per mark (10,000 marks)' },
+      {
+        id: 'signal-set-notify',
+        file: 'engine/signal.mjs',
+        desc: 'Signal `.value` set + synchronous notify, 1 subscriber (2,000,000 sets)',
+      },
+      {
+        id: 'channel-broadcast',
+        file: 'engine/channel-broadcast.mjs',
+        desc: 'DirtyChannel mark+flush, 100 subscribers all interested (50,000 marks)',
+      },
+      {
+        id: 'channel-selective',
+        file: 'engine/channel-selective.mjs',
+        desc: 'DirtyChannel mark+flush, 1000 subscribers, 1 intersects per mark (10,000 marks)',
+      },
     ],
   },
   structural: {
@@ -38,10 +56,26 @@ const PACKAGES = {
     pkgJson: join(ROOT, 'packages/dirtytalk-structural/package.json'),
     dist: join(ROOT, 'packages/dirtytalk-structural/dist/index.js'),
     scenarios: [
-      { id: 'patch', file: 'structural/patch.mjs', desc: 'StructuralContainer.patch() no-diff path (500,000 patches)' },
-      { id: 'emit-diff', file: 'structural/emit-diff.mjs', desc: 'StructuralContainer.emit() diff-along-skeleton, 50 consumers (20,000 emits)' },
-      { id: 'track-render', file: 'structural/track-render.mjs', desc: 'trackRender proxy recording of nested reads (200,000 renders)' },
-      { id: 'intern', file: 'structural/intern.mjs', desc: 'PathInterner steady-state interning, 1000-path vocabulary (2,000,000 interns)' },
+      {
+        id: 'patch',
+        file: 'structural/patch.mjs',
+        desc: 'StructuralContainer.patch() no-diff path (500,000 patches)',
+      },
+      {
+        id: 'emit-diff',
+        file: 'structural/emit-diff.mjs',
+        desc: 'StructuralContainer.emit() diff-along-skeleton, 50 consumers (20,000 emits)',
+      },
+      {
+        id: 'track-render',
+        file: 'structural/track-render.mjs',
+        desc: 'trackRender proxy recording of nested reads (200,000 renders)',
+      },
+      {
+        id: 'intern',
+        file: 'structural/intern.mjs',
+        desc: 'PathInterner steady-state interning, 1000-path vocabulary (2,000,000 interns)',
+      },
     ],
   },
 };
@@ -97,7 +131,9 @@ function runPackage(key, opts) {
     hfArgs.push('-n', s.id, `node ${join(HERE, 'scenarios', s.file)}`);
   }
 
-  console.error(`\n▶ Benchmarking ${pkg.name}@${version} (${pkg.scenarios.length} scenarios)\n`);
+  console.error(
+    `\n▶ Benchmarking ${pkg.name}@${version} (${pkg.scenarios.length} scenarios)\n`,
+  );
   execFileSync('hyperfine', hfArgs, { cwd: ROOT, stdio: 'inherit' });
 
   const table = readFileSync(tmpMd, 'utf8').trim();
@@ -142,5 +178,6 @@ ${table}
 }
 
 const opts = parseArgs(process.argv.slice(2));
-const targets = opts.target === 'all' ? ['engine', 'structural'] : [opts.target];
+const targets =
+  opts.target === 'all' ? ['engine', 'structural'] : [opts.target];
 for (const t of targets) runPackage(t, opts);

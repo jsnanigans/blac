@@ -48,9 +48,9 @@ export class ChannelBloc extends Cubit<ChannelState, ChannelArgs> {
   }
 
   protected override init({ channelId }: ChannelArgs): void {
-    const channelInfo = this._contactsDep.untracked().state.channels.find(
-      (c: Channel) => c.id === channelId,
-    );
+    const channelInfo = this._contactsDep
+      .untracked()
+      .state.channels.find((c: Channel) => c.id === channelId);
     if (!channelInfo) return;
 
     const persisted = persistenceService.loadChannel(channelInfo.id);

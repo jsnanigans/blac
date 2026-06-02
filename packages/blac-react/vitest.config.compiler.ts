@@ -1,9 +1,12 @@
 import { defineConfig } from 'vite-plus';
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 import path from 'path';
 
 // Vitest config WITH React Compiler enabled
-// This allows testing how the React 19 compiler interacts with @blac/react
+// This allows testing how the React 19 compiler interacts with @blac/react.
+// @vitejs/plugin-react v6 dropped the inline `babel` option; the compiler is
+// now wired via @rolldown/plugin-babel + the exported reactCompilerPreset.
 export default defineConfig({
   resolve: {
     alias: {
@@ -17,19 +20,13 @@ export default defineConfig({
     },
   },
   plugins: [
-    react({
-      babel: {
-        plugins: [
-          [
-            'babel-plugin-react-compiler',
-            {
-              target: '19', // React 19 target
-              // Optional: Enable compilation logs for debugging
-              // compilationMode: 'annotation', // Only compile components with "use memo"
-            },
-          ],
-        ],
-      },
+    react(),
+    babel({
+      presets: [
+        reactCompilerPreset({
+          target: '19', // React 19 target
+        }),
+      ],
     }),
   ],
   test: {

@@ -15,7 +15,13 @@ class MatrixBloc extends Cubit<{
   unrelated: number;
 }> {
   constructor() {
-    super({ matrix: [[1, 2], [3, 4]], unrelated: 0 });
+    super({
+      matrix: [
+        [1, 2],
+        [3, 4],
+      ],
+      unrelated: 0,
+    });
   }
 
   get matrixSum(): number {
@@ -103,7 +109,9 @@ describe('useBloc — getter tracking', () => {
       </>,
     );
     const initial = renders.mock.calls.length;
-    await act(async () => { bloc.bumpCell(0, 0); });
+    await act(async () => {
+      bloc.bumpCell(0, 0);
+    });
     expect(renders.mock.calls.length).toBeGreaterThan(initial);
   });
 
@@ -123,7 +131,9 @@ describe('useBloc — getter tracking', () => {
       </>,
     );
     const initial = renders.mock.calls.length;
-    await act(async () => { bloc.bumpUnrelated(); });
+    await act(async () => {
+      bloc.bumpUnrelated();
+    });
     expect(renders.mock.calls.length).toBe(initial);
   });
 
@@ -143,7 +153,9 @@ describe('useBloc — getter tracking', () => {
       </>,
     );
     const initial = renders.mock.calls.length;
-    await act(async () => { bloc.toggleItem(0); });
+    await act(async () => {
+      bloc.toggleItem(0);
+    });
     expect(renders.mock.calls.length).toBeGreaterThan(initial);
   });
 
@@ -163,7 +175,9 @@ describe('useBloc — getter tracking', () => {
       </>,
     );
     const initial = renders.mock.calls.length;
-    await act(async () => { bloc.changeTitleOnly(0, 'Z'); });
+    await act(async () => {
+      bloc.changeTitleOnly(0, 'Z');
+    });
     expect(renders.mock.calls.length).toBe(initial);
   });
 
@@ -198,7 +212,9 @@ describe('useBloc — getter tracking', () => {
       return <span>{b.matrixSum}</span>;
     }
     render(<Comp />);
-    await act(async () => { bloc.bumpCell(0, 0); });
+    await act(async () => {
+      bloc.bumpCell(0, 0);
+    });
     // All captured refs must be the same proxy object.
     expect(blocRefs.length).toBeGreaterThan(1);
     expect(new Set(blocRefs).size).toBe(1);

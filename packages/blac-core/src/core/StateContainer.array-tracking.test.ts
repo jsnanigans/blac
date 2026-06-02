@@ -21,9 +21,12 @@
 
 import { describe, it, expect, vi } from 'vite-plus/test';
 import { blacTestSetup, flush } from '@blac/core/testing';
-import { trackRender, type PathSet } from '@dirtytalk/structural';
+import {
+  trackRender,
+  type PathSet,
+  type PathInterner,
+} from '@dirtytalk/structural';
 import { Cubit } from './Cubit';
-import type { PathInterner } from '@dirtytalk/structural';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -298,11 +301,13 @@ describe('array-tracking isolation', () => {
     it('items.map(i => i.title) consumer does NOT wake when unrelated field changes', async () => {
       const cubit = new TodoCubit();
       // .map(i => i.title) now tracks items.length + items.*.title precisely
-      const cMap = makeConsumer(cubit, 'cMap', (s) =>
-        void s.items.map((i) => i.title),
+      const cMap = makeConsumer(
+        cubit,
+        'cMap',
+        (s) => void s.items.map((i) => i.title),
       );
       // Second consumer to force diffAlongSkeleton (not ALL_PATHS shortcut)
-      const c0 = makeConsumer(cubit, 'c0', (s) => void s.items[0].title);
+      const _c0 = makeConsumer(cubit, 'c0', (s) => void s.items[0].title);
 
       cubit.setDoneEmit(1, false); // changes items[1].done only — title unchanged
       await flush();
@@ -321,11 +326,7 @@ describe('array-tracking isolation', () => {
     it('items[0].title consumer does NOT wake when items[1].done changes via patch()', async () => {
       const cubit = new TodoCubit();
       const c0 = makeConsumer(cubit, 'c0', (s) => void s.items[0].title);
-      const c1done = makeConsumer(
-        cubit,
-        'c1done',
-        (s) => void s.items[1].done,
-      );
+      const c1done = makeConsumer(cubit, 'c1done', (s) => void s.items[1].done);
 
       cubit.setDonePatch(1, false); // calls patch({ items: newArray })
       await flush();
@@ -338,16 +339,8 @@ describe('array-tracking isolation', () => {
 
     it('items[0].done consumer does NOT wake when items[2].done changes via patch()', async () => {
       const cubit = new TodoCubit();
-      const c0done = makeConsumer(
-        cubit,
-        'c0done',
-        (s) => void s.items[0].done,
-      );
-      const c2done = makeConsumer(
-        cubit,
-        'c2done',
-        (s) => void s.items[2].done,
-      );
+      const c0done = makeConsumer(cubit, 'c0done', (s) => void s.items[0].done);
+      const c2done = makeConsumer(cubit, 'c2done', (s) => void s.items[2].done);
 
       cubit.setDonePatch(2, true);
       await flush();
@@ -359,11 +352,7 @@ describe('array-tracking isolation', () => {
     it('items.length consumer does NOT wake when only done status changes via patch()', async () => {
       const cubit = new TodoCubit();
       const cLen = makeConsumer(cubit, 'cLen', (s) => void s.items.length);
-      const c1done = makeConsumer(
-        cubit,
-        'c1done',
-        (s) => void s.items[1].done,
-      );
+      const c1done = makeConsumer(cubit, 'c1done', (s) => void s.items[1].done);
 
       cubit.setDonePatch(1, false);
       await flush();
@@ -438,12 +427,7 @@ describe('matrix[][] tracking isolation', () => {
   blacTestSetup();
 
   // Helper typed for MatrixCubit
-  function makeCell(
-    cubit: MatrixCubit,
-    id: string,
-    row: number,
-    col: number,
-  ) {
+  function makeCell(cubit: MatrixCubit, id: string, row: number, col: number) {
     return makeConsumer(
       cubit as unknown as TodoCubit,
       id,
@@ -455,7 +439,11 @@ describe('matrix[][] tracking isolation', () => {
     return makeConsumer(
       cubit as unknown as TodoCubit,
       id,
-      (s) => void (s as unknown as MatrixState).matrix[row]?.reduce((a, b) => a + b, 0),
+      (s) =>
+        void (s as unknown as MatrixState).matrix[row]?.reduce(
+          (a, b) => a + b,
+          0,
+        ),
     );
   }
 
@@ -595,7 +583,7 @@ describe('matrix[][] tracking isolation', () => {
     it('matrix.map() consumer wakes on any cell change (pins "matrix" path)', async () => {
       const cubit = new MatrixCubit();
       const matSum = makeMatrixMap(cubit, 'matSum');
-      const c33 = makeCell(cubit, 'c33', 3, 3); // sentinel
+      const _c33 = makeCell(cubit, 'c33', 3, 3); // sentinel
 
       cubit.bumpCellEmit(3, 3);
       await flush();
@@ -613,7 +601,9 @@ describe('matrix[][] tracking isolation', () => {
         constructor() {
           super({ matrix: makeMatrix(), tick: 0 });
         }
-        bumpTick() { this.patch({ tick: this.state.tick + 1 }); }
+        bumpTick() {
+          this.patch({ tick: this.state.tick + 1 });
+        }
       }
 
       const cubit = new ComboCubit();
@@ -621,13 +611,18 @@ describe('matrix[][] tracking isolation', () => {
 
       // Build consumers using the combo cubit's channel/interner directly
       const { value: proxy, paths } = trackRender(cubit.state, cubit.interner);
-      void (proxy as ComboState).matrix.map((r) => r.reduce((a, b) => a + b, 0));
+      void (proxy as ComboState).matrix.map((r) =>
+        r.reduce((a, b) => a + b, 0),
+      );
       cubit.registerConsumerPaths('matSum', paths);
       const matSumInterest = expandWithAncestors(paths, cubit.interner);
       const matSumCb = vi.fn();
       cubit.channel.subscribe(() => matSumInterest, matSumCb);
 
-      const { value: proxy2, paths: paths2 } = trackRender(cubit.state, cubit.interner);
+      const { value: proxy2, paths: paths2 } = trackRender(
+        cubit.state,
+        cubit.interner,
+      );
       void (proxy2 as ComboState).tick;
       cubit.registerConsumerPaths('tick', paths2);
       const tickInterest = expandWithAncestors(paths2, cubit.interner);
@@ -726,11 +721,13 @@ describe('consecutive-patch regression (tracking-lab title+ bug)', () => {
     const cubit = new TodoCubit();
 
     // Mirrors the `items.map(titles)` consumer in the tracking-lab.
-    const cMap = makeConsumer(cubit, 'cMap', (s) =>
-      void s.items.map((i) => i.title),
+    const cMap = makeConsumer(
+      cubit,
+      'cMap',
+      (s) => void s.items.map((i) => i.title),
     );
     // Second consumer to force diffAlongSkeleton (not ALL_PATHS shortcut).
-    const c0 = makeConsumer(cubit, 'c0', (s) => void s.items[0].title);
+    const _c0 = makeConsumer(cubit, 'c0', (s) => void s.items[0].title);
 
     // First patch — equivalent to clicking `title+` once.
     cubit.appendTitlePatch(0, '.');
@@ -756,10 +753,12 @@ describe('consecutive-patch regression (tracking-lab title+ bug)', () => {
     // the patch is a structural no-op for that field → _refineAncestorMarks
     // correctly produces no leaf change → consumer stays asleep.
     const cubit = new TodoCubit();
-    const cMap = makeConsumer(cubit, 'cMap', (s) =>
-      void s.items.map((i) => i.title),
+    const cMap = makeConsumer(
+      cubit,
+      'cMap',
+      (s) => void s.items.map((i) => i.title),
     );
-    const c0 = makeConsumer(cubit, 'c0', (s) => void s.items[0].title);
+    const _c0 = makeConsumer(cubit, 'c0', (s) => void s.items[0].title);
 
     // First real patch.
     cubit.appendTitlePatch(0, '.');

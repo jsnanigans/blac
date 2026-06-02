@@ -16,8 +16,7 @@
  */
 import { performance } from 'node:perf_hooks';
 import { Cubit, configureBlac } from '@blac/core';
-import { trackRender } from '@dirtytalk/structural';
-import { StructuralContainer } from '@dirtytalk/structural';
+import { StructuralContainer, trackRender } from '@dirtytalk/structural';
 import { createStore } from 'zustand';
 import { createWideState, type WideState } from '../shared/types';
 
