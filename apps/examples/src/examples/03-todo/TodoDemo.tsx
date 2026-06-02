@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { watch } from '@blac/core';
 import { useBloc } from '@blac/react';
 import { ExampleLayout } from '../../shared/ExampleLayout';
-import { Card, Button } from '../../shared/components';
-import { TodoCubit, type TodoFilter } from './TodoCubit';
+import { Card } from '../../shared/components';
+import { TodoCubit } from './TodoCubit';
 import { TodoList } from './TodoList';
 import { TodoStats } from './TodoStats';
+import { TodoToolbar } from './TodoToolbar';
 import { QuickAdd } from './QuickAdd';
 
 const STORAGE_KEY = 'blac-examples-todos';
@@ -29,8 +30,12 @@ export function TodoDemo() {
     return unwatch;
   }, [addLog]);
 
-  // onMount / onUnmount lifecycle hooks
-  const [state, bloc] = useBloc(TodoCubit, {
+  // onMount / onUnmount lifecycle hooks. This shell owns the Cubit lifecycle
+  // but reads no state (`select: () => []`), so it never re-renders from todo
+  // changes — only its own local `logs` state. The filter bar, list, and stats
+  // each read their own slice via their own useBloc call.
+  useBloc(TodoCubit, {
+    select: () => [],
     onMount: (b) => {
       addLog(`onMount: TodoCubit loaded with ${b.state.items.length} items`);
     },
@@ -45,8 +50,6 @@ export function TodoDemo() {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
   }, [logs]);
-
-  const filters: TodoFilter[] = ['all', 'active', 'completed'];
 
   return (
     <ExampleLayout
@@ -65,30 +68,7 @@ export function TodoDemo() {
             <Card>
               <div className="stack-md">
                 <QuickAdd />
-
-                <div className="flex-between">
-                  <div className="todo-filters">
-                    {filters.map((f) => (
-                      <button
-                        key={f}
-                        className={`ghost ${state.filter === f ? 'active' : ''}`}
-                        onClick={() => bloc.setFilter(f)}
-                      >
-                        {f}
-                      </button>
-                    ))}
-                  </div>
-                  {bloc.completedCount > 0 && (
-                    <Button
-                      variant="ghost"
-                      onClick={bloc.clearCompleted}
-                      style={{ fontSize: '0.8125rem' }}
-                    >
-                      Clear completed
-                    </Button>
-                  )}
-                </div>
-
+                <TodoToolbar />
                 <TodoList />
               </div>
             </Card>

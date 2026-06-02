@@ -1,82 +1,50 @@
-import { useBloc } from '@blac/react';
-import { FormCubit } from './FormCubit';
-import { Input, Textarea, RenderCounter } from '../../shared/components';
+import { FormField, TermsField, type FieldConfig } from './FormField';
+
+// Each field declares which per-field error getter it tracks (if any). The
+// container itself reads no state — every field re-renders independently.
+const FIELDS: FieldConfig[] = [
+  {
+    field: 'name',
+    label: 'Name',
+    placeholder: 'Your name',
+    error: (b) => b.nameError,
+  },
+  {
+    field: 'email',
+    label: 'Email',
+    type: 'email',
+    placeholder: 'you@example.com',
+    error: (b) => b.emailError,
+  },
+  {
+    field: 'password',
+    label: 'Password',
+    type: 'password',
+    placeholder: 'At least 8 characters',
+    error: (b) => b.passwordError,
+  },
+  {
+    field: 'confirmPassword',
+    label: 'Confirm Password',
+    type: 'password',
+    placeholder: 'Repeat password',
+    error: (b) => b.confirmPasswordError,
+  },
+  {
+    field: 'bio',
+    label: 'Bio (optional)',
+    placeholder: 'Tell us about yourself',
+    multiline: true,
+  },
+];
 
 export function FormFields({ formId }: { formId: string }) {
-  const [state, bloc] = useBloc(FormCubit, { args: { id: formId } });
-
-  const fieldError = (
-    field: 'name' | 'email' | 'password' | 'confirmPassword' | 'bio',
-  ) => {
-    const s = state[field];
-    if (!s.touched) return undefined;
-    return bloc.errors[field];
-  };
-
   return (
-    <div style={{ position: 'relative' }}>
-      <RenderCounter name="FormFields" />
-      <div className="form-grid">
-        <Input
-          label="Name"
-          value={state.name.value}
-          onChange={(e) => bloc.setField('name', e.target.value)}
-          onBlur={() => bloc.touchField('name')}
-          error={fieldError('name')}
-          placeholder="Your name"
-        />
-        <Input
-          label="Email"
-          type="email"
-          value={state.email.value}
-          onChange={(e) => bloc.setField('email', e.target.value)}
-          onBlur={() => bloc.touchField('email')}
-          error={fieldError('email')}
-          placeholder="you@example.com"
-        />
-        <Input
-          label="Password"
-          type="password"
-          value={state.password.value}
-          onChange={(e) => bloc.setField('password', e.target.value)}
-          onBlur={() => bloc.touchField('password')}
-          error={fieldError('password')}
-          placeholder="At least 8 characters"
-        />
-        <Input
-          label="Confirm Password"
-          type="password"
-          value={state.confirmPassword.value}
-          onChange={(e) => bloc.setField('confirmPassword', e.target.value)}
-          onBlur={() => bloc.touchField('confirmPassword')}
-          error={fieldError('confirmPassword')}
-          placeholder="Repeat password"
-        />
-        <Textarea
-          label="Bio (optional)"
-          value={state.bio.value}
-          onChange={(e) => bloc.setField('bio', e.target.value)}
-          onBlur={() => bloc.touchField('bio')}
-          placeholder="Tell us about yourself"
-          rows={3}
-        />
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '0.875rem',
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={state.agreeToTerms}
-            onChange={bloc.toggleTerms}
-            style={{ width: 'auto' }}
-          />
-          I agree to the terms and conditions
-        </label>
-      </div>
+    <div className="form-grid">
+      {FIELDS.map((config) => (
+        <FormField key={config.field} formId={formId} config={config} />
+      ))}
+      <TermsField formId={formId} />
     </div>
   );
 }

@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ensure, getPluginManager } from '@blac/core';
-import { useBloc } from '@blac/react';
+import { useEffect, useState } from 'react';
+import { getPluginManager } from '@blac/core';
 import { ExampleLayout } from '../../shared/ExampleLayout';
 import { Button, Card } from '../../shared/components';
 import {
@@ -8,179 +7,19 @@ import {
   DRAFT_PERSIST_KEY,
   draftPersistPlugin,
 } from './persistPlugin';
-import { PersistedDraftCubit } from './PersistedDraftCubit';
+import { DraftForm } from './DraftForm';
+import { PersistenceStatus } from './PersistenceStatus';
+import { TransformedRecord } from './TransformedRecord';
 
 function DraftEditor() {
-  const [state, bloc] = useBloc(PersistedDraftCubit, {
-    args: { id: DRAFT_INSTANCE_ID },
-  });
-  const actualBloc = useMemo(
-    () => ensure(PersistedDraftCubit, { args: { id: DRAFT_INSTANCE_ID } }),
-    [],
-  );
-  const [persistStatus, setPersistStatus] = useState('hydrating');
-  const [savedAt, setSavedAt] = useState<string>('not saved yet');
-  const [hydrationReady, setHydrationReady] = useState('pending');
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const unsubscribe = draftPersistPlugin.subscribe((event) => {
-      if ((event.instance as unknown) !== actualBloc) return;
-
-      setPersistStatus(event.status.phase);
-      setSavedAt(
-        event.status.savedAt
-          ? new Date(event.status.savedAt).toLocaleTimeString()
-          : 'not saved yet',
-      );
-      setError(event.status.error?.message ?? null);
-    });
-
-    const currentStatus = draftPersistPlugin.getStatus(actualBloc as never);
-    if (currentStatus) {
-      setPersistStatus(currentStatus.phase);
-      setSavedAt(
-        currentStatus.savedAt
-          ? new Date(currentStatus.savedAt).toLocaleTimeString()
-          : 'not saved yet',
-      );
-      setError(currentStatus.error?.message ?? null);
-    }
-
-    return unsubscribe;
-  }, [actualBloc]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    setHydrationReady('pending');
-    void actualBloc
-      .waitForHydration()
-      .then(() => {
-        if (!cancelled) {
-          setHydrationReady('ready');
-        }
-      })
-      .catch((nextError) => {
-        if (!cancelled) {
-          setHydrationReady('error');
-          setError(
-            nextError instanceof Error ? nextError.message : String(nextError),
-          );
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [actualBloc]);
-
+  // Pure composition: three sibling components share the same draft instance by
+  // args id, each reading its own slice. The editor shell holds no state.
   return (
     <div className="grid grid-cols-2 gap-md">
-      <Card>
-        <div className="stack-md">
-          <div className="stack-xs">
-            <label className="text-small text-muted">Title</label>
-            <input
-              value={state.title}
-              onChange={(e) => bloc.setTitle(e.target.value)}
-              placeholder="Draft title"
-            />
-          </div>
-
-          <div className="stack-xs">
-            <label className="text-small text-muted">Tags</label>
-            <input
-              value={state.tags.join(', ')}
-              onChange={(e) =>
-                bloc.setTags(
-                  e.target.value
-                    .split(',')
-                    .map((tag) => tag.trim())
-                    .filter(Boolean),
-                )
-              }
-              placeholder="tag-one, tag-two"
-            />
-          </div>
-
-          <div className="stack-xs">
-            <label className="text-small text-muted">Body</label>
-            <textarea
-              value={state.body}
-              onChange={(e) => bloc.setBody(e.target.value)}
-              placeholder="Write something and remount the editor"
-              rows={10}
-            />
-          </div>
-
-          <div className="row-xs flex-wrap">
-            <Button variant="ghost" onClick={bloc.resetDraft}>
-              Reset in-memory state
-            </Button>
-          </div>
-        </div>
-      </Card>
-
+      <DraftForm draftId={DRAFT_INSTANCE_ID} />
       <div className="stack-md">
-        <Card>
-          <h4>Persistence Status</h4>
-          <div className="stack-xs text-small text-muted">
-            <p>
-              <strong>Plugin phase:</strong> <code>{persistStatus}</code>
-            </p>
-            <p>
-              <strong>Core hydration:</strong>{' '}
-              <code>{actualBloc.hydrationStatus}</code>
-            </p>
-            <p>
-              <strong>waitForHydration():</strong> <code>{hydrationReady}</code>
-            </p>
-            <p>
-              <strong>Hydrated:</strong>{' '}
-              <code>{actualBloc.isHydrated ? 'true' : 'false'}</code>
-            </p>
-            <p>
-              <strong>Last saved:</strong> <code>{savedAt}</code>
-            </p>
-            <p>
-              <strong>Persist key:</strong> <code>{DRAFT_PERSIST_KEY}</code>
-            </p>
-            <p>
-              <strong>Local edits:</strong> <code>{state.localEditCount}</code>
-            </p>
-            {error ? (
-              <p>
-                <strong>Error:</strong> <code>{error}</code>
-              </p>
-            ) : null}
-          </div>
-        </Card>
-
-        <Card>
-          <h4>Transformed Record</h4>
-          <div className="stack-xs text-small text-muted">
-            <p>
-              <code>stateToDb</code> stores tags as a comma-delimited string and
-              omits <code>localEditCount</code>.
-            </p>
-            <p>
-              <code>dbToState</code> parses the string back into an array and
-              merges with the Cubit defaults.
-            </p>
-          </div>
-          <pre className="code-block">
-            {JSON.stringify(
-              {
-                title: state.title,
-                body: state.body,
-                tags: state.tags.join(','),
-              },
-              null,
-              2,
-            )}
-          </pre>
-        </Card>
+        <PersistenceStatus draftId={DRAFT_INSTANCE_ID} />
+        <TransformedRecord draftId={DRAFT_INSTANCE_ID} />
       </div>
     </div>
   );

@@ -15,7 +15,11 @@ import { CURRENT_USER_ID } from '../mockData';
  * - Clean separation of concerns
  */
 export function MessengerApp() {
-  const [appState, { setCurrentUserId: setUserId }] = useBloc(AppCubit);
+  // Action-only: the shell owns the user id + websocket lifecycle but reads no
+  // AppCubit state, so switching channels never re-renders the whole app.
+  const [, { setCurrentUserId: setUserId }] = useBloc(AppCubit, {
+    select: () => [],
+  });
 
   // Set current user ID in AppCubit
   useEffect(() => {
@@ -42,79 +46,88 @@ export function MessengerApp() {
       <Sidebar currentUserId={CURRENT_USER_ID} />
 
       <div className="main-content">
-        {appState.activeChannelId ? (
-          <ChannelView
-            channelId={appState.activeChannelId}
-            currentUserId={CURRENT_USER_ID}
-          />
-        ) : (
-          <div className="no-channel-selected">
-            <h2>Welcome to BlaC Messenger</h2>
-            <p>Select a channel from the sidebar to start chatting</p>
-            <div className="demo-info">
-              <h3>What to watch for:</h3>
-              <ul>
-                <li>
-                  Each channel has its own independent state (ChannelBloc)
-                </li>
-                <li>
-                  Components only re-render when their specific data changes
-                </li>
-                <li>
-                  Bots will randomly send messages and show typing indicators
-                </li>
-                <li>
-                  Switching channels creates isolated state without disturbing
-                  the rest of the workspace
-                </li>
-              </ul>
-            </div>
-
-            <details className="patterns-panel" style={{ marginTop: '24px' }}>
-              <summary>BlaC Patterns Used</summary>
-              <div className="pattern-list">
-                <div className="pattern-item">
-                  <span>
-                    <code>instanceKey</code> &mdash; Each channel gets its own
-                    ChannelBloc instance, keyed by channel ID
-                  </span>
-                </div>
-                <div className="pattern-item">
-                  <span>
-                    <code>acquire / borrow / borrowSafe</code> &mdash;
-                    Components acquire shared instances and borrow references
-                    across the tree
-                  </span>
-                </div>
-                <div className="pattern-item">
-                  <span>
-                    <code>depend()</code> &mdash; ChannelBloc depends on
-                    AppCubit for current user context
-                  </span>
-                </div>
-                <div className="pattern-item">
-                  <span>
-                    <code>onSystemEvent('dispose')</code> &mdash; Persistence
-                    hooks save channel state before disposal
-                  </span>
-                </div>
-                <div className="pattern-item">
-                  <span>
-                    <code>NotificationCubit</code> &mdash; Lightweight proxy
-                    cubit that aggregates unread counts from all channels
-                  </span>
-                </div>
-                <div className="pattern-item">
-                  <span>
-                    <code>Lazy creation</code> &mdash; UserCubit instances are
-                    created on demand when a user profile is first needed
-                  </span>
-                </div>
-              </div>
-            </details>
-          </div>
-        )}
+        <MainContent />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Reads only `activeChannelId` from AppCubit and routes to the active channel.
+ * Isolated from the app shell so a channel switch re-renders just this subtree.
+ */
+function MainContent() {
+  const [appState] = useBloc(AppCubit, {
+    select: (s) => [s.activeChannelId],
+  });
+
+  if (appState.activeChannelId) {
+    return (
+      <ChannelView
+        channelId={appState.activeChannelId}
+        currentUserId={CURRENT_USER_ID}
+      />
+    );
+  }
+
+  return (
+    <div className="no-channel-selected">
+      <h2>Welcome to BlaC Messenger</h2>
+      <p>Select a channel from the sidebar to start chatting</p>
+      <div className="demo-info">
+        <h3>What to watch for:</h3>
+        <ul>
+          <li>Each channel has its own independent state (ChannelBloc)</li>
+          <li>Components only re-render when their specific data changes</li>
+          <li>Bots will randomly send messages and show typing indicators</li>
+          <li>
+            Switching channels creates isolated state without disturbing the
+            rest of the workspace
+          </li>
+        </ul>
+      </div>
+
+      <details className="patterns-panel" style={{ marginTop: '24px' }}>
+        <summary>BlaC Patterns Used</summary>
+        <div className="pattern-list">
+          <div className="pattern-item">
+            <span>
+              <code>instanceKey</code> &mdash; Each channel gets its own
+              ChannelBloc instance, keyed by channel ID
+            </span>
+          </div>
+          <div className="pattern-item">
+            <span>
+              <code>acquire / borrow / borrowSafe</code> &mdash; Components
+              acquire shared instances and borrow references across the tree
+            </span>
+          </div>
+          <div className="pattern-item">
+            <span>
+              <code>depend()</code> &mdash; ChannelBloc depends on AppCubit for
+              current user context
+            </span>
+          </div>
+          <div className="pattern-item">
+            <span>
+              <code>onSystemEvent('dispose')</code> &mdash; Persistence hooks
+              save channel state before disposal
+            </span>
+          </div>
+          <div className="pattern-item">
+            <span>
+              <code>NotificationCubit</code> &mdash; Lightweight proxy cubit
+              that aggregates unread counts from all channels
+            </span>
+          </div>
+          <div className="pattern-item">
+            <span>
+              <code>Lazy creation</code> &mdash; UserCubit instances are created
+              on demand when a user profile is first needed
+            </span>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }

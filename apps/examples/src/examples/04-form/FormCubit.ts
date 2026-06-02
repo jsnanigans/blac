@@ -56,27 +56,46 @@ export class FormCubit extends Cubit<FormState, FormArgs> {
     this.emit({ ...initialState });
   };
 
+  // Per-field error getters. Each reads only the field(s) it validates, so a
+  // FormField component reading `bloc.nameError` re-renders only when `name`
+  // changes — confirmPassword re-renders when either it or `password` changes.
+  // (A method like `errorFor(field)` would NOT work for tracking: methods read
+  // live untracked state, whereas getters run through the render tracking proxy.)
+  get nameError(): string | undefined {
+    const v = this.state.name.value;
+    if (!v.trim()) return 'Name is required';
+    if (v.trim().length < 2) return 'Name must be at least 2 characters';
+    return undefined;
+  }
+
+  get emailError(): string | undefined {
+    const v = this.state.email.value;
+    if (!v.trim()) return 'Email is required';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Invalid email address';
+    return undefined;
+  }
+
+  get passwordError(): string | undefined {
+    const v = this.state.password.value;
+    if (!v) return 'Password is required';
+    if (v.length < 8) return 'Password must be at least 8 characters';
+    return undefined;
+  }
+
+  get confirmPasswordError(): string | undefined {
+    if (this.state.confirmPassword.value !== this.state.password.value)
+      return 'Passwords do not match';
+    return undefined;
+  }
+
   get errors(): Record<string, string> {
-    const s = this.state;
     const errs: Record<string, string> = {};
-
-    if (!s.name.value.trim()) errs.name = 'Name is required';
-    else if (s.name.value.trim().length < 2)
-      errs.name = 'Name must be at least 2 characters';
-
-    if (!s.email.value.trim()) errs.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email.value))
-      errs.email = 'Invalid email address';
-
-    if (!s.password.value) errs.password = 'Password is required';
-    else if (s.password.value.length < 8)
-      errs.password = 'Password must be at least 8 characters';
-
-    if (s.confirmPassword.value !== s.password.value)
-      errs.confirmPassword = 'Passwords do not match';
-
-    if (!s.agreeToTerms) errs.terms = 'You must agree to the terms';
-
+    if (this.nameError) errs.name = this.nameError;
+    if (this.emailError) errs.email = this.emailError;
+    if (this.passwordError) errs.password = this.passwordError;
+    if (this.confirmPasswordError)
+      errs.confirmPassword = this.confirmPasswordError;
+    if (!this.state.agreeToTerms) errs.terms = 'You must agree to the terms';
     return errs;
   }
 
