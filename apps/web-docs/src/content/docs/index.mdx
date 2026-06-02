@@ -1,0 +1,43 @@
+---
+title: BlaC
+description: Type-safe state management for React with automatic re-render optimization.
+template: splash
+hero:
+  tagline: Type-safe state management for React with automatic re-render optimization. Read state like a plain object — only the components that touch what changed re-render.
+  image:
+    file: ../../assets/logo.svg
+  actions:
+    - text: Get started
+      link: /guide/getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/jsnanigans/blac
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## One library, many packages
+
+BlaC is the umbrella. Pick the package that fits where you are.
+
+<CardGrid>
+  <Card title="Guide" icon="open-book">
+    Learn BlaC end to end — concepts, the mental model, and a build-along
+    tutorial. [Start here](/guide/introduction/).
+  </Card>
+  <Card title="blac-core" icon="seti:typescript">
+    The framework-agnostic reactive core: blocs, cubits, tracking.
+    [Reference](/core/cubit/).
+  </Card>
+  <Card title="blac-react" icon="seti:react">
+    React bindings — `useBloc`, per-consumer re-render isolation.
+    [Reference](/react/getting-started/).
+  </Card>
+  <Card title="dirtytalk" icon="puzzle">
+    The spatial / structural / engine sub-libraries.
+    [Explore](/dirtytalk/).
+  </Card>
+</CardGrid>

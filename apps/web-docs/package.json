@@ -1,0 +1,30 @@
+{
+  "name": "@blac/web-docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "node ./scripts/check-snippets.mjs",
+    "build:astro": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@blac/core": "workspace:*",
+    "@blac/react": "workspace:*",
+    "@types/react": "catalog:",
+    "astro": "^6.4.3",
+    "expressive-code": "^0.41.7",
+    "expressive-code-twoslash": "^0.6.1",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.38.3",
+    "sharp": "^0.34.0",
+    "starlight-sidebar-topics": "^0.7.1"
+  }
+}

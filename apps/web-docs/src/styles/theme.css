@@ -1,0 +1,59 @@
+/*
+  BlaC docs theme — "fresh minimal / technical".
+  Light layer over Starlight's defaults: brand accent (the logo's indigo→cyan),
+  a touch of cool to the grays, and a few restrained polish touches. We keep
+  Starlight's system font stack (no web-font payload) so pages stay fast.
+
+  Brand reference: logo gradient #6366F1 (indigo) → #22D3EE (cyan).
+  Accent palettes below are tuned from that indigo for each color mode.
+*/
+
+/* Dark mode (Starlight's default :root) ---------------------------------- */
+:root {
+  --sl-color-accent-low: #1e1b4b;
+  --sl-color-accent: #6366f1;
+  --sl-color-accent-high: #c7d2fe;
+
+  /* Brand gradient, reused by the splash hero + accents. */
+  --blac-gradient: linear-gradient(120deg, #818cf8 10%, #22d3ee 90%);
+}
+
+/* Light mode -------------------------------------------------------------- */
+:root[data-theme='light'] {
+  --sl-color-accent-low: #e0e7ff;
+  --sl-color-accent: #4f46e5;
+  --sl-color-accent-high: #312e81;
+
+  --blac-gradient: linear-gradient(120deg, #4f46e5 10%, #0891b2 90%);
+}
+
+/* Splash hero: gradient wordmark + tightened measure ---------------------- */
+.hero h1 {
+  background: var(--blac-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero .tagline {
+  max-width: 44ch;
+}
+
+/* Card grid: subtle branded lift on hover (Starlight <CardGrid>/<Card>) ---- */
+.card {
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--sl-color-accent);
+  transform: translateY(-2px);
+}
+
+/* The topic dropdown is the primary package switcher — make it read as a
+   first-class control, not an afterthought. */
+starlight-sidebar-topics-dropdown summary,
+.topics-dropdown summary {
+  font-weight: 600;
+}

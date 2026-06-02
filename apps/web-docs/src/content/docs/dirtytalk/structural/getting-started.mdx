@@ -1,0 +1,202 @@
+---
+title: Getting Started
+description: Build a small state container with no framework, watch it notify subscribers on a microtask flush, then wire it into React for path-level re-render isolation.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+This page teaches `@dirtytalk/structural` by doing. You will build a small state container with no framework, watch it notify subscribers on a microtask flush, and then wire the same container into React so that a component re-renders only when the exact fields it read actually change. It is written for anyone who wants fine-grained, path-level change tracking for object state.
+
+## What this package gives you
+
+`@dirtytalk/structural` is a state container for **structural data** — plain objects and arrays whose consumers care about specific named paths (`user.name`, `items`, `count`). When you mutate the state, it works out which paths actually changed and wakes only the consumers that read those paths. A component that read `state.count` will not re-render because `state.label` changed.
+
+It is built on [`@dirtytalk/engine`](/dirtytalk/engine/getting-started), which provides the dirty-tracking channel and the schedulers that decide _when_ notifications fire. The engine is a runtime dependency — you will import schedulers from it directly.
+
+## Install
+
+`@dirtytalk/structural` depends on `@dirtytalk/engine`. Install both. React is an optional peer dependency, only needed if you use the `/react` subpath.
+
+<Tabs syncKey="pkg">
+<TabItem label="pnpm">
+
+```bash
+pnpm add @dirtytalk/structural @dirtytalk/engine
+```
+
+</TabItem>
+<TabItem label="npm">
+
+```bash
+npm install @dirtytalk/structural @dirtytalk/engine
+```
+
+</TabItem>
+<TabItem label="yarn">
+
+```bash
+yarn add @dirtytalk/structural @dirtytalk/engine
+```
+
+</TabItem>
+</Tabs>
+
+:::note[Engine is required]
+`@dirtytalk/structural` lists `@dirtytalk/engine` as a dependency, so a package manager will pull it in automatically. You still import schedulers (`SyncScheduler`, `MicrotaskScheduler`, …) from `@dirtytalk/engine` directly — they are **not** re-exported from `@dirtytalk/structural`.
+:::
+
+## A core walkthrough (no React)
+
+Let's build a container by subclassing `StructuralContainer<S>`, drive it with `patch`/`emit`/`update`, subscribe to it through its channel, and observe a flush.
+
+### 1. Subclass `StructuralContainer<S>`
+
+`StructuralContainer<S>` is abstract. You subclass it, type its state shape, and add your own methods that call the protected-by-convention mutators (`patch`, `emit`, `update`).
+
+```ts
+import { StructuralContainer } from '@dirtytalk/structural';
+import { SyncScheduler } from '@dirtytalk/engine';
+
+interface CounterState {
+  count: number;
+  label: string;
+}
+
+class Counter extends StructuralContainer<CounterState> {
+  increment() {
+    // patch merges a DeepPartial<S> into the current state.
+    this.patch({ count: this.state.count + 1 });
+  }
+
+  rename(label: string) {
+    this.patch({ label });
+  }
+}
+
+// The constructor takes (initial, options). For deterministic, synchronous
+// behaviour (tests, SSR, this walkthrough) pass a SyncScheduler from the engine.
+const counter = new Counter(
+  { count: 0, label: 'clicks' },
+  {
+    scheduler: new SyncScheduler(),
+  },
+);
+```
+
+:::caution[Schedulers come from the engine]
+You import `SyncScheduler` from `@dirtytalk/engine`, and you pass it as `options.scheduler` — an object, not a bare positional argument. The default scheduler (if you pass none) is a fresh `MicrotaskScheduler`, which defers and coalesces notifications onto a microtask.
+:::
+
+### 2. Subscribe through the channel using `ALL_PATHS`
+
+Every container exposes a `subscribe(interest, cb)` method that passes straight through to the underlying [`DirtyChannel`](/dirtytalk/engine/concepts). `interest` is a thunk returning the set of paths this subscriber cares about. For a devtools-style subscriber that wants to hear about _every_ change, return the `ALL_PATHS` sentinel.
+
+```ts
+import { ALL_PATHS } from '@dirtytalk/structural';
+
+const unsubscribe = counter.subscribe(
+  () => ALL_PATHS, // "wake me on any change"
+  (dirty) => {
+    console.log('state is now', counter.state, 'dirty:', dirty);
+  },
+);
+```
+
+The callback receives `dirty`, the set of path IDs that changed (or `ALL_PATHS`). Because we used a `SyncScheduler`, the callback fires synchronously the moment a mutation marks the channel.
+
+```ts
+counter.increment(); // logs: state is now { count: 1, label: 'clicks' } ...
+counter.rename('taps'); // logs: state is now { count: 1, label: 'taps' } ...
+
+unsubscribe(); // stop listening
+```
+
+:::note[Single-consumer shortcut]
+With at most one registered consumer, `emit`/`update` skip diffing and mark `ALL_PATHS` — the lone consumer wakes on any change. Raw `subscribe` callers like the one above do not count toward that registry (they never call `registerConsumerPaths`), so a `subscribe` returning `ALL_PATHS` always hears every change regardless. Fine-grained, path-level isolation kicks in once there are two or more _registered_ consumers, which is exactly what the React hook does for you.
+:::
+
+### 3. Observe a microtask flush
+
+Switch to the default scheduler to see coalescing. Drop the `scheduler` option (or pass `new MicrotaskScheduler()`), and multiple mutations in one synchronous tick collapse into a single deferred notification.
+
+```ts
+import { StructuralContainer, ALL_PATHS } from '@dirtytalk/structural';
+
+const c = new Counter({ count: 0, label: 'clicks' }); // default: MicrotaskScheduler
+
+let flushes = 0;
+c.subscribe(
+  () => ALL_PATHS,
+  () => {
+    flushes += 1;
+  },
+);
+
+c.increment();
+c.increment();
+c.increment();
+
+console.log(flushes); // 0 — nothing has flushed yet, still in this tick
+
+await Promise.resolve(); // let the microtask run
+
+console.log(flushes); // 1 — three marks coalesced into one flush
+```
+
+This is the same flush/coalescing model the engine documents in [Engine: Concepts](/dirtytalk/engine/concepts): marks accumulate via set union, a flush is requested from the scheduler, and the subscriber sees the unioned dirty region exactly once.
+
+## A React walkthrough
+
+The React adapter lives at the `@dirtytalk/structural/react` subpath and exposes a single hook, `useStructural`. It returns `[state, container]`, where `state` is a recording proxy: reading a field off it during render registers _that path_ as this component's interest, so only changes to paths it read trigger a re-render.
+
+```tsx
+import { useStructural } from '@dirtytalk/structural/react';
+
+function CountButton({ counter }: { counter: Counter }) {
+  const [state, container] = useStructural(counter);
+  // Reading state.count registers the path "count" for this component.
+  return (
+    <button onClick={() => container.increment()}>
+      clicked {state.count} times
+    </button>
+  );
+}
+
+function LabelTag({ counter }: { counter: Counter }) {
+  const [state] = useStructural(counter);
+  // This component reads only state.label, so it registers "label".
+  return <span>{state.label}</span>;
+}
+```
+
+Now the isolation pays off. With both components mounted against the same `counter` instance:
+
+- `counter.increment()` changes `count`. Only `CountButton` re-renders. `LabelTag` read `label` and stays asleep.
+- `counter.rename('taps')` changes `label`. Only `LabelTag` re-renders. `CountButton` stays asleep.
+
+No selector function, no manual dependency array. The hook tracks exactly the paths your JSX touched this render, and adapts automatically when conditional reads change which fields you access. Pass the container instance in however you like — props, context, or a module singleton.
+
+:::note[How the hook tracks]
+`useStructural` wraps `container.state` in a recording proxy each render and stores the set of paths read into a ref. After the render commits, a layout effect registers that path set with the container, keeping the container's skeleton in sync with what the component actually read. It then subscribes to the channel and forces a re-render (via `useReducer`) when an overlapping path goes dirty. It is StrictMode-safe and uses React's `useId()` for a stable per-component consumer id. See [Concepts](/dirtytalk/structural/concepts) for the full mechanism.
+:::
+
+:::caution[Immutable updates only]
+There is no in-place mutation primitive. Mutating `state` directly (`counter.state.count++`) bypasses change tracking entirely and nobody will wake. Always go through `emit`, `patch`, or `update`, all of which install a new immutable value.
+:::
+
+## When to use this package, and how it relates to BlaC
+
+Reach for `@dirtytalk/structural` when:
+
+- You have object/array state with **many independent consumers** that each read different slices of it, and you want each consumer to re-render only when its slice changes — without writing selectors.
+- You want path-level change tracking that is **framework-agnostic at the core** (the container and diff helpers have no React dependency) with an optional thin React adapter.
+- You are building on `@dirtytalk/engine` and want a higher-level, path-aware container rather than wiring a `DirtyChannel` by hand.
+
+It is the spiritual successor to BlaC's per-consumer path tracking. If you have used BlaC's [tracked state](/core/tracked) and [dependency tracking in `useBloc`](/react/dependency-tracking), the model here will feel familiar: read what you need, re-render when it changes. `@dirtytalk/structural` distills that idea into a standalone, engine-backed package. If you want the full BlaC programming model (cubits, cross-bloc dependencies, the wider ecosystem), see the [BlaC introduction](/guide/introduction). If you want fine-grained structural tracking as a focused building block, this package is it.
+
+## See also
+
+- [Structural: Concepts](/dirtytalk/structural/concepts) — the why and the model: path sets, the skeleton, the tracker.
+- [Structural: API Reference](/dirtytalk/structural/api-reference) — every export, signature, and option.
+- [Engine: Getting Started](/dirtytalk/engine/getting-started) — the `DirtyChannel` and schedulers this package is built on.
+- [Engine: Concepts](/dirtytalk/engine/concepts) — Space algebra, scheduling, and the flush model.
