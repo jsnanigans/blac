@@ -2,7 +2,7 @@
 
 This page is about judgment, not mechanics. It collects the opinionated do/don't principles that keep a BlaC codebase predictable as it grows: how to shape state, how to choose between the input lanes, how to model async work, and which habits quietly cause bugs.
 
-If you want copy-paste recipes for these situations, see [Patterns & Recipes](/guide/patterns) — that page is the concrete how-to. This page is the *why* behind the choices.
+If you want copy-paste recipes for these situations, see [Patterns & Recipes](/guide/patterns) — that page is the concrete how-to. This page is the _why_ behind the choices.
 
 ::: tip How to read this page
 Each section states a principle, gives a one-line rationale, and shows a good-vs-bad pair. The [Anti-patterns](#anti-patterns) section at the end is a quick-reference of the mistakes, each with its fix.
@@ -27,19 +27,21 @@ class CounterCubit extends Cubit<{ count: number }> {
 
 ```ts
 // Bad — there is no Bloc class to extend, and no event enum to dispatch
-class CounterBloc extends Bloc<CounterState, CounterEvent> { /* does not exist */ }
+class CounterBloc extends Bloc<CounterState, CounterEvent> {
+  /* does not exist */
+}
 ```
 
 If you genuinely want an event-sourced log (every intent recorded as a value before it is reduced), model it explicitly inside a Cubit — keep an `events: Event[]` array in state and a reducer method — rather than looking for a framework `Bloc`. For the lower-level engine that BlaC is built on, see [DirtyTalk](/dirtytalk/).
 
 ## State shape: flat, serializable, and free of derived values
 
-**Principle:** state holds the *source of truth*; everything computable from it is a getter, not a stored field.
+**Principle:** state holds the _source of truth_; everything computable from it is a getter, not a stored field.
 
 Two rules keep state honest:
 
 1. **Prefer flat and serializable.** Deeply nested or non-serializable state (class instances, `Map`/`Set`/`Date`, DOM nodes, functions) is harder to diff, harder to persist, and is treated as an opaque leaf by auto-tracking — see [Dependency Tracking](/react/dependency-tracking). `patch` accepts a `DeepPartial<S>` so shallow shapes update cleanly. Deep nesting is supported, but flat shapes are easier to reason about; reach for nesting only when the domain truly is nested.
-2. **Never store what you can derive.** A derived value stored in state is a second source of truth you must remember to keep in sync. Expose it as a getter instead — the tracker records getter access and only re-renders consumers when the *computed result* they read actually changes.
+2. **Never store what you can derive.** A derived value stored in state is a second source of truth you must remember to keep in sync. Expose it as a getter instead — the tracker records getter access and only re-renders consumers when the _computed result_ they read actually changes.
 
 ```ts
 // Good — totals are getters; state has one source of truth
@@ -71,7 +73,7 @@ interface CartState {
 ```
 
 ::: info Why getters re-render correctly
-Auto-tracking records the *leaf paths* a render reads. A getter that reads `this.state.items` is recorded as a dependency on `items`; when `items` changes the getter is re-evaluated and consumers re-render. A getter that no consumer reads costs nothing. See [Patterns & Recipes](/guide/patterns#getter-based-computed-values) for the recipe.
+Auto-tracking records the _leaf paths_ a render reads. A getter that reads `this.state.items` is recorded as a dependency on `items`; when `items` changes the getter is re-evaluated and consumers re-render. A getter that no consumer reads costs nothing. See [Patterns & Recipes](/guide/patterns#getter-based-computed-values) for the recipe.
 :::
 
 ## `args` vs `deps`: the decision rule
@@ -80,11 +82,11 @@ Auto-tracking records the *leaf paths* a render reads. A getter that reads `this
 
 This is the single most common source of confusion, so commit the rule to memory:
 
-| You have… | Use | Because |
-|---|---|---|
-| Serializable data that defines *which* instance (a `userId`, an `endpoint`, a filter set) | **`args`** | Args are hashed into the instance key — same args share one instance, different args fork. |
-| A non-serializable handle (a `useRef`, a stable `useCallback`, an external API object) | **`deps`** | Deps never key identity and are merged per-consumer; the bloc reads them lazily. |
-| An opaque key that isn't real bloc data (a per-mount id, an externally-managed token) | **a synthetic `args` field + `static key`** | Add the value to `args` (e.g. `_id`) and key on it; nothing else forks the instance. |
+| You have…                                                                                 | Use                                         | Because                                                                                    |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Serializable data that defines _which_ instance (a `userId`, an `endpoint`, a filter set) | **`args`**                                  | Args are hashed into the instance key — same args share one instance, different args fork. |
+| A non-serializable handle (a `useRef`, a stable `useCallback`, an external API object)    | **`deps`**                                  | Deps never key identity and are merged per-consumer; the bloc reads them lazily.           |
+| An opaque key that isn't real bloc data (a per-mount id, an externally-managed token)     | **a synthetic `args` field + `static key`** | Add the value to `args` (e.g. `_id`) and key on it; nothing else forks the instance.       |
 
 The mechanics of all three live in [Passing Inputs to Blocs](/guide/inputs); this is just the judgment. Note that `deps` is **not** a `useBloc` option in v2 — a consumer contributes its slice from a mount effect via the `APPLY_DEPS` / `REMOVE_DEPS_OWNER` handles from `@blac/core` (the examples below import them); see [Wiring deps from a component](/guide/inputs#wiring-deps-from-a-component).
 
@@ -120,11 +122,14 @@ See the full treatment in [Passing Inputs to Blocs](/guide/inputs#the-callback-s
 
 ### Per-component private instances
 
-When a component needs its *own* instance with its own lifecycle (disposed on unmount), add a per-mount unique value to `args` keyed by React's `useId()` and select it with `static key` — each mount gets a fresh private instance.
+When a component needs its _own_ instance with its own lifecycle (disposed on unmount), add a per-mount unique value to `args` keyed by React's `useId()` and select it with `static key` — each mount gets a fresh private instance.
 
 ```ts
 // Good — a synthetic `_id` keys the instance; endpoint rides along as config
-class FileUploadCubit extends Cubit<UploadState, { endpoint: string; _id: string }> {
+class FileUploadCubit extends Cubit<
+  UploadState,
+  { endpoint: string; _id: string }
+> {
   static key = (a: FileUploadCubit['args']) => a._id;
   constructor() {
     super({ status: 'idle', progress: 0 });
@@ -142,7 +147,7 @@ const [state, upload] = useBloc(FileUploadCubit, { args: { endpoint, _id } });
 ```
 
 ::: tip One source of per-mount identity
-`useId()` returns a stable-per-mount value, so keying on it gives each mount a private instance that lives and dies with it. For *named* sections that should share an instance by name (e.g. `"billing"` vs `"shipping"` form sections), make that name a real `args` field and key on it the same way. See [Instance Management](/core/instance-management) for the registry mechanics.
+`useId()` returns a stable-per-mount value, so keying on it gives each mount a private instance that lives and dies with it. For _named_ sections that should share an instance by name (e.g. `"billing"` vs `"shipping"` form sections), make that name a real `args` field and key on it the same way. See [Instance Management](/core/instance-management) for the registry mechanics.
 :::
 
 ## Async, loading, and error state
@@ -151,7 +156,7 @@ const [state, upload] = useBloc(FileUploadCubit, { args: { endpoint, _id } });
 
 ### Make status a value, not a guess
 
-Don't infer "loading" from `data === null`. Hold an explicit status so the UI can distinguish *never loaded*, *loading*, *error*, and *empty success*.
+Don't infer "loading" from `data === null`. Hold an explicit status so the UI can distinguish _never loaded_, _loading_, _error_, and _empty success_.
 
 ```ts
 // Good — explicit, exhaustive status
@@ -225,7 +230,7 @@ If state arrives asynchronously from the persistence plugin, await `waitForHydra
 
 **Principle:** declare cross-bloc reads with `this.depend(Other)`; keep the dependency graph a DAG.
 
-`this.depend(OtherCubit)` returns a lazy getter that resolves the dependency from the registry on each call. Use it to *read* another bloc's state inside a getter, or to *call* its methods to coordinate side effects.
+`this.depend(OtherCubit)` returns a lazy getter that resolves the dependency from the registry on each call. Use it to _read_ another bloc's state inside a getter, or to _call_ its methods to coordinate side effects.
 
 ```ts
 // Good — CartCubit depends on ShippingCubit, one direction only
@@ -246,6 +251,7 @@ class ShippingCubit extends Cubit<ShippingState> {
 ```
 
 ::: warning Two gotchas with `depend`
+
 - **`depend` resolves via `ensure`, which does not hold a reference.** A depended-on bloc can be disposed out from under you if nothing else keeps it alive. For app-wide collaborators, mark the dependency `@blac({ keepAlive: true })`.
 - **Reading a dependency's state in a constructor is unsafe** — it may not be initialized yet. Read it lazily inside a method or getter, where the getter resolves it on demand.
 - **Calling a dependency's method does not subscribe you to it.** `depend` gives you access, not reactivity; React re-render tracking is wired by `useBloc`, not by `depend`.
@@ -253,13 +259,28 @@ class ShippingCubit extends Cubit<ShippingState> {
 See [Bloc Communication](/core/bloc-communication) for the full lifecycle picture.
 :::
 
+**Reach for `.track()` when the cross-bloc read needs to be reactive.** Plain `this.getShipping().state.rate` is a live but _untracked_ read — the consumer only re-renders if it independently subscribes to the dependency. When a getter genuinely derives from another bloc and components should update on its changes, call `.track()` on the handle (`const [shipping] = this.shipping.track()`) instead of duplicating `useBloc(Other)` across every consumer. Keep the plain call for one-off reads and method invocations where you don't want a subscription.
+
+```ts
+// Good — the derivation declares its own reactivity; consumers stay simple.
+class CartCubit extends Cubit<CartState> {
+  private shipping = this.depend(ShippingCubit);
+  get total() {
+    const [shipping] = this.shipping.track();
+    return this.subtotal + shipping.rate;
+  }
+}
+```
+
+This keeps the dependency graph in the blocs (where it's testable) rather than scattering coordinating `useBloc` calls through the view. See [Auto-tracking with `.track()`](/core/bloc-communication#auto-tracking-with-track).
+
 If you find two blocs reaching into each other, that is usually a sign the shared concern belongs in a third bloc both depend on, or that the two should be one. Cross-bloc coupling is a smell worth questioning, not a tool to reach for first.
 
 ## Keep components dumb
 
 **Principle:** components read tracked state and call methods. They should not hold derived logic, mutate state, or own business rules.
 
-A component's job is to render the current state and forward intent. Put the *what* in the bloc (methods, getters) and leave the *how it looks* in the component. This keeps logic testable without a DOM and keeps re-renders precise.
+A component's job is to render the current state and forward intent. Put the _what_ in the bloc (methods, getters) and leave the _how it looks_ in the component. This keeps logic testable without a DOM and keeps re-renders precise.
 
 ```tsx
 // Good — reads a getter, calls a method; no logic in the view
@@ -284,7 +305,8 @@ function CartSummary() {
   return (
     <footer>
       <strong>${total.toFixed(2)}</strong>
-      <button onClick={() => (cart.state.items = [])}>Clear</button> {/* never mutate */}
+      <button onClick={() => (cart.state.items = [])}>Clear</button>{' '}
+      {/* never mutate */}
     </footer>
   );
 }
@@ -348,7 +370,7 @@ get total() { return this.state.items.reduce(/* ... */); }
 
 ### Threading identity outside `args`
 
-When the distinguishing value is *meaningful data* (a `userId`, a `docId`), it belongs in `args` — args both key the instance and seed `init()` in one step. Don't invent a parallel key channel.
+When the distinguishing value is _meaningful data_ (a `userId`, a `docId`), it belongs in `args` — args both key the instance and seed `init()` in one step. Don't invent a parallel key channel.
 
 ```tsx
 // Bad — passing userId as a bare positional/extra arg, separate from args
@@ -372,7 +394,9 @@ useEffect(() => {
 
 // Fix — invert: expose result state, call your own callback in an effect
 const [{ doneId }] = useBloc(UploadCubit, { args });
-useEffect(() => { if (doneId) onDone(doneId); }, [doneId, onDone]);
+useEffect(() => {
+  if (doneId) onDone(doneId);
+}, [doneId, onDone]);
 ```
 
 ### Non-serializable values in `args`
@@ -403,7 +427,7 @@ const [s] = useBloc(TodoCubit, { select: (s) => [s.items] });
 const [s] = useBloc(TodoCubit);
 ```
 
-Use `select` deliberately: to opt a writer-only component *out* of all re-renders (`() => []`), or to narrow re-renders to a specific computed slice when profiling shows it matters — not as a default. A `select` function must also be referentially stable (wrap it in `useCallback`), or a fresh function each render re-keys the subscription.
+Use `select` deliberately: to opt a writer-only component _out_ of all re-renders (`() => []`), or to narrow re-renders to a specific computed slice when profiling shows it matters — not as a default. A `select` function must also be referentially stable (wrap it in `useCallback`), or a fresh function each render re-keys the subscription.
 
 ## See also
 

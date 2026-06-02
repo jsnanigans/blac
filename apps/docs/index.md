@@ -40,6 +40,12 @@ features:
   - icon: ⚛️
     title: Batched Updates
     details: "Changes coalesce on the microtask queue and dispatch through React's normal update path, so a burst of updates in one tick re-renders a component once."
+
+  - icon: 🔗
+    title: Reactive Cross-Bloc Getters
+    details: "A getter on one bloc can read another bloc's state via depend().track() — and the component reading it wakes when either bloc changes. No selectors, no extra useBloc, no provider wiring."
+    link: /core/bloc-communication#auto-tracking-with-track
+    linkText: See .track()
 ---
 
 <script setup>

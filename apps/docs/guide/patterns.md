@@ -163,6 +163,32 @@ class CartCubit extends Cubit<CartState> {
 }
 ```
 
+### Auto-tracking a dependency with `.track()`
+
+A plain `depend()` read (`this.getShipping().state.rate`) is _not_ reactive on its own — a component reading `cart.total` only re-renders on shipping changes if it _also_ calls `useBloc(ShippingCubit)`. Calling `.track()` on the handle removes that ceremony: the component reading the getter auto-subscribes to the dependency too.
+
+```ts
+class CartCubit extends Cubit<CartState> {
+  private shipping = this.depend(ShippingCubit);
+
+  get total() {
+    const subtotal = this.state.items.reduce((sum, i) => sum + i.price, 0);
+    const [shippingState] = this.shipping.track(); // opt in to cross-bloc reactivity
+    return subtotal + shippingState.rate;
+  }
+}
+```
+
+```tsx
+// The component subscribes to CartCubit only — yet re-renders when shipping changes too.
+function CartTotal() {
+  const [, cart] = useBloc(CartCubit);
+  return <strong>${cart.total.toFixed(2)}</strong>;
+}
+```
+
+`.track()` is render-aware (outside render it degrades to live values, no subscription), tracks the dependency's own getters transitively, and supports conditional and mutual dependencies. See [Auto-tracking with `.track()`](/core/bloc-communication#auto-tracking-with-track) for the full reference.
+
 ### Triggering side effects across blocs
 
 Call methods on dependencies to coordinate behavior:

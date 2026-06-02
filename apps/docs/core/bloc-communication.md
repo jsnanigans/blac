@@ -10,21 +10,25 @@ Think of `depend()` as "I need to know about that bloc, but I don't own it." It 
 
 ## `depend(Type)`
 
-Declare a cross-bloc dependency from inside a Cubit. Returns a lazy getter that resolves the other instance from the registry on each call.
+Declare a cross-bloc dependency from inside a Cubit. Returns a branded, callable handle that resolves the other instance from the registry on each call — and that you can `.track()` to opt into automatic cross-bloc re-renders.
 
 ```ts
 protected depend<T extends StateContainerConstructor>(
   Type: T,
-  instanceKey?: string,
-): () => InstanceType<T>
+  args?: ExtractArgs<T>,
+): DepHandle<T>
 ```
 
-| Parameter     | Type                                  | Required | Description                                                            |
-| ------------- | ------------------------------------- | -------- | ---------------------------------------------------------------------- |
-| `Type`        | `T extends StateContainerConstructor` | yes      | The state-container class to depend on.                                |
-| `instanceKey` | `string`                              | no       | Which keyed instance to resolve. Defaults to the default instance key. |
+| Parameter | Type                                  | Required | Description                                                                                                              |
+| --------- | ------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `Type`    | `T extends StateContainerConstructor` | yes      | The state-container class to depend on.                                                                                  |
+| `args`    | `ExtractArgs<T>`                      | no       | The `args` that identify which [keyed instance](/core/instance-management) to resolve. Defaults to the default instance. |
 
-**Returns:** a getter `() => InstanceType<T>` — call it (`this.getShipping()`) to resolve the dep against the registry lazily, on each call. The getter is returned immediately at declaration time; resolution happens each time you invoke it.
+**Returns:** a [`DepHandle<T>`](#what-track-returns) — a branded, **callable** handle. Call it (`this.getShipping()`) to resolve the live instance from the registry lazily, on each call; this is back-compatible with the old getter return. The handle also carries `.track()`, which opts the current React consumer into automatic cross-bloc re-renders — see [Auto-tracking with `.track()`](#auto-tracking-with-track). The handle is returned immediately at declaration time; resolution happens each time you invoke it.
+
+::: tip This is the part most state libraries can't do
+A getter on one bloc can read **another bloc's** state (and its getters) and, via `.track()`, the React component reading that getter wakes when _either_ bloc changes — with no `useBloc(Other)`, no selectors, and no provider wiring. Jump to [Auto-tracking with `.track()`](#auto-tracking-with-track) for the whole story.
+:::
 
 **Behavior.** `depend()` records the dependency (the `Type` → `instanceKey` pair is stored on the instance), then returns a closure that calls `this._registry.ensure(Type, instanceKey)` on each invocation. Resolution is **lazy per call**, which keeps the surface immune to dep-instance churn — if the depended-on instance is disposed and recreated, the next getter call simply returns the new one. `depend()` does **not** wire a reactive subscription between the two blocs: `this.getShipping().state.rate` is a plain read inside the bloc. Reactivity comes from the consumer (a React component's auto-tracking proxy, or an explicit `watch()`) — a naive auto-bridge would loop on mutual deps.
 
