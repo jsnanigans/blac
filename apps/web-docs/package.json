@@ -21,6 +21,7 @@
     "expressive-code": "^0.41.7",
     "expressive-code-twoslash": "^0.6.1",
     "react": "catalog:",
+    "remark-gfm": "^4.0.0",
     "react-dom": "catalog:",
     "typescript": "catalog:"
   },

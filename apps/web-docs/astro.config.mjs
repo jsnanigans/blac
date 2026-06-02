@@ -5,12 +5,22 @@ import react from '@astrojs/react';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
 import ts from 'typescript';
 import pluginTwoslash from 'expressive-code-twoslash';
+import remarkGfm from 'remark-gfm';
 
 // https://astro.build/config
 export default defineConfig({
   // Canonical origin — drives sitemap + absolute URLs. Update to the real
   // production domain when the Cloudflare Pages project is set up.
   site: 'https://blac-docs.pages.dev',
+  // GFM (tables, strikethrough, autolinks) renders in `.md` via Astro's
+  // built-in default, but `@astrojs/mdx` does NOT inherit that default — so
+  // tables in `.mdx` pages silently render as literal `| … |` text. Listing
+  // remark-gfm here as an explicit user plugin makes it run for BOTH `.md` and
+  // `.mdx` (mdx extends `markdown.remarkPlugins`), restoring tables in the
+  // interactive demo pages that were converted `.md` → `.mdx`.
+  markdown: {
+    remarkPlugins: [remarkGfm],
+  },
   integrations: [
     // React renderer for the interactive demo islands under
     // src/components/demos/. Islands import real workspace `@blac/react` and
