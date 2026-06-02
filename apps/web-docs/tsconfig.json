@@ -1,5 +1,14 @@
 {
   "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    // React islands live in src/components/demos/*.tsx and use the automatic
+    // JSX runtime. Astro's base preset leaves `jsx: "preserve"` (for .astro);
+    // overriding to the React automatic runtime here makes `astro check` and
+    // editors type-check the .tsx islands correctly. The Twoslash compiler
+    // options in astro.config.mjs are separate (they govern fenced snippets).
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  },
   "include": [".astro/types.d.ts", "**/*"],
   "exclude": ["dist"]
 }

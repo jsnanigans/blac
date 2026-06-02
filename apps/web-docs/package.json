@@ -12,9 +12,11 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@astrojs/react": "^5.0.7",
     "@blac/core": "workspace:*",
     "@blac/react": "workspace:*",
     "@types/react": "catalog:",
+    "@types/react-dom": "^19.2.3",
     "astro": "^6.4.3",
     "expressive-code": "^0.41.7",
     "expressive-code-twoslash": "^0.6.1",

@@ -1,0 +1,101 @@
+/*
+  Shared chrome for interactive `@blac/react` demo islands.
+
+  All values are pulled from Starlight's CSS custom properties so the demos
+  track the active light/dark theme automatically — there is no demo-local
+  color literal here. If you need a new token, prefer an existing `--sl-*`
+  variable (see Starlight's theme docs) over hard-coding a hex value.
+
+  Class names are prefixed `blac-demo-` to avoid colliding with Starlight or
+  Expressive Code styles. Authored once in Phase 0; reused by every island.
+*/
+
+.blac-demo {
+  /* Bordered, rounded card that reads as "live, try it" vs. a code snippet. */
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  background: var(--sl-color-black);
+  margin: 1.5rem 0;
+  overflow: hidden;
+  /* Match Expressive Code frame typography so demos sit next to snippets. */
+  font-size: var(--sl-text-sm);
+}
+
+.blac-demo__label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  border-bottom: 1px solid var(--sl-color-gray-5);
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-gray-2);
+  font-size: var(--sl-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.blac-demo__label::before {
+  /* "Live" dot — signals this is interactive, not a static screenshot. */
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--sl-color-accent);
+  flex: none;
+}
+
+.blac-demo__body {
+  padding: 1rem 1.25rem;
+  color: var(--sl-color-white);
+}
+
+/* --- Shared interactive primitives demos may reuse --------------------- */
+
+.blac-demo button {
+  font: inherit;
+  cursor: pointer;
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--sl-color-accent);
+  background: var(--sl-color-accent);
+  color: var(--sl-color-white);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.blac-demo button:hover {
+  background: var(--sl-color-accent-high);
+  border-color: var(--sl-color-accent-high);
+}
+
+.blac-demo button:focus-visible {
+  outline: 2px solid var(--sl-color-accent-high);
+  outline-offset: 2px;
+}
+
+/* --- RenderCounter ----------------------------------------------------- */
+
+.blac-demo-render-counter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--sl-color-gray-5);
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-gray-2);
+  font-size: var(--sl-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.blac-demo-render-counter__label {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.blac-demo-render-counter__count {
+  font-weight: 700;
+  color: var(--sl-color-accent-high);
+}

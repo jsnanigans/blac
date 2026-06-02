@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import react from '@astrojs/react';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
 import ts from 'typescript';
 import pluginTwoslash from 'expressive-code-twoslash';
@@ -11,6 +12,12 @@ export default defineConfig({
   // production domain when the Cloudflare Pages project is set up.
   site: 'https://blac-docs.pages.dev',
   integrations: [
+    // React renderer for the interactive demo islands under
+    // src/components/demos/. Islands import real workspace `@blac/react` and
+    // hydrate lazily (`client:visible`) — see that dir's README for the
+    // embedding contract. `.mdx` component support comes from the
+    // `@astrojs/mdx` integration Starlight already bundles.
+    react(),
     starlight({
       title: 'BlaC',
       description:
@@ -108,7 +115,10 @@ export default defineConfig({
               {
                 label: 'Going Deeper',
                 items: [
-                  { label: 'How BlaC Works Internally', link: '/guide/internals/' },
+                  {
+                    label: 'How BlaC Works Internally',
+                    link: '/guide/internals/',
+                  },
                   { label: 'Async', link: '/guide/async/' },
                   { label: 'TypeScript', link: '/guide/typescript/' },
                   { label: 'Patterns & Recipes', link: '/guide/patterns/' },
@@ -162,7 +172,10 @@ export default defineConfig({
                     link: '/guide/troubleshooting/',
                   },
                   { label: 'Glossary', link: '/guide/glossary/' },
-                  { label: 'Migrating from v1', link: '/guide/migration-from-v1/' },
+                  {
+                    label: 'Migrating from v1',
+                    link: '/guide/migration-from-v1/',
+                  },
                   {
                     label: 'Versioning & Stability',
                     link: '/guide/versioning/',
@@ -303,7 +316,10 @@ export default defineConfig({
                     label: 'Getting Started',
                     link: '/dirtytalk/structural/getting-started/',
                   },
-                  { label: 'Concepts', link: '/dirtytalk/structural/concepts/' },
+                  {
+                    label: 'Concepts',
+                    link: '/dirtytalk/structural/concepts/',
+                  },
                   {
                     label: 'API Reference',
                     link: '/dirtytalk/structural/api-reference/',
