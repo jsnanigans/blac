@@ -308,7 +308,10 @@ export abstract class StateContainer<
 
     const handle = resolve as DepHandle<T>;
 
-    (handle as any).track = (): [ExtractState<T>, InstanceType<T>] => {
+    (handle as { track: DepHandle<T>['track'] }).track = (): [
+      ExtractState<T>,
+      InstanceType<T>,
+    ] => {
       const instance = resolve();
       return [instance.state as ExtractState<T>, instance];
     };
