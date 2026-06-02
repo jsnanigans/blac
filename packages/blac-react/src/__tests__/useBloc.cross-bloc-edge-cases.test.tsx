@@ -15,7 +15,7 @@ class DeepABloc extends Cubit<{ value: number }> {
   increment = () => this.emit({ value: this.state.value + 1 });
 
   get computed() {
-    return this.state.value + this.deepB().computed;
+    return this.state.value + this.deepB.untracked().computed;
   }
 }
 
@@ -29,7 +29,7 @@ class DeepBBloc extends Cubit<{ value: number }> {
   increment = () => this.emit({ value: this.state.value + 1 });
 
   get computed() {
-    return this.state.value + this.deepC().computed;
+    return this.state.value + this.deepC.untracked().computed;
   }
 }
 
@@ -59,7 +59,7 @@ class DynamicDepBloc extends Cubit<{ useExternal: boolean; value: number }> {
 
   get computed() {
     if (this.state.useExternal) {
-      return this.state.value + this.conditionalBloc().state.count;
+      return this.state.value + this.conditionalBloc.untracked().state.count;
     }
     return this.state.value;
   }

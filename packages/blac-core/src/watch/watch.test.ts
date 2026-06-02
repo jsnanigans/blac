@@ -43,7 +43,7 @@ class DependentCubit extends Cubit<{ value: number }> {
   }
 
   get combinedValue() {
-    return this.state.value + this.counterDep().state.count;
+    return this.state.value + this.counterDep.untracked().state.count;
   }
 
   setValue = (value: number) => this.emit({ value });

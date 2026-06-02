@@ -452,18 +452,18 @@ Declare a cross-bloc dependency. See [Bloc Communication](/core/bloc-communicati
 ```ts
 protected depend<T extends StateContainerConstructor>(
   Type: T,
-  instanceKey?: string,
-): () => InstanceType<T>
+  defaultArgs?: ExtractArgs<T>,
+): DepHandle<T>
 ```
 
-| Parameter     | Type                                  | Required | Description                                                            |
-| ------------- | ------------------------------------- | -------- | ---------------------------------------------------------------------- |
-| `Type`        | `T extends StateContainerConstructor` | yes      | The state-container class to depend on.                                |
-| `instanceKey` | `string`                              | no       | Which keyed instance to resolve. Defaults to the default instance key. |
+| Parameter     | Type                                  | Required | Description                                                                                |
+| ------------- | ------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
+| `Type`        | `T extends StateContainerConstructor` | yes      | The state-container class to depend on.                                                    |
+| `defaultArgs` | `ExtractArgs<T>`                      | no       | Args identifying which keyed instance to resolve when an accessor is called without its own `args`. |
 
-**Returns:** a getter `() => InstanceType<T>` — call it (`this.user()`) to resolve the dep against the registry lazily, on each call.
+**Returns:** a `DepHandle<T>` with two accessors — `handle.untracked()` resolves the dep against the registry lazily on each call (`this.user.untracked()`), and `handle.track()` does the same _plus_ subscribes the reading React consumer. Both take an optional `{ args }` to override `defaultArgs` per call. See [Auto-tracking with `.track()`](/core/bloc-communication#auto-tracking-with-track).
 
-**Behavior.** Records the dependency, then returns a lazy resolver. Resolving on every call keeps the surface immune to dep-instance churn. Note: `depend` does **not** auto-resubscribe to the dep's channel — consumers that need reactive updates from a dep subscribe explicitly (typically via `useBloc`'s tracker). A naive auto-bridge here would cycle on mutual deps.
+**Behavior.** Records the dependency, then returns the handle. Resolving on every call keeps the surface immune to dep-instance churn. Note: `.untracked()` does **not** auto-resubscribe to the dep's channel — consumers that need reactive updates use `.track()` (or subscribe explicitly via `useBloc`'s tracker). A naive always-on auto-bridge would cycle on mutual deps, which is why tracking is opt-in.
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -482,7 +482,7 @@ class ProfileCubit extends Cubit<{ name: string }> {
   }
 
   get currentUserId() {
-    return this.auth().state.userId; // lazy resolve
+    return this.auth.untracked().state.userId; // lazy resolve
   }
 }
 ```

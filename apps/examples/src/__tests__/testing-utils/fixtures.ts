@@ -138,16 +138,16 @@ export interface DashboardState {
 }
 
 export class DashboardCubit extends Cubit<DashboardState> {
-  getAuth = this.depend(AuthCubit);
-  getSettings = this.depend(SettingsCubit);
+  auth = this.depend(AuthCubit);
+  settings = this.depend(SettingsCubit);
 
   constructor() {
     super({ loaded: false, greeting: '' });
   }
 
   loadDashboard = () => {
-    const auth = this.getAuth();
-    const settings = this.getSettings();
+    const auth = this.auth.untracked();
+    const settings = this.settings.untracked();
     const name = auth.state.loggedIn ? auth.state.userId : 'Guest';
     const locale = settings.state.locale;
     this.emit({
@@ -165,14 +165,14 @@ export interface NotificationState {
 }
 
 export class NotificationCubit extends Cubit<NotificationState> {
-  getAuth = this.depend(AuthCubit);
+  auth = this.depend(AuthCubit);
 
   constructor() {
     super({ messages: [], unreadCount: 0 });
   }
 
   loadNotifications = () => {
-    const auth = this.getAuth();
+    const auth = this.auth.untracked();
     if (!auth.state.loggedIn) {
       this.emit({ messages: [], unreadCount: 0 });
       return;

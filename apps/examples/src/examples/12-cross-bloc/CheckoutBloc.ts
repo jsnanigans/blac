@@ -71,9 +71,12 @@ export class CheckoutBloc extends Cubit<CheckoutState> {
   toggleLiveFx = () => {
     if (this.state.liveFx) {
       // Capture the current live rate so the total holds steady once frozen.
-      // `this.fx()` resolves the live instance (the handle is back-compat
-      // callable); reading its state outside render takes no subscription.
-      this.patch({ liveFx: false, frozenRate: this.fx().state.usdPerEur });
+      // `.untracked()` resolves the live instance; reading its state in an
+      // event handler (outside render) takes no subscription.
+      this.patch({
+        liveFx: false,
+        frozenRate: this.fx.untracked().state.usdPerEur,
+      });
     } else {
       this.patch({ liveFx: true });
     }

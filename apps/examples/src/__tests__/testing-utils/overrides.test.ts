@@ -48,7 +48,7 @@ describe('registerOverride', () => {
     fakeAuth.login('test-user', 'admin');
     registerOverride(AuthCubit, fakeAuth);
 
-    // DashboardCubit.getAuth() calls ensure(AuthCubit), which now returns fakeAuth
+    // DashboardCubit.auth.untracked() calls ensure(AuthCubit), now fakeAuth
     const dashboard = ensure(DashboardCubit);
     dashboard.loadDashboard();
 

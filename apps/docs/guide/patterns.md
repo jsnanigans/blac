@@ -150,22 +150,22 @@ The recipes below are the common shapes; [Bloc Communication](/core/bloc-communi
 
 ### Reading state from another bloc
 
-Use `depend()` to declare a dependency. It returns a lazy getter that resolves the instance from the registry on demand.
+Use `depend()` to declare a dependency. It returns a handle that resolves the instance from the registry on demand — `.untracked()` for a plain read.
 
 ```ts
 class CartCubit extends Cubit<CartState> {
-  private getShipping = this.depend(ShippingCubit);
+  private shipping = this.depend(ShippingCubit);
 
   get total() {
     const subtotal = this.state.items.reduce((sum, i) => sum + i.price, 0);
-    return subtotal + this.getShipping().state.rate;
+    return subtotal + this.shipping.untracked().state.rate;
   }
 }
 ```
 
 ### Auto-tracking a dependency with `.track()`
 
-A plain `depend()` read (`this.getShipping().state.rate`) is _not_ reactive on its own — a component reading `cart.total` only re-renders on shipping changes if it _also_ calls `useBloc(ShippingCubit)`. Calling `.track()` on the handle removes that ceremony: the component reading the getter auto-subscribes to the dependency too.
+A plain `.untracked()` read (`this.shipping.untracked().state.rate`) is _not_ reactive on its own — a component reading `cart.total` only re-renders on shipping changes if it _also_ calls `useBloc(ShippingCubit)`. Calling `.track()` on the handle removes that ceremony: the component reading the getter auto-subscribes to the dependency too.
 
 ```ts
 class CartCubit extends Cubit<CartState> {
@@ -195,11 +195,11 @@ Call methods on dependencies to coordinate behavior:
 
 ```ts
 class ChannelCubit extends Cubit<ChannelState> {
-  private getNotifications = this.depend(NotificationCubit);
+  private notifications = this.depend(NotificationCubit);
 
   receiveMessage = (message: Message) => {
     this.patch({ messages: [...this.state.messages, message] });
-    this.getNotifications().incrementUnread(this.state.channelId);
+    this.notifications.untracked().incrementUnread(this.state.channelId);
   };
 }
 ```

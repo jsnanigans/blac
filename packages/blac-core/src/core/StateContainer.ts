@@ -25,18 +25,30 @@ import { getClassEquality } from '../utils/static-props';
 export const DEP_BRAND = Symbol('blac.depHandle');
 
 /**
- * Branded callable handle returned by `StateContainer.depend()`.
+ * Per-access options for a {@link DepHandle}. `args` resolves the specific dep
+ * instance for this call; omit it to fall back to the default args passed to
+ * `depend()`. Args resolve at call time so they can derive from current state.
+ */
+export interface DepAccessOptions<T extends StateContainerConstructor> {
+  args?: ExtractArgs<T>;
+}
+
+/**
+ * Branded handle returned by `StateContainer.depend()`. Two intention-revealing
+ * accessors, no callable surface:
  *
- * - `handle()` — resolves and returns the live dep instance (back-compat).
- * - `handle.track()` — base impl: returns `[instance.state, instance]` live
- *   with no subscription. The React layer replaces `.track()` per-consumer
- *   so that cross-bloc state changes trigger re-renders.
- * - `handle[DEP_BRAND]` — carries `{ Type, key, args }` for framework use.
+ * - `handle.track(options?)` — base impl: returns `[instance.state, instance]`
+ *   live with no subscription. The React layer replaces `.track()` per-consumer
+ *   so that cross-bloc state changes trigger re-renders of the reading component.
+ * - `handle.untracked(options?)` — returns the live dep instance with no
+ *   tracking. Use for imperative calls (`.untracked().doThing()`) and one-off
+ *   state reads that should not subscribe the reader.
+ * - `handle[DEP_BRAND]` — carries `{ Type, defaultArgs }` for framework use.
  */
 export interface DepHandle<T extends StateContainerConstructor> {
-  (): InstanceType<T>;
-  track(): [ExtractState<T>, InstanceType<T>];
-  readonly [DEP_BRAND]: { Type: T; key: string; args?: ExtractArgs<T> };
+  track(options?: DepAccessOptions<T>): [ExtractState<T>, InstanceType<T>];
+  untracked(options?: DepAccessOptions<T>): InstanceType<T>;
+  readonly [DEP_BRAND]: { Type: T; defaultArgs?: ExtractArgs<T> };
 }
 
 export interface StateContainerConfig {
@@ -279,45 +291,52 @@ export abstract class StateContainer<
   }
 
   /**
-   * Declare a cross-bloc dependency. Returns a branded callable handle so
-   * callers write `this.user()` lazily — the dep is resolved against the
-   * registry on each call, which keeps the surface immune to dep-instance
-   * churn.
+   * Declare a cross-bloc dependency. Returns a branded handle with two
+   * accessors — the dep instance is resolved against the registry on each call,
+   * which keeps the surface immune to dep-instance churn:
    *
-   * The returned handle is back-compat: `handle()` still resolves the live
-   * instance. `handle.track()` returns `[instance.state, instance]` live with
-   * no subscription (base impl). The React layer replaces `.track()` with a
-   * session-bound version so cross-bloc state changes trigger re-renders.
+   * - `handle.track(options?)` — reactive read. Returns `[state, instance]`.
+   *   Inside a getter reached through the React proxy this subscribes the
+   *   reading component to the dep's changes (base impl: live, no subscription).
+   * - `handle.untracked(options?)` — returns the live instance with no tracking,
+   *   for imperative method calls and one-off reads.
    *
-   * Note: this does NOT auto-resubscribe to the dep's channel. Consumers that
-   * need reactive updates from a dep should call `.track()` inside a getter
-   * that is accessed through the React proxy, or subscribe explicitly.
+   * `defaultArgs` resolves the dep instance when an accessor is called without
+   * its own `args`; per-call `options.args` overrides it and can derive from
+   * current state. This does NOT auto-resubscribe outside the React proxy;
+   * non-React consumers needing updates should subscribe explicitly.
    */
   protected depend<T extends StateContainerConstructor>(
     Type: T,
-    args?: ExtractArgs<T>,
+    defaultArgs?: ExtractArgs<T>,
   ): DepHandle<T> {
     if (!this._dependencies) {
       this._dependencies = new Map();
     }
-    const key = this._registry.resolveKey(Type, undefined, args);
-    this._dependencies.set(Type, key);
+    this._dependencies.set(
+      Type,
+      this._registry.resolveKey(Type, undefined, defaultArgs),
+    );
 
-    const resolve = (): InstanceType<T> =>
-      this._registry.ensure(Type, key, args);
-
-    const handle = resolve as DepHandle<T>;
-
-    (handle as { track: DepHandle<T>['track'] }).track = (): [
-      ExtractState<T>,
-      InstanceType<T>,
-    ] => {
-      const instance = resolve();
-      return [instance.state as ExtractState<T>, instance];
+    const resolve = (args?: ExtractArgs<T>): InstanceType<T> => {
+      const effectiveArgs = args ?? defaultArgs;
+      const key = this._registry.resolveKey(Type, undefined, effectiveArgs);
+      return this._registry.ensure(Type, key, effectiveArgs);
     };
 
+    const handle = {
+      track: (
+        options?: DepAccessOptions<T>,
+      ): [ExtractState<T>, InstanceType<T>] => {
+        const instance = resolve(options?.args);
+        return [instance.state as ExtractState<T>, instance];
+      },
+      untracked: (options?: DepAccessOptions<T>): InstanceType<T> =>
+        resolve(options?.args),
+    } as DepHandle<T>;
+
     Object.defineProperty(handle, DEP_BRAND, {
-      value: { Type, key, args },
+      value: { Type, defaultArgs },
       enumerable: false,
       writable: false,
       configurable: false,

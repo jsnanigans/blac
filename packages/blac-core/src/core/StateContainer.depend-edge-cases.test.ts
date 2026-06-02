@@ -27,32 +27,35 @@ class DepOwner extends Cubit<{ x: number }> {
 describe('StateContainer depend() edge cases', () => {
   blacTestSetup();
 
-  it('depend() returns a getter function, not an instance', () => {
+  it('depend() returns a handle with track/untracked, not an instance', () => {
     const owner = new DepOwner();
-    expect(typeof owner.getTarget).toBe('function');
+    expect(typeof owner.getTarget).toBe('object');
+    expect(typeof owner.getTarget.track).toBe('function');
+    expect(typeof owner.getTarget.untracked).toBe('function');
+    expect(owner.getTarget).not.toBeInstanceOf(DepTarget);
   });
 
-  it('calling the getter creates the dependency in registry via ensure', () => {
+  it('calling untracked() creates the dependency in registry via ensure', () => {
     const owner = new DepOwner();
     expect(hasInstance(DepTarget)).toBe(false);
-    owner.getTarget();
+    owner.getTarget.untracked();
     expect(hasInstance(DepTarget)).toBe(true);
   });
 
   it('calling getter multiple times returns same instance, refCount unchanged', () => {
     const owner = new DepOwner();
-    const first = owner.getTarget();
+    const first = owner.getTarget.untracked();
     const countAfterFirst = getRefCount(DepTarget);
-    const second = owner.getTarget();
+    const second = owner.getTarget.untracked();
     expect(second).toBe(first);
     expect(getRefCount(DepTarget)).toBe(countAfterFirst);
   });
 
   it('depend() with no args uses default key', () => {
     const owner = new DepOwner();
-    const depInstance = owner.getTarget();
+    const depInstance = owner.getTarget.untracked();
     expect(hasInstance(DepTarget)).toBe(true);
-    expect(depInstance).toBe(owner.getTarget());
+    expect(depInstance).toBe(owner.getTarget.untracked());
   });
 
   it('depend() with specific args targets correct instance', () => {
@@ -63,7 +66,7 @@ describe('StateContainer depend() edge cases', () => {
       }
     }
     const owner = new OwnerWithKey();
-    owner.getTarget();
+    owner.getTarget.untracked();
     expect(hasInstance(DepTarget, { args: { id: 'myKey' } })).toBe(true);
     expect(hasInstance(DepTarget)).toBe(false);
   });
@@ -77,8 +80,8 @@ describe('StateContainer depend() edge cases', () => {
       }
     }
     const owner = new MultiKeyOwner();
-    const a = owner.getA();
-    const b = owner.getB();
+    const a = owner.getA.untracked();
+    const b = owner.getB.untracked();
     expect(a).not.toBe(b);
     expect(hasInstance(DepTarget, { args: { id: 'a' } })).toBe(true);
     expect(hasInstance(DepTarget, { args: { id: 'b' } })).toBe(true);
@@ -88,7 +91,7 @@ describe('StateContainer depend() edge cases', () => {
     const existing = acquire(DepTarget);
     const countBefore = getRefCount(DepTarget);
     const owner = new DepOwner();
-    const fromGetter = owner.getTarget();
+    const fromGetter = owner.getTarget.untracked();
     expect(fromGetter).toBe(existing);
     expect(getRefCount(DepTarget)).toBe(countBefore);
   });

@@ -66,8 +66,8 @@ describe('StateContainer.depend()', () => {
 
     it('resolves each dependency independently', () => {
       const dashboard = new DashboardBloc();
-      const auth = dashboard.getAuth();
-      const settings = dashboard.getSettings();
+      const auth = dashboard.getAuth.untracked();
+      const settings = dashboard.getSettings.untracked();
 
       expect(auth).toBeInstanceOf(AuthBloc);
       expect(settings).toBeInstanceOf(SettingsBloc);
@@ -84,7 +84,7 @@ describe('StateContainer.depend()', () => {
       }
 
       refresh() {
-        const auth = this.getAuth();
+        const auth = this.getAuth.untracked();
         this.emit({
           display: auth.state.loggedIn ? `User: ${auth.state.userId}` : 'Guest',
         });
@@ -100,7 +100,7 @@ describe('StateContainer.depend()', () => {
 
     it('sees updated dependency state on subsequent reads', () => {
       const profile = new ProfileBloc();
-      const auth = profile.getAuth();
+      const auth = profile.getAuth.untracked();
 
       auth.login('alice');
       profile.refresh();
@@ -110,7 +110,7 @@ describe('StateContainer.depend()', () => {
 
     it('reflects dependency state changes across multiple updates', () => {
       const profile = new ProfileBloc();
-      const auth = profile.getAuth();
+      const auth = profile.getAuth.untracked();
 
       auth.login('bob');
       profile.refresh();
@@ -137,7 +137,7 @@ describe('StateContainer.depend()', () => {
       }
 
       load() {
-        const c = this.getC();
+        const c = this.getC.untracked();
         this.emit({ value: c.state.data });
       }
     }
@@ -150,7 +150,7 @@ describe('StateContainer.depend()', () => {
       }
 
       load() {
-        const b = this.getB();
+        const b = this.getB.untracked();
         b.load();
         this.emit({ result: b.state.value });
       }
@@ -191,17 +191,17 @@ describe('StateContainer.depend()', () => {
       const x = new BlocX();
       const y = new BlocY();
 
-      expect(x.getAuth()).toBe(y.getAuth());
+      expect(x.getAuth.untracked()).toBe(y.getAuth.untracked());
     });
 
     it('both see state changes from the shared dependency', () => {
       const x = new BlocX();
       const y = new BlocY();
 
-      x.getAuth().login('shared-user');
+      x.getAuth.untracked().login('shared-user');
 
-      expect(y.getAuth().state.loggedIn).toBe(true);
-      expect(y.getAuth().state.userId).toBe('shared-user');
+      expect(y.getAuth.untracked().state.loggedIn).toBe(true);
+      expect(y.getAuth.untracked().state.userId).toBe('shared-user');
     });
   });
 
@@ -215,7 +215,7 @@ describe('StateContainer.depend()', () => {
 
     it('resolves keepAlive dependency', () => {
       const order = new OrderBloc();
-      const cart = order.getCart();
+      const cart = order.getCart.untracked();
 
       expect(cart).toBeInstanceOf(CartBloc);
       cart.addItem('widget');
@@ -224,7 +224,7 @@ describe('StateContainer.depend()', () => {
 
     it('keepAlive dependency persists after owner is gone', () => {
       const order = new OrderBloc();
-      const cart = order.getCart();
+      const cart = order.getCart.untracked();
       cart.addItem('thing');
 
       // Owner goes away — dependency should still be in registry
@@ -246,7 +246,7 @@ describe('StateContainer.depend()', () => {
       existing.login('pre-existing');
 
       const consumer = new ConsumerBloc();
-      const auth = consumer.getAuth();
+      const auth = consumer.getAuth.untracked();
 
       expect(auth).toBe(existing);
       expect(auth.state.userId).toBe('pre-existing');
@@ -257,7 +257,7 @@ describe('StateContainer.depend()', () => {
       expect(getRefCount(AuthBloc)).toBe(1);
 
       const consumer = new ConsumerBloc();
-      consumer.getAuth();
+      consumer.getAuth.untracked();
 
       expect(getRefCount(AuthBloc)).toBe(1);
     });
@@ -275,8 +275,8 @@ describe('StateContainer.depend()', () => {
 
     it('resolves different instances for different keys of same type', () => {
       const bloc = new MultiKeyBloc();
-      const primary = bloc.getPrimary();
-      const secondary = bloc.getSecondary();
+      const primary = bloc.getPrimary.untracked();
+      const secondary = bloc.getSecondary.untracked();
 
       expect(primary).not.toBe(secondary);
       expect(primary).toBeInstanceOf(SettingsBloc);
@@ -292,8 +292,8 @@ describe('StateContainer.depend()', () => {
 
     it('state is independent per key', () => {
       const bloc = new MultiKeyBloc();
-      const primary = bloc.getPrimary();
-      const secondary = bloc.getSecondary();
+      const primary = bloc.getPrimary.untracked();
+      const secondary = bloc.getSecondary.untracked();
 
       primary.setTheme('dark');
 
@@ -310,20 +310,20 @@ describe('StateContainer.depend()', () => {
       }
     }
 
-    it('accessor still works after owner is disposed', () => {
+    it('handle still works after owner is disposed', () => {
       const owner = new OwnerBloc();
-      const accessor = owner.getAuth;
+      const handle = owner.getAuth;
 
       owner.dispose();
 
-      // accessor is a plain closure — still functional
-      const auth = accessor();
+      // handle closes over the registry — still functional after dispose
+      const auth = handle.untracked();
       expect(auth).toBeInstanceOf(AuthBloc);
     });
 
     it('disposing owner does not affect dependency', () => {
       const owner = new OwnerBloc();
-      const auth = owner.getAuth();
+      const auth = owner.getAuth.untracked();
       auth.login('test');
 
       owner.dispose();
@@ -393,9 +393,9 @@ describe('StateContainer.depend()', () => {
       }
 
       checkout() {
-        const auth = this.getAuth();
-        const cart = this.getCart();
-        const notifications = this.getNotifications();
+        const auth = this.getAuth.untracked();
+        const cart = this.getCart.untracked();
+        const notifications = this.getNotifications.untracked();
 
         if (!auth.state.loggedIn) {
           this.emit({ status: 'error: not logged in' });
@@ -420,18 +420,18 @@ describe('StateContainer.depend()', () => {
       expect(checkout.state.status).toBe('error: not logged in');
 
       // Log in but empty cart
-      checkout.getAuth().login('buyer');
+      checkout.getAuth.untracked().login('buyer');
       checkout.checkout();
       expect(checkout.state.status).toBe('error: cart empty');
 
       // Add items and checkout
-      checkout.getCart().addItem('book');
-      checkout.getCart().addItem('pen');
+      checkout.getCart.untracked().addItem('book');
+      checkout.getCart.untracked().addItem('pen');
       checkout.checkout();
       expect(checkout.state.status).toBe('completed');
 
       // Verify notification was pushed
-      expect(checkout.getNotifications().state.messages).toEqual([
+      expect(checkout.getNotifications.untracked().state.messages).toEqual([
         'Order placed: 2 item(s)',
       ]);
     });

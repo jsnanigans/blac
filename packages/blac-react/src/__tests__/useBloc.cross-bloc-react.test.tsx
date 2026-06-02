@@ -25,7 +25,7 @@ class ExtBlocA extends Cubit<{ multiplier: number }, { _id: string }> {
     this.emit({ multiplier: m });
   }
   get result() {
-    return this.state.multiplier * this.bGetter().state.x;
+    return this.state.multiplier * this.bGetter.untracked().state.x;
   }
 }
 
@@ -39,7 +39,7 @@ class ConditionalExtA extends Cubit<{ useExt: boolean; base: number }> {
   }
   get result() {
     if (this.state.useExt) {
-      return this.state.base + this.bGetter().state.x;
+      return this.state.base + this.bGetter.untracked().state.x;
     }
     return this.state.base;
   }

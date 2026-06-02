@@ -48,7 +48,7 @@ export class ChannelBloc extends Cubit<ChannelState, ChannelArgs> {
   }
 
   protected override init({ channelId }: ChannelArgs): void {
-    const channelInfo = this._contactsDep().state.channels.find(
+    const channelInfo = this._contactsDep.untracked().state.channels.find(
       (c: Channel) => c.id === channelId,
     );
     if (!channelInfo) return;
@@ -135,7 +135,7 @@ export class ChannelBloc extends Cubit<ChannelState, ChannelArgs> {
 
     // Update notification cubit with unread count
     if (this.state.channel) {
-      this._notificationsDep().incrementUnread(this.state.channel.id);
+      this._notificationsDep.untracked().incrementUnread(this.state.channel.id);
     }
   };
 
@@ -156,7 +156,7 @@ export class ChannelBloc extends Cubit<ChannelState, ChannelArgs> {
 
   markAsRead = () => {
     if (!this.state.channel) return;
-    this._notificationsDep().clearUnread(this.state.channel.id);
+    this._notificationsDep.untracked().clearUnread(this.state.channel.id);
   };
 
   updateMessageStatus = (messageId: string, status: Message['status']) => {

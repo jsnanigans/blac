@@ -505,21 +505,25 @@ interface DepSub {
   refId: string;
 }
 
+/** Per-access options shared by both dep accessors. */
+interface DepAccessOptionsLike {
+  args?: unknown;
+}
+
 /** Structural shape of a branded `depend()` handle as seen from React. */
 interface DepHandleLike {
-  (): StateContainer;
-  track(): [unknown, StateContainer];
+  track(options?: DepAccessOptionsLike): [unknown, StateContainer];
+  untracked(options?: DepAccessOptionsLike): StateContainer;
   readonly [DEP_BRAND]: {
     Type: StateContainerConstructor;
-    key: string;
-    args?: unknown;
+    defaultArgs?: unknown;
   };
 }
 
 /**
  * Build the per-consumer wrapper that replaces a branded dep handle inside a
- * tracked getter's `this`. The wrapper is itself callable (delegates to the
- * original handle for back-compat) and overrides `.track()`:
+ * tracked getter's `this`. The wrapper exposes the same accessors as the core
+ * handle and overrides `.track()`:
  *
  * - **Inside a render** (`trackedStateRef.current != null`): resolve the dep,
  *   take a refcount (once per consumer), `trackRender` its state, merge the
@@ -528,9 +532,14 @@ interface DepHandleLike {
  * - **Outside a render**: degrade to live `[dep.state, dep]` — matches the core
  *   base impl, safe in event handlers/effects/methods.
  *
- * Guards against a container re-entering tracking within the same render
- * (mutual A↔B deps): if the dep already has a non-primary session entry this
- * render, reuse its proxy + union its paths instead of re-acquiring.
+ * `.untracked()` always returns the live instance with no subscription.
+ *
+ * Args resolve at call time (`options.args ?? defaultArgs`), so a single handle
+ * can resolve different dep instances across calls; tracked-proxy state is
+ * therefore cached per resolved instance, not per handle. Guards against a
+ * container re-entering tracking within the same render (mutual A↔B deps): if
+ * the dep already has a non-primary session entry this render, reuse its proxy
+ * + union its paths instead of re-acquiring.
  */
 function makeDepWrapper(
   handle: DepHandleLike,
@@ -542,67 +551,78 @@ function makeDepWrapper(
 ): DepHandleLike {
   const brand = handle[DEP_BRAND];
   const refId = depRefId(consumerId);
-  // Stable per-handle tracked-state ref + proxy lazily built on first track.
-  const depTrackedStateRef = { current: null as unknown };
-  let depProxy: StateContainer | null = null;
+  const registry = getRegistry();
+  // Per-resolved-instance tracked-state ref + proxy. Call-time args mean one
+  // handle can resolve several instances, so cache is keyed by the instance.
+  const perDep = new Map<
+    StateContainer,
+    { ref: { current: unknown }; proxy: StateContainer }
+  >();
 
-  const wrapper = (() => handle()) as DepHandleLike;
-
-  (wrapper as { track: () => [unknown, StateContainer] }).track = () => {
-    const registry = getRegistry();
-    const dep = registry.ensure(
-      brand.Type,
-      brand.key,
-      brand.args,
-    ) as unknown as StateContainer;
-
-    // Outside a render: live values, no subscription (core base behavior).
-    if (trackedStateRef.current == null) {
-      return [dep.state, dep];
-    }
-
-    const session = sessionRef.current;
-    const existing = session.get(dep);
-
-    // Take a refcount the FIRST time this dep is tracked, held across renders
-    // and released by the reconcile (on drop) or unmount. The session map is
-    // rebuilt every render, so it can't tell us whether we already hold a ref;
-    // `depSubsRef` does — it persists across renders and is populated by the
-    // reconcile after the first tracking render. If neither the (cleared) per-
-    // render session nor the persistent sub set knows this dep, acquire once.
-    // React runs the layout-effect reconcile before the next render, so the
-    // sub is registered before a subsequent track sees it → no double-acquire.
-    if (existing === undefined && !depSubsRef.current.has(dep)) {
-      registry.acquire(brand.Type, brand.key, {
-        canCreate: true,
-        countRef: true,
-        refId,
-        args: brand.args,
-      });
-    }
-
-    const tracked = trackRender(dep.state, dep.interner);
-    depTrackedStateRef.current = tracked.value;
-    if (depProxy === null) {
-      depProxy = buildTrackedProxy(dep, depTrackedStateRef, onDepHandle).proxy;
-    }
-
-    if (existing !== undefined) {
-      // Re-entry this render (e.g. `.track()` called twice, or a mutual cycle):
-      // union the new paths into the existing entry rather than re-acquiring.
-      existing.paths = unionPaths(existing.paths, tracked.paths);
-    } else {
-      session.set(dep, {
-        kind: 'dep',
-        paths: tracked.paths,
-        Type: brand.Type,
-        key: brand.key,
-        refId,
-      });
-    }
-
-    return [tracked.value, depProxy];
+  const resolve = (options?: DepAccessOptionsLike) => {
+    const args = options?.args ?? brand.defaultArgs;
+    const key = registry.resolveKey(brand.Type, undefined, args);
+    const dep = registry.ensure(brand.Type, key, args) as unknown as StateContainer;
+    return { dep, key, args };
   };
+
+  const wrapper = {
+    untracked: (options?: DepAccessOptionsLike) => resolve(options).dep,
+    track: (options?: DepAccessOptionsLike) => {
+      const { dep, key, args } = resolve(options);
+
+      // Outside a render: live values, no subscription (core base behavior).
+      if (trackedStateRef.current == null) {
+        return [dep.state, dep];
+      }
+
+      const session = sessionRef.current;
+      const existing = session.get(dep);
+
+      // Take a refcount the FIRST time this dep is tracked, held across renders
+      // and released by the reconcile (on drop) or unmount. The session map is
+      // rebuilt every render, so it can't tell us whether we already hold a ref;
+      // `depSubsRef` does — it persists across renders and is populated by the
+      // reconcile after the first tracking render. If neither the (cleared) per-
+      // render session nor the persistent sub set knows this dep, acquire once.
+      // React runs the layout-effect reconcile before the next render, so the
+      // sub is registered before a subsequent track sees it → no double-acquire.
+      if (existing === undefined && !depSubsRef.current.has(dep)) {
+        registry.acquire(brand.Type, key, {
+          canCreate: true,
+          countRef: true,
+          refId,
+          args,
+        });
+      }
+
+      const tracked = trackRender(dep.state, dep.interner);
+      let cache = perDep.get(dep);
+      if (cache === undefined) {
+        const ref = { current: tracked.value as unknown };
+        cache = { ref, proxy: buildTrackedProxy(dep, ref, onDepHandle).proxy };
+        perDep.set(dep, cache);
+      } else {
+        cache.ref.current = tracked.value;
+      }
+
+      if (existing !== undefined) {
+        // Re-entry this render (`.track()` twice, or a mutual cycle): union the
+        // new paths into the existing entry rather than re-acquiring.
+        existing.paths = unionPaths(existing.paths, tracked.paths);
+      } else {
+        session.set(dep, {
+          kind: 'dep',
+          paths: tracked.paths,
+          Type: brand.Type,
+          key,
+          refId,
+        });
+      }
+
+      return [tracked.value, cache.proxy];
+    },
+  } as DepHandleLike;
 
   Object.defineProperty(wrapper, DEP_BRAND, {
     value: brand,

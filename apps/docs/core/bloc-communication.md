@@ -5,35 +5,40 @@ Real apps are made of several focused blocs — a cart, a shipping calculator, a
 `depend()` is the answer: it lets one [Cubit](/core/cubit) declare a dependency on another and read its state (or call its methods) **without holding a hard reference and without the two classes importing each other's instances**. The dependency is resolved lazily from the [registry](/core/instance-management), so each bloc stays decoupled from how the other is created or keyed.
 
 ::: info Mental model
-Think of `depend()` as "I need to know about that bloc, but I don't own it." It records an intent ("CartCubit depends on ShippingCubit") and hands you a getter that fetches the live instance on demand. Ownership and lifetime still flow through the registry's [ref counting](/core/instance-management) — see [Lifecycle: who keeps the dependency alive?](#lifecycle-who-keeps-the-dependency-alive) below for the gotcha this creates.
+Think of `depend()` as "I need to know about that bloc, but I don't own it." It records an intent ("CartCubit depends on ShippingCubit") and hands you a handle that fetches the live instance on demand — `.untracked()` for a plain read or method call, `.track()` to subscribe the reading component reactively. Ownership and lifetime still flow through the registry's [ref counting](/core/instance-management) — see [Lifecycle: who keeps the dependency alive?](#lifecycle-who-keeps-the-dependency-alive) below for the gotcha this creates.
 :::
 
 ## `depend(Type)`
 
-Declare a cross-bloc dependency from inside a Cubit. Returns a branded, callable handle that resolves the other instance from the registry on each call — and that you can `.track()` to opt into automatic cross-bloc re-renders.
+Declare a cross-bloc dependency from inside a Cubit. Returns a branded handle with two accessors: `.untracked()` resolves the other instance from the registry on each call, and `.track()` does the same _plus_ opts the reading React consumer into automatic cross-bloc re-renders.
 
 ```ts
 protected depend<T extends StateContainerConstructor>(
   Type: T,
-  args?: ExtractArgs<T>,
+  defaultArgs?: ExtractArgs<T>,
 ): DepHandle<T>
 ```
 
-| Parameter | Type                                  | Required | Description                                                                                                              |
-| --------- | ------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `Type`    | `T extends StateContainerConstructor` | yes      | The state-container class to depend on.                                                                                  |
-| `args`    | `ExtractArgs<T>`                      | no       | The `args` that identify which [keyed instance](/core/instance-management) to resolve. Defaults to the default instance. |
+| Parameter     | Type                                  | Required | Description                                                                                                                                                              |
+| ------------- | ------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Type`        | `T extends StateContainerConstructor` | yes      | The state-container class to depend on.                                                                                                                                  |
+| `defaultArgs` | `ExtractArgs<T>`                      | no       | The `args` that identify which [keyed instance](/core/instance-management) to resolve when an accessor is called without its own `args`. Defaults to the default instance. |
 
-**Returns:** a [`DepHandle<T>`](#what-track-returns) — a branded, **callable** handle. Call it (`this.getShipping()`) to resolve the live instance from the registry lazily, on each call; this is back-compatible with the old getter return. The handle also carries `.track()`, which opts the current React consumer into automatic cross-bloc re-renders — see [Auto-tracking with `.track()`](#auto-tracking-with-track). The handle is returned immediately at declaration time; resolution happens each time you invoke it.
+**Returns:** a [`DepHandle<T>`](#what-track-returns) — a branded handle with two methods:
+
+- **`handle.untracked(options?)`** resolves the live instance from the registry lazily, on each call. Use it for imperative method calls (`this.shipping.untracked().recalc()`) and one-off state reads that should _not_ subscribe the reader.
+- **`handle.track(options?)`** resolves the same instance and, inside a React render, opts the current consumer into automatic cross-bloc re-renders — see [Auto-tracking with `.track()`](#auto-tracking-with-track).
+
+Both accept an optional `{ args }` to resolve a specific [keyed instance](/core/instance-management) at call time (overriding `defaultArgs`), so the resolved instance can derive from current state. The handle is returned immediately at declaration time; resolution happens each time you call an accessor.
 
 ::: tip This is the part most state libraries can't do
 A getter on one bloc can read **another bloc's** state (and its getters) and, via `.track()`, the React component reading that getter wakes when _either_ bloc changes — with no `useBloc(Other)`, no selectors, and no provider wiring. Jump to [Auto-tracking with `.track()`](#auto-tracking-with-track) for the whole story.
 :::
 
-**Behavior.** `depend()` records the dependency (the `Type` → `instanceKey` pair is stored on the instance), then returns a closure that calls `this._registry.ensure(Type, instanceKey)` on each invocation. Resolution is **lazy per call**, which keeps the surface immune to dep-instance churn — if the depended-on instance is disposed and recreated, the next getter call simply returns the new one. `depend()` does **not** wire a reactive subscription between the two blocs: `this.getShipping().state.rate` is a plain read inside the bloc. Reactivity comes from the consumer (a React component's auto-tracking proxy, or an explicit `watch()`) — a naive auto-bridge would loop on mutual deps.
+**Behavior.** `depend()` records the dependency (the `Type` → `instanceKey` pair is stored on the instance), then returns a handle whose accessors call `this._registry.ensure(Type, key)` on each invocation. Resolution is **lazy per call**, which keeps the surface immune to dep-instance churn — if the depended-on instance is disposed and recreated, the next accessor call simply returns the new one. `.untracked()` does **not** wire a reactive subscription between the two blocs: `this.shipping.untracked().state.rate` is a plain read inside the bloc. Reactivity comes from the consumer — `.track()` inside a tracked getter (a React component's auto-tracking proxy), or an explicit `watch()`. A naive always-on auto-bridge would loop on mutual deps, which is why tracking is opt-in per read.
 
 ::: warning `depend()` does not auto-subscribe
-`depend()` only records the dependency and resolves the instance — it does **not** wire up a reactive subscription between the two blocs. Inside the bloc, `this.getShipping().state.rate` is a plain read; it returns the current value but does not cause `CartCubit` to re-emit when shipping changes.
+`depend()` only records the dependency and resolves the instance — it does **not** wire up a reactive subscription between the two blocs. Inside the bloc, `this.shipping.untracked().state.rate` is a plain read; it returns the current value but does not cause `CartCubit` to re-emit when shipping changes.
 
 Reactivity is supplied by the consumer that reads the derived value: a React component via the [auto-tracking proxy](/react/dependency-tracking), or non-React code via [`watch()`](/core/watch). If you need a bloc itself to react to a dependency's changes, subscribe explicitly (e.g. `watch(...)`) and tear it down in [`dispose`](/core/system-events). This is deliberate — a naive auto-bridge would loop forever on mutual dependencies.
 :::
@@ -52,7 +57,7 @@ interface CartItem {
 }
 
 class CartCubit extends Cubit<{ items: CartItem[] }> {
-  private getShipping = this.depend(ShippingCubit);
+  private shipping = this.depend(ShippingCubit);
 
   constructor() {
     super({ items: [] });
@@ -60,21 +65,22 @@ class CartCubit extends Cubit<{ items: CartItem[] }> {
 
   get total() {
     const subtotal = this.state.items.reduce((sum, i) => sum + i.price, 0);
-    return subtotal + this.getShipping().state.rate;
+    // Plain (untracked) read — see `.track()` below for the reactive version.
+    return subtotal + this.shipping.untracked().state.rate;
   }
 }
 ```
 
 ### How `depend()` works
 
-1. `this.depend(ShippingCubit)` records the dependency (`ShippingCubit` → instance key) and returns a getter `() => ShippingCubit`.
-2. Calling that getter resolves the instance via [`ensure()`](/core/instance-management) from the registry — creating it if it does not exist yet.
-3. The dependency is resolved **lazily on every call**, not when you declare it. This keeps `CartCubit` immune to dep-instance churn: if the depended-on instance is disposed and recreated, the next `getShipping()` call simply returns the new one.
-4. When a React component reads `cart.total`, reactivity comes from the render-time tracker. Plain `this.getShipping().state.rate` reads a live (untracked) instance — the component re-renders only if it is also subscribed to `ShippingCubit` via `useBloc`. To opt into automatic cross-bloc subscriptions without a second `useBloc` call, use [`.track()`](#auto-tracking-with-track) on the handle.
+1. `this.depend(ShippingCubit)` records the dependency (`ShippingCubit` → instance key) and returns a `DepHandle<ShippingCubit>`.
+2. Calling `.untracked()` (or `.track()`) resolves the instance via [`ensure()`](/core/instance-management) from the registry — creating it if it does not exist yet.
+3. The dependency is resolved **lazily on every call**, not when you declare it. This keeps `CartCubit` immune to dep-instance churn: if the depended-on instance is disposed and recreated, the next `shipping.untracked()` call simply returns the new one.
+4. When a React component reads `cart.total`, reactivity comes from the render-time tracker. Plain `this.shipping.untracked().state.rate` reads a live (untracked) instance — the component re-renders only if it is also subscribed to `ShippingCubit` via `useBloc`. To opt into automatic cross-bloc subscriptions without a second `useBloc` call, use [`.track()`](#auto-tracking-with-track) on the handle.
 
 ### Named instance dependencies
 
-By default, `depend(Type)` targets the `'default'` instance key. To depend on a specific [named instance](/core/instance-management), pass the `args` that identify it:
+By default, `depend(Type)` targets the `'default'` instance key. To depend on a specific [named instance](/core/instance-management), pass the `defaultArgs` that identify it (or override per call with `.track({ args })` / `.untracked({ args })`):
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -87,7 +93,7 @@ class EditorCubit extends Cubit<{ content: string }, { docId: string }> {
 }
 
 class ReviewCubit extends Cubit<{ approved: boolean }> {
-  private getEditor = this.depend(EditorCubit, { docId: 'doc-42' });
+  private editor = this.depend(EditorCubit, { docId: 'doc-42' });
 
   constructor() {
     super({ approved: false });
@@ -150,7 +156,7 @@ There are two clean ways to guarantee a dependency stays alive:
 - **The cascade does the right thing on teardown.** When a bloc that _created_ its dependencies (via `ensure`) is itself disposed and reaches zero refs, the registry cascades disposal to those deps if they too have zero refs and are not `keepAlive`. So a `depend()`-only dependency graph tears itself down cleanly without leaking.
 
 ::: details Why lazy resolution matters here
-Because the getter re-resolves on every call, a dependency that _was_ disposed out from under you is not a dangling pointer — the next `getShipping()` simply re-creates a fresh instance via `ensure()`. The cost is that any state the old instance held is gone. If that state must survive, use `keepAlive` rather than relying on re-creation.
+Because the handle re-resolves on every call, a dependency that _was_ disposed out from under you is not a dangling pointer — the next `shipping.untracked()` simply re-creates a fresh instance via `ensure()`. The cost is that any state the old instance held is gone. If that state must survive, use `keepAlive` rather than relying on re-creation.
 :::
 
 ## Avoiding cycles and constructor-time reads
@@ -197,7 +203,7 @@ class NotificationCubit extends Cubit<{ unread: number }> {
 }
 
 class ChannelCubit extends Cubit<ChannelState> {
-  private getNotifications = this.depend(NotificationCubit);
+  private notifications = this.depend(NotificationCubit);
 
   constructor() {
     super({ channelId: '', messages: [] });
@@ -209,12 +215,13 @@ class ChannelCubit extends Cubit<ChannelState> {
       messages: [...s.messages, message],
     }));
 
-    // Trigger a side effect in another bloc
-    this.getNotifications().incrementUnread(this.state.channelId);
+    // Trigger a side effect in another bloc. `.untracked()` resolves the live
+    // instance without subscribing — a method call needs no reactivity.
+    this.notifications.untracked().incrementUnread(this.state.channelId);
   };
 
   markAsRead = () => {
-    this.getNotifications().clearUnread(this.state.channelId);
+    this.notifications.untracked().clearUnread(this.state.channelId);
   };
 }
 ```
@@ -222,12 +229,12 @@ class ChannelCubit extends Cubit<ChannelState> {
 This keeps notification logic in `NotificationCubit` while letting `ChannelCubit` coordinate when it fires.
 
 ::: tip Reading state vs calling methods
-These behave differently with respect to re-renders. **Reading** a dependency's `state` inside a tracked getter subscribes the consuming component to that path (via the [auto-tracking proxy](/react/dependency-tracking)). **Calling a method** on a dependency — like `incrementUnread()` above — does not subscribe to anything; it just triggers a side effect in the other bloc. A component that only triggers actions on a dependency will not re-render when that dependency's state changes, which is exactly what you want for action-only coordination.
+These behave differently with respect to re-renders. **Reading** a dependency's `state` via `.track()` inside a getter subscribes the consuming component to that path (via the [auto-tracking proxy](/react/dependency-tracking)). **Calling a method** on a dependency through `.untracked()` — like `incrementUnread()` above — does not subscribe to anything; it just triggers a side effect in the other bloc. A component that only triggers actions on a dependency will not re-render when that dependency's state changes, which is exactly what you want for action-only coordination.
 :::
 
 ## Derived getters across blocs
 
-Getters that read from multiple blocs are tracked through the proxy: a component reading `dashboard.summary` subscribes to every dependency path the getter touches (`auth.user.name`, `cart.items`), and re-renders only when one of those changes.
+Getters that read from multiple blocs with `.track()` are wired through the proxy: a component reading `dashboard.summary` subscribes to every dependency path the getter touches (`auth.user.name`, `cart.items`), and re-renders only when one of those changes.
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -245,16 +252,18 @@ class CartCubit extends Cubit<{ items: string[] }> {
 }
 
 class DashboardCubit extends Cubit<Record<string, never>> {
-  private getAuth = this.depend(AuthCubit);
-  private getCart = this.depend(CartCubit);
+  private auth = this.depend(AuthCubit);
+  private cart = this.depend(CartCubit);
 
   constructor() {
     super({});
   }
 
   get summary() {
-    const user = this.getAuth().state.user;
-    const itemCount = this.getCart().state.items.length;
+    const [authState] = this.auth.track();
+    const [cartState] = this.cart.track();
+    const user = authState.user;
+    const itemCount = cartState.items.length;
     return `${user?.name ?? 'Guest'} has ${itemCount} items`;
   }
 }
@@ -266,7 +275,7 @@ class DashboardCubit extends Cubit<Record<string, never>> {
 
 ## Auto-tracking with `.track()`
 
-By default, `this.depend(OtherBloc)` returns a handle you call as a function (`this.getShipping()`) to get the live instance. Reading the instance's state inside a getter — `this.getShipping().state.rate` — is a plain live read. A React consumer won't re-render when `ShippingCubit` emits unless the component also calls `useBloc(ShippingCubit)` itself.
+`this.depend(OtherBloc).untracked()` gets the live instance. Reading its state inside a getter — `this.shipping.untracked().state.rate` — is a plain live read. A React consumer won't re-render when `ShippingCubit` emits unless the component also calls `useBloc(ShippingCubit)` itself.
 
 Calling `.track()` on the handle opts the **current render's consumer** into automatic cross-bloc subscriptions, without a second `useBloc` at the component level:
 

@@ -230,14 +230,14 @@ If state arrives asynchronously from the persistence plugin, await `waitForHydra
 
 **Principle:** declare cross-bloc reads with `this.depend(Other)`; keep the dependency graph a DAG.
 
-`this.depend(OtherCubit)` returns a lazy getter that resolves the dependency from the registry on each call. Use it to _read_ another bloc's state inside a getter, or to _call_ its methods to coordinate side effects.
+`this.depend(OtherCubit)` returns a handle that resolves the dependency from the registry on each call. Use `.untracked()` to _read_ another bloc's state inside a getter or to _call_ its methods, and `.track()` when the read should re-render the consumer (below).
 
 ```ts
 // Good — CartCubit depends on ShippingCubit, one direction only
 class CartCubit extends Cubit<CartState> {
-  private getShipping = this.depend(ShippingCubit);
+  private shipping = this.depend(ShippingCubit);
   get total() {
-    return this.subtotal + this.getShipping().state.rate;
+    return this.subtotal + this.shipping.untracked().state.rate;
   }
 }
 ```
@@ -246,7 +246,7 @@ class CartCubit extends Cubit<CartState> {
 // Bad — a cycle: Cart depends on Shipping AND Shipping depends on Cart.
 // Reading total now risks infinite recursion, and disposal order is undefined.
 class ShippingCubit extends Cubit<ShippingState> {
-  private getCart = this.depend(CartCubit); // closes the loop — don't
+  private cart = this.depend(CartCubit); // closes the loop — don't
 }
 ```
 
@@ -254,12 +254,12 @@ class ShippingCubit extends Cubit<ShippingState> {
 
 - **`depend` resolves via `ensure`, which does not hold a reference.** A depended-on bloc can be disposed out from under you if nothing else keeps it alive. For app-wide collaborators, mark the dependency `@blac({ keepAlive: true })`.
 - **Reading a dependency's state in a constructor is unsafe** — it may not be initialized yet. Read it lazily inside a method or getter, where the getter resolves it on demand.
-- **Calling a dependency's method does not subscribe you to it.** `depend` gives you access, not reactivity; React re-render tracking is wired by `useBloc`, not by `depend`.
+- **`.untracked()` reads and method calls do not subscribe you.** They give you access, not reactivity. Cross-bloc re-render tracking is opt-in via `.track()` (below); a plain `.untracked()` read only updates if the consumer also subscribes via `useBloc`.
 
 See [Bloc Communication](/core/bloc-communication) for the full lifecycle picture.
 :::
 
-**Reach for `.track()` when the cross-bloc read needs to be reactive.** Plain `this.getShipping().state.rate` is a live but _untracked_ read — the consumer only re-renders if it independently subscribes to the dependency. When a getter genuinely derives from another bloc and components should update on its changes, call `.track()` on the handle (`const [shipping] = this.shipping.track()`) instead of duplicating `useBloc(Other)` across every consumer. Keep the plain call for one-off reads and method invocations where you don't want a subscription.
+**Reach for `.track()` when the cross-bloc read needs to be reactive.** Plain `this.shipping.untracked().state.rate` is a live but _untracked_ read — the consumer only re-renders if it independently subscribes to the dependency. When a getter genuinely derives from another bloc and components should update on its changes, call `.track()` on the handle (`const [shipping] = this.shipping.track()`) instead of duplicating `useBloc(Other)` across every consumer. Keep `.untracked()` for one-off reads and method invocations where you don't want a subscription.
 
 ```ts
 // Good — the derivation declares its own reactivity; consumers stay simple.

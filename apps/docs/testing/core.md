@@ -411,12 +411,12 @@ When a cubit uses `this.depend()`, it resolves dependencies lazily from the regi
 
 ```ts
 class CartCubit extends Cubit<CartState> {
-  private getShipping = this.depend(ShippingCubit);
+  private shipping = this.depend(ShippingCubit);
 
   get total() {
     return (
       this.state.items.reduce((s, i) => s + i.price, 0) +
-      this.getShipping().state.rate
+      this.shipping.untracked().state.rate
     );
   }
 }
@@ -439,7 +439,7 @@ it('includes shipping in total', () => {
 });
 ```
 
-The stub is a real `ShippingCubit` instance, so `cart.getShipping()` works exactly as it would in production — no special mocking framework needed. (For the production-side picture of how `depend()` resolves from the registry, see [Bloc Communication](/core/bloc-communication).)
+The stub is a real `ShippingCubit` instance, so `cart`'s `.shipping.untracked()` resolves it exactly as it would in production — no special mocking framework needed. (For the production-side picture of how `depend()` resolves from the registry, see [Bloc Communication](/core/bloc-communication).)
 
 ::: danger Common mistakes
 - **Overriding a dependency *after* the dependent bloc has already read it.** `depend()` resolves lazily on each call, but if your dependent bloc cached a value in `init()` from the dependency, register the override *before* you `ensure` the dependent bloc.

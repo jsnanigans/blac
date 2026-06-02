@@ -216,7 +216,7 @@ The registry ref-counts instances. Each `useBloc` consumer acquires one ref on m
 
 ```ts
 // inside a bloc — depend() does NOT keep the target alive on its own
-private getUser = this.depend(UserCubit);
+private user = this.depend(UserCubit);
 ```
 
 ```ts
@@ -342,7 +342,7 @@ There is no `@tracked` decorator and no `autoTrack` option. Tracking is **automa
 :::
 
 ::: details Does `depend()` make my component re-render when the dependency changes?
-`depend()` returns a lazy getter and does **not** auto-subscribe to the dependency's channel. For React, the `useBloc` tracker handles reactive updates to whatever you read during render. Calling a dependency's method never subscribes you to it. See [Bloc communication](/core/bloc-communication).
+A plain `.untracked()` read does **not** auto-subscribe to the dependency's channel — but `.track()` does: read a dep's state via `const [s] = this.dep.track()` inside a getter and the component reading that getter re-renders when the dependency changes, no second `useBloc` needed. Calling a dependency's method (through `.untracked()`) never subscribes you to it. See [Bloc communication](/core/bloc-communication#auto-tracking-with-track).
 :::
 
 ::: details `watch` callback fires async / `watch` never stops — what gives?

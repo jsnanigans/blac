@@ -479,15 +479,15 @@ class AuthCubit extends Cubit<{ userId: string | null }> {
 }
 
 class DashboardCubit extends Cubit<{ ready: boolean }> {
-  // `depend` returns a lazy getter resolved against the registry per call.
-  private getAuth = this.depend(AuthCubit);
+  // `depend` returns a handle resolved against the registry per call.
+  private auth = this.depend(AuthCubit);
 
   constructor() {
     super({ ready: false });
   }
 
   get currentUser(): string | null {
-    return this.getAuth().state.userId; // resolve, then read
+    return this.auth.untracked().state.userId; // resolve, then read
   }
 }
 ```
@@ -495,7 +495,7 @@ class DashboardCubit extends Cubit<{ ready: boolean }> {
 Two design points fall out of the source:
 
 - **`depend` does not auto-resubscribe.** It records the dependency (visible via
-  the `dependencies` getter) and returns a resolver. It deliberately does **not**
+  the `dependencies` getter) and returns a handle. It deliberately does **not**
   bridge the dep's channel into this bloc — a naive auto-bridge would cycle on
   mutual deps. A consumer that needs reactive updates from a dep subscribes
   explicitly, which in React means a component `useBloc`s both blocs and the
@@ -514,9 +514,9 @@ Stage 4: deps resolve through the registry (no auto-bridge)
    DashboardCubit                          registry
         │                                      │
         │  this.depend(AuthCubit)              │
-        │  ── records dep, returns getter ──►  │
+        │  ── records dep, returns handle ──►  │
         │                                      │
-        │  getAuth()  ─── ensure(AuthCubit) ─► │ ── returns the live
+        │ auth.untracked() ─ ensure(AuthCubit)►│ ── returns the live
         │                                      │    AuthCubit instance
         │  ◄──────────── instance ──────────── │
         ▼

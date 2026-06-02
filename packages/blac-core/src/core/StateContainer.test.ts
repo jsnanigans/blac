@@ -791,7 +791,7 @@ describe('StateContainer', () => {
 
     it('resolves on accessor call', () => {
       const owner = new DepOwner();
-      const target = owner.getTarget();
+      const target = owner.getTarget.untracked();
 
       expect(target).toBeInstanceOf(DepTarget);
       expect(hasInstance(DepTarget)).toBe(true);
@@ -799,16 +799,16 @@ describe('StateContainer', () => {
 
     it('returns same instance on repeated calls', () => {
       const owner = new DepOwner();
-      const a = owner.getTarget();
-      const b = owner.getTarget();
+      const a = owner.getTarget.untracked();
+      const b = owner.getTarget.untracked();
 
       expect(a).toBe(b);
     });
 
     it('does not increment refCount (ensure semantics)', () => {
       const owner = new DepOwner();
-      owner.getTarget();
-      owner.getTarget();
+      owner.getTarget.untracked();
+      owner.getTarget.untracked();
 
       expect(getRefCount(DepTarget)).toBe(0);
     });
@@ -841,7 +841,7 @@ describe('StateContainer', () => {
       }
 
       const cubit = new MyCubit();
-      const target = cubit.getTarget();
+      const target = cubit.getTarget.untracked();
 
       expect(target).toBeInstanceOf(DepTarget);
     });

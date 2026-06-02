@@ -8,7 +8,7 @@ export interface StatsState {
 }
 
 export class StatsCubit extends Cubit<StatsState> {
-  private getTheme = this.depend(ThemeCubit);
+  private theme = this.depend(ThemeCubit);
 
   constructor() {
     super({
@@ -19,7 +19,7 @@ export class StatsCubit extends Cubit<StatsState> {
   }
 
   get formattedRevenue(): string {
-    const theme = this.getTheme();
+    const theme = this.theme.untracked();
     const locale = theme.state.mode === 'dark' ? 'en-GB' : 'en-US';
     return new Intl.NumberFormat(locale, {
       style: 'currency',

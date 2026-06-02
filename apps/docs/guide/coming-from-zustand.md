@@ -263,21 +263,21 @@ class AuthCubit extends Cubit<{ user: string | null }> {
 }
 // ---cut---
 class CartCubit extends Cubit<{ items: string[] }> {
-  private getAuth = this.depend(AuthCubit);
+  private auth = this.depend(AuthCubit);
 
   constructor() {
     super({ items: [] });
   }
 
   checkout = async () => {
-    const authState = this.getAuth().state;
+    const authState = this.auth.untracked().state;
     if (!authState.user) throw new Error('Not logged in');
     // ... proceed
   };
 }
 ```
 
-No slice merging, no shared-store handle. `depend` returns a getter that resolves the Cubit from the
+No slice merging, no shared-store handle. `depend` returns a handle that resolves the Cubit from the
 registry, keeping the two slices decoupled.
 
 ## Re-render scoping: selector vs auto-track
