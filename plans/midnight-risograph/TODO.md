@@ -20,7 +20,7 @@ in `00-conventions.md`).
 ## Phase 3 — Chrome  (`[‖]` group A — disjoint files)
 - [x] **T3.1** `[‖A]` Chrome CSS (sidebar/nav/cards) · Sonnet/medium
 - [x] **T3.2** `[‖A]` `PageTitle.astro` riso titles · Sonnet/medium
-- [ ] **T3.3** `[‖A]` `Footer.astro` zine colophon · Sonnet/medium
+- [x] **T3.3** `[‖A]` `Footer.astro` zine colophon · Sonnet/medium
 - [x] **T3.4** `[‖A]` Logo + favicon riso re-skin · Haiku/medium
 - [ ] Phase gate: every doc page reads as the new theme, build green
 

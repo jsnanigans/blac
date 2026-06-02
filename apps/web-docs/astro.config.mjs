@@ -50,7 +50,7 @@ export default defineConfig({
       },
       components: {
         PageTitle: './src/components/overrides/PageTitle.astro',
-        // T3.3 adds: Footer: './src/components/overrides/Footer.astro'
+        Footer: './src/components/overrides/Footer.astro',
         // T4.1 adds: Hero:  './src/components/overrides/Hero.astro'
       },
       customCss: [

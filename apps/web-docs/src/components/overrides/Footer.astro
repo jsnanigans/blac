@@ -1,0 +1,126 @@
+---
+/*
+  Footer.astro — zine colophon override for Starlight's default footer.
+
+  Wraps all default footer content (EditLink, LastUpdated, Pagination) inside a
+  printer's-colophon style block. A halftone rule (SectionBreak) separates the
+  colophon note from the page nav. All default links remain functional and
+  accessible — this is a style wrapper, not a content replacement.
+
+  Structure:
+    <footer.blac-footer>
+      <SectionBreak />          — halftone divider above colophon
+      <div.blac-footer__nav>    — Pagination (prev/next)
+      <div.blac-footer__meta>   — EditLink + LastUpdated
+      <div.blac-footer__colophon> — edition note + "printed with BlaC"
+*/
+
+import EditLink from '@astrojs/starlight/components/EditLink.astro';
+import LastUpdated from '@astrojs/starlight/components/LastUpdated.astro';
+import Pagination from '@astrojs/starlight/components/Pagination.astro';
+import SectionBreak from '../riso/SectionBreak.astro';
+---
+
+<footer class="blac-footer sl-flex">
+  <SectionBreak dotSize="4px" dotOpacity="0.18" class="blac-footer__rule" />
+
+  <div class="blac-footer__nav">
+    <Pagination />
+  </div>
+
+  <div class="blac-footer__meta sl-flex">
+    <EditLink />
+    <LastUpdated />
+  </div>
+
+  <div class="blac-footer__colophon" aria-label="Colophon">
+    <span class="blac-footer__edition">
+      Edition <span class="blac-footer__edition-tag">2026</span>
+    </span>
+    <span class="blac-footer__sep" aria-hidden="true">&mdash;</span>
+    <span class="blac-footer__imprint">printed with BlaC</span>
+  </div>
+</footer>
+
+<style>
+  .blac-footer {
+    flex-direction: column;
+    gap: 0;
+    padding-block-end: 2rem;
+  }
+
+  /* Tighten the SectionBreak within the footer context — smaller than a
+     full-bleed page section break, more like a colophon rule. */
+  .blac-footer :global(.blac-footer__rule) {
+    min-height: 2rem;
+    padding-block: 0.75rem;
+    margin-block-end: 0.5rem;
+  }
+
+  /* Pagination nav — full-width, standard Starlight layout preserved */
+  .blac-footer__nav {
+    width: 100%;
+  }
+
+  /* EditLink + LastUpdated meta row — mirrors the default footer's .meta */
+  .blac-footer__meta {
+    gap: 0.75rem 3rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+    font-size: var(--sl-text-sm);
+    color: var(--blac-ink-dim, var(--sl-color-gray-3));
+  }
+
+  .blac-footer__meta > :global(p:only-child) {
+    margin-inline-start: auto;
+  }
+
+  /* Colophon block — the "printer's note" at the very bottom */
+  .blac-footer__colophon {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    margin-block-start: 1.5rem;
+    margin-inline: auto;
+    font-family: var(--blac-font-display, Georgia, serif);
+    font-size: var(--sl-text-xs, 0.75rem);
+    font-style: italic;
+    letter-spacing: 0.04em;
+    color: var(--blac-ink-dim, var(--sl-color-gray-3));
+    opacity: 0.7;
+
+    /* Hover lifts the opacity slightly — a gentle reveal */
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+
+  .blac-footer__edition {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+  }
+
+  /* Edition tag — small label rendered in dusty blue, a riso ink accent */
+  .blac-footer__edition-tag {
+    font-style: normal;
+    font-family: var(--blac-font-body, system-ui, sans-serif);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blac-dusty, var(--sl-color-accent));
+    opacity: 0.85;
+  }
+
+  .blac-footer__sep {
+    color: var(--blac-ink-dim, var(--sl-color-gray-3));
+    opacity: 0.4;
+  }
+
+  .blac-footer__imprint {
+    /* "printed with BlaC" — the colophon credit line */
+    color: var(--blac-ink-dim, var(--sl-color-gray-3));
+  }
+</style>
