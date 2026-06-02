@@ -166,6 +166,22 @@ export const exampleCatalog: RouteMeta[] = [
       'DirtyChannel coalescing',
     ],
   },
+  {
+    id: '12',
+    path: '/cross-bloc',
+    title: 'Cross-Bloc Tracking',
+    navLabel: 'Cross-Bloc',
+    category: 'Reactivity',
+    badge: 'Advanced',
+    blurb:
+      'A live pricing engine: one receipt derives its total from three independently-owned blocs — an FX feed, the cart, and a membership tier — yet subscribes to only one. depend().track() wires the cross-bloc reactivity.',
+    concepts: [
+      'depend().track()',
+      'Cross-bloc auto-tracking',
+      'Transitive getters',
+      'Conditional dependencies',
+    ],
+  },
 ];
 
 export function getRouteMeta(path: string): RouteMeta {

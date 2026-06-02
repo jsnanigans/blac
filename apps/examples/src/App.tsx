@@ -12,6 +12,7 @@ import { RegistryDemo } from './examples/07-registry/RegistryDemo';
 import { TrackingDemo } from './examples/08-tracking/TrackingDemo';
 import { InputPatternDemo } from './examples/10-input-pattern/InputPatternDemo';
 import { SpatialDemo } from './spatial/SpatialDemo';
+import { CrossBlocDemo } from './examples/12-cross-bloc/CrossBlocDemo';
 import { useState } from 'react';
 import { useBloc } from '@blac/react';
 import { PerformanceOverlay } from './shared/components';
@@ -166,6 +167,9 @@ export function App() {
               </Route>
               <Route path="/spatial">
                 <SpatialDemo />
+              </Route>
+              <Route path="/cross-bloc">
+                <CrossBlocDemo />
               </Route>
             </div>
           </div>
