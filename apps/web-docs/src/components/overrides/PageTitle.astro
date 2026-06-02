@@ -1,0 +1,54 @@
+---
+/*
+  PageTitle.astro — Starlight PageTitle override.
+
+  Preserves the default PageTitle's semantics exactly:
+    - Single <h1> element
+    - id="_top" (PAGE_TITLE_ID = '_top') for skip-link + in-page anchor targets
+    - Title text sourced from starlightRoute.entry.data.title
+    - Starlight's h1 size/spacing tokens honored via :global(h1.page-title)
+
+  Riso treatment:
+    Replicates RisoHeading at intensity="normal" (riso-overprint +
+    riso-misregister, --blac-misregister: 1.5px). The classes are applied
+    directly here rather than composing through <RisoHeading> because that
+    component does not expose an `id` prop, and the skip-link / anchor contract
+    requires the id on the real <h1>. This file IS the sanctioned override
+    point — applying .riso-* classes here is within convention.
+
+    intensity="loud" is reserved for the landing hero (T4.1).
+    PAGE_TITLE_ID is intentionally inlined as '_top' to avoid importing from an
+    unexported internal Starlight path; the constant has been '_top' since v0.x
+    and is stable (verified in constants.ts).
+*/
+---
+
+<h1
+  id="_top"
+  class="riso-heading riso-overprint riso-misregister page-title"
+  data-riso-heading="true"
+  data-riso-intensity="normal"
+  style="--blac-misregister: 1.5px;"
+>
+  {Astro.locals.starlightRoute.entry.data.title}
+</h1>
+
+<style>
+  /*
+    Replicate Starlight's @layer starlight.core h1 rules (spacing + type tokens)
+    and add the Fraunces display font that RisoHeading normally supplies via its
+    scoped .riso-heading rule. Scoped to .page-title to avoid clashing with any
+    other h1 on the page.
+  */
+  @layer starlight.core {
+    :global(h1.page-title) {
+      margin-top: 1rem;
+      font-size: var(--sl-text-h1);
+      line-height: var(--sl-line-height-headings);
+      font-weight: 700;
+      color: var(--sl-color-white);
+      font-family: var(--blac-font-display);
+      letter-spacing: -0.02em;
+    }
+  }
+</style>

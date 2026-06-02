@@ -48,6 +48,11 @@ export default defineConfig({
       editLink: {
         baseUrl: 'https://github.com/jsnanigans/blac/edit/main/apps/web-docs/',
       },
+      components: {
+        PageTitle: './src/components/overrides/PageTitle.astro',
+        // T3.3 adds: Footer: './src/components/overrides/Footer.astro'
+        // T4.1 adds: Hero:  './src/components/overrides/Hero.astro'
+      },
       customCss: [
         // Load order per midnight-risograph conventions:
         //   fonts.css  (T1.2 — @font-face declarations, must come first)
