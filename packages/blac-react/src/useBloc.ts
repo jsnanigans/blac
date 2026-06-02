@@ -30,6 +30,12 @@ import type { ComponentRef, UseBlocOptions, UseBlocReturn } from './types';
 
 let nextConsumerId = 0;
 
+// Registry refId formats for a consumer's primary bloc and its tracked deps.
+// Centralised so the `acquire` and `release` sites can never drift apart — a
+// mismatch would leak the ref and keep the bloc alive past unmount.
+const primaryRefId = (consumerId: string): string => `useBloc@${consumerId}`;
+const depRefId = (consumerId: string): string => `useBloc@${consumerId}:dep`;
+
 /**
  * React hook that connects a component to a state container with automatic
  * re-render on state changes.
@@ -173,7 +179,7 @@ export function useBloc<
         : providerArgsRef.current;
 
     const resolvedKey = resolveInstanceKey(BlocClass, effectiveArgs);
-    const refId = `useBloc@${consumerId}`;
+    const refId = primaryRefId(consumerId);
     const registry = getRegistry();
     const instance = registry.acquire(BlocClass, resolvedKey, {
       canCreate: true,
@@ -303,8 +309,12 @@ export function useBloc<
     onMountRef.current?.(bloc as InstanceType<T>);
     return () => {
       onUnmountRef.current?.(bloc as InstanceType<T>);
-      const refId = `useBloc@${consumerId}`;
-      getRegistry().release(BlocClass, instanceKey, false, refId);
+      getRegistry().release(
+        BlocClass,
+        instanceKey,
+        false,
+        primaryRefId(consumerId),
+      );
     };
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [bloc, instanceKey]);
@@ -346,8 +356,8 @@ export function useBloc<
     const session = sessionRef.current;
     session.clear();
     session.set(bloc as unknown as StateContainer, {
+      kind: 'primary',
       paths: tracked.paths,
-      isPrimary: true,
     });
     // NOTE: registerConsumerPaths is intentionally NOT called here. The
     // proxy hasn't been accessed yet, so `tracked.paths` is an empty Set
@@ -412,7 +422,7 @@ export function useBloc<
 
     // Pass 2: add/refresh containers in the session (skip the primary).
     for (const [depContainer, entry] of session) {
-      if (entry.isPrimary) continue;
+      if (entry.kind === 'primary') continue;
       const interest = expandWithAncestors(entry.paths, depContainer.interner);
       depContainer.registerConsumerPaths(consumerId, entry.paths);
       const existing = subs.get(depContainer);
@@ -428,9 +438,9 @@ export function useBloc<
       subs.set(depContainer, {
         unsubscribe,
         interestRef,
-        Type: entry.Type as StateContainerConstructor,
-        key: entry.key as string,
-        refId: entry.refId as string,
+        Type: entry.Type,
+        key: entry.key,
+        refId: entry.refId,
       });
     }
   });
@@ -463,19 +473,28 @@ export function useBloc<
 // Cross-bloc session types + dep-handle wrapper.
 // ---------------------------------------------------------------------------
 
-/** One entry in a consumer's per-render session map. */
-interface SessionEntry {
-  /** Tracked leaf paths recorded against this container this render. */
-  paths: PathSet;
-  /** The primary bloc (managed by its own dedicated effect, not the reconcile). */
-  isPrimary?: boolean;
-  /** Dep-only: constructor for registry release. */
-  Type?: StateContainerConstructor;
-  /** Dep-only: resolved instance key for registry release. */
-  key?: string;
-  /** Dep-only: refId held for this dep (released on drop/unmount). */
-  refId?: string;
-}
+/**
+ * One entry in a consumer's per-render session map. Discriminated on `kind`:
+ * the primary bloc is managed by its own dedicated effect, while dep entries
+ * carry the registry coordinates the reconcile needs to release their ref.
+ */
+type SessionEntry =
+  | {
+      kind: 'primary';
+      /** Tracked leaf paths recorded against the primary this render. */
+      paths: PathSet;
+    }
+  | {
+      kind: 'dep';
+      /** Tracked leaf paths recorded against this dep this render. */
+      paths: PathSet;
+      /** Constructor for registry release. */
+      Type: StateContainerConstructor;
+      /** Resolved instance key for registry release. */
+      key: string;
+      /** refId held for this dep (released on drop/unmount). */
+      refId: string;
+    };
 
 /** A live dep-channel subscription tracked between renders for reconciliation. */
 interface DepSub {
@@ -522,7 +541,7 @@ function makeDepWrapper(
   onDepHandle: (handle: object) => unknown,
 ): DepHandleLike {
   const brand = handle[DEP_BRAND];
-  const refId = `useBloc@${consumerId}:dep`;
+  const refId = depRefId(consumerId);
   // Stable per-handle tracked-state ref + proxy lazily built on first track.
   const depTrackedStateRef = { current: null as unknown };
   let depProxy: StateContainer | null = null;
@@ -574,6 +593,7 @@ function makeDepWrapper(
       existing.paths = unionPaths(existing.paths, tracked.paths);
     } else {
       session.set(dep, {
+        kind: 'dep',
         paths: tracked.paths,
         Type: brand.Type,
         key: brand.key,
