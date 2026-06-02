@@ -5,12 +5,12 @@ are sequential; `[‖]` = parallel-eligible within its phase (see commit protoco
 in `00-conventions.md`).
 
 ## Setup
-- [ ] Orchestrator: `git switch -c feat/web-docs-midnight-risograph` (off `main`)
+- [x] Orchestrator: `git switch -c feat/web-docs-midnight-risograph` (off `main`)
 
 ## Phase 1 — Foundation
 - [x] **T1.1** Color token system — `tokens.css` · Sonnet/medium · *do first*
 - [x] **T1.2** `[‖]` Self-hosted Fraunces + Hanken + type scale · Sonnet/high
-- [ ] Phase gate: strict build green, fonts load, dark palette applied
+- [x] Phase gate: strict build green, fonts load, dark palette applied
 
 ## Phase 2 — Riso kit
 - [ ] **T2.1** Riso primitive CSS — `riso.css` · Sonnet/high · *do first*
