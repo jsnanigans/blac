@@ -145,6 +145,20 @@ export const trackRender = <S>(
         // from its parent, satisfying the coarsening contract.
         if (!Object.prototype.hasOwnProperty.call(t, key)) {
           if (isArray && typeof value === 'function') {
+            // Identity-search methods compare a raw argument against elements
+            // with `===` / SameValueZero. Binding to the recording proxy would
+            // hand them wrapped sub-proxies, so `arr.includes(rawItem)` would
+            // never match for object arrays. Bind these to the raw target so
+            // the comparison is correct, and coarsen: pin the array's entry
+            // path so element-content changes still wake the consumer.
+            if (
+              key === 'includes' ||
+              key === 'indexOf' ||
+              key === 'lastIndexOf'
+            ) {
+              pinArrayPath();
+              return (value as (...a: unknown[]) => unknown).bind(t);
+            }
             if (TRACK_ARRAY_ITERATION) {
               // Bind to the proxy so the method's internal reads (this.length,
               // this[0], this[1], …) go through the get trap. Callbacks

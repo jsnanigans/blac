@@ -56,7 +56,9 @@ export class PathInterner {
 
   /** True when `id` was interned via {@link internAncestor} (sentinel prefix). */
   isAncestorId(id: PathId): boolean {
-    return id >= 0 && id < this._paths.length && this._paths[id].charCodeAt(0) === 0;
+    return (
+      id >= 0 && id < this._paths.length && this._paths[id].charCodeAt(0) === 0
+    );
   }
 
   get size(): number {

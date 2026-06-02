@@ -167,6 +167,27 @@ describe('useBloc — getter tracking', () => {
     expect(renders.mock.calls.length).toBe(initial);
   });
 
+  it('reading a getter outside render reflects live state, not the last render', async () => {
+    let bloc!: MatrixBloc;
+    function Comp() {
+      const [, b] = useBloc(MatrixBloc);
+      bloc = b as MatrixBloc;
+      return <span>{b.matrixSum}</span>;
+    }
+    render(<Comp />);
+    // matrix [[1,2],[3,4]] → sum 10.
+    expect(bloc.matrixSum).toBe(10);
+    let observed = 0;
+    await act(async () => {
+      bloc.bumpCell(0, 0); // matrix[0][0] 1→2, sum 10→11
+      // Read the getter synchronously inside the handler, BEFORE React has
+      // re-rendered. Must see the live (post-mutation) value, not the frozen
+      // snapshot captured during the previous render.
+      observed = bloc.matrixSum;
+    });
+    expect(observed).toBe(11);
+  });
+
   it('returned bloc reference is stable across re-renders', async () => {
     const blocRefs: unknown[] = [];
     let bloc!: MatrixBloc;

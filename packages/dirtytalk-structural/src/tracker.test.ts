@@ -137,6 +137,36 @@ describe('trackRender', () => {
     expect(strings).toEqual(['items.length']);
   });
 
+  it('4g. .includes(object) compares against raw elements, not proxies', () => {
+    // Regression: binding array methods to the recording proxy hands callbacks
+    // and identity-search methods *wrapped* elements. `.includes`/`.indexOf`
+    // compare a raw argument with `===`, so they must see raw elements or they
+    // silently return false / -1 for object arrays.
+    const interner = new PathInterner();
+    const target = { id: 2 };
+    const { value, paths } = trackRender(
+      { items: [{ id: 1 }, target, { id: 3 }] },
+      interner,
+    );
+    expect(value.items.includes(target)).toBe(true);
+    expect(value.items.indexOf(target)).toBe(1);
+    expect(value.items.lastIndexOf(target)).toBe(1);
+    expect(value.items.includes({ id: 2 })).toBe(false);
+    // Identity-search coarsens to the array's entry path so any element-content
+    // change still wakes the consumer.
+    const strings = asPathStrings(paths, interner);
+    expect(strings).toContain('items');
+  });
+
+  it('4h. .includes on a primitive array still works', () => {
+    const interner = new PathInterner();
+    const { value, paths } = trackRender({ tags: ['a', 'b', 'c'] }, interner);
+    expect(value.tags.includes('b')).toBe(true);
+    expect(value.tags.indexOf('c')).toBe(2);
+    expect(value.tags.includes('z')).toBe(false);
+    expect(asPathStrings(paths, interner)).toContain('tags');
+  });
+
   it('5. conditional reads only record the taken branch', () => {
     const interner = new PathInterner();
     const { value, paths } = trackRender({ a: 1, b: 2 }, interner);

@@ -264,15 +264,18 @@ export abstract class StructuralContainer<S> {
     if (rough === ALL_PATHS) return rough;
     const roughSet = rough as Set<PathId>;
 
-    // Fast exit: scan for any ancestor-watch mark before allocating anything.
-    let hasAncestor = false;
+    // Collect the decoded prefix of every ancestor-watch mark in one pass.
+    // `lookup` strips the sentinel so we get the real ancestor path; the
+    // trailing dot makes `startsWith` a true descendant test ("items." does
+    // not match a sibling "itemsExtra").
+    const prefixes: string[] = [];
     for (const id of roughSet) {
       if (this.interner.isAncestorId(id)) {
-        hasAncestor = true;
-        break;
+        prefixes.push(this.interner.lookup(id) + '.');
       }
     }
-    if (!hasAncestor) return rough;
+    // Fast exit: no ancestor-watch marks → plain-object patch, zero overhead.
+    if (prefixes.length === 0) return rough;
 
     // Fast exit: nothing in the skeleton to refine against.
     if (this._skeleton === ALL_PATHS) return rough;
@@ -282,31 +285,31 @@ export abstract class StructuralContainer<S> {
     const equalsFn = this._equalsFn();
     const result = new Set<PathId>();
 
+    // Keep every non-ancestor mark (e.g. PathId("items") for whole-array
+    // readers that pinned the parent directly, e.g. via .map()). Ancestor-watch
+    // marks are dropped — they are replaced by the precise leaf marks below.
+    // Consumers whose expanded interest relied on them match those leaves.
     for (const id of roughSet) {
-      if (!this.interner.isAncestorId(id)) {
-        // Normal path mark (e.g. PathId("items"), PathId("matrix")): keep as-is.
-        // These wake consumers that pinned the parent directly (e.g. via .map()).
-        result.add(id);
-        continue;
-      }
+      if (!this.interner.isAncestorId(id)) result.add(id);
+    }
 
-      // Ancestor-watch mark: replace with precise value-diffs against skeleton
-      // children. `lookup` strips the sentinel so we get the real ancestor path.
-      const ancestorPath = this.interner.lookup(id);
-      const prefix = ancestorPath + '.';
-
-      for (const skelId of skeleton) {
-        const skelPath = this.interner.lookup(skelId);
-        if (!skelPath.startsWith(prefix)) continue;
-        // Value-compare at this skeleton path — same logic as diffAlongSkeleton.
-        const pv = getAt(prev, skelPath);
-        const nv = getAt(next, skelPath);
-        const eq = equalsFn ? equalsFn(skelId, pv, nv) : Object.is(pv, nv);
-        if (!eq) result.add(skelId);
+    // Single pass over the skeleton: a leaf that descends from any refined
+    // ancestor is marked iff its value actually changed (one `getAt` per leaf,
+    // never re-walked per ancestor). Same value-compare as diffAlongSkeleton.
+    for (const skelId of skeleton) {
+      const skelPath = this.interner.lookup(skelId);
+      let descends = false;
+      for (const prefix of prefixes) {
+        if (skelPath.startsWith(prefix)) {
+          descends = true;
+          break;
+        }
       }
-      // The ancestor-watch mark itself is intentionally dropped: it has been
-      // replaced by the precise leaf marks above. Consumers whose expanded
-      // interest relied on it will instead match directly on the leaf PathIds.
+      if (!descends) continue;
+      const pv = getAt(prev, skelPath);
+      const nv = getAt(next, skelPath);
+      const eq = equalsFn ? equalsFn(skelId, pv, nv) : Object.is(pv, nv);
+      if (!eq) result.add(skelId);
     }
 
     return result;

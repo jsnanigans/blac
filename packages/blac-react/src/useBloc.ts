@@ -155,39 +155,45 @@ export function useBloc<
 
     // Build a map of getter descriptors from the prototype chain (excluding
     // Object.prototype). This is computed once per bloc acquisition so that
-    // the proxy's get trap is O(1) per property access. Arrow-function class
-    // properties (own, bound in the constructor) are not getters and pass
-    // through unmodified.
+    // the proxy's get trap is O(1) per property access. Both string- and
+    // symbol-keyed getters are collected. Arrow-function class properties
+    // (own, bound in the constructor) are not getters and pass through
+    // unmodified.
     const getterDescs = new Map<string | symbol, PropertyDescriptor>();
     let proto = Object.getPrototypeOf(instance);
     while (proto && proto !== Object.prototype) {
-      for (const key of Object.getOwnPropertyNames(proto)) {
+      const keys: (string | symbol)[] = [
+        ...Object.getOwnPropertyNames(proto),
+        ...Object.getOwnPropertySymbols(proto),
+      ];
+      for (const key of keys) {
         const desc = Object.getOwnPropertyDescriptor(proto, key);
         if (desc?.get && !getterDescs.has(key)) getterDescs.set(key, desc);
       }
       proto = Object.getPrototypeOf(proto);
     }
 
-    // Stable proxy: one allocation per bloc acquisition. Captures
-    // `trackedStateRef` by reference so getter calls during each render see
-    // the current render's tracking proxy. Non-getter access is a single Map
-    // lookup + Reflect.get — no prototype walk on the hot path.
+    // `this`-proxy for getter invocations, allocated ONCE per acquisition (the
+    // trap closes over the stable `trackedStateRef`, so it never needs to be
+    // rebuilt per access). Redirects `this.state` to the current render's
+    // tracking proxy so getter reads during JSX record paths; outside render
+    // `trackedStateRef.current` is null and it falls through to live state.
+    // The receiver `r` (this proxy) is threaded through Reflect.get so chained
+    // getter calls (getters reading other getters) stay in tracked context.
+    const thisProxy = new Proxy(instance as object, {
+      get(t, k, r) {
+        if (k === 'state')
+          return trackedStateRef.current ?? Reflect.get(t, k, r);
+        return Reflect.get(t, k, r);
+      },
+    });
+
+    // Stable proxy: one allocation per bloc acquisition. Non-getter access is
+    // a single Map lookup + Reflect.get — no prototype walk on the hot path.
     const proxy = new Proxy(instance as object, {
       get(target, key, receiver) {
         const desc = getterDescs.get(key);
-        if (desc?.get) {
-          // Redirect `this.state` to the current render's tracking proxy.
-          // Passing the receiver through Reflect.get ensures chained getter
-          // calls (getters that call other getters) stay in tracked context.
-          const thisProxy = new Proxy(target, {
-            get(t, k, r) {
-              if (k === 'state')
-                return trackedStateRef.current ?? Reflect.get(t, k, r);
-              return Reflect.get(t, k, r);
-            },
-          });
-          return desc.get.call(thisProxy);
-        }
+        if (desc?.get) return desc.get.call(thisProxy);
         return Reflect.get(target, key, receiver);
       },
     }) as TBloc;
@@ -339,6 +345,11 @@ export function useBloc<
   // next emit fires.
   // oxlint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
+    // Clear the render-time tracking proxy now that JSX has been evaluated and
+    // committed. Getters invoked after this point (event handlers, effects,
+    // method→getter chains) fall through to live state instead of reading this
+    // render's frozen snapshot. The render body re-seeds it next render.
+    trackedStateRef.current = null;
     if (selectRef.current !== undefined) return;
     const container = bloc as unknown as StateContainer;
     const paths = pathRef.current;
