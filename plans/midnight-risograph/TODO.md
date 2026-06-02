@@ -22,7 +22,7 @@ in `00-conventions.md`).
 - [x] **T3.2** `[‖A]` `PageTitle.astro` riso titles · Sonnet/medium
 - [x] **T3.3** `[‖A]` `Footer.astro` zine colophon · Sonnet/medium
 - [x] **T3.4** `[‖A]` Logo + favicon riso re-skin · Haiku/medium
-- [ ] Phase gate: every doc page reads as the new theme, build green
+- [x] Phase gate: every doc page reads as the new theme, build green
 
 ## Phase 4 — Landing (flagship)
 - [ ] **T4.1** Hero override + `index.mdx` rebuild · **Opus/high**
