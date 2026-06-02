@@ -9,12 +9,13 @@ export {
 } from './config';
 
 // Core Classes
-export { StateContainer } from './core/StateContainer';
+export { StateContainer, DEP_BRAND } from './core/StateContainer';
 export type {
   HydrationStatus,
   StateContainerConfig,
   SystemEvent,
   SystemEventPayloads,
+  DepHandle,
 } from './core/StateContainer';
 export { Cubit } from './core/Cubit';
 /**

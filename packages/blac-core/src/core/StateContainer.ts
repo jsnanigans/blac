@@ -8,11 +8,36 @@ import { generateSimpleId } from '../utils/idGenerator';
 import { getRegistry } from '../registry/config';
 import type {
   ExtractArgs,
+  ExtractState,
   StateContainerConstructor,
 } from '../types/utilities';
 import { APPLY_DEPS, EMIT, REMOVE_DEPS_OWNER } from './symbols';
 import { type EqualityFn, getBlacConfig } from '../config';
 import { getClassEquality } from '../utils/static-props';
+
+/**
+ * Brand symbol carried (non-enumerable) on every handle returned by
+ * `depend()`. Framework adapters (`@blac/react`) use this to detect handles
+ * inside a tracked-proxy and swap in a session-bound wrapper.
+ *
+ * @internal — exported for `@blac/react`; not part of the public API.
+ */
+export const DEP_BRAND = Symbol('blac.depHandle');
+
+/**
+ * Branded callable handle returned by `StateContainer.depend()`.
+ *
+ * - `handle()` — resolves and returns the live dep instance (back-compat).
+ * - `handle.track()` — base impl: returns `[instance.state, instance]` live
+ *   with no subscription. The React layer replaces `.track()` per-consumer
+ *   so that cross-bloc state changes trigger re-renders.
+ * - `handle[DEP_BRAND]` — carries `{ Type, key, args }` for framework use.
+ */
+export interface DepHandle<T extends StateContainerConstructor> {
+  (): InstanceType<T>;
+  track(): [ExtractState<T>, InstanceType<T>];
+  readonly [DEP_BRAND]: { Type: T; key: string; args?: ExtractArgs<T> };
+}
 
 export interface StateContainerConfig {
   name?: string;
@@ -254,26 +279,48 @@ export abstract class StateContainer<
   }
 
   /**
-   * Declare a cross-bloc dependency. Returns a getter so callers write
-   * `this.user()` lazily — the dep is resolved against the registry on each
-   * call, which keeps the surface immune to dep-instance churn.
+   * Declare a cross-bloc dependency. Returns a branded callable handle so
+   * callers write `this.user()` lazily — the dep is resolved against the
+   * registry on each call, which keeps the surface immune to dep-instance
+   * churn.
+   *
+   * The returned handle is back-compat: `handle()` still resolves the live
+   * instance. `handle.track()` returns `[instance.state, instance]` live with
+   * no subscription (base impl). The React layer replaces `.track()` with a
+   * session-bound version so cross-bloc state changes trigger re-renders.
    *
    * Note: this does NOT auto-resubscribe to the dep's channel. Consumers that
-   * need reactive updates from a dep should subscribe explicitly (typically
-   * via the framework adapter / `useBloc`'s tracker). A naive auto-bridge
-   * here would cycle on mutual deps; the channel's same-tick coalescing
-   * limits the blast radius but a true mutual cycle is still a user bug.
+   * need reactive updates from a dep should call `.track()` inside a getter
+   * that is accessed through the React proxy, or subscribe explicitly.
    */
   protected depend<T extends StateContainerConstructor>(
     Type: T,
     args?: ExtractArgs<T>,
-  ): () => InstanceType<T> {
+  ): DepHandle<T> {
     if (!this._dependencies) {
       this._dependencies = new Map();
     }
     const key = this._registry.resolveKey(Type, undefined, args);
     this._dependencies.set(Type, key);
-    return () => this._registry.ensure(Type, key, args);
+
+    const resolve = (): InstanceType<T> =>
+      this._registry.ensure(Type, key, args);
+
+    const handle = resolve as DepHandle<T>;
+
+    (handle as any).track = (): [ExtractState<T>, InstanceType<T>] => {
+      const instance = resolve();
+      return [instance.state as ExtractState<T>, instance];
+    };
+
+    Object.defineProperty(handle, DEP_BRAND, {
+      value: { Type, key, args },
+      enumerable: false,
+      writable: false,
+      configurable: false,
+    });
+
+    return handle;
   }
 
   constructor(initialState: S, options?: StructuralContainerOptions) {
