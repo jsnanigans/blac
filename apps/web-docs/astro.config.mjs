@@ -58,6 +58,7 @@ export default defineConfig({
         './src/styles/tokens.css',
         './src/styles/riso.css',
         './src/styles/theme.css',
+        './src/styles/chrome.css',
       ],
 
       // Code highlighting = Expressive Code (Shiki at build time, zero client

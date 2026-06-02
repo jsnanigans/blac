@@ -1,0 +1,445 @@
+/*
+  BlaC docs — midnight-risograph chrome polish.
+  Re-skins Starlight's sidebar, nav/header, topic-switcher dropdown,
+  <CardGrid>/<Card>, search box, and the on-this-page TOC.
+
+  Contract:
+  - All values reference --blac-* / --sl-* tokens; no raw hex here.
+  - "Calm and readable" — restraint. The loudness lives in page titles and
+    the landing. Nothing here should compete with content.
+  - focus-visible states are preserved everywhere an outline is removed;
+    replaced with a --blac-dusty ring.
+  - Migrates the topic-dropdown and card rules that were in theme.css so they
+    live in the canonical Phase-3 file. theme.css rules not yet superseded are
+    left intact (they cover the hero, which is Phase 4).
+
+  Sections:
+    1. Sidebar
+    2. Header / nav bar
+    3. Topic-switcher dropdown  (primary package switcher — first-class)
+    4. Search
+    5. Card grid
+    6. On-this-page TOC
+    7. Shared focus-visible ring
+    8. Light-mode adjustments
+
+  Load order:  fonts.css → tokens.css → riso.css → chrome.css (this file)
+*/
+
+/* ── 1. Sidebar ─────────────────────────────────────────────────────────────── */
+
+/* Sidebar panel background */
+.sidebar {
+  background-color: var(--blac-surface);
+  border-right: 1px solid var(--sl-color-gray-5);
+}
+
+/* Sidebar navigation container */
+.sidebar-content {
+  padding-block-start: 0.5rem;
+}
+
+/* Group / section labels */
+.sidebar-group-label {
+  color: var(--blac-ink-dim);
+  font-family: var(--blac-font-body);
+  font-size: var(--blac-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Nav links — default state */
+.sidebar a {
+  color: var(--blac-ink-dim);
+  border-radius: 4px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.sidebar a:hover {
+  color: var(--blac-ink);
+  background-color: var(--blac-surface-2);
+  text-decoration: none;
+}
+
+/* Active / current page link */
+.sidebar a[aria-current='page'],
+.sidebar a[data-current-page='true'] {
+  color: var(--blac-dusty);
+  background-color: color-mix(in srgb, var(--blac-dusty) 10%, transparent);
+  font-weight: 500;
+}
+
+.sidebar a[aria-current='page']:hover,
+.sidebar a[data-current-page='true']:hover {
+  background-color: color-mix(in srgb, var(--blac-dusty) 15%, transparent);
+}
+
+/* Sidebar disclosure buttons (collapsed group toggle) */
+.sidebar details > summary {
+  color: var(--blac-ink-dim);
+  border-radius: 4px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.sidebar details > summary:hover {
+  color: var(--blac-ink);
+  background-color: var(--blac-surface-2);
+}
+
+/* Focus rings for all sidebar interactive elements */
+.sidebar a:focus-visible,
+.sidebar summary:focus-visible {
+  outline: 2px solid var(--blac-dusty);
+  outline-offset: 2px;
+}
+
+/* ── 2. Header / nav bar ───────────────────────────────────────────────────── */
+
+/* Top nav bar background */
+header.header {
+  background-color: var(--blac-surface);
+  border-bottom: 1px solid var(--sl-color-gray-5);
+  backdrop-filter: none; /* remove any default blur that can break layering */
+}
+
+/* Site title / logo area */
+.site-title {
+  color: var(--blac-ink);
+  font-family: var(--blac-font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.site-title:hover {
+  color: var(--blac-dusty);
+  text-decoration: none;
+}
+
+/* Header icon buttons (GitHub, theme toggle, etc.) */
+header .social-icons a,
+header [data-icon-button] {
+  color: var(--blac-ink-dim);
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+header .social-icons a:hover,
+header [data-icon-button]:hover {
+  color: var(--blac-ink);
+}
+
+header .social-icons a:focus-visible,
+header [data-icon-button]:focus-visible {
+  outline: 2px solid var(--blac-dusty);
+  outline-offset: 2px;
+}
+
+/* Mobile menu toggle */
+starlight-menu-button button {
+  color: var(--blac-ink-dim);
+  transition: color 0.15s ease;
+}
+
+starlight-menu-button button:hover {
+  color: var(--blac-ink);
+}
+
+starlight-menu-button button:focus-visible {
+  outline: 2px solid var(--blac-dusty);
+  outline-offset: 2px;
+}
+
+/* ── 3. Topic-switcher dropdown ─────────────────────────────────────────────── */
+/*
+  This is the PRIMARY package switcher — the most important navigation control
+  on the site. Keep it first-class and prominent. Elevated over the rest of the
+  sidebar chrome.
+*/
+
+starlight-sidebar-topics-dropdown,
+.topics-dropdown {
+  /* Ensure it has room to breathe at the top of the sidebar */
+  margin-bottom: 0.75rem;
+}
+
+starlight-sidebar-topics-dropdown summary,
+.topics-dropdown summary {
+  /* Override from theme.css — keep the font-weight: 600 and add more presence */
+  font-weight: 600;
+  color: var(--blac-ink);
+  background-color: var(--blac-surface-2);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+  cursor: pointer;
+  list-style: none; /* remove disclosure triangle in Firefox */
+}
+
+/* Remove Webkit's default disclosure triangle */
+starlight-sidebar-topics-dropdown summary::-webkit-details-marker,
+.topics-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+starlight-sidebar-topics-dropdown summary:hover,
+.topics-dropdown summary:hover {
+  color: var(--blac-dusty);
+  border-color: var(--blac-dusty);
+  background-color: color-mix(in srgb, var(--blac-dusty) 8%, var(--blac-surface-2));
+}
+
+starlight-sidebar-topics-dropdown summary:focus-visible,
+.topics-dropdown summary:focus-visible {
+  outline: 2px solid var(--blac-dusty);
+  outline-offset: 2px;
+}
+
+/* The open dropdown panel */
+starlight-sidebar-topics-dropdown[open] > ul,
+starlight-sidebar-topics-dropdown details[open] > ul,
+.topics-dropdown[open] > ul,
+.topics-dropdown details[open] > ul {
+  background-color: var(--blac-surface-2);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 6px;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--blac-bg) 60%, transparent);
+}
+
+/* Topic list items */
+starlight-sidebar-topics-dropdown li a,
+.topics-dropdown li a {
+  color: var(--blac-ink-dim);
+  padding: 0.4rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 4px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  text-decoration: none;
+}
+
+starlight-sidebar-topics-dropdown li a:hover,
+.topics-dropdown li a:hover {
+  color: var(--blac-ink);
+  background-color: color-mix(in srgb, var(--blac-dusty) 10%, transparent);
+}
+
+/* Active / selected topic */
+starlight-sidebar-topics-dropdown li a[aria-current='true'],
+starlight-sidebar-topics-dropdown li a.active,
+.topics-dropdown li a[aria-current='true'],
+.topics-dropdown li a.active {
+  color: var(--blac-dusty);
+  font-weight: 600;
+}
+
+starlight-sidebar-topics-dropdown li a:focus-visible,
+.topics-dropdown li a:focus-visible {
+  outline: 2px solid var(--blac-dusty);
+  outline-offset: 2px;
+}
+
+/* ── 4. Search ──────────────────────────────────────────────────────────────── */
+
+/* Search trigger button */
+site-search button,
+[data-search-trigger] {
+  background-color: var(--blac-surface-2);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 6px;
+  color: var(--blac-ink-dim);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+site-search button:hover,
+[data-search-trigger]:hover {
+  border-color: var(--blac-dusty);
+  color: var(--blac-ink);
+  background-color: color-mix(in srgb, var(--blac-dusty) 6%, var(--blac-surface-2));
+}
+
+site-search button:focus-visible,
+[data-search-trigger]:focus-visible {
+  outline: 2px solid var(--blac-dusty);
+  outline-offset: 2px;
+}
+
+/* Pagefind search dialog / modal */
+[data-pagefind-ui] .pagefind-ui__search-input {
+  background-color: var(--blac-surface-2);
+  border-color: var(--sl-color-gray-4);
+  color: var(--blac-ink);
+  border-radius: 6px;
+}
+
+[data-pagefind-ui] .pagefind-ui__search-input::placeholder {
+  color: var(--blac-ink-dim);
+}
+
+[data-pagefind-ui] .pagefind-ui__search-input:focus-visible {
+  outline: 2px solid var(--blac-dusty);
+  outline-offset: -1px;
+  border-color: var(--blac-dusty);
+}
+
+/* Search results */
+[data-pagefind-ui] .pagefind-ui__result {
+  border-color: var(--sl-color-gray-5);
+}
+
+[data-pagefind-ui] .pagefind-ui__result-title a {
+  color: var(--blac-dusty);
+}
+
+[data-pagefind-ui] .pagefind-ui__result-title a:hover {
+  color: var(--blac-lavender);
+  text-decoration: underline;
+}
+
+[data-pagefind-ui] .pagefind-ui__result-excerpt mark {
+  background-color: color-mix(in srgb, var(--blac-dusty) 20%, transparent);
+  color: var(--blac-ink);
+  border-radius: 2px;
+}
+
+/* ── 5. Card grid ───────────────────────────────────────────────────────────── */
+/*
+  Starlight's <CardGrid> / <Card> components.
+  Migrated from theme.css (which had .card:hover) — extending with full state.
+*/
+
+.card {
+  background-color: var(--blac-surface);
+  border-color: var(--sl-color-gray-5);
+  border-radius: 8px;
+  /* Inherit the hover lift from theme.css; add transition for border */
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.card:hover {
+  /* theme.css already sets border-color + translateY(-2px) — reinforce here
+     so our load-order (chrome after theme) wins cleanly */
+  border-color: var(--blac-dusty);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--blac-dusty) 12%, transparent);
+}
+
+/* Card title */
+.card .sl-flex .icon + *,
+.card h2,
+.card h3 {
+  color: var(--blac-ink);
+}
+
+/* Card icon accent */
+.card .icon {
+  color: var(--blac-dusty);
+}
+
+/* ── 6. On-this-page TOC ────────────────────────────────────────────────────── */
+
+/* TOC nav container */
+starlight-toc nav {
+  border-left: 1px solid var(--sl-color-gray-5);
+}
+
+/* TOC section heading label */
+.right-sidebar-panel .right-sidebar-label {
+  color: var(--blac-ink-dim);
+  font-size: var(--blac-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* TOC links */
+starlight-toc a {
+  color: var(--blac-ink-dim);
+  font-size: var(--blac-text-sm);
+  transition: color 0.15s ease;
+  text-decoration: none;
+}
+
+starlight-toc a:hover {
+  color: var(--blac-ink);
+}
+
+/* Current / active TOC entry */
+starlight-toc a[aria-current='true'] {
+  color: var(--blac-dusty);
+  font-weight: 500;
+  /* Subtle left-border marker on the active entry */
+  border-left: 2px solid var(--blac-dusty);
+  padding-left: 0.5rem;
+  margin-left: -2px; /* keep text aligned with inactive entries */
+}
+
+starlight-toc a:focus-visible {
+  outline: 2px solid var(--blac-dusty);
+  outline-offset: 2px;
+}
+
+/* ── 7. Shared focus-visible ring ───────────────────────────────────────────── */
+/*
+  Global fallback: any interactive element we haven't explicitly targeted above
+  gets a branded ring when focused via keyboard, replacing Starlight's default
+  browser outline (which can be jarring against the warm-charcoal palette).
+  We do NOT use outline: none without replacement — this is a global enhancement.
+*/
+
+:where(a, button, [role='button'], details > summary, input, select, textarea):focus-visible {
+  outline: 2px solid var(--blac-dusty);
+  outline-offset: 2px;
+  /* Remove any existing outlines that differ per-browser */
+  outline-color: var(--blac-dusty);
+}
+
+/* ── 8. Light-mode adjustments ──────────────────────────────────────────────── */
+/*
+  Most values inherit correctly from the light-mode token overrides in tokens.css.
+  A handful of chrome-specific surfaces need an explicit touch on cream paper.
+*/
+
+:root[data-theme='light'] .sidebar {
+  background-color: var(--blac-surface);
+  border-right-color: var(--sl-color-gray-5);
+}
+
+:root[data-theme='light'] header.header {
+  background-color: var(--blac-surface);
+  border-bottom-color: var(--sl-color-gray-5);
+}
+
+:root[data-theme='light'] starlight-sidebar-topics-dropdown summary,
+:root[data-theme='light'] .topics-dropdown summary {
+  background-color: var(--blac-surface-2);
+  border-color: var(--sl-color-gray-5);
+}
+
+:root[data-theme='light'] .card {
+  background-color: var(--blac-surface);
+}
+
+:root[data-theme='light'] site-search button,
+:root[data-theme='light'] [data-search-trigger] {
+  background-color: var(--blac-surface-2);
+  border-color: var(--sl-color-gray-4);
+}
+
+:root[data-theme='light'] [data-pagefind-ui] .pagefind-ui__result-excerpt mark {
+  background-color: color-mix(in srgb, var(--blac-dusty) 15%, transparent);
+  color: var(--blac-ink);
+}
