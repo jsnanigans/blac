@@ -46,9 +46,11 @@ class CartBloc extends Cubit<{ qty: number }> {
   get qtyLabel() {
     return `qty:${this.state.qty}`;
   }
-  // Reads own state AND another bloc's state.
+  // Reads own state AND another bloc's state via the tracking handle, so a
+  // consumer reading `total` during render also subscribes to PriceBloc.
   get total() {
-    return this.state.qty * this.price().state.price;
+    const [price] = this.price.track();
+    return this.state.qty * price.price;
   }
 }
 
@@ -68,7 +70,8 @@ class ChainBBloc extends Cubit<{ value: number }> {
     super({ value: 10 });
   }
   get computed() {
-    return this.state.value + this.c().computed;
+    const [, c] = this.c.track();
+    return this.state.value + c.computed;
   }
 }
 class ChainABloc extends Cubit<{ value: number }> {
@@ -77,7 +80,8 @@ class ChainABloc extends Cubit<{ value: number }> {
     super({ value: 1 });
   }
   get computed() {
-    return this.state.value + this.b().computed;
+    const [, b] = this.b.track();
+    return this.state.value + b.computed;
   }
 }
 
@@ -128,14 +132,14 @@ describe('useBloc — cross-bloc getter tracking (characterization)', () => {
   });
 
   // -------------------------------------------------------------------------
-  // [GAP] The core question: cross-bloc reads are NOT auto-tracked.
+  // Cross-bloc reads via `.track()` ARE auto-tracked.
   // -------------------------------------------------------------------------
-  it('[GAP] cross-bloc getter does NOT auto re-render when the other bloc changes', async () => {
+  it('cross-bloc getter auto re-renders when the other bloc changes', async () => {
     let renders = 0;
     function Comp() {
       renders++;
-      // Only subscribes to CartBloc. Reads `total`, which internally pulls
-      // PriceBloc's state — but does NOT call useBloc(PriceBloc).
+      // Only subscribes to CartBloc. Reads `total`, which internally tracks
+      // PriceBloc via `this.price.track()` — NO explicit useBloc(PriceBloc).
       const [, bloc] = useBloc(CartBloc);
       return <span data-testid="out">{bloc.total}</span>;
     }
@@ -147,14 +151,12 @@ describe('useBloc — cross-bloc getter tracking (characterization)', () => {
       borrow(PriceBloc).setPrice(50);
     });
 
-    // DESIRED would be '100' (2 * 50). ACTUAL today: the component never wakes,
-    // so the DOM is stale at the last-rendered value. This is the limitation
-    // this suite exists to document.
-    expect(screen.getByTestId('out').textContent).toBe('200');
-    expect(renders).toBe(rendersAfterMount);
+    // `.track()` recorded interest in PriceBloc.price and subscribed the
+    // consumer to PriceBloc's channel, so a PriceBloc emit wakes the consumer.
+    expect(screen.getByTestId('out').textContent).toBe('100'); // 2 * 50
+    expect(renders).toBeGreaterThan(rendersAfterMount);
 
-    // Proof the staleness is purely a missing wakeup, not a stale getter: the
-    // bloc's getter itself reads live cross-bloc state when invoked fresh.
+    // The getter still reads live cross-bloc state when invoked fresh.
     expect(borrow(CartBloc).total).toBe(100); // 2 * 50
   });
 
@@ -182,9 +184,10 @@ describe('useBloc — cross-bloc getter tracking (characterization)', () => {
   });
 
   // -------------------------------------------------------------------------
-  // [GAP] Deep chains compound the gap: A's getter folds B which folds C.
+  // Deep chains propagate: A.track(B), B.track(C) — a C change wakes the
+  // consumer of A through the transitive tracked proxies.
   // -------------------------------------------------------------------------
-  it('[GAP] deep chain A->B->C does NOT wake on C change without subscribing down the chain', async () => {
+  it('deep chain A->B->C wakes on C change via transitive track()', async () => {
     function Comp() {
       const [, blocA] = useBloc(ChainABloc);
       return <span data-testid="out">{blocA.computed}</span>;
@@ -196,9 +199,9 @@ describe('useBloc — cross-bloc getter tracking (characterization)', () => {
       borrow(ChainCBloc).bump();
     });
 
-    // Only ChainABloc is subscribed; C's change never reaches the consumer.
-    expect(screen.getByTestId('out').textContent).toBe('111');
-    // The getter is correct when read fresh — again purely a wakeup gap.
+    // A tracks B's tracked proxy, whose `computed` tracks C — so C's emit wakes
+    // the consumer of A even though only ChainABloc was passed to useBloc.
+    expect(screen.getByTestId('out').textContent).toBe('112'); // 1 + (10 + 101)
     expect(borrow(ChainABloc).computed).toBe(112);
   });
 
@@ -223,13 +226,15 @@ describe('useBloc — cross-bloc getter tracking (characterization)', () => {
   // -------------------------------------------------------------------------
   // select-mode: re-runs on every emit of the SUBSCRIBED bloc only.
   // -------------------------------------------------------------------------
-  it('[GAP] select() over a cross-bloc getter does not re-run on the other bloc emit', async () => {
+  it('select() over a cross-bloc getter does not re-run on the other bloc emit (by design)', async () => {
     let renders = 0;
     function Comp() {
       renders++;
-      // select subscribes (ALL_PATHS) to CartBloc only; the selector reads the
-      // cross-bloc-derived `total`, but PriceBloc emits never reach CartBloc's
-      // channel, so no re-run/re-render happens.
+      // select subscribes (ALL_PATHS) to CartBloc only and stays primary-only:
+      // `.track()` only records inside an auto-track render (trackedStateRef set
+      // during render), which select mode never sets, so `.track()` degrades to
+      // live values with no subscription. PriceBloc emits never reach CartBloc's
+      // channel, so no re-run/re-render happens. This is intentional.
       const [, bloc] = useBloc(CartBloc, {
         select: (_s, b) => [b.total],
       });

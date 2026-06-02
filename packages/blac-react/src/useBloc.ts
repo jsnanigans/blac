@@ -8,6 +8,7 @@ import {
   type RefObject,
 } from 'react';
 import {
+  DEP_BRAND,
   getRegistry,
   resolveInstanceKey,
   type ExtractArgs,
@@ -141,6 +142,25 @@ export function useBloc<
   // by useLayoutEffect after commit.
   const trackedStateRef = useRef<unknown>(null);
 
+  // ---------------------------------------------------------------------------
+  // Per-consumer cross-bloc session.
+  //
+  // Each render rebuilds a map of every container this consumer is currently
+  // interested in. The PRIMARY bloc is the first uniform entry; every dep
+  // reached through `this.<handle>.track()` inside a tracked getter adds an
+  // entry. The layout-effect reconcile (below) diffs this map vs the previous
+  // render to subscribe new deps and release dropped ones. The session lives in
+  // this hook's refs only — there is no global ambient state, so sibling
+  // renders never cross-contaminate.
+  // ---------------------------------------------------------------------------
+  const sessionRef = useRef<Map<StateContainer, SessionEntry>>(new Map());
+  // Channel subscriptions for DEP containers (the primary keeps its own
+  // dedicated effect). container -> { unsubscribe, interestRef, refId held }.
+  const depSubsRef = useRef<Map<StateContainer, DepSub>>(new Map());
+  // Per-handle wrapper cache, allocated once per bloc acquisition (in the memo)
+  // so wrappers are stable across renders. handle -> session-bound wrapper.
+  const depWrapperCacheRef = useRef<Map<object, unknown>>(new Map());
+
   const { bloc, instanceKey, trackedBloc } = useMemo<{
     bloc: TBloc;
     instanceKey: string;
@@ -162,11 +182,32 @@ export function useBloc<
       args: effectiveArgs,
     }) as TBloc;
 
-    const { proxy, thisProxy } = buildTrackedProxy(
+    // Build a session-bound wrapper for a dep handle the first time a getter
+    // reads it off `this`; cache per handle so the wrapper identity is stable.
+    // `onDepHandle` is threaded into each dep's tracked proxy too, so a nested
+    // `this.<otherHandle>.track()` inside a dep's getter records into the SAME
+    // consumer session — that is what makes deep chains (A→B→C) reactive.
+    const onDepHandle = (handle: object): unknown => {
+      const cache = depWrapperCacheRef.current;
+      const cached = cache.get(handle);
+      if (cached !== undefined) return cached;
+      const wrapper = makeDepWrapper(
+        handle as DepHandleLike,
+        consumerId,
+        trackedStateRef,
+        sessionRef,
+        depSubsRef,
+        onDepHandle,
+      );
+      cache.set(handle, wrapper);
+      return wrapper;
+    };
+
+    const { proxy } = buildTrackedProxy(
       instance as object,
       trackedStateRef,
+      onDepHandle,
     );
-    void thisProxy; // exposed for Task 03; unused here
 
     return {
       bloc: instance,
@@ -296,6 +337,18 @@ export function useBloc<
     state = tracked.value as ExtractState<T>;
     trackedStateRef.current = tracked.value;
     pathRef.current = tracked.paths;
+    // Rebuild the per-consumer session for this render. The primary bloc is the
+    // first uniform entry; its `paths` are the SAME PathSet object the proxy
+    // mutates during JSX (so it stays live as getters record leaves). Dep
+    // entries are appended during JSX as `this.<handle>.track()` runs. Cleared
+    // here (not in the layout effect) so a render that no longer tracks a dep
+    // produces a session without it, and the reconcile drops it.
+    const session = sessionRef.current;
+    session.clear();
+    session.set(bloc as unknown as StateContainer, {
+      paths: tracked.paths,
+      isPrimary: true,
+    });
     // NOTE: registerConsumerPaths is intentionally NOT called here. The
     // proxy hasn't been accessed yet, so `tracked.paths` is an empty Set
     // that the proxy will mutate during JSX evaluation. Registering at
@@ -332,13 +385,221 @@ export function useBloc<
       paths,
       container.interner,
     );
+
+    // -----------------------------------------------------------------------
+    // Reconcile DEP containers (cross-bloc `.track()` interest).
+    //
+    // The primary bloc keeps its own dedicated subscription effect above; this
+    // block manages only the *dep* containers recorded in the session this
+    // render. We diff the new dep set vs the previously-subscribed set:
+    //   - new dep      -> acquire was already done in `.track()`; subscribe its
+    //                     channel + registerConsumerPaths + seed interest.
+    //   - surviving    -> refresh its interest ref (subscribe closure reads it).
+    //   - dropped      -> unsubscribe, unregisterConsumer, and release its ref.
+    // -----------------------------------------------------------------------
+    const subs = depSubsRef.current;
+    const session = sessionRef.current;
+
+    // Pass 1: drop containers no longer in the session.
+    for (const [depContainer, sub] of subs) {
+      if (!session.has(depContainer)) {
+        sub.unsubscribe();
+        depContainer.unregisterConsumer(consumerId);
+        getRegistry().release(sub.Type, sub.key, false, sub.refId);
+        subs.delete(depContainer);
+      }
+    }
+
+    // Pass 2: add/refresh containers in the session (skip the primary).
+    for (const [depContainer, entry] of session) {
+      if (entry.isPrimary) continue;
+      const interest = expandWithAncestors(entry.paths, depContainer.interner);
+      depContainer.registerConsumerPaths(consumerId, entry.paths);
+      const existing = subs.get(depContainer);
+      if (existing) {
+        existing.interestRef.current = interest;
+        continue;
+      }
+      const interestRef: { current: PathSet } = { current: interest };
+      const unsubscribe = depContainer.channel.subscribe(
+        () => interestRef.current,
+        () => force(),
+      );
+      subs.set(depContainer, {
+        unsubscribe,
+        interestRef,
+        Type: entry.Type as StateContainerConstructor,
+        key: entry.key as string,
+        refId: entry.refId as string,
+      });
+    }
   });
+
+  // Unmount: tear down every dep subscription + ref exactly once. Kept in its
+  // own effect (empty deps) so it only runs on final unmount, not on every
+  // reconcile. depSubsRef is mutated in place by the reconcile, so reading it
+  // here at unmount yields the live set.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    return () => {
+      const subs = depSubsRef.current;
+      for (const [depContainer, sub] of subs) {
+        sub.unsubscribe();
+        depContainer.unregisterConsumer(consumerId);
+        getRegistry().release(sub.Type, sub.key, false, sub.refId);
+      }
+      subs.clear();
+    };
+  }, []);
 
   return [
     state,
     trackedBloc,
     componentRef as RefObject<ComponentRef>,
   ] as UseBlocReturn<T, ExtractState<T>>;
+}
+
+// ---------------------------------------------------------------------------
+// Cross-bloc session types + dep-handle wrapper.
+// ---------------------------------------------------------------------------
+
+/** One entry in a consumer's per-render session map. */
+interface SessionEntry {
+  /** Tracked leaf paths recorded against this container this render. */
+  paths: PathSet;
+  /** The primary bloc (managed by its own dedicated effect, not the reconcile). */
+  isPrimary?: boolean;
+  /** Dep-only: constructor for registry release. */
+  Type?: StateContainerConstructor;
+  /** Dep-only: resolved instance key for registry release. */
+  key?: string;
+  /** Dep-only: refId held for this dep (released on drop/unmount). */
+  refId?: string;
+}
+
+/** A live dep-channel subscription tracked between renders for reconciliation. */
+interface DepSub {
+  unsubscribe: () => void;
+  interestRef: { current: PathSet };
+  Type: StateContainerConstructor;
+  key: string;
+  refId: string;
+}
+
+/** Structural shape of a branded `depend()` handle as seen from React. */
+interface DepHandleLike {
+  (): StateContainer;
+  track(): [unknown, StateContainer];
+  readonly [DEP_BRAND]: {
+    Type: StateContainerConstructor;
+    key: string;
+    args?: unknown;
+  };
+}
+
+/**
+ * Build the per-consumer wrapper that replaces a branded dep handle inside a
+ * tracked getter's `this`. The wrapper is itself callable (delegates to the
+ * original handle for back-compat) and overrides `.track()`:
+ *
+ * - **Inside a render** (`trackedStateRef.current != null`): resolve the dep,
+ *   take a refcount (once per consumer), `trackRender` its state, merge the
+ *   recorded paths into the session entry, build/reuse a tracked proxy for the
+ *   dep so its OWN getters track too, and return `[trackedValue, depProxy]`.
+ * - **Outside a render**: degrade to live `[dep.state, dep]` — matches the core
+ *   base impl, safe in event handlers/effects/methods.
+ *
+ * Guards against a container re-entering tracking within the same render
+ * (mutual A↔B deps): if the dep already has a non-primary session entry this
+ * render, reuse its proxy + union its paths instead of re-acquiring.
+ */
+function makeDepWrapper(
+  handle: DepHandleLike,
+  consumerId: string,
+  trackedStateRef: { current: unknown },
+  sessionRef: { current: Map<StateContainer, SessionEntry> },
+  depSubsRef: { current: Map<StateContainer, DepSub> },
+  onDepHandle: (handle: object) => unknown,
+): DepHandleLike {
+  const brand = handle[DEP_BRAND];
+  const refId = `useBloc@${consumerId}:dep`;
+  // Stable per-handle tracked-state ref + proxy lazily built on first track.
+  const depTrackedStateRef = { current: null as unknown };
+  let depProxy: StateContainer | null = null;
+
+  const wrapper = (() => handle()) as DepHandleLike;
+
+  (wrapper as { track: () => [unknown, StateContainer] }).track = () => {
+    const registry = getRegistry();
+    const dep = registry.ensure(
+      brand.Type,
+      brand.key,
+      brand.args,
+    ) as unknown as StateContainer;
+
+    // Outside a render: live values, no subscription (core base behavior).
+    if (trackedStateRef.current == null) {
+      return [dep.state, dep];
+    }
+
+    const session = sessionRef.current;
+    const existing = session.get(dep);
+
+    // Take a refcount the FIRST time this dep is tracked, held across renders
+    // and released by the reconcile (on drop) or unmount. The session map is
+    // rebuilt every render, so it can't tell us whether we already hold a ref;
+    // `depSubsRef` does — it persists across renders and is populated by the
+    // reconcile after the first tracking render. If neither the (cleared) per-
+    // render session nor the persistent sub set knows this dep, acquire once.
+    // React runs the layout-effect reconcile before the next render, so the
+    // sub is registered before a subsequent track sees it → no double-acquire.
+    if (existing === undefined && !depSubsRef.current.has(dep)) {
+      registry.acquire(brand.Type, brand.key, {
+        canCreate: true,
+        countRef: true,
+        refId,
+        args: brand.args,
+      });
+    }
+
+    const tracked = trackRender(dep.state, dep.interner);
+    depTrackedStateRef.current = tracked.value;
+    if (depProxy === null) {
+      depProxy = buildTrackedProxy(dep, depTrackedStateRef, onDepHandle).proxy;
+    }
+
+    if (existing !== undefined) {
+      // Re-entry this render (e.g. `.track()` called twice, or a mutual cycle):
+      // union the new paths into the existing entry rather than re-acquiring.
+      existing.paths = unionPaths(existing.paths, tracked.paths);
+    } else {
+      session.set(dep, {
+        paths: tracked.paths,
+        Type: brand.Type,
+        key: brand.key,
+        refId,
+      });
+    }
+
+    return [tracked.value, depProxy];
+  };
+
+  Object.defineProperty(wrapper, DEP_BRAND, {
+    value: brand,
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
+
+  return wrapper;
+}
+
+/** Union two PathSets (ALL_PATHS dominates). */
+function unionPaths(a: PathSet, b: PathSet): PathSet {
+  if (a === ALL_PATHS || b === ALL_PATHS) return ALL_PATHS;
+  const out = new Set<number>(a as Set<number>);
+  for (const id of b as Set<number>) out.add(id);
+  return out;
 }
 
 const shallowArrayEqual = (a: unknown[], b: unknown[]): boolean => {

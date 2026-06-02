@@ -1,3 +1,5 @@
+import { DEP_BRAND } from '@blac/core';
+
 /**
  * Build a per-consumer proxy pair for a bloc instance.
  *
@@ -9,14 +11,24 @@
  * - `thisProxy` — the inner `this`-proxy used as the receiver for getter
  *   calls. Intercepts `state` to return `trackedStateRef.current` when a
  *   tracking context is active; otherwise falls through to the live value.
- *   Exposed for Task 03 which needs to intercept dep handles on `thisProxy`.
+ *   When `onDepHandle` is supplied, a read off `this` whose value carries the
+ *   `DEP_BRAND` symbol (i.e. a `depend()` handle) is routed through
+ *   `onDepHandle`, which returns a per-consumer wrapper whose `.track()` opts
+ *   the consumer into cross-bloc reactivity. Core stays decoupled — detection
+ *   is purely by the `DEP_BRAND` symbol.
  *
  * Both allocations happen exactly once per bloc acquisition (inside `useMemo`)
  * so the proxies are stable across renders.
+ *
+ * @param onDepHandle - Optional callback invoked when a getter reads a branded
+ *   dep handle off `this`. Receives the original handle and returns the value
+ *   to expose in its place (the session-bound wrapper). The callback is
+ *   responsible for caching wrappers per handle to avoid re-allocation.
  */
 export function buildTrackedProxy<T extends object>(
   instance: T,
   trackedStateRef: { current: unknown },
+  onDepHandle?: (handle: object) => unknown,
 ): { proxy: T; thisProxy: T } {
   // Build a map of getter descriptors from the prototype chain (excluding
   // Object.prototype). This is computed once per bloc acquisition so that
@@ -48,7 +60,18 @@ export function buildTrackedProxy<T extends object>(
   const thisProxy = new Proxy(instance as object, {
     get(t, k, r) {
       if (k === 'state') return trackedStateRef.current ?? Reflect.get(t, k, r);
-      return Reflect.get(t, k, r);
+      const value = Reflect.get(t, k, r);
+      // A branded dep handle read off `this` (e.g. `this.price`) is routed
+      // through onDepHandle so the consumer's session can wrap `.track()`.
+      if (
+        onDepHandle !== undefined &&
+        (typeof value === 'function' || typeof value === 'object') &&
+        value !== null &&
+        (value as Record<symbol, unknown>)[DEP_BRAND] !== undefined
+      ) {
+        return onDepHandle(value as object);
+      }
+      return value;
     },
   });
 
