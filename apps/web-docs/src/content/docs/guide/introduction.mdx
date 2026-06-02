@@ -4,6 +4,7 @@ description: BlaC is a TypeScript state management library for React that separa
 ---
 
 import CounterDemo from '../../../components/demos/CounterDemo.tsx';
+import RenderCounterDemo from '../../../components/demos/RenderCounterDemo.tsx';
 
 BlaC (Business Logic Components) is a TypeScript state management library for React. It separates business logic into class-based state containers — [Cubits](/guide/glossary#core-model) — that are type-safe, testable, and automatically optimized for minimal re-renders.
 
@@ -44,6 +45,10 @@ BlaC takes a different approach:
 - **Re-renders are precise by default.** Auto-tracking proxies detect which state properties your component reads during render. Only changes to those properties trigger re-renders.
 - **Lifecycle is declarative.** Instances are shared by default. Use `args` (with a `static key`) for named per-component instances or `@blac({ keepAlive: true })` for persistent singletons.
 - **Built for TypeScript.** State types flow from your class definition through the hook return value with zero type annotations needed.
+
+Two components share one bloc — each reads a different field. Increment the count or edit the label: only the component reading the changed field re-renders.
+
+<RenderCounterDemo client:visible />
 
 :::note[How does this compare to Redux / Zustand / Jotai / MobX?]
 The short version: BlaC keeps logic in classes (like flutter_bloc), shares instances through a ref-counted registry (no providers), and tracks re-renders with a render-time proxy (no selectors or `useMemo`). The honest, side-by-side comparison — including where those other libraries are the better fit — lives on the [Comparison](/guide/comparison) page.
