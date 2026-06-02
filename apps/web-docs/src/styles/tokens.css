@@ -30,10 +30,38 @@
   /* Overprint gradient: plate A → plate B */
   --blac-gradient: linear-gradient(120deg, var(--blac-ink-a) 10%, var(--blac-ink-b) 90%);
 
-  /* Font token names (fallback stacks; real @font-face wired in T1.2) */
+  /* Font family stacks — @font-face for 'Fraunces' and 'Hanken Grotesk'
+     are registered in fonts.css (loaded before this file). */
   --blac-font-display: 'Fraunces', Georgia, serif;
   --blac-font-body:    'Hanken Grotesk', system-ui, sans-serif;
   --blac-font-mono:    /* leave Starlight / Expressive Code default */ inherit;
+
+  /* ── Type scale ────────────────────────────────────────────────────────── */
+  /* Modular scale (base 1rem, ratio ~1.25 — Major Third).
+     Names are --blac-text-* to avoid shadowing Starlight's --sl-text-* names.
+     Use --blac-text-* in our components; map to --sl-text-* where Starlight
+     consumes them directly (e.g. body and sidebar). */
+
+  --blac-text-xs:   0.75rem;   /* 12 px — captions, badges           */
+  --blac-text-sm:   0.875rem;  /* 14 px — sidebar labels, meta       */
+  --blac-text-base: 1rem;      /* 16 px — body copy                  */
+  --blac-text-md:   1.125rem;  /* 18 px — lead / callout             */
+  --blac-text-lg:   1.25rem;   /* 20 px — H4 / sub-heading           */
+  --blac-text-xl:   1.5rem;    /* 24 px — H3                         */
+  --blac-text-2xl:  1.875rem;  /* 30 px — H2                         */
+  --blac-text-3xl:  2.25rem;   /* 36 px — H1 / page title            */
+  --blac-text-4xl:  3rem;      /* 48 px — hero wordmark              */
+  --blac-text-5xl:  3.75rem;   /* 60 px — hero display (Fraunces)    */
+
+  /* Line heights — looser for display, tighter for body */
+  --blac-leading-tight:  1.15;
+  --blac-leading-snug:   1.3;
+  --blac-leading-normal: 1.5;
+  --blac-leading-relaxed: 1.65;
+
+  /* Alias Starlight's base text size so body copy tracks our scale */
+  --sl-text-base: var(--blac-text-base);
+  --sl-text-sm:   var(--blac-text-sm);
 
   /* ── Starlight contract ────────────────────────────────────────────────── */
 
@@ -106,4 +134,16 @@
   --sl-color-gray-4: #bdb09e;
   --sl-color-gray-5: #ddd5c3;
   --sl-color-gray-6: #efe7d4;
+}
+
+/* ── Global font application ────────────────────────────────────────────────
+   Apply body font globally here so it doesn't rely on Starlight defaults.
+   Display font is reserved for headings/set-pieces — Phase 2/3 components
+   pull var(--blac-font-display) directly; we don't force it onto all <h*>
+   yet to avoid fighting Starlight's cascade.
+*/
+body {
+  font-family: var(--blac-font-body);
+  font-size: var(--blac-text-base);
+  line-height: var(--blac-leading-normal);
 }

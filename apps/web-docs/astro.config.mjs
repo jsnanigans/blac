@@ -50,10 +50,11 @@ export default defineConfig({
       },
       customCss: [
         // Load order per midnight-risograph conventions:
-        //   fonts.css  (T1.2 — prepended when font task runs)
-        //   tokens.css (T1.1 — colors + font token names)
+        //   fonts.css  (T1.2 — @font-face declarations, must come first)
+        //   tokens.css (T1.1 / T1.2 — colors + font token names + type scale)
         //   riso.css   (T2.1 — print primitives)
         //   chrome.css (T3.1 — Starlight chrome polish)
+        './src/styles/fonts.css',
         './src/styles/tokens.css',
         './src/styles/theme.css',
       ],

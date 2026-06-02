@@ -15,14 +15,16 @@
     "@astrojs/react": "^5.0.7",
     "@blac/core": "workspace:*",
     "@blac/react": "workspace:*",
+    "@fontsource-variable/fraunces": "^5.2.9",
+    "@fontsource-variable/hanken-grotesk": "^5.2.8",
     "@types/react": "catalog:",
     "@types/react-dom": "^19.2.3",
     "astro": "^6.4.3",
     "expressive-code": "^0.41.7",
     "expressive-code-twoslash": "^0.6.1",
     "react": "catalog:",
-    "remark-gfm": "^4.0.0",
     "react-dom": "catalog:",
+    "remark-gfm": "^4.0.0",
     "typescript": "catalog:"
   },
   "dependencies": {

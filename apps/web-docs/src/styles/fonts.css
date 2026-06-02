@@ -1,0 +1,94 @@
+/*
+  BlaC docs — self-hosted variable font faces.
+  Must be the FIRST entry in astro.config.mjs customCss so the font names
+  resolve before tokens.css and everything downstream references them.
+
+  Sources (both OFL-1.1):
+    Fraunces  v22  — https://github.com/undercasetype/Fraunces
+    Hanken Grotesk  v12  — https://github.com/marcologous/hanken-grotesk
+
+  Acquisition: fontsource-variable packages (pre-subsetted to Latin); files
+  vendored to public/fonts/ so the build controls the asset path. The packages
+  are listed as devDependencies; only the woff2 binaries matter at runtime.
+
+  Payload (latin subsets only):
+    fraunces-latin-opsz-normal.woff2   66 KB  (wght 100–900, opsz 9–144, SOFT, WONK)
+    fraunces-latin-opsz-italic.woff2   80 KB
+    hanken-grotesk-latin-wght-normal.woff2  34 KB  (wght 100–900)
+    hanken-grotesk-latin-wght-italic.woff2  35 KB
+    ─────────────────────────────────────────────
+    Total                             215 KB (brotli-compressed ~60 % smaller in prod)
+
+  Fallback metric overrides (Hanken Grotesk only):
+    Hanken Grotesk UPM 2000, typoAscender 1960, typoDescender −500, lineGap 0.
+    size-adjust 100 % — cap-height ratio is close enough to system-ui to skip.
+    ascent-override  98 % (1960 / 2000)
+    descent-override 25 % ( 500 / 2000)
+    line-gap-override 0 %
+    These keep the fallback block height within ~1 px of the real font, avoiding
+    measurable CLS on swap.
+*/
+
+/* ── Fraunces (display) ─────────────────────────────────────────────────────
+   Family name 'Fraunces' — matches the value in --blac-font-display (tokens.css).
+   opsz files carry all four variable axes: wght (100–900), opsz (9–144),
+   SOFT (0–100), WONK (0–1). Phase 5 animation uses SOFT/WONK directly.
+   unicode-range: standard latin block.
+*/
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/fonts/fraunces-latin-opsz-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/fonts/fraunces-latin-opsz-italic.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ── Hanken Grotesk (body) ──────────────────────────────────────────────────
+   Family name 'Hanken Grotesk' — matches --blac-font-body (tokens.css).
+   Variable axis: wght 100–900 (ital is a separate file, not a continuous axis).
+   Fallback metric overrides tune the system-ui fallback to match Hanken's
+   block dimensions; see file-header comment for derivation.
+*/
+
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/fonts/hanken-grotesk-latin-wght-normal.woff2') format('woff2');
+  ascent-override: 98%;
+  descent-override: 25%;
+  line-gap-override: 0%;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/fonts/hanken-grotesk-latin-wght-italic.woff2') format('woff2');
+  ascent-override: 98%;
+  descent-override: 25%;
+  line-gap-override: 0%;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
