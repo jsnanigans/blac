@@ -113,15 +113,30 @@ const wrapperClasses = ['section-break', 'riso-halftone', className ?? '']
     position: relative; /* stack above the background */
     z-index: 1;
     font-family: var(--blac-font-display);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--blac-ink-dim);
+    /* Full ink for legibility — a muted label disappears into the dot field. */
+    color: var(--blac-ink);
+
+    /*
+      Clear a dot-free gap directly behind the label so no dots sit beside the
+      glyphs. The scrim is the page background colour, so it reads as an
+      intentional break in the dot field rather than a box. The blurred
+      box-shadow of the same colour feathers the gap's edges so it blends into
+      the surrounding dots instead of hard-cutting.
+    */
+    padding-inline: 0.85em;
+    background: var(--blac-bg);
+    box-shadow: 0 0 12px 6px var(--blac-bg);
 
     /* Fade out label when empty so no ghost space is visible */
     &:empty {
       display: none;
+      padding-inline: 0;
+      background: none;
+      box-shadow: none;
     }
   }
 </style>
