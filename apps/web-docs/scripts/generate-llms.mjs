@@ -1,24 +1,25 @@
 #!/usr/bin/env node
 /*
- * Generate llms.txt + llms-full.txt from the docs content.
+ * Generate llms.txt + llms-full.txt + per-package full-text files from the docs.
  *
  * These are the AI/LLM discovery artifacts the old VitePress site shipped as
  * hand-maintained statics in public/. There was no generator — so they drifted
  * from the content. Here we derive them from `src/content/docs` at build time
  * instead, so they can never go stale:
  *
- *   - public/llms.txt       a curated index: one linked, described entry per
- *                           page, grouped by section. Built from each page's
- *                           frontmatter `title` + `description`.
- *   - public/llms-full.txt  the full corpus: every page's title + description +
- *                           body concatenated, frontmatter and leading MDX
- *                           imports stripped. Intended as a single-file context
- *                           dump for LLMs.
+ *   - public/llms.txt        curated index: one linked, described entry per
+ *                            page, grouped by section, with discovery links to
+ *                            the per-package full-text files below. Built from
+ *                            each page's frontmatter `title` + `description`.
+ *   - public/llms-full.txt   the whole corpus in one file (every page's body).
+ *   - public/llms-<group>.txt one full-text file PER PACKAGE (see GROUPS), so an
+ *                            LLM can be pointed at just the relevant package's
+ *                            docs instead of the whole site.
  *
  * Run standalone (`node scripts/generate-llms.mjs`) or via the strict build
  * wrapper (check-snippets.mjs runs it before `astro build`). Writes into
  * public/, which Astro copies verbatim into dist/, so the files are served at
- * /llms.txt and /llms-full.txt.
+ * /llms.txt, /llms-full.txt, /llms-<group>.txt.
  */
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -34,9 +35,9 @@ const SITE_BLURB =
   'Comprehensive guide covering core concepts, React integration, plugins, ' +
   'testing, and framework integrations.';
 
-// Section order + human labels, keyed by the first path segment. Pages whose
-// segment isn't listed here fall into "Examples" (root-level pages like
-// showcase / playground); `index` is the home page and is excluded from lists.
+// Section order + human labels for the llms.txt INDEX, keyed by the first path
+// segment. `__root__` catches root-level pages (showcase / playground). The
+// home page (`/`) is excluded from the index lists.
 const SECTIONS = [
   { key: 'guide', label: 'Guide' },
   { key: 'core', label: 'Core' },
@@ -46,6 +47,32 @@ const SECTIONS = [
   { key: 'integrations', label: 'Integrations' },
   { key: 'dirtytalk', label: 'DirtyTalk' },
   { key: '__root__', label: 'Examples' },
+];
+
+// Per-package GROUPS for the full-text dumps — aligned to the npm packages /
+// topic dropdown. Each group owns a set of top-level path segments; `root: true`
+// also sweeps in root-level pages (index, showcase, playground). Order here is
+// the order they appear in the index's discovery line and in llms-full.txt.
+const GROUPS = [
+  {
+    id: 'blac',
+    label: 'BlaC',
+    file: 'llms-blac.txt',
+    segments: ['guide', 'core', 'plugins', 'testing', 'integrations'],
+    root: true,
+  },
+  {
+    id: 'blac-react',
+    label: 'BlaC React',
+    file: 'llms-blac-react.txt',
+    segments: ['react'],
+  },
+  {
+    id: 'dirtytalk',
+    label: 'DirtyTalk',
+    file: 'llms-dirtytalk.txt',
+    segments: ['dirtytalk'],
+  },
 ];
 
 /** Recursively collect every .md / .mdx file under DOCS_DIR. */
@@ -96,9 +123,30 @@ function stripLeadingImports(body) {
   );
 }
 
+/** First path segment of a URL, or '' for the home page. */
+function firstSegment(url) {
+  return url.split('/').filter(Boolean)[0] ?? '';
+}
+
 function sectionKeyFor(url) {
-  const seg = url.split('/').filter(Boolean)[0];
+  const seg = firstSegment(url);
   return SECTIONS.some((s) => s.key === seg) ? seg : '__root__';
+}
+
+function groupIdFor(url) {
+  const seg = firstSegment(url);
+  const owner = GROUPS.find((g) => g.segments.includes(seg));
+  if (owner) return owner.id;
+  // Root-level page (home, showcase, playground) → the root-sweeping group.
+  return (GROUPS.find((g) => g.root) ?? GROUPS[0]).id;
+}
+
+/** Render one page as a full-text block (used by llms-full + per-group files). */
+function renderPageBlock(p) {
+  const lines = ['---', '', `# ${p.title}`, ''];
+  if (p.description) lines.push(`> ${p.description}`, '');
+  lines.push(`Source: ${p.url}`, '', p.body, '');
+  return lines.join('\n');
 }
 
 async function main() {
@@ -114,6 +162,7 @@ async function main() {
       description: fmField(frontmatter, 'description'),
       body: stripLeadingImports(body).trim(),
       section: sectionKeyFor(url),
+      group: groupIdFor(url),
     });
   }
 
@@ -125,12 +174,21 @@ async function main() {
       a.url.localeCompare(b.url),
   );
 
+  const written = [];
+
   // ---- llms.txt (curated index) ----
-  const indexLines = [`# ${SITE_TITLE}`, '', SITE_BLURB, ''];
+  const discovery = GROUPS.map((g) => `[${g.label}](/${g.file})`).join(', ');
+  const indexLines = [
+    `# ${SITE_TITLE}`,
+    '',
+    SITE_BLURB,
+    '',
+    `Full text by package: ${discovery}. Everything in one file: ` +
+      `[Complete docs](/llms-full.txt).`,
+    '',
+  ];
   for (const { key, label } of SECTIONS) {
-    const inSection = pages.filter(
-      (p) => p.section === key && p.url !== '/', // exclude the home page
-    );
+    const inSection = pages.filter((p) => p.section === key && p.url !== '/');
     if (inSection.length === 0) continue;
     indexLines.push(`## ${label}`, '');
     for (const p of inSection) {
@@ -139,23 +197,45 @@ async function main() {
     }
     indexLines.push('');
   }
-  const llmsTxt = indexLines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';
-
-  // ---- llms-full.txt (full corpus) ----
-  const fullParts = [`# ${SITE_TITLE}`, '', SITE_BLURB, ''];
-  for (const p of pages) {
-    fullParts.push('---', '', `# ${p.title}`, '');
-    if (p.description) fullParts.push(`> ${p.description}`, '');
-    fullParts.push(`Source: ${p.url}`, '', p.body, '');
-  }
-  const llmsFull = fullParts.join('\n').trimEnd() + '\n';
-
+  const llmsTxt =
+    indexLines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';
   await writeFile(path.join(PUBLIC_DIR, 'llms.txt'), llmsTxt, 'utf8');
-  await writeFile(path.join(PUBLIC_DIR, 'llms-full.txt'), llmsFull, 'utf8');
+  written.push(`llms.txt (index, ${pages.length - 1} pages)`);
 
-  console.log(
-    `✓ llms.txt (${pages.length} pages indexed) + llms-full.txt generated.`,
+  // ---- llms-full.txt (whole corpus) ----
+  const fullParts = [`# ${SITE_TITLE}`, '', SITE_BLURB, ''];
+  for (const p of pages) fullParts.push(renderPageBlock(p));
+  await writeFile(
+    path.join(PUBLIC_DIR, 'llms-full.txt'),
+    fullParts.join('\n').trimEnd() + '\n',
+    'utf8',
   );
+  written.push(`llms-full.txt (${pages.length} pages)`);
+
+  // ---- llms-<group>.txt (one full-text file per package) ----
+  for (const g of GROUPS) {
+    const groupPages = pages.filter((p) => p.group === g.id);
+    if (groupPages.length === 0) continue;
+    const parts = [
+      `# ${SITE_TITLE} — ${g.label}`,
+      '',
+      SITE_BLURB,
+      '',
+      `This file contains the full text of the ${g.label} documentation only. ` +
+        `See /llms.txt for the complete index.`,
+      '',
+    ];
+    for (const p of groupPages) parts.push(renderPageBlock(p));
+    await writeFile(
+      path.join(PUBLIC_DIR, g.file),
+      parts.join('\n').trimEnd() + '\n',
+      'utf8',
+    );
+    written.push(`${g.file} (${groupPages.length} pages)`);
+  }
+
+  console.log('✓ Generated LLM artifacts:');
+  for (const w of written) console.log(`  - ${w}`);
 }
 
 main().catch((err) => {
