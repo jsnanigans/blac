@@ -37,9 +37,9 @@ in `00-conventions.md`).
 
 - [x] **T5.1** `[‖B]` Motion: variable-font registration snap + drift + easter eggs · Sonnet/high
 - [x] **T5.2** `[‖B]` Light-mode tuning + WCAG AA contrast audit · Sonnet/medium
-- [ ] **T5.3** Final strict build + cross-page regression sweep · Sonnet/medium
-- [ ] Phase gate: AA contrast, reduced-motion respected, no regressions
+- [x] **T5.3** Final strict build + cross-page regression sweep · Sonnet/medium
+- [x] Phase gate: AA contrast, reduced-motion respected, no regressions
 
 ## Done
 
-- [ ] Hand off to user for review (`pnpm --filter @blac/web-docs dev`) + PR/push
+- [x] Hand off to user for review (`pnpm --filter @blac/web-docs dev`) + PR/push

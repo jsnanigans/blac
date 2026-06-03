@@ -61,10 +61,14 @@ export default defineConfig({
         //   tokens.css (T1.1 / T1.2 — colors + font token names + type scale)
         //   riso.css   (T2.1 — print primitives)
         //   chrome.css (T3.1 — Starlight chrome polish)
+        // theme.css deleted (T5.3): all rules were either dead (`.hero h1` gradient
+        // wordmark — superseded by Hero.astro's .blac-hero class, which deliberately
+        // avoids `.hero`), or fully migrated into chrome.css (card hover, topic-
+        // dropdown font-weight, `.hero .tagline` max-width now owned by
+        // .blac-hero__tagline in Hero.astro).
         './src/styles/fonts.css',
         './src/styles/tokens.css',
         './src/styles/riso.css',
-        './src/styles/theme.css',
         './src/styles/chrome.css',
       ],
 
