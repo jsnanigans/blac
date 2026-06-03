@@ -291,4 +291,83 @@ const wordmark = title ?? 'BlaC';
       --blac-hero-misregister: var(--blac-misregister, 1.5px);
     }
   }
+
+  /* ── T5.1 Motion layer ──────────────────────────────────────────────────── */
+  /*
+    All motion lives exclusively inside `prefers-reduced-motion: no-preference`
+    so the existing static T4.1 frame is the one-and-only reduced-motion state.
+    No animation shorthand is placed on any element OUTSIDE this block — this
+    prevents animation-fill-mode from ghosting a half-played frame if the media
+    query doesn't match.
+
+    FOUC reasoning: the element's resting state is declared unconditionally
+    above (plates offset at --blac-misregister, halftone stationary). Keyframe
+    `from` overrides only while the animation is active. If the stylesheet loads
+    late or the animation never fires, the visitor already sees the T4.1 finished
+    frame — never a blank or mis-animated flash. The `animation-fill-mode:
+    backwards` hold only applies during a deliberate short delay before the
+    animation begins.
+  */
+  @media (prefers-reduced-motion: no-preference) {
+    /* ── 1. Wordmark registration snap (the brand moment) ─────────────────── */
+    /*
+      Animate --blac-hero-misregister from 9px → 0 via the riso-plate-snap
+      keyframe (defined in riso.css). Because we registered the property with
+      @property, both plate transforms interpolate continuously as the var tweens.
+      A tiny delay lets the page paint before the effect begins, avoiding any
+      layout-jank interference with first-contentful-paint.
+
+      animation-fill-mode: backwards holds the `from` state during the delay so
+      the wordmark starts in the wide-split position from frame 0, never showing
+      the 1.5px resting state mid-entrance.
+
+      End state: the animation ends at --blac-hero-misregister: 0. After it
+      completes (animation-fill-mode defaults to none at end), the inline style
+      `--blac-hero-misregister: var(--blac-misregister, 1.5px)` on the element
+      takes over and the plates return to the intentional 1.5px off-press rest —
+      which is the authored static look.
+    */
+    .blac-hero__wordmark {
+      animation:
+        riso-plate-snap 1.1s cubic-bezier(0.22, 0.85, 0.42, 1.02) 0.15s 1 both;
+    }
+
+    /* ── 2. Fraunces axes ink-in ──────────────────────────────────────────── */
+    /*
+      All three copies (plates + face) share the same grid cell and the same
+      parent rule for font-variation-settings, so targeting the children
+      uniformly makes the type "ink in" as the plates converge. Runs in sync
+      with the plate snap.
+    */
+    .blac-hero__wordmark > * {
+      animation:
+        riso-axes-ink-in 1.1s ease-out 0.15s 1 both;
+    }
+
+    /* ── 3. Halftone slow drift ───────────────────────────────────────────── */
+    /*
+      Very slow (30s) alternating loop — low amplitude shift of the two dot-field
+      background-position layers so the backdrop feels alive but never competes
+      with the wordmark. Uses background-position only; no layout properties.
+    */
+    .blac-hero__halftone {
+      animation:
+        riso-halftone-drift 30s ease-in-out infinite alternate;
+    }
+
+    /* ── 4. Hover easter egg: plates briefly mis-register then re-snap ────── */
+    /*
+      On wordmark hover, the plates drift apart with a quick wobble then
+      return to zero. animation-fill-mode: none so the 1.5px resting value
+      from the inline style is restored after the interaction ends.
+      The riso-hover-wobble keyframe goes from 0→spread→0, not from the
+      1.5px rest, so it works whether the load animation has finished or not:
+      hovering during page load would restart the plate at the 1.5px that
+      the inline style declares (the hover keyframe takes over from there).
+    */
+    .blac-hero__wordmark:hover {
+      animation:
+        riso-hover-wobble 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) 1 none;
+    }
+  }
 </style>

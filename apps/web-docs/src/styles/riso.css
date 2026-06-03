@@ -28,10 +28,10 @@
   Phase 5 can animate --blac-misregister by setting it on a scoped ancestor.
 */
 :root {
-  --blac-halftone-size:    3px;
+  --blac-halftone-size: 3px;
   --blac-halftone-opacity: 0.12;
-  --blac-misregister:      1.5px;
-  --blac-grain-opacity:    0.035;
+  --blac-misregister: 1.5px;
+  --blac-grain-opacity: 0.035;
 }
 
 /* ── .riso-halftone ────────────────────────────────────────────────────────── */
@@ -55,15 +55,25 @@
     /* Primary dot field — plate A colour */
     radial-gradient(
       circle,
-      color-mix(in srgb, var(--blac-ink-a) calc(var(--blac-halftone-opacity) * 100%), transparent) 35%,
+      color-mix(
+          in srgb,
+          var(--blac-ink-a) calc(var(--blac-halftone-opacity) * 100%),
+          transparent
+        )
+        35%,
       transparent 36%
     ),
     /* Secondary field offset at half-pitch — subtle B-plate warmth */
     radial-gradient(
-      circle,
-      color-mix(in srgb, var(--blac-ink-b) calc(var(--blac-halftone-opacity) * 55%), transparent) 25%,
-      transparent 26%
-    );
+        circle,
+        color-mix(
+            in srgb,
+            var(--blac-ink-b) calc(var(--blac-halftone-opacity) * 55%),
+            transparent
+          )
+          25%,
+        transparent 26%
+      );
 
   background-size:
     calc(var(--blac-halftone-size) * 4) calc(var(--blac-halftone-size) * 4),
@@ -133,7 +143,10 @@
 /* Plate B — warm coral; shifted down-right for the press-offset look */
 .riso-overprint::after {
   background: color-mix(in srgb, var(--blac-ink-b) 35%, transparent);
-  transform: translate(calc(var(--blac-misregister) * 0.5), calc(var(--blac-misregister) * 0.5));
+  transform: translate(
+    calc(var(--blac-misregister) * 0.5),
+    calc(var(--blac-misregister) * 0.5)
+  );
 }
 
 /* Light mode: switch to multiply so the ink darkens cream paper correctly */
@@ -247,4 +260,117 @@
 /* Light mode: soft-light blends better on cream paper than overlay */
 :root[data-theme='light'] .riso-grain {
   mix-blend-mode: soft-light;
+}
+
+/* ── T5.1 Motion — registration snap + halftone drift ─────────────────────── */
+/*
+  ALL motion is wrapped in `prefers-reduced-motion: no-preference` so the
+  existing static frame is the one-and-only reduced-motion state. No animation
+  shorthand is placed on elements outside this media query — that prevents
+  animation-fill-mode from ghosting a half-played frame when motion is off.
+
+  FOUC note: the resting element state (plate offset at --blac-misregister,
+  halftone stationary) is declared on the elements themselves, outside any media
+  query. The keyframe `from` overrides that only while the animation is running.
+  If CSS loads late or the animation never fires, the visitor sees the finished
+  static T4.1 state — never an unstyled or mid-keyframe flash.
+*/
+
+/* -- @property: register --blac-hero-misregister so the browser can interpolate
+   it as a <length>. Without this declaration, animating a custom property that
+   feeds into `calc()` inside `transform` produces a discrete jump; with it the
+   browser tweens the value continuously and both plates glide for free. */
+@property --blac-hero-misregister {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 1.5px;
+}
+
+/* ── Hero halftone slow drift ──────────────────────────────────────────────── */
+/*
+  background-position shift on the two dot-field layers. Low amplitude (< 1 dot
+  cell) over a long period so the drift is felt, not noticed. Two layers move at
+  slightly different rates for a subtle parallax between plate A and plate B dots,
+  reinforcing the two-ink metaphor. transform/opacity only — no layout paint.
+  The animation loops infinitely with alternate so it never jumps on repeat.
+*/
+@keyframes riso-halftone-drift {
+  from {
+    background-position:
+      0 0,
+      calc(var(--blac-halftone-size) * 2) calc(var(--blac-halftone-size) * 2);
+  }
+  to {
+    background-position:
+      calc(var(--blac-halftone-size) * 2) calc(var(--blac-halftone-size) * -1),
+      calc(var(--blac-halftone-size) * 4) calc(var(--blac-halftone-size) * 3);
+  }
+}
+
+/* ── Hero wordmark registration snap ───────────────────────────────────────── */
+/*
+  Animates --blac-hero-misregister from a dramatically wide split down to 0,
+  then the static CSS settles the var back to its resting 1.5px declaration.
+  A gentle overshoot (via cubic-bezier) gives the "ink thwack" that makes it
+  feel tactile — the plate snaps past registration, rebounds a hair, then rests.
+
+  We also morph the Fraunces variable axes on the wordmark children: weight and
+  SOFT start heavier/harder and ease into the authored resting values so the type
+  "inks in" as the plates converge. The face and both plates share the same
+  font-variation-settings rule, so the axis change applies uniformly.
+
+  The animation-fill-mode: backwards lets the keyframe `from` state hold during
+  the animation-delay window so the wordmark starts wide from frame 0.
+*/
+@keyframes riso-plate-snap {
+  0% {
+    --blac-hero-misregister: 9px;
+  }
+  /* brief pause at full split so the eye reads the chaos before resolution */
+  15% {
+    --blac-hero-misregister: 9px;
+  }
+  /* converge with an overshoot through zero — plates briefly cross, then settle */
+  80% {
+    --blac-hero-misregister: -0.4px;
+  }
+  100% {
+    --blac-hero-misregister: 0px;
+  }
+}
+
+@keyframes riso-axes-ink-in {
+  /* Start heavier + less optical — harder, inkier, not yet warmed */
+  from {
+    font-variation-settings:
+      'SOFT' 20,
+      'WONK' 1;
+  }
+  /* Resting values from Hero.astro — must match exactly */
+  to {
+    font-variation-settings:
+      'SOFT' 100,
+      'WONK' 1;
+  }
+}
+
+/* ── Hover easter egg: brief mis-register wobble then re-snap ──────────────── */
+/*
+  On wordmark hover the plates drift apart slightly — just enough to register
+  as a "blink" — and snap back. One short pulse; no loop. Keeps the easter-egg
+  quality: only attentive visitors notice.
+*/
+@keyframes riso-hover-wobble {
+  0% {
+    --blac-hero-misregister: 0px;
+  }
+  25% {
+    --blac-hero-misregister: 3.5px;
+  }
+  55% {
+    --blac-hero-misregister: -0.3px;
+  }
+  100% {
+    --blac-hero-misregister: 0px;
+  }
 }
