@@ -36,7 +36,7 @@ in `00-conventions.md`).
 ## Phase 5 — Polish (`[‖]` group B = T5.1 + T5.2; T5.3 last)
 
 - [x] **T5.1** `[‖B]` Motion: variable-font registration snap + drift + easter eggs · Sonnet/high
-- [ ] **T5.2** `[‖B]` Light-mode tuning + WCAG AA contrast audit · Sonnet/medium
+- [x] **T5.2** `[‖B]` Light-mode tuning + WCAG AA contrast audit · Sonnet/medium
 - [ ] **T5.3** Final strict build + cross-page regression sweep · Sonnet/medium
 - [ ] Phase gate: AA contrast, reduced-motion respected, no regressions
 

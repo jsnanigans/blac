@@ -34,6 +34,17 @@
   --blac-grain-opacity: 0.035;
 }
 
+/* Light mode: recalibrate knobs for cream paper.
+   - halftone-opacity up slightly: dots are ink ON cream, not light on dark —
+     they need a touch more presence to read as a print artifact.
+   - grain-opacity up: soft-light mode on cream is gentler than overlay on dark;
+     a slightly higher value restores the "printed paper" tactility.
+   - misregister unchanged: the ghost offset is perceptual; same px works both ways. */
+:root[data-theme='light'] {
+  --blac-halftone-opacity: 0.15;
+  --blac-grain-opacity: 0.05;
+}
+
 /* ── .riso-halftone ────────────────────────────────────────────────────────── */
 /*
   A repeating radial-gradient dot field rendered as a background layer.
@@ -149,9 +160,16 @@
   );
 }
 
-/* Light mode: switch to multiply so the ink darkens cream paper correctly */
-:root[data-theme='light'] .riso-overprint::before,
+/* Light mode: switch to multiply so the ink darkens cream paper correctly.
+   Also increase plate opacity slightly — multiply on cream is more muted than
+   screen on dark at the same opacity, so we compensate to keep the two-ink
+   character legible without muddying the surface. */
+:root[data-theme='light'] .riso-overprint::before {
+  background: color-mix(in srgb, var(--blac-ink-a) 55%, transparent);
+  mix-blend-mode: multiply;
+}
 :root[data-theme='light'] .riso-overprint::after {
+  background: color-mix(in srgb, var(--blac-ink-b) 45%, transparent);
   mix-blend-mode: multiply;
 }
 
