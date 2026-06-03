@@ -48,6 +48,34 @@ export default defineConfig({
       editLink: {
         baseUrl: 'https://github.com/jsnanigans/blac/edit/main/apps/web-docs/',
       },
+      // Preload the two normal-style woff2s so the browser fetches them
+      // before CSS parse discovers the @font-face rules — shrinks the
+      // font-display:swap window (the metric-matched fallbacks in fonts.css
+      // make whatever window remains shift-free). Italics are not preloaded:
+      // rarely above the fold, not worth blocking bandwidth for.
+      // `crossorigin` is required for font preloads even same-origin.
+      head: [
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'preload',
+            href: '/fonts/hanken-grotesk-latin-wght-normal.woff2',
+            as: 'font',
+            type: 'font/woff2',
+            crossorigin: 'anonymous',
+          },
+        },
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'preload',
+            href: '/fonts/fraunces-latin-opsz-normal.woff2',
+            as: 'font',
+            type: 'font/woff2',
+            crossorigin: 'anonymous',
+          },
+        },
+      ],
       components: {
         PageTitle: './src/components/overrides/PageTitle.astro',
         Footer: './src/components/overrides/Footer.astro',

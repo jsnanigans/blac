@@ -19,14 +19,32 @@
     ─────────────────────────────────────────────
     Total                             215 KB (brotli-compressed ~60 % smaller in prod)
 
-  Fallback metric overrides (Hanken Grotesk only):
-    Hanken Grotesk UPM 2000, typoAscender 1960, typoDescender −500, lineGap 0.
-    size-adjust 100 % — cap-height ratio is close enough to system-ui to skip.
-    ascent-override  98 % (1960 / 2000)
-    descent-override 25 % ( 500 / 2000)
-    line-gap-override 0 %
-    These keep the fallback block height within ~1 px of the real font, avoiding
-    measurable CLS on swap.
+  Fallback metric overrides — the CLS killer. Each web font gets a companion
+  '<Family> Fallback' face that aliases a universally-available system font
+  (Arial / Georgia) and re-shapes it to occupy *exactly* the web font's box,
+  so the swap reflows nothing. Overrides live on the FALLBACK faces only —
+  putting them on the real @font-face would distort the loaded font instead.
+
+  Metrics measured from the actual woff2 files + macOS system fonts via
+  fontTools (frequency-weighted avg char width, capsize method):
+
+    Hanken Grotesk  UPM 1000, asc 1000, desc −303, gap 0, avg 0.4606 em
+    Arial           avg 0.4521 em
+      size-adjust      = 0.4606 / 0.4521          = 101.88 %
+      ascent-override  = (1000 / 1000) / 1.0188   =  98.16 %
+      descent-override = ( 303 / 1000) / 1.0188   =  29.74 %
+
+    Fraunces        UPM 2000, asc 1956, desc −510, gap 0, avg 0.5311 em
+    Georgia         avg 0.4527 em
+      size-adjust      = 0.5311 / 0.4527          = 117.32 %
+      ascent-override  = (1956 / 2000) / 1.1732   =  83.36 %
+      descent-override = ( 510 / 2000) / 1.1732   =  21.74 %
+
+  The fallback families slot in via tokens.css:
+    --blac-font-display: 'Fraunces', 'Fraunces Fallback', Georgia, serif
+    --blac-font-body: 'Hanken Grotesk', 'Hanken Grotesk Fallback', system-ui, …
+  The two normal-style woff2s are also <link rel=preload>ed from astro.config
+  head[] to shrink the swap window itself.
 */
 
 /* ── Fraunces (display) ─────────────────────────────────────────────────────
@@ -61,8 +79,6 @@
 /* ── Hanken Grotesk (body) ──────────────────────────────────────────────────
    Family name 'Hanken Grotesk' — matches --blac-font-body (tokens.css).
    Variable axis: wght 100–900 (ital is a separate file, not a continuous axis).
-   Fallback metric overrides tune the system-ui fallback to match Hanken's
-   block dimensions; see file-header comment for derivation.
 */
 
 @font-face {
@@ -71,9 +87,6 @@
   font-display: swap;
   font-weight: 100 900;
   src: url('/fonts/hanken-grotesk-latin-wght-normal.woff2') format('woff2');
-  ascent-override: 98%;
-  descent-override: 25%;
-  line-gap-override: 0%;
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
     U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
     U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
@@ -85,10 +98,32 @@
   font-display: swap;
   font-weight: 100 900;
   src: url('/fonts/hanken-grotesk-latin-wght-italic.woff2') format('woff2');
-  ascent-override: 98%;
-  descent-override: 25%;
-  line-gap-override: 0%;
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
     U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
     U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ── Metric-matched fallbacks ───────────────────────────────────────────────
+   Shown during the font-display:swap period; sized to the web fonts' exact
+   block dimensions so the swap causes zero layout shift. Derivation in the
+   file-header comment. Italic text synthesizes (oblique) during the swap
+   window — acceptable for the ~1 frame it's visible.
+*/
+
+@font-face {
+  font-family: 'Fraunces Fallback';
+  src: local('Georgia');
+  size-adjust: 117.32%;
+  ascent-override: 83.36%;
+  descent-override: 21.74%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Hanken Grotesk Fallback';
+  src: local('Arial');
+  size-adjust: 101.88%;
+  ascent-override: 98.16%;
+  descent-override: 29.74%;
+  line-gap-override: 0%;
 }

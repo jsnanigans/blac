@@ -8,6 +8,7 @@
     "build": "node ./scripts/check-snippets.mjs",
     "build:astro": "astro build",
     "preview": "astro preview",
+    "publish": "pnpm run build && wrangler pages deploy",
     "typecheck": "astro check"
   },
   "devDependencies": {
@@ -25,7 +26,8 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "remark-gfm": "^4.0.0",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "wrangler": "^4.95.0"
   },
   "dependencies": {
     "@astrojs/starlight": "0.38.3",

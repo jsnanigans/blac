@@ -35,9 +35,12 @@
   );
 
   /* Font family stacks — @font-face for 'Fraunces' and 'Hanken Grotesk'
-     are registered in fonts.css (loaded before this file). */
-  --blac-font-display: 'Fraunces', Georgia, serif;
-  --blac-font-body: 'Hanken Grotesk', system-ui, sans-serif;
+     are registered in fonts.css (loaded before this file). The '* Fallback'
+     entries are metric-matched system-font aliases (also fonts.css) that
+     hold the web font's exact box during load, so the swap is shift-free. */
+  --blac-font-display: 'Fraunces', 'Fraunces Fallback', Georgia, serif;
+  --blac-font-body:
+    'Hanken Grotesk', 'Hanken Grotesk Fallback', system-ui, sans-serif;
   --blac-font-mono:    /* leave Starlight / Expressive Code default */ inherit;
 
   /* ── Type scale ────────────────────────────────────────────────────────── */
