@@ -219,7 +219,6 @@ export default defineConfig({
                     label: 'Versioning & Stability',
                     link: '/guide/versioning/',
                   },
-                  { label: 'Changelog', link: '/guide/changelog/' },
                 ],
               },
               {

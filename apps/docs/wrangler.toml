@@ -1,3 +1,0 @@
-name = "blac-docs"
-pages_build_output_dir = ".vitepress/dist"
-compatibility_date = "2025-01-01"

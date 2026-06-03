@@ -10,7 +10,7 @@
   "ignore": [
     "@9amhealth/blac-compat",
     "@blac/devtools-extension",
-    "@blac/docs",
+    "@blac/web-docs",
     "examples",
     "perf"
   ]

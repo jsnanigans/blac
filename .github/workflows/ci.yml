@@ -75,9 +75,9 @@ jobs:
         with:
           node-version: lts
           cache: true
-      # VitePress fails the build on dead internal links, so this doubles as
-      # the internal link checker. External links are checked on a schedule
-      # in link-check.yml.
+      # Builds the Astro/Starlight docs (apps/web-docs) via the strict wrapper,
+      # which fails on any broken Twoslash code snippet. External links are
+      # checked on a schedule in link-check.yml.
       - run: pnpm docs:build
 
   size:

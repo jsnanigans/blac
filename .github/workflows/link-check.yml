@@ -1,8 +1,8 @@
 name: Link check
 
-# Internal links are validated on every PR by the `docs` job in ci.yml
-# (VitePress fails its build on dead relative links). This workflow checks
-# *external* URLs on a schedule, where transient failures won't block PRs.
+# The `docs` job in ci.yml builds the Astro/Starlight docs on every PR. This
+# workflow checks *external* URLs on a schedule, where transient failures
+# won't block PRs.
 
 on:
   schedule:
@@ -23,7 +23,8 @@ jobs:
             --no-progress
             --max-retries 3
             --accept 200,206,429
-            'apps/docs/**/*.md'
+            'apps/web-docs/src/content/docs/**/*.md'
+            'apps/web-docs/src/content/docs/**/*.mdx'
             'README.md'
             'packages/*/README.md'
           fail: true
