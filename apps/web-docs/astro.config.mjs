@@ -145,6 +145,13 @@ export default defineConfig({
                 ],
               },
               {
+                label: 'Examples',
+                items: [
+                  { label: 'Playground', link: '/playground/' },
+                  { label: 'Showcase', link: '/showcase/' },
+                ],
+              },
+              {
                 label: 'Going Deeper',
                 items: [
                   {

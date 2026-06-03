@@ -12,7 +12,17 @@
  * snippet which doesn't type-check FAILS the build. dist is still produced on
  * success, so it's a drop-in replacement for `astro build` in CI/deploy.
  */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+
+// Regenerate the LLM discovery artifacts (public/llms.txt + llms-full.txt) from
+// the current content before building, so dist always ships fresh copies.
+// Failing here fails the build — a stale or missing llms.txt is a real defect.
+const llms = spawnSync('node', ['./scripts/generate-llms.mjs'], {
+  stdio: 'inherit',
+});
+if (llms.status !== 0) {
+  process.exit(llms.status ?? 1);
+}
 
 // Signatures of a soft-logged snippet/render failure that astro build swallows.
 const ERROR_PATTERNS = [

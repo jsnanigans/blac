@@ -1,5 +1,8 @@
 # build output
 dist/
+# generated at build time by scripts/generate-llms.mjs
+public/llms.txt
+public/llms-full.txt
 # generated types
 .astro/
 # dependencies

@@ -1,0 +1,5 @@
+name = "blac-docs"
+# Astro's Starlight build writes static output to ./dist (the strict build
+# wrapper, `pnpm build`, runs `astro build` and produces the same dist).
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
