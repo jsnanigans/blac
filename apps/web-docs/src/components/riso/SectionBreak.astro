@@ -73,6 +73,29 @@ const wrapperClasses = ['section-break', 'riso-halftone', className ?? '']
     min-height: 3rem;
     padding-block: 1.5rem;
     overflow: hidden;
+
+    /*
+      Fade the dot field out at the top and bottom edges so the divider never
+      hard-cuts a partial row of dots (the band height is rarely an exact
+      multiple of the dot pitch). The mask is opaque through the middle — where
+      the centred label sits — so the label stays fully crisp. Applied to the
+      whole element; the semantic <hr> and label are unaffected visually since
+      they live in the opaque core.
+    */
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 32%,
+      #000 68%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 32%,
+      #000 68%,
+      transparent 100%
+    );
   }
 
   /* The semantic <hr> is hidden — it exists only for a11y tree structure. */

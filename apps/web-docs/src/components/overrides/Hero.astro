@@ -154,22 +154,25 @@ const wordmark = title ?? 'BlaC';
 
   .blac-hero__halftone {
     --blac-halftone-size: 7px;
-    --blac-halftone-opacity: 0.5;
+    --blac-halftone-opacity: 0.32;
     width: min(46rem, 92%);
-    aspect-ratio: 2 / 1;
+    /* A flatter ellipse so the field hugs the wordmark band and dies out well
+       before the tagline below — keeps the dots from competing with body copy. */
+    aspect-ratio: 5 / 2;
     border-radius: 50%;
-    /* Soft vignette so the field fades out at the rim — no hard rectangle. */
+    /* Soft vignette so the field fades out at the rim — no hard rectangle, and
+       it fades early enough that the densest dots stay behind the wordmark. */
     -webkit-mask-image: radial-gradient(
       ellipse at center,
-      var(--blac-ink) 30%,
-      transparent 72%
+      var(--blac-ink) 22%,
+      transparent 62%
     );
     mask-image: radial-gradient(
       ellipse at center,
-      var(--blac-ink) 30%,
-      transparent 72%
+      var(--blac-ink) 22%,
+      transparent 62%
     );
-    opacity: 0.7;
+    opacity: 0.55;
   }
 
   /* ── Copy column ───────────────────────────────────────────────────────── */
@@ -264,7 +267,16 @@ const wordmark = title ?? 'BlaC';
     font-family: var(--blac-font-body);
     font-size: clamp(var(--blac-text-md), calc(0.75rem + 1.2vw), var(--blac-text-xl));
     line-height: var(--blac-leading-snug);
-    color: var(--blac-ink-dim);
+    /* Full-strength ink (not ink-dim): the wordmark's size already carries the
+       hierarchy, and over the residual halftone the tagline needs the contrast
+       to stay legible. */
+    color: var(--blac-ink);
+    /* A tight bg-coloured scrim halo lifts the text off any stray dots without
+       reading as a glow — it darkens (dark) / lightens (cream) the dots right
+       around each glyph. Theme-aware via --blac-bg. */
+    text-shadow:
+      0 0 8px var(--blac-bg),
+      0 0 8px var(--blac-bg);
     /* A single coral em-phrase inside the tagline (.blac-hero__tagline em) gets
        the warm ink — see index.mdx where "state, handled" is emphasised. */
   }
