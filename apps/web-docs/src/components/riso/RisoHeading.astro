@@ -14,16 +14,12 @@
 
   Slot:
     default — the heading text. Rendered in normal flow for accessibility.
-              Screen readers see it once; decorative pseudo-element plates
-              (::before / ::after from .riso-overprint) are CSS-only and carry
-              no accessible text.
 
   Accessibility:
     The visible text lives in the real heading element in normal flow —
-    announced once, selectable, keyboard-focusable. The overprint plates are
-    CSS pseudo-elements (::before/::after) with content:'', so they are
-    invisible to the a11y tree. No aria-hidden needed here; the CSS contract
-    in riso.css already guards this.
+    announced once, selectable, keyboard-focusable. The riso character comes
+    from .riso-misregister, a pure text-shadow ghost (no extra DOM, no
+    pseudo-element text), so there is nothing to hide from the a11y tree.
 
   Animation hook (Phase 5):
     The heading element carries data-riso-heading="true" and the intensity as
@@ -63,13 +59,16 @@ const localMisregister = misregisterScale[intensity];
 
 /*
   Class composition:
-    .riso-overprint — always applied (the two-plate colour blend).
-    .riso-misregister — applied at 'normal' and 'loud' intensity only; skipped
-      at 'subtle' to keep it purely a colour effect without the channel split.
+    .riso-misregister — the channel-split ink ghost (text-safe, non-destructive:
+      it keeps the heading legible and paints no box). Applied at 'normal' and
+      'loud' only; 'subtle' is the clean display font with no split.
+  NOTE: .riso-overprint is intentionally NOT applied here. It is a shape-fill
+  treatment (inset:0 background plates) and paints a solid box behind text — use
+  it on panels/dividers, never on headings. The misregister ghost provides the
+  two-ink off-press look for text without harming contrast.
 */
 const risoClasses = [
   'riso-heading',
-  'riso-overprint',
   intensity !== 'subtle' ? 'riso-misregister' : '',
   className ?? '',
 ].filter(Boolean).join(' ');

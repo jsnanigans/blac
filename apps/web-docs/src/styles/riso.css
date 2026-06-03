@@ -161,25 +161,29 @@
   moves both together.
 */
 .riso-misregister {
-  color: var(--blac-ink-a);
-
   /*
-    Shadow uses ink-b (coral) offset by the register knob.
-    Two shadows: one slightly ahead (positive), one slightly behind (negative)
-    on the perpendicular axis — this mirrors real two-plate misreg where plates
-    drift in both x and y by different amounts.
+    NON-DESTRUCTIVE: the element keeps whatever `color` the consumer set, so the
+    main glyph stays high-contrast and legible. The two-plate "off-press" look
+    comes purely from offset ink ghosts sitting BEHIND the readable text —
+    blue (ink-a) drifting one way, coral (ink-b) the other. This is what makes
+    the effect safe to apply to real headings (it does NOT recolour the text to
+    a low-contrast pastel, and it paints no box — unlike .riso-overprint, which
+    is a shape-fill treatment, not a text treatment).
   */
   text-shadow:
-    calc(var(--blac-misregister) * -1)  0                               0   color-mix(in srgb, var(--blac-ink-b) 70%, transparent),
-    0                                   var(--blac-misregister)          0   color-mix(in srgb, var(--blac-ink-b) 40%, transparent);
+    calc(var(--blac-misregister) * -1) 0 0
+      color-mix(in srgb, var(--blac-ink-a) 65%, transparent),
+    var(--blac-misregister) calc(var(--blac-misregister) * 0.6) 0
+      color-mix(in srgb, var(--blac-ink-b) 55%, transparent);
 }
 
-/* Light mode: flip — element uses ink-b, shadow is ink-a (paper reads lighter) */
+/* Light mode: lighter ghosts so the cream paper doesn't muddy under the text. */
 :root[data-theme='light'] .riso-misregister {
-  color: var(--blac-ink-b);
   text-shadow:
-    calc(var(--blac-misregister) * -1)  0                               0   color-mix(in srgb, var(--blac-ink-a) 65%, transparent),
-    0                                   var(--blac-misregister)          0   color-mix(in srgb, var(--blac-ink-a) 35%, transparent);
+    calc(var(--blac-misregister) * -1) 0 0
+      color-mix(in srgb, var(--blac-ink-a) 50%, transparent),
+    var(--blac-misregister) calc(var(--blac-misregister) * 0.6) 0
+      color-mix(in srgb, var(--blac-ink-b) 45%, transparent);
 }
 
 /* ── .riso-grain ───────────────────────────────────────────────────────────── */
