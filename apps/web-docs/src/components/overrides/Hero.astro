@@ -1,0 +1,294 @@
+---
+/*
+  Hero.astro — the flagship landing set-piece for the Midnight Risograph theme.
+
+  This REPLACES Starlight's default splash hero (node_modules/@astrojs/starlight/
+  components/Hero.astro) entirely. It preserves that component's data contract:
+
+    - Reads the hero config from Astro.locals.starlightRoute.entry.data.hero
+      ({ title?, tagline?, image?, actions[] }), exactly like the stock Hero.
+    - Renders ONE real <h1> with id=PAGE_TITLE_ID ('_top') — the skip-link and
+      in-page anchor target. PageTitle.astro is NOT rendered on splash pages, so
+      this hero owns the page's single <h1>.
+    - Re-implements the action buttons (CTAs) so "Get started" / "View on GitHub"
+      keep working, honoring each action's link / variant / icon.
+
+  THE SIGNATURE MOMENT — two-plate overprint wordmark
+  ---------------------------------------------------
+  The wordmark "BlaC" is composed as a risograph two-colour overprint built from
+  LAYERED TEXT (not the .riso-overprint box, which is a shape-fill and would
+  paint a solid rectangle behind glyphs). Three stacked copies of the word:
+
+    plate A (data-riso-plate="a")  — dusty blue (--blac-ink-a), nudged up-left
+    plate B (data-riso-plate="b")  — coral     (--blac-ink-b), nudged down-right
+    the readable face               — warm ink (--blac-ink), dead centre, in the
+                                      real <h1>; the two plates are aria-hidden
+
+  The two plates are offset by the misregister knob --blac-misregister so the
+  word reads "off-press". Where the translucent plates overlap the face they
+  resolve toward a single warm hue — the brand's "chaos resolving into calm".
+  A .riso-halftone dot field drifts behind the whole composition (per-element
+  background; NOT the site grain singleton, which the layout already mounts).
+
+  ANIMATION SEAM FOR T5.1 (motion) — do not animate here, leave it static
+  -----------------------------------------------------------------------
+  T5.1 will snap the two plates into registration on load. The stable hooks it
+  targets WITHOUT editing this file:
+
+    - .blac-hero__wordmark[data-hero-wordmark]      — the wordmark container
+    - [data-riso-plate="a"] / [data-riso-plate="b"] — the two ink plates
+    - the CSS custom prop --blac-hero-misregister   — the plate offset distance,
+      declared on the wordmark and consumed by the plate transforms below.
+
+  To animate the snap-to-register, T5.1 transitions/animates
+  --blac-hero-misregister from its resting value to 0 (e.g. a @keyframes on
+  [data-hero-wordmark], or `transition: --blac-hero-misregister …` via @property).
+  Because the plate transforms read the var, both plates converge for free.
+
+  REDUCED MOTION / STATIC CONTRACT:
+    The shipped static state below is already the finished, resting look and is
+    exactly what `prefers-reduced-motion: reduce` users will keep — the plates
+    sit slightly misregistered (a designed, intentional off-press look), the
+    halftone is still. Nothing here moves; T5.1 adds motion behind a
+    motion-safe guard and treats this file's output as the resting frame.
+
+  TOKEN HYGIENE: only --blac-* / --sl-* vars below — no raw hex, no raw font
+  names (those live in tokens.css / fonts.css).
+*/
+
+import { LinkButton } from '@astrojs/starlight/components';
+
+// PAGE_TITLE_ID is '_top' in Starlight (constants.ts) — inlined to avoid
+// importing from an unexported internal path, matching PageTitle.astro's note.
+const PAGE_TITLE_ID = '_top';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const { title = data.title, tagline, actions = [] } = data.hero ?? {};
+
+// The wordmark text. The hero `title` frontmatter is "BlaC"; we render that
+// glyph-for-glyph across the three plates so screen readers announce it once
+// (only the real <h1> carries readable text; the plates are aria-hidden).
+const wordmark = title ?? 'BlaC';
+---
+
+<div class="blac-hero">
+  {/* ── The overprint wordmark — the signature moment ───────────────────── */}
+  <div class="blac-hero__plate-stage" aria-hidden="true">
+    {/* Halftone drift field behind the wordmark (per-element bg, NOT the grain
+        singleton). Decorative — hidden from a11y. */}
+    <div class="blac-hero__halftone riso-halftone"></div>
+  </div>
+
+  <div class="blac-hero__copy sl-flex">
+    {/*
+      The wordmark: stable T5.1 seam via [data-hero-wordmark] +
+      --blac-hero-misregister. The two ink plates are aria-hidden decorative
+      copies; the readable text lives in the real <h1> face.
+    */}
+    <div
+      class="blac-hero__wordmark"
+      data-hero-wordmark
+      style="--blac-hero-misregister: var(--blac-misregister, 1.5px);"
+    >
+      <span class="blac-hero__plate" data-riso-plate="a" aria-hidden="true">{wordmark}</span>
+      <span class="blac-hero__plate" data-riso-plate="b" aria-hidden="true">{wordmark}</span>
+      <h1 id={PAGE_TITLE_ID} class="blac-hero__face" data-page-title>{wordmark}</h1>
+    </div>
+
+    {
+      tagline && (
+        <p class="blac-hero__tagline" set:html={tagline} />
+      )
+    }
+
+    {
+      actions.length > 0 && (
+        <div class="blac-hero__actions sl-flex">
+          {actions.map(
+            ({ attrs: { class: className, ...attrs } = {}, icon, link: href, text, variant }) => (
+              <LinkButton {href} {variant} icon={icon?.name} class:list={[className]} {...attrs}>
+                {text}
+                {icon?.html && <Fragment set:html={icon.html} />}
+              </LinkButton>
+            )
+          )}
+        </div>
+      )
+    }
+  </div>
+</div>
+
+<style>
+  /*
+    Root scoping note: we use our OWN class `.blac-hero` (NOT Starlight's
+    `.hero`) so the residual theme.css `.hero h1 { background-clip: text }` and
+    the stock `.hero` grid rules do NOT apply to this set-piece. This override
+    owns its layout end-to-end.
+  */
+  .blac-hero {
+    position: relative;
+    display: grid;
+    place-items: center;
+    /* Generous vertical breathing room — this is the loudest moment of the
+       site, give it the stage. Clamp scales with viewport. */
+    padding-block: clamp(3rem, calc(2rem + 8vmin), 8rem);
+    isolation: isolate; /* contain the plate blend math to this set-piece */
+    overflow: hidden;
+  }
+
+  /* ── Halftone backdrop ─────────────────────────────────────────────────── */
+  /*
+    A drifting dot field sitting behind the wordmark. Sized up from the body
+    default for a visible riso set-piece; faded so it never fights the type.
+    Masked to a soft radial vignette so the dots dissolve at the edges rather
+    than ending in a hard box.
+  */
+  .blac-hero__plate-stage {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    display: grid;
+    place-items: center;
+  }
+
+  .blac-hero__halftone {
+    --blac-halftone-size: 7px;
+    --blac-halftone-opacity: 0.5;
+    width: min(46rem, 92%);
+    aspect-ratio: 2 / 1;
+    border-radius: 50%;
+    /* Soft vignette so the field fades out at the rim — no hard rectangle. */
+    -webkit-mask-image: radial-gradient(
+      ellipse at center,
+      var(--blac-ink) 30%,
+      transparent 72%
+    );
+    mask-image: radial-gradient(
+      ellipse at center,
+      var(--blac-ink) 30%,
+      transparent 72%
+    );
+    opacity: 0.7;
+  }
+
+  /* ── Copy column ───────────────────────────────────────────────────────── */
+  .blac-hero__copy {
+    position: relative;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(1.5rem, calc(1rem + 2vw), 2.5rem);
+    text-align: center;
+  }
+
+  /* ── The two-plate wordmark ────────────────────────────────────────────── */
+  /*
+    Three stacked copies share one grid cell so they overlap precisely. The two
+    decorative plates are absolutely-stacked behind the readable face and
+    offset by --blac-hero-misregister (the T5.1 animation seam). On a dark
+    background the plate ink reads as soft coloured ghosts fringing the warm
+    face — the off-press overprint look — and stays fully legible because the
+    face on top is high-contrast --blac-ink.
+  */
+  .blac-hero__wordmark {
+    position: relative;
+    display: grid;
+    place-items: center;
+    /* The misregister offset T5.1 will animate toward 0. Static resting value
+       inherited from the inline style (defaults to --blac-misregister). */
+    --blac-hero-misregister: var(--blac-misregister, 1.5px);
+  }
+
+  .blac-hero__wordmark > * {
+    /* Stack all three copies in the same grid cell */
+    grid-area: 1 / 1;
+    margin: 0;
+    font-family: var(--blac-font-display);
+    /* Big, fluid display size — the wordmark is the focal point */
+    font-size: clamp(var(--blac-text-4xl), calc(2rem + 14vw), 11rem);
+    font-weight: 700;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    /* Loud Fraunces axes — extra ink warmth / softness for the set-piece.
+       Degrades gracefully if the variable axes aren't available. */
+    font-variation-settings: 'SOFT' 100, 'WONK' 1;
+  }
+
+  /* The readable face — high-contrast warm ink, sits on top. */
+  .blac-hero__face {
+    position: relative;
+    z-index: 2;
+    color: var(--blac-ink);
+  }
+
+  /* Decorative ink plates — translucent so the overlap resolves to a third,
+     calmer hue (the brand idea). mix-blend screen on dark adds the channels. */
+  .blac-hero__plate {
+    z-index: 1;
+    user-select: none;
+    mix-blend-mode: screen;
+  }
+
+  /* Plate A — dusty blue, nudged UP-LEFT by the misregister knob. */
+  .blac-hero__plate[data-riso-plate='a'] {
+    color: var(--blac-ink-a);
+    transform: translate(
+      calc(var(--blac-hero-misregister) * -1),
+      calc(var(--blac-hero-misregister) * -0.7)
+    );
+  }
+
+  /* Plate B — coral, nudged DOWN-RIGHT — opposing offset = the channel split. */
+  .blac-hero__plate[data-riso-plate='b'] {
+    color: var(--blac-ink-b);
+    transform: translate(
+      var(--blac-hero-misregister),
+      calc(var(--blac-hero-misregister) * 0.7)
+    );
+  }
+
+  /*
+    Light mode: on cream paper, `screen` would wash the plates out to nothing.
+    Multiply darkens each ink into the paper (real overprint behaviour), and we
+    pull the face slightly so the darker plates still fringe legibly.
+  */
+  :global(:root[data-theme='light']) .blac-hero__plate {
+    mix-blend-mode: multiply;
+    opacity: 0.85;
+  }
+
+  /* ── Tagline ───────────────────────────────────────────────────────────── */
+  .blac-hero__tagline {
+    max-width: 46ch;
+    margin: 0;
+    font-family: var(--blac-font-body);
+    font-size: clamp(var(--blac-text-md), calc(0.75rem + 1.2vw), var(--blac-text-xl));
+    line-height: var(--blac-leading-snug);
+    color: var(--blac-ink-dim);
+    /* A single coral em-phrase inside the tagline (.blac-hero__tagline em) gets
+       the warm ink — see index.mdx where "state, handled" is emphasised. */
+  }
+
+  .blac-hero__tagline :global(em) {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--blac-ink-b);
+  }
+
+  /* ── CTAs ──────────────────────────────────────────────────────────────── */
+  .blac-hero__actions {
+    gap: 1rem 1.25rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Honour reduced-motion explicitly: nothing here animates, but declare the
+     contract so it's obvious this static frame IS the reduced-motion state and
+     T5.1's additions must respect the same guard. */
+  @media (prefers-reduced-motion: reduce) {
+    .blac-hero__wordmark {
+      /* Resting offset is intentional and kept — no snap animation. */
+      --blac-hero-misregister: var(--blac-misregister, 1.5px);
+    }
+  }
+</style>

@@ -51,7 +51,9 @@ export default defineConfig({
       components: {
         PageTitle: './src/components/overrides/PageTitle.astro',
         Footer: './src/components/overrides/Footer.astro',
-        // T4.1 adds: Hero:  './src/components/overrides/Hero.astro'
+        // T4.1: the flagship landing set-piece — replaces the stock splash
+        // hero with the two-plate overprint wordmark (see the file's header).
+        Hero: './src/components/overrides/Hero.astro',
       },
       customCss: [
         // Load order per midnight-risograph conventions:

@@ -25,8 +25,8 @@ in `00-conventions.md`).
 - [x] Phase gate: every doc page reads as the new theme, build green
 
 ## Phase 4 — Landing (flagship)
-- [ ] **T4.1** Hero override + `index.mdx` rebuild · **Opus/high**
-- [ ] Phase gate: hero is the signature moment, all links resolve, build green
+- [x] **T4.1** Hero override + `index.mdx` rebuild · **Opus/high**
+- [x] Phase gate: hero is the signature moment, all links resolve, build green
 
 ## Phase 5 — Polish  (`[‖]` group B = T5.1 + T5.2; T5.3 last)
 - [ ] **T5.1** `[‖B]` Motion: variable-font registration snap + drift + easter eggs · Sonnet/high

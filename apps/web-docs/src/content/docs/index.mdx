@@ -3,9 +3,10 @@ title: BlaC
 description: Type-safe state management for React with automatic re-render optimization.
 template: splash
 hero:
-  tagline: Type-safe state management for React with automatic re-render optimization. Read state like a plain object — only the components that touch what changed re-render.
-  image:
-    file: ../../assets/logo.svg
+  # tagline feeds the Hero override (src/components/overrides/Hero.astro). The
+  # <em>state, handled</em> phrase is recoloured coral by the hero's scoped CSS —
+  # the concept tagline of the redesign ("chaos resolving into calm").
+  tagline: <em>State, handled.</em> Type-safe state management for React with automatic re-render optimization — read state like a plain object, and only the components that touch what changed re-render.
   actions:
     - text: Get started
       link: /guide/getting-started/
@@ -18,10 +19,17 @@ hero:
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
+import SectionBreak from '../../components/riso/SectionBreak.astro';
+import RisoHeading from '../../components/riso/RisoHeading.astro';
 
-## One library, many packages
+<SectionBreak label="§ packages" dotSize="7px" dotOpacity="0.2" />
 
-BlaC is the umbrella. Pick the package that fits where you are.
+<RisoHeading as="h2" intensity="subtle">
+  One library, many packages
+</RisoHeading>
+
+BlaC is the umbrella. Pick the package that fits where you are — the core is
+framework-agnostic, the bindings are thin, and everything composes.
 
 <CardGrid>
   <Card title="Guide" icon="open-book">
@@ -37,7 +45,25 @@ BlaC is the umbrella. Pick the package that fits where you are.
     [Reference](/react/getting-started/).
   </Card>
   <Card title="dirtytalk" icon="puzzle">
-    The spatial / structural / engine sub-libraries.
-    [Explore](/dirtytalk/).
+    The spatial / structural / engine sub-libraries. [Explore](/dirtytalk/).
   </Card>
 </CardGrid>
+
+<SectionBreak label="§ why blac" dotSize="7px" dotOpacity="0.2" />
+
+<RisoHeading as="h2" intensity="subtle">
+  Chaos resolving into calm
+</RisoHeading>
+
+State changes are messy by nature. BlaC's job is to let you write the messy
+part plainly and read it back as something calm and predictable.
+
+- **Read state like a plain object.** No selectors to memoize, no boilerplate
+  to wire. Touch what you need; BlaC tracks it for you.
+- **Only what changed re-renders.** Each `useBloc` consumer gets its own
+  dependency tracking, so a change to one slice never wakes a component that
+  never read it.
+- **Type-safe to the edges.** Inference flows from your state shape through to
+  every consumer — no casts, no `any`, no surprises.
+
+Ready to write some? [Quick Start →](/guide/getting-started/)
