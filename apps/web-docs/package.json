@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@astrojs/starlight": "0.38.3",
+    "@codesandbox/sandpack-react": "^2.20.0",
     "sharp": "^0.34.0",
     "starlight-sidebar-topics": "^0.7.1"
   }

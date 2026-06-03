@@ -3,6 +3,12 @@ title: 'Tutorial: build a Todo app, then make it time-travel'
 description: Build a Todo app one step at a time and finish with full undo, redo, and time travel using only BlaC's core state primitives.
 ---
 
+import BlacSandpack from '../../../components/demos/BlacSandpack.tsx';
+import {
+  tutorialInteractiveFiles,
+  tutorialTimeTravelFiles,
+} from '../../../components/demos/tutorial-sandpack-files.ts';
+
 This is the long way round — one app, built in seven numbered steps, each a small diff on the last. We start with an empty Cubit and finish with full **undo / redo and time travel**, all from the same state primitives you meet in the first step. No new APIs appear at the end; the payoff is that BlaC's plain-immutable-state model makes undo fall out almost for free.
 
 If you have not read [Quick Start](/guide/getting-started) and [Core Concepts](/guide/concepts) yet, skim them first — this page assumes you know what `emit`/`update`/`patch` do and that `useBloc` returns a `[state, bloc]` tuple. Everything else is built up here.
@@ -224,13 +230,16 @@ function List() {
 
 ### Checkpoint — it works
 
-That is a complete, usable todo app: add, toggle, remove, filter, and a live "items left" count. Try it. Add a few items, toggle some, switch filters.
+That is a complete, usable todo app: add, toggle, remove, filter, and a live "items left" count. Try it below — add a few items, toggle some, switch filters. Hit **View code** and edit anything; the preview re-runs live.
 
-:::note[Interactive demo]
-A live, editable example will be embedded here once interactive demos are wired up.
-:::
+<BlacSandpack
+  client:only="react"
+  files={tutorialInteractiveFiles}
+  activeFile="/TodoCubit.ts"
+  defaultOpen={false}
+/>
 
-Open `/TodoCubit.ts` in the sandbox — that one class is the entire app's logic. The components are thin: each calls `useBloc`, reads its slice, and renders. No reducers, no actions object, no provider.
+Open `/TodoCubit.ts` in the sandbox — that one class is the entire app's logic. The components in `/App.tsx` are thin: each calls `useBloc`, reads its slice, and renders. No reducers, no actions object, no provider.
 
 ## Step 5 — seed it from somewhere (async)
 
@@ -499,11 +508,14 @@ function Timeline() {
 
 Add several todos, toggle a few, then hit **Undo** repeatedly and watch the list rewind one change at a time. **Redo** walks forward again. Click any dot in the history row to jump straight to that point. Switch filters at any cursor position — the filter never disturbs the timeline.
 
-:::note[Interactive demo]
-A live, editable example will be embedded here once interactive demos are wired up.
-:::
+<BlacSandpack
+  client:only="react"
+  files={tutorialTimeTravelFiles}
+  activeFile="/TodoCubit.ts"
+  defaultOpen={false}
+/>
 
-Open `/TodoCubit.ts` and compare it with the Step 4 version. The diff that bought you a full undo system is small: a `past`/`cursor` pair instead of a bare `todos` array, a slightly smarter `commit`, three cursor-moving methods, and two boolean getters. Everything else — the actions, the components, the filter — barely moved.
+Open `/TodoCubit.ts` and compare it with the Step 4 version above. The diff that bought you a full undo system is small: a `past`/`cursor` pair instead of a bare `todos` array, a slightly smarter `commit`, three cursor-moving methods, and two boolean getters. Everything else — the actions, the components, the filter — barely moved.
 
 ## What you learned
 

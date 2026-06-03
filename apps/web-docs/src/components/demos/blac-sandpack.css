@@ -1,0 +1,145 @@
+/*
+  Chrome for the editable BlacSandpack playground island.
+
+  Mirrors the demo islands' approach: every surface/border/accent is pulled from
+  Starlight's `--sl-color-*` custom properties, so the frame tracks the active
+  light/dark theme automatically. Prefixed `blac-sp` to avoid colliding with
+  Starlight, Expressive Code, or the `blac-demo-*` island classes.
+*/
+
+.blac-sp {
+  margin: 1.5rem 0;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background-color: var(--sl-color-bg);
+}
+
+/* Chrome bar -------------------------------------------------------------- */
+.blac-sp__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--sl-color-gray-6);
+  border-bottom: 1px solid var(--sl-color-gray-5);
+}
+
+.blac-sp__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--sl-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--sl-color-gray-2);
+  text-transform: uppercase;
+}
+
+.blac-sp__pulse {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: var(--sl-color-accent);
+  box-shadow: 0 0 0 0 var(--sl-color-accent);
+  animation: blac-sp-pulse 2.4s ease-out infinite;
+}
+
+@keyframes blac-sp-pulse {
+  0% {
+    box-shadow: 0 0 0 0
+      color-mix(in srgb, var(--sl-color-accent) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.blac-sp__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  font: inherit;
+  font-size: var(--sl-text-xs);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--sl-color-white);
+  background-color: var(--sl-color-bg);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background-color 0.2s;
+}
+
+.blac-sp__toggle:hover {
+  color: var(--sl-color-text-accent);
+  border-color: var(--sl-color-text-accent);
+  background-color: var(--sl-color-gray-6);
+}
+
+.blac-sp__toggle:focus-visible {
+  outline: 2px solid var(--sl-color-accent-high);
+  outline-offset: 2px;
+}
+
+.blac-sp__code-icon {
+  transition: transform 0.2s;
+}
+
+.blac-sp--open .blac-sp__code-icon {
+  transform: rotate(90deg);
+}
+
+/* Body: preview-only by default, 50/50 split when the editor is revealed ---- */
+.blac-sp__body {
+  display: flex;
+  align-items: stretch;
+}
+
+.blac-sp__pane {
+  min-width: 0;
+}
+
+.blac-sp__editor {
+  flex: 1 1 50%;
+  border-right: 1px solid var(--sl-color-gray-5);
+}
+
+.blac-sp__preview {
+  flex: 1 1 50%;
+}
+
+/* When closed the preview is the only child and fills the full width. */
+.blac-sp:not(.blac-sp--open) .blac-sp__preview {
+  flex-basis: 100%;
+}
+
+/* Make the Sandpack primitives fill our flex panes. */
+.blac-sp .sp-stack,
+.blac-sp .sp-wrapper,
+.blac-sp .sp-layout {
+  height: 100%;
+}
+
+.blac-sp__console {
+  border-top: 1px solid var(--sl-color-gray-5);
+}
+
+/* Stack editor over preview on narrow screens. */
+@media (max-width: 640px) {
+  .blac-sp--open .blac-sp__body {
+    flex-direction: column;
+  }
+  .blac-sp__editor {
+    border-right: none;
+    border-bottom: 1px solid var(--sl-color-gray-5);
+  }
+}
