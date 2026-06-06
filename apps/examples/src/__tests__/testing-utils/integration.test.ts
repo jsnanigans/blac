@@ -102,7 +102,7 @@ describe('integration: mixed helpers workflow', () => {
 });
 
 describe('integration: subscription and lifecycle', () => {
-  it('stubs respond to subscribe/emit like real cubits', () => {
+  it('stubs respond to subscribe/emit like real cubits', async () => {
     const stub = createCubitStub(CounterCubit, { state: { count: 10 } });
     registerOverride(CounterCubit, stub);
 
@@ -112,11 +112,14 @@ describe('integration: subscription and lifecycle', () => {
 
     cubit.increment();
 
+    // Channel flushes are microtask-coalesced; listeners fire after a tick.
+    await Promise.resolve();
+
     expect(listener).toHaveBeenCalledOnce();
     expect(cubit.state.count).toBe(11);
   });
 
-  it('stubs with mocked methods still support subscription for other mutations', () => {
+  it('stubs with mocked methods still support subscription for other mutations', async () => {
     const stub = createCubitStub(CounterCubit, {
       state: { count: 0 },
       methods: { increment: vi.fn() },
@@ -129,10 +132,12 @@ describe('integration: subscription and lifecycle', () => {
 
     // Mocked method — no state change, no notification
     cubit.increment();
+    await Promise.resolve();
     expect(listener).not.toHaveBeenCalled();
 
     // Real method — state changes, listener notified
     cubit.decrement();
+    await Promise.resolve();
     expect(listener).toHaveBeenCalledOnce();
     expect(cubit.state.count).toBe(-1);
   });

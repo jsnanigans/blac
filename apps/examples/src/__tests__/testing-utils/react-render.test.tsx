@@ -40,13 +40,14 @@ describe('renderWithBloc', () => {
       expect(screen.getByTestId('count')).toHaveTextContent('0');
     });
 
-    it('returns the bloc instance for direct manipulation', () => {
+    it('returns the bloc instance for direct manipulation', async () => {
       const { bloc } = renderWithBloc(<Counter />, {
         bloc: CounterCubit,
         state: { count: 0 },
       });
 
-      act(() => {
+      // Emits are microtask-coalesced; async act flushes them before asserting.
+      await act(async () => {
         bloc.increment();
       });
 
@@ -121,28 +122,28 @@ describe('renderWithBloc', () => {
   });
 
   describe('interactive updates', () => {
-    it('component responds to bloc state changes after render', () => {
+    it('component responds to bloc state changes after render', async () => {
       const { bloc } = renderWithBloc(<Counter />, {
         bloc: CounterCubit,
       });
 
       expect(screen.getByTestId('count')).toHaveTextContent('0');
 
-      act(() => bloc.increment());
+      await act(async () => bloc.increment());
       expect(screen.getByTestId('count')).toHaveTextContent('1');
 
-      act(() => bloc.addAmount(10));
+      await act(async () => bloc.addAmount(10));
       expect(screen.getByTestId('count')).toHaveTextContent('11');
     });
 
-    it('user interactions trigger bloc methods and update UI', () => {
+    it('user interactions trigger bloc methods and update UI', async () => {
       renderWithBloc(<AuthStatus />, {
         bloc: AuthCubit,
       });
 
       expect(screen.getByTestId('status')).toHaveTextContent('Not logged in');
 
-      act(() => {
+      await act(async () => {
         screen.getByText('Login').click();
       });
 
@@ -175,7 +176,7 @@ describe('renderWithRegistry', () => {
     expect(screen.getByTestId('count')).toHaveTextContent('77');
   });
 
-  it('supports multi-bloc setup for components with dependencies', () => {
+  it('supports multi-bloc setup for components with dependencies', async () => {
     renderWithRegistry(<Dashboard />, () => {
       const auth = createCubitStub(AuthCubit, {
         state: { loggedIn: true, userId: 'bob', role: 'user' },
@@ -191,15 +192,15 @@ describe('renderWithRegistry', () => {
     // Dashboard starts unloaded
     expect(screen.getByTestId('loaded')).toHaveTextContent('no');
 
-    // Click load to trigger dependency resolution
-    act(() => {
+    // Click load to trigger dependency resolution (emits flush on a microtask)
+    await act(async () => {
       screen.getByText('Load').click();
     });
 
     expect(screen.getByTestId('greeting')).toHaveTextContent('Hello bob (fr)');
   });
 
-  it('supports notification component with auth dependency', () => {
+  it('supports notification component with auth dependency', async () => {
     renderWithRegistry(<NotificationBadge />, () => {
       registerOverride(
         AuthCubit,
@@ -209,7 +210,7 @@ describe('renderWithRegistry', () => {
       );
     });
 
-    act(() => {
+    await act(async () => {
       screen.getByText('Load').click();
     });
 
