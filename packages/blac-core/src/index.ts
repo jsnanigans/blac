@@ -19,12 +19,12 @@ export type {
 } from './core/StateContainer';
 export { Cubit } from './core/Cubit';
 /**
- * @internal symbols — read by framework adapters (`@blac/react` via the
- * `@blac/adapter` re-export). Kept until D0 ports `useBloc` off this surface.
+ * @internal symbols — read by `@blac/react` (APPLY_DEPS / REMOVE_DEPS_OWNER)
+ * and in-package tests (EMIT / INIT_CONFIG).
  *
- * `EMIT` is deprecated: zero external consumers per A2 audit, but the
- * in-package legacy tests still index `[EMIT]`. Kept as a thin alias for
- * `emit()` so those tests typecheck and run unchanged; C5 deletes it.
+ * `EMIT` is deprecated: zero external consumers, only in-package tests still
+ * index `[EMIT]`. Kept as a thin alias for `emit()` so those tests typecheck
+ * and run unchanged.
  */
 export {
   EMIT,

@@ -79,7 +79,7 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({
         container: expect.objectContaining({
-          instanceId: expect.any(String),
+          $blac: expect.objectContaining({ id: expect.any(String) }),
         }),
         getInstanceMetadata: expect.any(Function),
       }),
@@ -98,7 +98,7 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({
         container: expect.objectContaining({
-          instanceId: expect.any(String),
+          $blac: expect.objectContaining({ id: expect.any(String) }),
         }),
         getInstanceMetadata: expect.any(Function),
       }),

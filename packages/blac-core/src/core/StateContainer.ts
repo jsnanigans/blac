@@ -139,8 +139,7 @@ export abstract class StateContainer<
   // Per-consumer deps slices (APPLY_DEPS / REMOVE_DEPS_OWNER)
   //
   // Kept until D0 ports `useBloc` off the adapter surface. See A2 audit:
-  // `@blac/react/src/useBloc.ts` calls these via the `@blac/adapter`
-  // re-export. EMIT is gone; APPLY_DEPS / REMOVE_DEPS_OWNER stay.
+  // `@blac/react/src/useBloc.ts` reads APPLY_DEPS / REMOVE_DEPS_OWNER.
   // ---------------------------------------------------------------------------
 
   private _depsByOwner: Map<string, Partial<Deps>> | null = null;
@@ -648,9 +647,9 @@ export abstract class StateContainer<
   // Hydration
   // ---------------------------------------------------------------------------
 
-  // The hydration state machine lives in these `_`-private impls. Both the
-  // `$blac.hydration` surface and the deprecated public methods below delegate
-  // here, so there's a single source of truth.
+  // The hydration state machine lives in these `_`-private impls. The
+  // `$blac.hydration` surface delegates here, so there is a single source
+  // of truth for the hydration state machine.
 
   private _beginHydration(): void {
     if (this._disposed) {

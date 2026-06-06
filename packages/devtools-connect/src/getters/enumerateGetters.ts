@@ -10,6 +10,10 @@ const BASE_GETTERS = new Set([
   // through the serializer and freeze the tab. Never touch it.
   'deps',
   'args',
+  // Former legacy public getters removed from StateContainer in M5 (the $blac
+  // meta-namespace migration). Kept here as a defensive exclusion so that if a
+  // userland subclass declares a getter with one of these names it does not
+  // appear in the devtools getter panel.
   'isDisposed',
   'hydrationStatus',
   'hydrationError',
@@ -19,10 +23,10 @@ const BASE_GETTERS = new Set([
   'interner',
   'channel',
   'consumerCount',
-  // Identity members — deprecated prototype getters since the $blac migration
-  // (M0). They were own properties before; now they live on the prototype and
-  // would be enumerated without this exclusion. `$blac` itself is the meta
-  // namespace and is never user-defined.
+  // Former identity members removed from StateContainer in M5 (the $blac
+  // meta-namespace migration). Kept as a defensive exclusion for the same
+  // reason as above. `$blac` is the reserved meta namespace and must always
+  // be excluded.
   'name',
   'debug',
   'instanceId',
