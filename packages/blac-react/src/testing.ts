@@ -27,7 +27,7 @@ export function renderWithBloc<T extends StateContainerConstructor>(
   const testRegistry = new StateContainerRegistry();
   setRegistry(testRegistry);
 
-  // Pass args explicitly so createCubitStub calls initConfig → init().
+  // Pass args explicitly so createCubitStub calls [INIT_CONFIG] → init().
   const instance = createCubitStub(BlocClass, { ...stubOptions, args } as any);
   registerOverride(BlocClass, instance, args);
 

@@ -123,66 +123,6 @@ describe('StateContainer $blac meta namespace', () => {
       // apply() is rejected once changedWhileHydrating is set
       expect(bloc.$blac.hydration.apply({ count: 99 })).toBe(false);
     });
-
-    it('parity: legacy methods and $blac.hydration behave identically', async () => {
-      const legacy = new CounterBloc();
-      const meta = new CounterBloc();
-
-      legacy.beginHydration();
-      meta.$blac.hydration.begin();
-      expect(legacy.hydrationStatus).toBe(meta.$blac.hydration.status);
-
-      expect(legacy.applyHydratedState({ count: 7 })).toBe(
-        meta.$blac.hydration.apply({ count: 7 }),
-      );
-      expect(legacy.state.count).toBe(meta.state.count);
-
-      legacy.finishHydration();
-      meta.$blac.hydration.finish();
-      expect(legacy.hydrationStatus).toBe(meta.$blac.hydration.status);
-
-      await expect(legacy.waitForHydration()).resolves.toBeUndefined();
-      await expect(meta.$blac.hydration.wait()).resolves.toBeUndefined();
-    });
-  });
-
-  describe('legacy delegates', () => {
-    it('legacy getters return identical values to $blac', () => {
-      const bloc = new CounterBloc();
-      bloc[INIT_CONFIG]({ name: 'Legacy', debug: true });
-
-      expect(bloc.name).toBe(bloc.$blac.name);
-      expect(bloc.instanceId).toBe(bloc.$blac.id);
-      expect(bloc.debug).toBe(bloc.$blac.debug);
-      expect(bloc.createdAt).toBe(bloc.$blac.createdAt);
-      expect(bloc.isDisposed).toBe(bloc.$blac.disposed);
-      expect(bloc.hydrationStatus).toBe(bloc.$blac.hydration.status);
-    });
-
-    it('legacy dependencies matches $blac.dependencies', () => {
-      const consumer = new ConsumerBloc();
-      consumer[INIT_CONFIG]({});
-      consumer.declareDep();
-      // Both return the live `_dependencies` map once one exists.
-      expect(consumer.dependencies).toBe(consumer.$blac.dependencies);
-      expect(consumer.dependencies.has(DepBloc)).toBe(true);
-    });
-
-    it('legacy setters update $blac', () => {
-      const bloc = new CounterBloc();
-      bloc.name = 'Renamed';
-      expect(bloc.$blac.name).toBe('Renamed');
-      bloc.debug = true;
-      expect(bloc.$blac.debug).toBe(true);
-      bloc.instanceId = 'forced-id';
-      expect(bloc.$blac.id).toBe('forced-id');
-    });
-
-    it('legacy initConfig delegates to [INIT_CONFIG]', () => {
-      const bloc = new CounterBloc();
-      bloc.initConfig({ name: 'ViaLegacy' });
-      expect(bloc.$blac.name).toBe('ViaLegacy');
-    });
   });
 
   describe('meta object', () => {
@@ -268,11 +208,11 @@ describe('StateContainer $blac meta namespace', () => {
       return (receiver as Record<string, unknown>)[key];
     }
 
-    it('legacy name getter invoked with a proxy receiver does not throw', () => {
+    it('deps getter invoked with a proxy receiver does not throw', () => {
       const bloc = new CounterBloc();
-      bloc[INIT_CONFIG]({ name: 'Proxied' });
-      expect(() => getterViaProxy(bloc, 'name')).not.toThrow();
-      expect(getterViaProxy(bloc, 'name')).toBe('Proxied');
+      bloc[INIT_CONFIG]({});
+      expect(() => getterViaProxy(bloc, 'deps')).not.toThrow();
+      expect(getterViaProxy(bloc, 'deps')).toEqual({});
     });
 
     it('$blac read through a proxy receiver returns the live meta', () => {

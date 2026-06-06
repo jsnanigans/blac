@@ -75,7 +75,7 @@ describe('StateContainer depend() → DepHandle', () => {
 
   it('bloc.dependencies records the dep after depend()', () => {
     const owner = new OwnerBloc();
-    const deps = owner.dependencies;
+    const deps = owner.$blac.dependencies;
     expect(deps.has(DepBloc)).toBe(true);
   });
 

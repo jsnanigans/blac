@@ -59,9 +59,9 @@ describe('StateContainer.depend()', () => {
     it('tracks all declared dependencies', () => {
       const dashboard = new DashboardBloc();
 
-      expect(dashboard.dependencies.size).toBe(2);
-      expect(dashboard.dependencies.has(AuthBloc)).toBe(true);
-      expect(dashboard.dependencies.has(SettingsBloc)).toBe(true);
+      expect(dashboard.$blac.dependencies.size).toBe(2);
+      expect(dashboard.$blac.dependencies.has(AuthBloc)).toBe(true);
+      expect(dashboard.$blac.dependencies.has(SettingsBloc)).toBe(true);
     });
 
     it('resolves each dependency independently', () => {
@@ -287,7 +287,7 @@ describe('StateContainer.depend()', () => {
       const bloc = new MultiKeyBloc();
 
       // Map keyed by constructor, so second depend() for same type overwrites
-      expect(bloc.dependencies.get(SettingsBloc)).toBe('secondary');
+      expect(bloc.$blac.dependencies.get(SettingsBloc)).toBe('secondary');
     });
 
     it('state is independent per key', () => {
@@ -345,13 +345,13 @@ describe('StateContainer.depend()', () => {
       const a = new IndBloc();
       const b = new IndBloc();
 
-      expect(a.dependencies).not.toBe(b.dependencies);
-      expect(a.dependencies.size).toBe(1);
-      expect(b.dependencies.size).toBe(1);
+      expect(a.$blac.dependencies).not.toBe(b.$blac.dependencies);
+      expect(a.$blac.dependencies.size).toBe(1);
+      expect(b.$blac.dependencies.size).toBe(1);
     });
   });
 
-  describe('dependencies getter', () => {
+  describe('dependencies via $blac', () => {
     class SomeBloc extends Cubit<{ n: number }> {
       constructor() {
         super({ n: 0 });
@@ -360,7 +360,7 @@ describe('StateContainer.depend()', () => {
 
     it('returns empty map when no depend() calls', () => {
       const bloc = new SomeBloc();
-      expect(bloc.dependencies.size).toBe(0);
+      expect(bloc.$blac.dependencies.size).toBe(0);
     });
 
     it('returns stable empty map reference across instances', () => {
@@ -368,7 +368,7 @@ describe('StateContainer.depend()', () => {
       const b = new SomeBloc();
 
       // Both should return the same EMPTY_DEPS singleton
-      expect(a.dependencies).toBe(b.dependencies);
+      expect(a.$blac.dependencies).toBe(b.$blac.dependencies);
     });
   });
 

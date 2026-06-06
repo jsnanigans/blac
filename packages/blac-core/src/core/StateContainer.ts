@@ -81,50 +81,6 @@ type SystemEventHandler<S, E extends SystemEvent> = (
   payload: SystemEventPayloads<S>[E],
 ) => void;
 
-const EMPTY_DEPS: ReadonlyMap<any, any> = new Map();
-
-// ---------------------------------------------------------------------------
-// Deprecation warnings (dev-only, once per member per class)
-//
-// The legacy identity/lifecycle/hydration surface (`name`, `instanceId`,
-// `debug`, `createdAt`, `isDisposed`, the `*Hydration` methods, `initConfig`)
-// is kept as deprecated delegates onto `$blac` until M5. Reading/writing them
-// from userland warns once per member per concrete class so registries that
-// spin up many instances don't spam.
-//
-// Suppressed under `NODE_ENV === 'test'` (vitest sets it — the legacy test
-// sites and `console.warn`-spying tests must stay quiet/green) and
-// `'production'` (dead-code-eliminated, zero cost). INTERNAL container code
-// must NEVER touch the legacy delegates — it reads the `_`-private fields and
-// `[INIT_CONFIG]` directly so it never trips these warnings.
-// ---------------------------------------------------------------------------
-
-const warnedMembers = new WeakMap<object, Set<string>>();
-
-function warnDeprecated(
-  ctor: object,
-  member: string,
-  replacement: string,
-): void {
-  if (
-    process.env.NODE_ENV === 'test' ||
-    process.env.NODE_ENV === 'production'
-  ) {
-    return;
-  }
-  let seen = warnedMembers.get(ctor);
-  if (!seen) {
-    seen = new Set();
-    warnedMembers.set(ctor, seen);
-  }
-  if (seen.has(member)) return;
-  seen.add(member);
-  console.warn(
-    `[blac] \`StateContainer#${member}\` is deprecated; use \`${replacement}\` instead. ` +
-      `(${(ctor as { name: string }).name}; this warning fires once per class.)`,
-  );
-}
-
 /**
  * Shallow per-key `Object.is` comparison of two plain records. Keys are
  * considered: a key present in one but not the other (regardless of value)
@@ -155,10 +111,8 @@ function shallowEqualRecord(
  *   - per-class `PathInterner`
  *
  * StateContainer layers on:
- *   - identity (`name`, `instanceId`, `createdAt`, `debug`)
- *   - lifecycle (`dispose`, `isDisposed`, `onSystemEvent`)
- *   - hydration (`beginHydration` / `applyHydratedState` / `finishHydration` / `failHydration` / `waitForHydration`)
- *   - cross-bloc deps (`depend()`, `dependencies` getter)
+ *   - identity / lifecycle / hydration (exposed via `$blac: BlacMeta`)
+ *   - cross-bloc deps (`depend()`, `$blac.dependencies`)
  *   - per-consumer deps slices (`APPLY_DEPS` / `REMOVE_DEPS_OWNER` / `onDepsChanged`)
  *   - registry integration (config-driven equality, emit-rate circuit breaker)
  *
@@ -321,7 +275,7 @@ export abstract class StateContainer<
   private _equalityFn: EqualityFn = getBlacConfig().equality;
 
   // Identity fields. TS-private (compile-time only) — proxy-safe, unlike ES
-  // `#private`. The `$blac` meta getters and the legacy delegates read these.
+  // `#private`. The `$blac` meta getters close over these.
   private _name: string = this.constructor.name;
   private _debug: boolean = false;
   private _instanceId: string = generateSimpleId(this.constructor.name, 'main');
@@ -335,59 +289,6 @@ export abstract class StateContainer<
    * proxy-safe. See {@link createMeta}.
    */
   readonly $blac: BlacMeta<S> = createMeta<S>(this);
-
-  /**
-   * @deprecated Use `$blac.name`. Setter kept until M5 (`[INIT_CONFIG]` and
-   * legacy `initConfig` historically wrote `name`).
-   */
-  get name(): string {
-    warnDeprecated(this.constructor, 'name', '$blac.name');
-    return this._name;
-  }
-  set name(value: string) {
-    warnDeprecated(this.constructor, 'name', '$blac.name');
-    this._name = value;
-  }
-
-  /**
-   * @deprecated Use `$blac.debug`. Setter kept until M5.
-   */
-  get debug(): boolean {
-    warnDeprecated(this.constructor, 'debug', '$blac.debug');
-    return this._debug;
-  }
-  set debug(value: boolean) {
-    warnDeprecated(this.constructor, 'debug', '$blac.debug');
-    this._debug = value;
-  }
-
-  /**
-   * @deprecated Use `$blac.id`. Setter kept until M5.
-   */
-  get instanceId(): string {
-    warnDeprecated(this.constructor, 'instanceId', '$blac.id');
-    return this._instanceId;
-  }
-  set instanceId(value: string) {
-    warnDeprecated(this.constructor, 'instanceId', '$blac.id');
-    this._instanceId = value;
-  }
-
-  /**
-   * @deprecated Use `$blac.createdAt`.
-   */
-  get createdAt(): number {
-    warnDeprecated(this.constructor, 'createdAt', '$blac.createdAt');
-    return this._createdAt;
-  }
-
-  /**
-   * @deprecated Use `$blac.dependencies`.
-   */
-  get dependencies(): ReadonlyMap<StateContainerConstructor, string> {
-    warnDeprecated(this.constructor, 'dependencies', '$blac.dependencies');
-    return this._dependencies ?? EMPTY_DEPS;
-  }
 
   get args(): Args | undefined {
     return this._config.args as Args | undefined;
@@ -470,8 +371,7 @@ export abstract class StateContainer<
 
   /**
    * @internal Framework-only configuration entry point (registry + testing
-   * helpers). Writes the `_`-private identity fields directly (NOT through the
-   * deprecated setters, so it never trips a deprecation warning), resolves
+   * helpers). Writes the `_`-private identity fields directly, resolves
    * per-class equality, emits the registry `created` event, and runs `init()`
    * once. See {@link INIT_CONFIG}.
    */
@@ -504,67 +404,6 @@ export abstract class StateContainer<
         );
       }
     }
-  }
-
-  /**
-   * @deprecated Use `[INIT_CONFIG]` (the symbol from `@blac/core`). Kept as a
-   * delegate until M5.
-   */
-  initConfig(config: StateContainerConfig): void {
-    warnDeprecated(this.constructor, 'initConfig', '[INIT_CONFIG]');
-    this[INIT_CONFIG](config);
-  }
-
-  /**
-   * @deprecated Use `$blac.disposed`.
-   */
-  get isDisposed(): boolean {
-    warnDeprecated(this.constructor, 'isDisposed', '$blac.disposed');
-    return this._disposed;
-  }
-
-  /**
-   * @deprecated Use `$blac.hydration.status`.
-   */
-  get hydrationStatus(): HydrationStatus {
-    warnDeprecated(
-      this.constructor,
-      'hydrationStatus',
-      '$blac.hydration.status',
-    );
-    return this._hydrationStatus;
-  }
-
-  /**
-   * @deprecated Use `$blac.hydration.error`.
-   */
-  get hydrationError(): Error | undefined {
-    warnDeprecated(this.constructor, 'hydrationError', '$blac.hydration.error');
-    return this._hydrationError;
-  }
-
-  /**
-   * @deprecated Use `$blac.hydration.isHydrated`.
-   */
-  get isHydrated(): boolean {
-    warnDeprecated(
-      this.constructor,
-      'isHydrated',
-      '$blac.hydration.isHydrated',
-    );
-    return this._hydrationStatus === 'hydrated';
-  }
-
-  /**
-   * @deprecated Use `$blac.hydration.changedWhileHydrating`.
-   */
-  get changedWhileHydrating(): boolean {
-    warnDeprecated(
-      this.constructor,
-      'changedWhileHydrating',
-      '$blac.hydration.changedWhileHydrating',
-    );
-    return this._changedWhileHydrating;
   }
 
   // ---------------------------------------------------------------------------
@@ -884,62 +723,6 @@ export abstract class StateContainer<
     }
 
     return this.ensureHydrationPromise();
-  }
-
-  /**
-   * @deprecated Use `$blac.hydration.begin()`.
-   */
-  beginHydration(): void {
-    warnDeprecated(
-      this.constructor,
-      'beginHydration',
-      '$blac.hydration.begin()',
-    );
-    this._beginHydration();
-  }
-
-  /**
-   * @deprecated Use `$blac.hydration.apply()`.
-   */
-  applyHydratedState(next: S): boolean {
-    warnDeprecated(
-      this.constructor,
-      'applyHydratedState',
-      '$blac.hydration.apply()',
-    );
-    return this._applyHydratedState(next);
-  }
-
-  /**
-   * @deprecated Use `$blac.hydration.finish()`.
-   */
-  finishHydration(): void {
-    warnDeprecated(
-      this.constructor,
-      'finishHydration',
-      '$blac.hydration.finish()',
-    );
-    this._finishHydration();
-  }
-
-  /**
-   * @deprecated Use `$blac.hydration.fail()`.
-   */
-  failHydration(error: Error): void {
-    warnDeprecated(this.constructor, 'failHydration', '$blac.hydration.fail()');
-    this._failHydration(error);
-  }
-
-  /**
-   * @deprecated Use `$blac.hydration.wait()`.
-   */
-  waitForHydration(): Promise<void> {
-    warnDeprecated(
-      this.constructor,
-      'waitForHydration',
-      '$blac.hydration.wait()',
-    );
-    return this._waitForHydration();
   }
 
   private setHydrationStatus(status: HydrationStatus, error?: Error): void {
