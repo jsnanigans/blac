@@ -353,12 +353,10 @@ describe('IndexedDbPersistPluginImpl — storage key stability ($blac migration)
   it('defaultKey format is unchanged: "<ClassName>:<instanceId>"', () => {
     const bloc = new CounterBloc();
 
-    // $blac.id and the legacy instanceId delegate must return the same string.
-    // Both read the same private _instanceId field — this equality is the
-    // proof that no key-format change occurred.
-    const viaLegacy: string = (bloc as any).instanceId as string;
-    const viaMeta: string = bloc.$blac.id;
-    expect(viaMeta).toBe(viaLegacy);
+    // The legacy instanceId delegate was deleted in the $blac migration —
+    // $blac.id is now the only accessor for the instance id.
+    expect((bloc as any).instanceId).toBeUndefined();
+    expect(bloc.$blac.id).toBeTypeOf('string');
 
     // The plugin's defaultKey builds: `${ClassName}:${$blac.id}`
     // Capture the key that onCreated assigns to runtime.key and compare
