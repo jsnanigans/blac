@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
 import { ensure, resolveInstanceKey, getRegistry } from '../registry';
 import { Cubit } from './Cubit';
@@ -34,7 +34,7 @@ describe('StateContainerRegistry args-based release', () => {
 
   it('disposes an args-keyed instance after the matching release', () => {
     const instance = mountThenUnmount({ userId: 'a' }, 'useBloc@UserCard-1');
-    expect(instance.isDisposed).toBe(true);
+    expect(instance.$blac.disposed).toBe(true);
   });
 
   it('does not accumulate orphaned entries as args change', () => {

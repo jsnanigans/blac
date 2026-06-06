@@ -21,7 +21,7 @@ describe('blac decorator edge cases', () => {
     );
     const instance = acquire(KABloc);
     release(KABloc);
-    expect(instance.isDisposed).toBe(false);
+    expect(instance.$blac.disposed).toBe(false);
   });
 
   it('@blac({ excludeFromDevTools: true }) — sets static __excludeFromDevTools', () => {

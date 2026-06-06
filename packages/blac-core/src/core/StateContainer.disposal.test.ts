@@ -23,7 +23,7 @@ describe('StateContainer disposal', () => {
   it('dispose() sets isDisposed to true', () => {
     const container = new DisposableContainer();
     container.dispose();
-    expect(container.isDisposed).toBe(true);
+    expect(container.$blac.disposed).toBe(true);
   });
 
   it('dispose() is idempotent — second call is a no-op', () => {
@@ -47,23 +47,23 @@ describe('StateContainer disposal', () => {
 
   it('dispose() during hydrating transitions hydrationStatus to error', () => {
     const container = new DisposableContainer();
-    container.beginHydration();
-    expect(container.hydrationStatus).toBe('hydrating');
+    container.$blac.hydration.begin();
+    expect(container.$blac.hydration.status).toBe('hydrating');
     container.dispose();
-    expect(container.isDisposed).toBe(true);
-    expect(container.hydrationStatus).toBe('error');
+    expect(container.$blac.disposed).toBe(true);
+    expect(container.$blac.hydration.status).toBe('error');
   });
 
   it('release() to zero refCount auto-disposes', () => {
     const instance = acquire(DisposableContainer);
     release(DisposableContainer);
-    expect(instance.isDisposed).toBe(true);
+    expect(instance.$blac.disposed).toBe(true);
   });
 
   it('release(Type, { forceDispose: true }) force-disposes regardless of refCount', () => {
     acquire(DisposableContainer);
     const instance = acquire(DisposableContainer);
     release(DisposableContainer, { forceDispose: true });
-    expect(instance.isDisposed).toBe(true);
+    expect(instance.$blac.disposed).toBe(true);
   });
 });

@@ -328,7 +328,7 @@ describe('StateContainer.depend()', () => {
 
       owner.dispose();
 
-      expect(auth.isDisposed).toBe(false);
+      expect(auth.$blac.disposed).toBe(false);
       expect(auth.state.userId).toBe('test');
     });
   });

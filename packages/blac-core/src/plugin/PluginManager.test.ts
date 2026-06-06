@@ -442,10 +442,10 @@ describe('PluginManager', () => {
       const metadata = capturedContext.getInstanceMetadata(counter);
 
       expect(metadata).toMatchObject({
-        id: counter.instanceId,
+        id: counter.$blac.id,
         className: 'CounterCubit',
         isDisposed: false,
-        name: counter.name,
+        name: counter.$blac.name,
         state: { count: 0 },
         hydrationStatus: 'idle',
         isHydrated: false,

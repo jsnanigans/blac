@@ -44,13 +44,13 @@ describe('StateContainerRegistry ref counting', () => {
     acquire(RefCountBloc);
     release(RefCountBloc);
     expect(getRefCount(RefCountBloc)).toBe(1);
-    expect(instance.isDisposed).toBe(false);
+    expect(instance.$blac.disposed).toBe(false);
   });
 
   it('release() from 1 to 0 disposes and removes from registry', () => {
     const instance = acquire(RefCountBloc);
     release(RefCountBloc);
-    expect(instance.isDisposed).toBe(true);
+    expect(instance.$blac.disposed).toBe(true);
     expect(hasInstance(RefCountBloc)).toBe(false);
   });
 
@@ -62,7 +62,7 @@ describe('StateContainerRegistry ref counting', () => {
     const instance = acquire(KeepAliveBloc);
     release(KeepAliveBloc);
     expect(getRefCount(KeepAliveBloc)).toBe(0);
-    expect(instance.isDisposed).toBe(false);
+    expect(instance.$blac.disposed).toBe(false);
     expect(hasInstance(KeepAliveBloc)).toBe(true);
   });
 
@@ -109,7 +109,7 @@ describe('StateContainerRegistry ref counting', () => {
     acquire(RefCountBloc);
     expect(getRefCount(RefCountBloc)).toBe(2);
     release(RefCountBloc, { forceDispose: true });
-    expect(instance.isDisposed).toBe(true);
+    expect(instance.$blac.disposed).toBe(true);
     expect(hasInstance(RefCountBloc)).toBe(false);
   });
 
@@ -118,7 +118,7 @@ describe('StateContainerRegistry ref counting', () => {
     first.dispose();
     const second = acquire(RefCountBloc);
     expect(second).not.toBe(first);
-    expect(second.isDisposed).toBe(false);
+    expect(second.$blac.disposed).toBe(false);
   });
 
   it('acquire() with distinct args tracks separately from default', () => {

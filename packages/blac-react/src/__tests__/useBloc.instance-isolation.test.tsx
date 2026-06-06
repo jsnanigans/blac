@@ -121,7 +121,7 @@ describe('useBloc — instance isolation', () => {
     function MountedComp() {
       const id = useId();
       const [, bloc] = useBloc(IsoBloc, { args: { _id: id } });
-      return <span data-testid="id">{bloc.instanceId}</span>;
+      return <span data-testid="id">{bloc.$blac.id}</span>;
     }
 
     const { result: r1 } = renderHook(() => {

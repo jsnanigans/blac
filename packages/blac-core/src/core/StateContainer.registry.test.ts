@@ -206,7 +206,7 @@ describe('StateContainer - Registry Features', () => {
       expect(states.sort((a, b) => a - b)).toEqual([1, 2, 3]);
 
       // c2 should now be disposed
-      expect(c2.isDisposed).toBe(true);
+      expect(c2.$blac.disposed).toBe(true);
 
       // Second forEach should skip the disposed one
       const secondStates: number[] = [];
@@ -227,7 +227,7 @@ describe('StateContainer - Registry Features', () => {
       // Should not throw, but should log error
       expect(() => {
         forEach(CounterBloc, (instance) => {
-          visitedKeys.push(instance.instanceId);
+          visitedKeys.push(instance.$blac.id);
           if (instance.state.count === 0) {
             throw new Error('Test error');
           }
@@ -417,11 +417,11 @@ describe('StateContainer - Registry Features', () => {
     it('should dispose instance when ref count reaches zero', () => {
       const instance = acquire(CounterBloc, { args: { id: 'test' } });
 
-      expect(instance.isDisposed).toBe(false);
+      expect(instance.$blac.disposed).toBe(false);
 
       release(CounterBloc, { args: { id: 'test' } });
 
-      expect(instance.isDisposed).toBe(true);
+      expect(instance.$blac.disposed).toBe(true);
       expect(getAll(CounterBloc)).toHaveLength(0);
     });
 
@@ -441,7 +441,7 @@ describe('StateContainer - Registry Features', () => {
       const instance = acquire(KeepAliveBloc, { args: { id: 'test' } });
       release(KeepAliveBloc, { args: { id: 'test' } });
 
-      expect(instance.isDisposed).toBe(false);
+      expect(instance.$blac.disposed).toBe(false);
       expect(getAll(KeepAliveBloc)).toHaveLength(1);
     });
 
@@ -481,7 +481,7 @@ describe('StateContainer - Registry Features', () => {
 
       const instance2 = acquire(CounterBloc, { args: { id: 'test' } });
       expect(instance2).not.toBe(instance1);
-      expect(instance2.isDisposed).toBe(false);
+      expect(instance2.$blac.disposed).toBe(false);
     });
   });
 });

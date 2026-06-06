@@ -13,7 +13,7 @@ import {
   type LifecycleEvent,
 } from './StateContainerRegistry';
 import { acquire, release } from '../registry';
-import { EMIT } from './symbols';
+import { EMIT, INIT_CONFIG } from './symbols';
 
 // ============ Test Implementations ============
 
@@ -74,7 +74,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const { listener, unsubscribe } = withCreatedListener();
 
       const bloc = fixture.cubit();
-      bloc.initConfig({});
+      bloc[INIT_CONFIG]({});
 
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(bloc);
@@ -109,7 +109,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const { listener: listener3 } = withCreatedListener();
 
       const bloc = fixture.cubit();
-      bloc.initConfig({});
+      bloc[INIT_CONFIG]({});
 
       expect(listener1).toHaveBeenCalledTimes(1);
       expect(listener2).toHaveBeenCalledTimes(1);
@@ -122,7 +122,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const { listener: disposedListener } = withDisposedListener();
 
       const bloc = fixture.cubit();
-      bloc.initConfig({});
+      bloc[INIT_CONFIG]({});
       bloc.increment();
       bloc.dispose();
 
@@ -139,13 +139,13 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const { listener, unsubscribe } = withCreatedListener();
 
       const bloc = fixture.cubit();
-      bloc.initConfig({});
+      bloc[INIT_CONFIG]({});
       expect(listener).toHaveBeenCalledTimes(1);
 
       unsubscribe();
 
       const bloc2 = fixture.cubit();
-      bloc2.initConfig({});
+      bloc2[INIT_CONFIG]({});
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
@@ -182,7 +182,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       unsubscribe1();
 
       const bloc = fixture.cubit();
-      bloc.initConfig({});
+      bloc[INIT_CONFIG]({});
 
       expect(listener1).not.toHaveBeenCalled();
       expect(listener2).toHaveBeenCalledTimes(1);
@@ -194,7 +194,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const { listener } = withCreatedListener();
 
       const bloc = fixture.cubit();
-      bloc.initConfig({});
+      bloc[INIT_CONFIG]({});
 
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(bloc);
@@ -219,11 +219,11 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const { listener } = withDisposedListener();
 
       const bloc = fixture.cubit();
-      bloc.initConfig({});
+      bloc[INIT_CONFIG]({});
       bloc.dispose();
 
       expect(listener).toHaveBeenCalledTimes(1);
-      expect(bloc.isDisposed).toBe(true);
+      expect(bloc.$blac.disposed).toBe(true);
     });
   });
 
@@ -241,7 +241,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       globalRegistry.on('created', listener2);
 
       const bloc = fixture.cubit();
-      bloc.initConfig({});
+      bloc[INIT_CONFIG]({});
 
       expect(listener1).toHaveBeenCalledTimes(1);
       expect(listener2).toHaveBeenCalledTimes(1);
@@ -284,7 +284,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       globalRegistry.on('stateChanged', (container, prevState, nextState) => {
         actions.push({
           type: 'STATE_CHANGE',
-          containerName: container.name,
+          containerName: container.$blac.name,
           timestamp: Date.now(),
         });
         states.push({ prev: prevState, next: nextState });
@@ -306,21 +306,21 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const logs: string[] = [];
 
       globalRegistry.on('created', (container) => {
-        logs.push(`[CREATED] ${container.name} (${container.instanceId})`);
+        logs.push(`[CREATED] ${container.$blac.name} (${container.$blac.id})`);
       });
 
       globalRegistry.on('stateChanged', (container, prev, next) => {
         logs.push(
-          `[STATE] ${container.name}: ${JSON.stringify(prev)} -> ${JSON.stringify(next)}`,
+          `[STATE] ${container.$blac.name}: ${JSON.stringify(prev)} -> ${JSON.stringify(next)}`,
         );
       });
 
       globalRegistry.on('disposed', (container) => {
-        logs.push(`[DISPOSED] ${container.name}`);
+        logs.push(`[DISPOSED] ${container.$blac.name}`);
       });
 
       const bloc = fixture.cubit(0);
-      bloc.initConfig({});
+      bloc[INIT_CONFIG]({});
       bloc.increment();
       bloc.dispose();
 
@@ -389,7 +389,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const { listener, unsubscribe } = withCreatedListener();
 
       const bloc = fixture.cubit();
-      bloc.initConfig({});
+      bloc[INIT_CONFIG]({});
 
       expect(listener).toHaveBeenCalledTimes(1);
 
@@ -403,7 +403,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       customRegistry.on('created', customListener);
 
       const bloc = fixture.cubit();
-      bloc.initConfig({});
+      bloc[INIT_CONFIG]({});
 
       expect(globalListener).toHaveBeenCalledTimes(1);
       expect(customListener).not.toHaveBeenCalled();
@@ -478,11 +478,11 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const _instance2 = acquire(TestCubit, { args: { id: 'test' } });
 
       expect(globalRegistry.getRefCount(TestCubit, 'test')).toBe(2);
-      expect(instance1.isDisposed).toBe(false);
+      expect(instance1.$blac.disposed).toBe(false);
 
       release(TestCubit, { args: { id: 'test' }, forceDispose: true });
 
-      expect(instance1.isDisposed).toBe(true);
+      expect(instance1.$blac.disposed).toBe(true);
       expect(globalRegistry.hasInstance(TestCubit, 'test')).toBe(false);
       expect(globalRegistry.getRefCount(TestCubit, 'test')).toBe(0);
     });

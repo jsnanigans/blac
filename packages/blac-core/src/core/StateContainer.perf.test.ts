@@ -13,6 +13,7 @@ import {
 } from './StateContainerRegistry';
 import { clearAll } from '../registry';
 import { setRegistry } from '../registry/config';
+import { INIT_CONFIG } from './symbols';
 
 class TestCubit extends Cubit<{ count: number }> {
   constructor() {
@@ -255,7 +256,7 @@ describe('StateContainer performance optimizations', () => {
       registry.on('disposed', disposedListener);
 
       const cubit = new TestCubit();
-      cubit.initConfig({});
+      cubit[INIT_CONFIG]({});
 
       // Created should be synchronous
       expect(createdListener).toHaveBeenCalledTimes(1);
@@ -279,7 +280,7 @@ describe('StateContainer performance optimizations', () => {
 
       // Cubit created AFTER setRegistry should use the new registry
       const cubit = new TestCubit();
-      cubit.initConfig({});
+      cubit[INIT_CONFIG]({});
       cubit.patch({ count: 42 });
 
       // stateChanged is deferred, but created should be sync
@@ -287,7 +288,7 @@ describe('StateContainer performance optimizations', () => {
       newRegistry.on('created', createdListener);
 
       const cubit2 = new TestCubit();
-      cubit2.initConfig({});
+      cubit2[INIT_CONFIG]({});
       expect(createdListener).toHaveBeenCalledTimes(1);
 
       setRegistry(registry); // restore

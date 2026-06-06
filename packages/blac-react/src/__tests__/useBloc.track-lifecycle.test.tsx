@@ -592,7 +592,7 @@ describe('useBloc — track() case 8: unmount releases dep ref', () => {
     render(<Comp />);
     // LifecycleDep was acquired by track() during render.
     expect(hasInstance(LifecycleDep)).toBe(true);
-    expect(borrow(LifecycleDep).isDisposed).toBe(false);
+    expect(borrow(LifecycleDep).$blac.disposed).toBe(false);
   });
 
   it('dep refcount drops to 0 after consumer unmounts (no other ref holders)', async () => {

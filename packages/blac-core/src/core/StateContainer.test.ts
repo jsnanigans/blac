@@ -14,7 +14,7 @@ import {
   clearAll,
 } from '../registry';
 import { Cubit } from './Cubit';
-import { EMIT } from './symbols';
+import { EMIT, INIT_CONFIG } from './symbols';
 
 // Test implementation of StateContainer
 class TestContainer extends StateContainer<{ value: number }, { id?: string }> {
@@ -163,7 +163,7 @@ describe('StateContainer', () => {
 
         expect(disposeSpy).toHaveBeenCalledOnce();
         expect(hasInstance(TestContainer)).toBe(false);
-        expect(instance.isDisposed).toBe(true);
+        expect(instance.$blac.disposed).toBe(true);
       });
 
       it('should respect static keepAlive property', () => {
@@ -273,39 +273,39 @@ describe('StateContainer', () => {
 
       it('should initialize with default config', () => {
         const container = new TestContainer();
-        expect(container.name).toBe('TestContainer');
-        expect(container.isDisposed).toBe(false);
+        expect(container.$blac.name).toBe('TestContainer');
+        expect(container.$blac.disposed).toBe(false);
       });
 
       it('should set default instanceId', () => {
         const container = new TestContainer(0);
-        expect(container.instanceId).toBe('TestContainer:main');
+        expect(container.$blac.id).toBe('TestContainer:main');
       });
 
       it('should initialize hydration state as idle', () => {
         const container = new TestContainer(0);
 
-        expect(container.hydrationStatus).toBe('idle');
-        expect(container.isHydrated).toBe(false);
-        expect(container.changedWhileHydrating).toBe(false);
+        expect(container.$blac.hydration.status).toBe('idle');
+        expect(container.$blac.hydration.isHydrated).toBe(false);
+        expect(container.$blac.hydration.changedWhileHydrating).toBe(false);
       });
 
       it('should respect custom instanceId', () => {
         const container = new TestContainer(0);
-        container.initConfig({ instanceId: 'custom-id' });
-        expect(container.instanceId).toBe('TestContainer:custom-id');
+        container[INIT_CONFIG]({ instanceId: 'custom-id' });
+        expect(container.$blac.id).toBe('TestContainer:custom-id');
       });
 
       it('should respect custom name', () => {
         const container = new TestContainer(0);
-        container.initConfig({ name: 'CustomName' });
-        expect(container.name).toBe('CustomName');
+        container[INIT_CONFIG]({ name: 'CustomName' });
+        expect(container.$blac.name).toBe('CustomName');
       });
 
       it('should not generate unique instanceId if not provided', () => {
         const container1 = new TestContainer();
         const container2 = new TestContainer();
-        expect(container1.instanceId).toBe(container2.instanceId);
+        expect(container1.$blac.id).toBe(container2.$blac.id);
       });
     });
 
@@ -313,87 +313,87 @@ describe('StateContainer', () => {
       it('should resolve waitForHydration immediately when idle', async () => {
         const container = new TestContainer(0);
 
-        await expect(container.waitForHydration()).resolves.toBeUndefined();
+        await expect(container.$blac.hydration.wait()).resolves.toBeUndefined();
       });
 
       it('should complete hydration successfully', async () => {
         const container = new TestContainer(0);
 
-        container.beginHydration();
-        expect(container.hydrationStatus).toBe('hydrating');
+        container.$blac.hydration.begin();
+        expect(container.$blac.hydration.status).toBe('hydrating');
 
-        expect(container.applyHydratedState({ value: 10 })).toBe(true);
-        container.finishHydration();
+        expect(container.$blac.hydration.apply({ value: 10 })).toBe(true);
+        container.$blac.hydration.finish();
 
-        await expect(container.waitForHydration()).resolves.toBeUndefined();
+        await expect(container.$blac.hydration.wait()).resolves.toBeUndefined();
         expect(container.state).toEqual({ value: 10 });
-        expect(container.hydrationStatus).toBe('hydrated');
-        expect(container.isHydrated).toBe(true);
+        expect(container.$blac.hydration.status).toBe('hydrated');
+        expect(container.$blac.hydration.isHydrated).toBe(true);
       });
 
       it('should reject hydrated state after user mutation during hydration', async () => {
         const container = new TestContainer(0);
 
-        container.beginHydration();
+        container.$blac.hydration.begin();
         container.testEmit({ value: 1 });
 
-        expect(container.changedWhileHydrating).toBe(true);
-        expect(container.applyHydratedState({ value: 99 })).toBe(false);
+        expect(container.$blac.hydration.changedWhileHydrating).toBe(true);
+        expect(container.$blac.hydration.apply({ value: 99 })).toBe(false);
 
-        container.finishHydration();
+        container.$blac.hydration.finish();
 
-        await expect(container.waitForHydration()).resolves.toBeUndefined();
+        await expect(container.$blac.hydration.wait()).resolves.toBeUndefined();
         expect(container.state).toEqual({ value: 1 });
       });
 
       it('should reject waitForHydration on hydration failure', async () => {
         const container = new TestContainer(0);
 
-        container.beginHydration();
-        container.failHydration(new Error('hydrate failed'));
+        container.$blac.hydration.begin();
+        container.$blac.hydration.fail(new Error('hydrate failed'));
 
-        await expect(container.waitForHydration()).rejects.toThrow(
+        await expect(container.$blac.hydration.wait()).rejects.toThrow(
           'hydrate failed',
         );
-        expect(container.hydrationStatus).toBe('error');
-        expect(container.hydrationError?.message).toBe('hydrate failed');
+        expect(container.$blac.hydration.status).toBe('error');
+        expect(container.$blac.hydration.error?.message).toBe('hydrate failed');
       });
 
       it('should allow a new hydration cycle after a failure', async () => {
         const container = new TestContainer(0);
 
-        container.beginHydration();
-        const firstHydration = container.waitForHydration();
-        container.failHydration(new Error('hydrate failed'));
+        container.$blac.hydration.begin();
+        const firstHydration = container.$blac.hydration.wait();
+        container.$blac.hydration.fail(new Error('hydrate failed'));
 
         await expect(firstHydration).rejects.toThrow('hydrate failed');
-        expect(container.hydrationStatus).toBe('error');
-        expect(container.hydrationError?.message).toBe('hydrate failed');
+        expect(container.$blac.hydration.status).toBe('error');
+        expect(container.$blac.hydration.error?.message).toBe('hydrate failed');
 
-        container.beginHydration();
-        expect(container.hydrationStatus).toBe('hydrating');
-        expect(container.hydrationError).toBeUndefined();
-        expect(container.changedWhileHydrating).toBe(false);
+        container.$blac.hydration.begin();
+        expect(container.$blac.hydration.status).toBe('hydrating');
+        expect(container.$blac.hydration.error).toBeUndefined();
+        expect(container.$blac.hydration.changedWhileHydrating).toBe(false);
 
-        const secondHydration = container.waitForHydration();
+        const secondHydration = container.$blac.hydration.wait();
         expect(secondHydration).not.toBe(firstHydration);
 
-        expect(container.applyHydratedState({ value: 42 })).toBe(true);
-        container.finishHydration();
+        expect(container.$blac.hydration.apply({ value: 42 })).toBe(true);
+        container.$blac.hydration.finish();
 
         await expect(secondHydration).resolves.toBeUndefined();
         expect(container.state).toEqual({ value: 42 });
-        expect(container.hydrationStatus).toBe('hydrated');
+        expect(container.$blac.hydration.status).toBe('hydrated');
       });
 
       it('should emit hydration lifecycle events with dirty and error state', async () => {
         const container = new HydrationEventTestContainer(0);
 
-        container.beginHydration();
+        container.$blac.hydration.begin();
         container.testEmit({ value: 1 });
-        container.failHydration(new Error('hydrate failed'));
+        container.$blac.hydration.fail(new Error('hydrate failed'));
 
-        await expect(container.waitForHydration()).rejects.toThrow(
+        await expect(container.$blac.hydration.wait()).rejects.toThrow(
           'hydrate failed',
         );
 
@@ -417,14 +417,14 @@ describe('StateContainer', () => {
         const container = acquire(TestContainer, {
           args: { id: 'hydration-dispose' },
         });
-        container.beginHydration();
+        container.$blac.hydration.begin();
 
         release(TestContainer, {
           args: { id: 'hydration-dispose' },
           forceDispose: true,
         });
 
-        await expect(container.waitForHydration()).rejects.toThrow(
+        await expect(container.$blac.hydration.wait()).rejects.toThrow(
           'Hydration cancelled',
         );
       });
@@ -543,15 +543,15 @@ describe('StateContainer', () => {
         container.dispose();
 
         expect(container.disposeCallCount).toBe(1);
-        expect(container.isDisposed).toBe(true);
+        expect(container.$blac.disposed).toBe(true);
       });
 
       it('should set isDisposed flag', () => {
         const container = new TestContainer(0);
 
-        expect(container.isDisposed).toBe(false);
+        expect(container.$blac.disposed).toBe(false);
         container.dispose();
-        expect(container.isDisposed).toBe(true);
+        expect(container.$blac.disposed).toBe(true);
       });
     });
   });
@@ -659,8 +659,8 @@ describe('StateContainer', () => {
   describe('Configuration', () => {
     it('should respect name configuration', () => {
       const container = new TestContainer(0);
-      container.initConfig({ name: 'MyCounter' });
-      expect(container.name).toBe('MyCounter');
+      container[INIT_CONFIG]({ name: 'MyCounter' });
+      expect(container.$blac.name).toBe('MyCounter');
     });
 
     it('should enable debug mode logging', () => {
@@ -669,7 +669,7 @@ describe('StateContainer', () => {
         .mockImplementation(() => {});
 
       const container = new TestContainer(0);
-      container.initConfig({
+      container[INIT_CONFIG]({
         debug: true,
         name: 'DebugTest',
       });
@@ -816,8 +816,8 @@ describe('StateContainer', () => {
     it('exposes declared dependencies via getter', () => {
       const owner = new DepOwner();
 
-      expect(owner.dependencies.size).toBe(1);
-      expect(owner.dependencies.get(DepTarget)).toBe('default');
+      expect(owner.$blac.dependencies.size).toBe(1);
+      expect(owner.$blac.dependencies.get(DepTarget)).toBe('default');
     });
 
     it('supports custom instance key via args', () => {
@@ -829,7 +829,7 @@ describe('StateContainer', () => {
       }
 
       const owner = new CustomKeyOwner();
-      expect(owner.dependencies.get(DepTarget)).toBe('custom');
+      expect(owner.$blac.dependencies.get(DepTarget)).toBe('custom');
     });
 
     it('works on Cubit subclasses', () => {
@@ -848,7 +848,7 @@ describe('StateContainer', () => {
 
     it('returns empty map when no dependencies declared', () => {
       const container = new TestContainer();
-      expect(container.dependencies.size).toBe(0);
+      expect(container.$blac.dependencies.size).toBe(0);
     });
   });
 });
