@@ -20,7 +20,7 @@
     "@fontsource-variable/hanken-grotesk": "^5.2.8",
     "@types/react": "catalog:",
     "@types/react-dom": "^19.2.3",
-    "astro": "^6.4.3",
+    "astro": "^6.4.4",
     "expressive-code": "^0.41.7",
     "expressive-code-twoslash": "^0.6.1",
     "react": "catalog:",

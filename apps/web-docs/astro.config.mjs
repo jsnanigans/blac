@@ -7,8 +7,63 @@ import ts from 'typescript';
 import pluginTwoslash from 'expressive-code-twoslash';
 import remarkGfm from 'remark-gfm';
 
+/*
+ * WORKAROUND — content-propagated styles dropped by `astro build`.
+ *
+ * The workspace overrides `vite` to `@voidzero-dev/vite-plus-core` (vite 8,
+ * Rolldown-based) for the vite-plus tooling, while Astro 6.4.x declares
+ * `vite: ^7.3.2` (Rollup-based). Under Rolldown, the rendered module code in
+ * the build no longer carries the leading `// astro-head-inject` comment from
+ * Astro's `astro:content` module template. That comment is the *only* seed
+ * Astro's `astro:head-metadata-build` plugin uses to mark pages as
+ * head-propagation boundaries in production builds. With zero seeds, no page
+ * is marked, and at render time `createHeadAndContent` silently drops every
+ * stylesheet propagated through content-collection MDX:
+ *
+ *   - scoped <style> from .astro components imported in .mdx (RisoHeading…)
+ *   - CSS imported by React islands (demos.css via DemoFrame/RenderCounter)
+ *
+ * Dev is unaffected (the dev plugin reads transform-time sources, where the
+ * comment still exists) — which is why `astro dev` looked fine while the
+ * production build shipped unstyled demos and fallback heading fonts.
+ *
+ * The fix: re-seed the marking ourselves by setting
+ * `meta.astro.propagation = 'self'` on the `astro:content` virtual module.
+ * Astro's build plugin then marks all ancestor pages "in-tree" and its own
+ * style collection + placeholder substitution work end-to-end, untouched.
+ *
+ * Remove once Astro officially supports the Rolldown-based vite (or the
+ * workspace stops overriding vite for this app). Regression test: the built
+ * homepage must contain `.riso-heading` and `.blac-demo` style rules.
+ */
+const headPropagationSeedFix = {
+  name: 'blac:head-propagation-seed-fix',
+  apply: /** @type {const} */ ('build'),
+  transform(_code, id) {
+    if (id === '\0astro:content') {
+      return {
+        meta: {
+          // Full AstroPluginMetadata shape — build plugins (plugin-analyzer)
+          // iterate every module with `meta.astro` and read these arrays
+          // unguarded, so a partial object crashes the build.
+          astro: {
+            hydratedComponents: [],
+            clientOnlyComponents: [],
+            serverComponents: [],
+            scripts: [],
+            containsHead: false,
+            propagation: 'self',
+            pageOptions: {},
+          },
+        },
+      };
+    }
+  },
+};
+
 // https://astro.build/config
 export default defineConfig({
+  vite: { plugins: [headPropagationSeedFix] },
   // Canonical origin — drives sitemap + absolute URLs. Update to the real
   // production domain when the Cloudflare Pages project is set up.
   site: 'https://blac-docs.pages.dev',
