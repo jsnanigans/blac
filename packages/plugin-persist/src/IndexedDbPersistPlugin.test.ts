@@ -342,3 +342,63 @@ describe('IndexedDbPersistPluginImpl — hook signature migration (C2)', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Storage-key stability — M2a acceptance criterion
+// Verifies that the key built via $blac.id is byte-identical to the key
+// that was previously built via instance.instanceId (same underlying field).
+// ---------------------------------------------------------------------------
+
+describe('IndexedDbPersistPluginImpl — storage key stability ($blac migration)', () => {
+  it('defaultKey format is unchanged: "<ClassName>:<instanceId>"', () => {
+    const bloc = new CounterBloc();
+
+    // $blac.id and the legacy instanceId delegate must return the same string.
+    // Both read the same private _instanceId field — this equality is the
+    // proof that no key-format change occurred.
+    const viaLegacy: string = (bloc as any).instanceId as string;
+    const viaMeta: string = bloc.$blac.id;
+    expect(viaMeta).toBe(viaLegacy);
+
+    // The plugin's defaultKey builds: `${ClassName}:${$blac.id}`
+    // Capture the key that onCreated assigns to runtime.key and compare
+    // against the pre-migration formula applied to the same instance.
+    const adapter = makeAdapter();
+    const plugin = new IndexedDbPersistPluginImpl({ adapter });
+    plugin.persist(CounterBloc);
+
+    const ctx = makeCtx(bloc);
+    plugin.onCreated(ctx);
+
+    const status = plugin.getStatus(bloc);
+    expect(status).toBeDefined();
+    if (!status) throw new Error('status must be defined after onCreated');
+
+    // Pre-migration key formula (now asserted against the live $blac.id):
+    const expectedKey = `${bloc.constructor.name}:${bloc.$blac.id}`;
+    expect(status.key).toBe(expectedKey);
+
+    // Ensure className portion matches constructor name
+    expect(status.key.startsWith('CounterBloc:')).toBe(true);
+  });
+
+  it('custom key function receives the same instanceId value', () => {
+    const bloc = new CounterBloc();
+    let capturedInstanceId: string | undefined;
+
+    const adapter = makeAdapter();
+    const plugin = new IndexedDbPersistPluginImpl({ adapter });
+    plugin.persist(CounterBloc, {
+      key: (ctx) => {
+        capturedInstanceId = ctx.instanceId;
+        return `custom:${ctx.instanceId}`;
+      },
+    });
+
+    const ctx = makeCtx(bloc);
+    plugin.onCreated(ctx);
+
+    // The instanceId passed into the key function must equal $blac.id
+    expect(capturedInstanceId).toBe(bloc.$blac.id);
+  });
+});

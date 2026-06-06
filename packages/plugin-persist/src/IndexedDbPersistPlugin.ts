@@ -429,7 +429,7 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     return {
       instance,
       className: instance.constructor.name,
-      instanceId: instance.instanceId,
+      instanceId: instance.$blac.id,
       currentState: currentState ?? context.getState(instance),
       key: key ?? this.defaultKey(instance),
     };
@@ -447,7 +447,7 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
   }
 
   private defaultKey(instance: StateContainer<any>): string {
-    return `${instance.constructor.name}:${instance.instanceId}`;
+    return `${instance.constructor.name}:${instance.$blac.id}`;
   }
 
   private updateStatus(
