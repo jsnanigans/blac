@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
 import { StateContainer } from './StateContainer';
 import { acquire, release } from '../registry';
-import { EMIT } from './symbols';
 
 class DisposableContainer extends StateContainer<{ v: number }> {
   disposeCount = 0;
@@ -13,7 +12,7 @@ class DisposableContainer extends StateContainer<{ v: number }> {
     });
   }
   doEmit(state: { v: number }) {
-    this[EMIT](state);
+    this.emit(state);
   }
 }
 

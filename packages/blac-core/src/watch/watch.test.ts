@@ -340,8 +340,9 @@ describe('watch', () => {
       }
       await flush();
 
-      // Channel-flush coalesces all 10 synchronous emits into one fire.
-      // Pre-C0/C3 expected 11 callback invocations (1 initial + 10).
+      // Channel-flush coalesces all 10 synchronous emits into one fire, so
+      // the callback runs twice: once with the initial value and once with
+      // the final value.
       expect(values.length).toBe(2);
       expect(values[0]).toBe(0);
       expect(values[1]).toBe(10);

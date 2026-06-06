@@ -44,12 +44,12 @@ every listener synchronously on every change.
 BlaC's real notification core is `DirtyChannel<Region>` from `@dirtytalk/engine`,
 but we approach it from the outside in. From the outside, that contract is what
 `Cubit` exposes: a value behind
-`state`, mutated by `emit` / `update`, with `subscribe(listener)` firing on
-every coalesced flush. This block type-checks against the real `@blac/core`
-surface:
+`state`, mutated by `emit` / `update`, with `watch` (or the lower-level
+`channel.subscribe`) firing on every coalesced flush. This block type-checks
+against the real `@blac/core` surface:
 
 ```ts twoslash
-import { Cubit } from '@blac/core';
+import { Cubit, watch, ensure } from '@blac/core';
 
 class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
@@ -61,15 +61,17 @@ class CounterCubit extends Cubit<{ count: number }> {
   }
 }
 
-const c = new CounterCubit();
-// Legacy listener-style subscribe: wakes on every flush, sees the latest state.
-const unsubscribe = c.subscribe((state) => console.log('woke at', state.count));
+// watch wakes on every flush and hands you the instance with the latest state.
+const stop = watch(CounterCubit, (counter) =>
+  console.log('woke at', counter.state.count),
+);
+const c = ensure(CounterCubit);
 c.increment();
-c.increment(); // two emits, same tick → listener fires once with count: 2
-unsubscribe();
+c.increment(); // two emits, same tick → callback fires once with count: 2
+stop();
 ```
 
-Underneath, that `subscribe` is a thin bridge over the real notification core:
+Underneath, `watch` is a thin bridge over the real notification core:
 `DirtyChannel<Region>` from `@dirtytalk/engine`. It is generic over a `Region` —
 an opaque "what changed" value governed by a `Space<Region>` algebra
 (`empty`, `isEmpty`, `union`, `intersects`). Two properties make it more than a
@@ -138,10 +140,9 @@ Stage 1: mark → flush → wake everyone
                                      interest intersects → cb()
 ```
 
-This is everything a `Cubit` does at the listener level. `StateContainer`'s
-back-compat `subscribe(listener)` is exactly this: it bridges every channel
-flush to `(state) => void` callbacks, regardless of what changed. The
-`watch(BlocClass, cb)` helper is the same "wake on any change" subscription
+This is everything a `Cubit` does at the listener level. The
+`watch(BlocClass, cb)` helper is exactly this: it bridges every channel
+flush to a callback that wakes on any change, regardless of what changed,
 applied from outside React. The flush is microtask-coalesced, which is why
 several synchronous `emit`s produce a single notification.
 

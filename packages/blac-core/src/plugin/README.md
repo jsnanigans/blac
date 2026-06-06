@@ -36,7 +36,7 @@ getPluginManager().install(myPlugin, {
 });
 ```
 
-## Event payload contract (C2 / Decision 6)
+## Event payload contract
 
 | Hook                | `ctx.container`     | Extra arguments                                              |
 | ------------------- | ------------------- | ------------------------------------------------------------ |
@@ -47,8 +47,8 @@ getPluginManager().install(myPlugin, {
 | `onHydrationChange` | the focal container | `status: HydrationStatus`, `previousStatus: HydrationStatus` |
 
 `paths` is the `PathSet` of changed paths for the flush. It may equal
-`ALL_PATHS` when the channel marks every path (e.g. coarse `emit` from
-legacy callers). Decode interned ids back to dotted strings via
+`ALL_PATHS` when the channel marks every path (e.g. a coarse `emit` that
+replaces the whole state). Decode interned ids back to dotted strings via
 `ctx.container.interner.lookup(id)`.
 
 ```typescript
@@ -73,15 +73,6 @@ function decodePaths(paths: PathSet, interner: PathInterner): string[] {
 
 - The plugin manager subscribes to every container with `ALL_PATHS` interest. This defeats the single-consumer-skip optimization in `StructuralContainer` for any container that has plugins installed. Devtools/persist plugins genuinely want every change; for fine-grained subscribers prefer `container.channel.subscribe(interest, cb)` directly.
 - Stateful plugins (logging) can opt into path-level signals by decoding `paths` via the interner.
-
-## Migration from pre-C2
-
-| Old hook name (pre-C2) | New hook name (C2)        | Arg shape change                                           |
-| ---------------------- | ------------------------- | ---------------------------------------------------------- |
-| `onInstanceCreated`    | `onCreated`               | `(instance, ctx)` → `(ctx)` (instance via `ctx.container`) |
-| `onInstanceDisposed`   | `onDestroyed`             | `(instance, ctx)` → `(ctx)`                                |
-| `onStateChanged`       | `onStateChange`           | `(instance, prev, next, ctx)` → `(ctx, prev, next, paths)` |
-| —                      | `onHydrationChange` (new) | —                                                          |
 
 ## Official Plugins
 

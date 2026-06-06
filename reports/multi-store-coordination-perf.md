@@ -172,6 +172,6 @@ Even with no listeners, overhead includes:
 
 ## Risks
 
-- **Plugin ecosystem dependency**: Any optimization that defers plugin initialization must maintain backward compatibility for code that expects plugins to initialize eagerly
+- **Plugin ecosystem dependency**: Any optimization that defers plugin initialization must keep working for code that expects plugins to initialize eagerly
 - **System event users**: If anything depends on synchronous 'stateChanged' system events, removing that emission would break it
 - **Change detection assumptions**: The patch() pre-check prevents emitting identical state twice. Some code may rely on always getting a notification

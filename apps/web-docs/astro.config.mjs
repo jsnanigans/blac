@@ -240,10 +240,6 @@ export default defineConfig({
                   },
                   { label: 'Glossary', link: '/guide/glossary/' },
                   {
-                    label: 'Migrating from v1',
-                    link: '/guide/migration-from-v1/',
-                  },
-                  {
                     label: 'Versioning & Stability',
                     link: '/guide/versioning/',
                   },

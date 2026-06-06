@@ -6,7 +6,6 @@ Observations from reviewing all packages, examples, and docs.
 
 ### Missing pages
 
-- **Migration guide (v1 → v2)**: No upgrade path documented. Users on v1 have no way to know what changed, what's deprecated, or how to migrate.
 - **Tutorial / walkthrough**: The guide goes concept → reference but never walks someone through building a small app end-to-end. A "Build a todo app" or "Build a chat app" tutorial would bridge the gap between Quick Start and the reference pages.
 - **FAQ / Troubleshooting**: Common pitfalls (e.g. "why is my component re-rendering?", "why is my instance disposed immediately?") are not addressed anywhere.
 

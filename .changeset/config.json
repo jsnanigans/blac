@@ -8,7 +8,6 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@9amhealth/blac-compat",
     "@blac/devtools-extension",
     "@blac/web-docs",
     "examples",

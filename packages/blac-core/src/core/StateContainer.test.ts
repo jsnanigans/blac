@@ -14,7 +14,8 @@ import {
   clearAll,
 } from '../registry';
 import { Cubit } from './Cubit';
-import { EMIT, INIT_CONFIG } from './symbols';
+import { INIT_CONFIG } from './symbols';
+import { ALL_PATHS } from '@dirtytalk/structural';
 
 // Test implementation of StateContainer
 class TestContainer extends StateContainer<{ value: number }, { id?: string }> {
@@ -25,7 +26,7 @@ class TestContainer extends StateContainer<{ value: number }, { id?: string }> {
   static key = (a?: { id?: string }) => a?.id ?? 'default';
 
   public testEmit(state: { value: number }): void {
-    this[EMIT](state);
+    this.emit(state);
   }
 }
 
@@ -52,7 +53,7 @@ class LifecycleTestContainer extends StateContainer<{ text: string }> {
   }
 
   public testEmit(state: { text: string }): void {
-    this[EMIT](state);
+    this.emit(state);
   }
 }
 
@@ -73,7 +74,7 @@ class HydrationEventTestContainer extends StateContainer<{ value: number }> {
   }
 
   public testEmit(state: { value: number }): void {
-    this[EMIT](state);
+    this.emit(state);
   }
 }
 
@@ -86,7 +87,7 @@ class KeepAliveTestContainer extends StateContainer<{ value: number }> {
   }
 
   public testEmit(state: { value: number }): void {
-    this[EMIT](state);
+    this.emit(state);
   }
 }
 
@@ -102,11 +103,11 @@ class ObjectStateContainer extends StateContainer<ObjectState> {
   }
 
   public increment(): void {
-    this[EMIT]({ ...this.state, count: this.state.count + 1 });
+    this.emit({ ...this.state, count: this.state.count + 1 });
   }
 
   public setName(name: string): void {
-    this[EMIT]({ ...this.state, name });
+    this.emit({ ...this.state, name });
   }
 }
 
@@ -443,88 +444,7 @@ describe('StateContainer', () => {
       });
     });
 
-    describe('subscribe()', () => {
-      it('should add listener and return unsubscribe function', async () => {
-        const container = new TestContainer(0);
-        const listener = vi.fn();
-
-        const unsubscribe = container.subscribe(listener);
-
-        expect(typeof unsubscribe).toBe('function');
-        container.testEmit({ value: 1 });
-        await flush();
-        expect(listener).toHaveBeenCalledWith({ value: 1 });
-      });
-
-      it('should throw when container disposed', () => {
-        const container = new TestContainer(0);
-        container.dispose();
-
-        expect(() => container.subscribe(vi.fn())).toThrow(
-          'Cannot subscribe to disposed container',
-        );
-      });
-
-      it('should notify multiple subscribers', async () => {
-        const container = new TestContainer(0);
-        const listener1 = vi.fn();
-        const listener2 = vi.fn();
-        const listener3 = vi.fn();
-
-        container.subscribe(listener1);
-        container.subscribe(listener2);
-        container.subscribe(listener3);
-
-        container.testEmit({ value: 5 });
-        await flush();
-
-        expect(listener1).toHaveBeenCalledWith({ value: 5 });
-        expect(listener2).toHaveBeenCalledWith({ value: 5 });
-        expect(listener3).toHaveBeenCalledWith({ value: 5 });
-      });
-
-      it('should unsubscribe correctly', async () => {
-        const container = new TestContainer(0);
-        const listener1 = vi.fn();
-        const listener2 = vi.fn();
-
-        const unsubscribe1 = container.subscribe(listener1);
-        container.subscribe(listener2);
-
-        unsubscribe1();
-        container.testEmit({ value: 1 });
-        await flush();
-
-        expect(listener1).not.toHaveBeenCalled();
-        expect(listener2).toHaveBeenCalledWith({ value: 1 });
-      });
-
-      it('should handle multiple unsubscribes safely', () => {
-        const container = new TestContainer(0);
-        const listener = vi.fn();
-
-        const unsubscribe = container.subscribe(listener);
-        unsubscribe();
-        unsubscribe(); // Should not throw
-
-        container.testEmit({ value: 1 });
-        expect(listener).not.toHaveBeenCalled();
-      });
-    });
-
     describe('dispose()', () => {
-      it('should clean up listeners', () => {
-        const container = new TestContainer(0);
-        const listener = vi.fn();
-
-        container.subscribe(listener);
-        container.dispose();
-
-        // Attempt to emit should throw, but listener should not be called
-        expect(() => container.testEmit({ value: 1 })).toThrow();
-        expect(listener).not.toHaveBeenCalled();
-      });
-
       it('should prevent further emissions', () => {
         const container = new TestContainer(0);
 
@@ -560,10 +480,13 @@ describe('StateContainer', () => {
 
   describe('Protected Methods', () => {
     describe('emit()', () => {
-      it('should update state and notify listeners', async () => {
+      it('should update state and notify subscribers', async () => {
         const container = new TestContainer(0);
         const listener = vi.fn();
-        container.subscribe(listener);
+        container.channel.subscribe(
+          () => ALL_PATHS,
+          () => listener(container.state),
+        );
 
         container.testEmit({ value: 42 });
         await flush();
@@ -592,7 +515,7 @@ describe('StateContainer', () => {
         expect(container.lastNewState).toEqual({ text: 'updated' });
       });
 
-      it('should call stateChanged system event before notifying listeners', async () => {
+      it('should call stateChanged system event before notifying subscribers', async () => {
         // Create a container class that tracks call order
         class OrderTrackingContainer extends Cubit<{ text: string }> {
           callOrder: string[] = [];
@@ -612,44 +535,17 @@ describe('StateContainer', () => {
 
         const container = new OrderTrackingContainer();
 
-        container.subscribe(() => {
-          container.callOrder.push('listener');
-        });
+        container.channel.subscribe(
+          () => ALL_PATHS,
+          () => {
+            container.callOrder.push('listener');
+          },
+        );
 
         container.testEmit({ text: 'updated' });
         await flush();
 
         expect(container.callOrder).toEqual(['stateChanged', 'listener']);
-      });
-    });
-
-    describe('Error handling in listeners', () => {
-      it('should not break notification chain if listener throws', async () => {
-        const container = new TestContainer(0);
-        const listener1 = vi.fn();
-        const listener2 = vi.fn(() => {
-          throw new Error('Listener error');
-        });
-        const listener3 = vi.fn();
-
-        // Spy on console.error to suppress error output
-        const consoleErrorSpy = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => {});
-
-        container.subscribe(listener1);
-        container.subscribe(listener2);
-        container.subscribe(listener3);
-
-        container.testEmit({ value: 1 });
-        await flush();
-
-        expect(listener1).toHaveBeenCalledWith({ value: 1 });
-        expect(listener2).toHaveBeenCalledWith({ value: 1 });
-        expect(listener3).toHaveBeenCalledWith({ value: 1 });
-        expect(consoleErrorSpy).toHaveBeenCalled();
-
-        consoleErrorSpy.mockRestore();
       });
     });
   });
@@ -692,7 +588,10 @@ describe('StateContainer', () => {
     it('should handle complex object state updates', async () => {
       const container = new ObjectStateContainer();
       const listener = vi.fn();
-      container.subscribe(listener);
+      container.channel.subscribe(
+        () => ALL_PATHS,
+        () => listener(container.state),
+      );
 
       container.increment();
       await flush();
@@ -719,16 +618,18 @@ describe('StateContainer', () => {
     it('should handle rapid state updates', async () => {
       const container = new TestContainer(0);
       const states: { value: number }[] = [];
-      container.subscribe((state) => states.push(state));
+      container.channel.subscribe(
+        () => ALL_PATHS,
+        () => states.push(container.state),
+      );
 
       for (let i = 1; i <= 100; i++) {
         container.testEmit({ value: i });
       }
       await flush();
 
-      // Post-C0: synchronous emits coalesce into a single channel flush, so
-      // the listener fires once with the latest state. Pre-C0 expected
-      // one listener call per emit.
+      // Synchronous emits coalesce into a single channel flush, so the
+      // subscriber fires once with the latest state.
       expect(states.length).toBe(1);
       expect(states[0]).toEqual({ value: 100 });
       expect(container.state).toEqual({ value: 100 });
@@ -737,7 +638,10 @@ describe('StateContainer', () => {
     it('should work with attach lifecycle', async () => {
       const instance1 = acquire(TestContainer, { args: { id: 'shared' } });
       const listener = vi.fn();
-      instance1.subscribe(listener);
+      instance1.channel.subscribe(
+        () => ALL_PATHS,
+        () => listener(instance1.state),
+      );
 
       const instance2 = acquire(TestContainer, { args: { id: 'shared' } });
       expect(instance1).toBe(instance2);

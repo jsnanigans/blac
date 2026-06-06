@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
 import { blacTestSetup, flush } from '@blac/core/testing';
 import { Cubit } from './Cubit';
 import { StateContainer } from './StateContainer';
+import { ALL_PATHS } from '@dirtytalk/structural';
 
 // ============ Test Implementations ============
 
@@ -163,7 +164,10 @@ describe('Cubit', () => {
       it('should merge partial state for object types', async () => {
         const cubit = fixture.user();
         const listener = vi.fn();
-        cubit.subscribe(listener);
+        cubit.channel.subscribe(
+          () => ALL_PATHS,
+          () => listener(cubit.state),
+        );
 
         cubit.updateName('Jane Doe');
         await flush();
@@ -202,7 +206,10 @@ describe('Cubit', () => {
       it('should notify listeners on patch', async () => {
         const cubit = fixture.user();
         const listener = vi.fn();
-        cubit.subscribe(listener);
+        cubit.channel.subscribe(
+          () => ALL_PATHS,
+          () => listener(cubit.state),
+        );
 
         cubit.updateEmail('newemail@example.com');
         await flush();
@@ -216,7 +223,10 @@ describe('Cubit', () => {
       it('should work alongside emit method', async () => {
         const cubit = fixture.user();
         const listener = vi.fn();
-        cubit.subscribe(listener);
+        cubit.channel.subscribe(
+          () => ALL_PATHS,
+          () => listener(cubit.state),
+        );
 
         cubit.updateName('First Update');
         await flush();
@@ -243,7 +253,10 @@ describe('Cubit', () => {
     it('should increment correctly', async () => {
       const counter = fixture.counter();
       const listener = vi.fn();
-      counter.subscribe(listener);
+      counter.channel.subscribe(
+        () => ALL_PATHS,
+        () => listener(counter.state),
+      );
 
       counter.increment();
       await flush();
@@ -397,7 +410,10 @@ describe('Cubit', () => {
     describe('Filter Operations', () => {
       it('should set filter using patch', () => {
         const listener = vi.fn();
-        todoCubit.subscribe(listener);
+        todoCubit.channel.subscribe(
+          () => ALL_PATHS,
+          () => listener(todoCubit.state),
+        );
 
         todoCubit.setFilter('active');
 
@@ -518,12 +534,14 @@ describe('Cubit', () => {
     describe('Integration Scenarios', () => {
       it('should handle complete workflow', async () => {
         const listener = vi.fn();
-        todoCubit.subscribe(listener);
+        todoCubit.channel.subscribe(
+          () => ALL_PATHS,
+          () => listener(todoCubit.state),
+        );
         let callCount = 0;
 
         // Per-flush coalescing: each operation is awaited so it lands in
-        // its own microtask, producing one listener call apiece. Pre-C0
-        // semantics were one listener call per emit synchronously.
+        // its own microtask, producing one listener call apiece.
         todoCubit.addTodo('Buy groceries');
         await flush();
         callCount++;

@@ -113,9 +113,8 @@ describe('watch edge cases', () => {
   });
 
   it('rapid emits within one tick coalesce into one watch call', async () => {
-    // Renamed from "rapid emits trigger one call per emit (no coalescing)".
-    // Post-C0 the channel coalesces synchronous emits into one flush; the
-    // pre-C0 contract of one watch call per emit is gone.
+    // The channel coalesces synchronous emits into a single flush, so three
+    // emits in one tick produce exactly one watch call.
     const cubit = acquire(CounterCubit);
     let callCount = 0;
     watch(CounterCubit, () => {

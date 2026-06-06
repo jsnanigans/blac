@@ -79,7 +79,7 @@ const [state, bloc, ref] = useBloc(MyCubit, {
 });
 ```
 
-`@blac/preact` is built for parity with `@blac/react`, so the v2 input model is the same: typed `args` for instance identity, the per-consumer `deps` lane (and the `onDepsChanged` hook on the container), and the `select` re-render selector (which replaced v1's `dependencies`). There is no `autoTrack` option in either binding — a component re-renders based on what it reads, or on `select` when you provide one; a component that reads no state never re-renders. For the complete, canonical options reference, see [useBloc](/react/use-bloc), and for the identity model, [Passing Inputs](/guide/inputs).
+`@blac/preact` is built for parity with `@blac/react`, so the input model is the same: typed `args` for instance identity, the per-consumer `deps` lane (and the `onDepsChanged` hook on the container), and the `select` re-render selector. There is no `autoTrack` option in either binding — a component re-renders based on what it reads, or on `select` when you provide one; a component that reads no state never re-renders. For the complete, canonical options reference, see [useBloc](/react/use-bloc), and for the identity model, [Passing Inputs](/guide/inputs).
 
 ## Global configuration
 

@@ -257,7 +257,7 @@ export class StateContainerRegistry {
    * You must call `release()` with the same refId when done.
    *
    * @internal Internal key tier. Public callers use the args-based `acquire`
-   *   wrapper; `useBloc`/`compat`/`watch` address a pre-resolved key here.
+   *   wrapper; `useBloc` and `watch` address a pre-resolved key here.
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Pre-resolved instance key (defaults to 'default')
    * @param options - Acquisition options
@@ -456,7 +456,8 @@ export class StateContainerRegistry {
       return;
     }
 
-    // Decrement the ref count, or pick one arbitrary ref for backward compat
+    // Decrement the named ref's count; when no refId is given, drop one
+    // arbitrary ref so an unscoped release still frees a reference.
     let releasedRefId: string | undefined;
     if (refId !== undefined) {
       const count = entry.refs.get(refId) ?? 0;

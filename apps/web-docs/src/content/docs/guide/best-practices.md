@@ -91,7 +91,7 @@ This is the single most common source of confusion, so commit the rule to memory
 | A non-serializable handle (a `useRef`, a stable `useCallback`, an external API object)    | **`deps`**                                  | Deps never key identity and are merged per-consumer; the bloc reads them lazily.           |
 | An opaque key that isn't real bloc data (a per-mount id, an externally-managed token)     | **a synthetic `args` field + `static key`** | Add the value to `args` (e.g. `_id`) and key on it; nothing else forks the instance.       |
 
-The mechanics of all three live in [Passing Inputs to Blocs](/guide/inputs); this is just the judgment. Note that `deps` is **not** a `useBloc` option in v2 — a consumer contributes its slice from a mount effect via the `APPLY_DEPS` / `REMOVE_DEPS_OWNER` handles from `@blac/core` (the examples below import them); see [Wiring deps from a component](/guide/inputs#wiring-deps-from-a-component).
+The mechanics of all three live in [Passing Inputs to Blocs](/guide/inputs); this is just the judgment. Note that `deps` is **not** a `useBloc` option — a consumer contributes its slice from a mount effect via the `APPLY_DEPS` / `REMOVE_DEPS_OWNER` handles from `@blac/core` (the examples below import them); see [Wiring deps from a component](/guide/inputs#wiring-deps-from-a-component).
 
 ```tsx
 // Good — userId is serializable identity (args); inputRef is a handle (deps).

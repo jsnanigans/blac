@@ -12,8 +12,8 @@ All published BlaC packages follow [Semantic Versioning 2.0](https://semver.org)
 
 - **PATCH** — backwards-compatible bug fixes. Safe to upgrade any time.
 - **MINOR** — new backwards-compatible features. Safe to upgrade.
-- **MAJOR** — breaking public API changes. The migration guide is updated before
-  the release; always read it before upgrading a major.
+- **MAJOR** — breaking public API changes. The changelog documents every
+  breaking change before the release; always read it before upgrading a major.
 
 "Public API" means anything exported without an `@internal` JSDoc tag. Items
 tagged `@internal` may change in any release, including patches.
@@ -108,21 +108,12 @@ not need React installed.
 
 ## Deprecations
 
-All v1 → v2 deprecations and removed APIs are documented in the
-[Migration from v1](/guide/migration-from-v1) guide. That page is the canonical
-reference; this page does not duplicate the individual items.
+When a public API is slated for removal it is first marked `@deprecated` in the
+type definitions, with the JSDoc tag pointing at the replacement. Deprecated APIs
+keep working for the remainder of the current major and are removed only on the
+next major bump, so a `@deprecated` warning is never a build break on its own.
 
-Summary of the categories covered there:
-
-- `useBloc` option `dependencies` renamed to `select`
-- `tracked()` standalone API removed
-- `@blac/adapter` package removed
-- `Bloc` event-driven class removed; use `Cubit`
-- `props` generic replaced by `args` / `deps` input lanes
-- `id` option removed; instance identity is derived from `args` (+ optional `static key`)
-- `Blac` static facade replaced by tree-shakeable registry functions
-- Plugin hook renames (`onInstanceCreated` → `onCreated`, etc.)
-- `onSystemEvent('stateChanged')` is now microtask-coalesced
-
-See [Migration from v1](/guide/migration-from-v1) for grep hints, before/after
-examples, and mechanical porting notes for each item.
+The changelog is the canonical record: every deprecation, the version that
+introduced it, and the version that removes it are listed there. Run your build
+with deprecation warnings enabled to surface anything you are still relying on
+before you upgrade across a major.

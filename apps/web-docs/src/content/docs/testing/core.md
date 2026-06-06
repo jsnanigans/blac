@@ -202,12 +202,12 @@ function createCubitStub<T extends StateContainerConstructor>(
 
 Creates a real instance of the cubit with optional pre-set state and method overrides. The stub is a fully functional instance — subscriptions, `emit`, `patch`, and `dispose` all work normally. Only the explicitly overridden methods are replaced.
 
-| Option    | Effect                                                                                                                                                                           |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `state`   | Seeds starting state. Merged via `patch()` for object state (provide only the fields you care about); replaced via `emit()` for non-object state.                                |
-| `methods` | Replaces specific methods on the instance. Everything else stays real.                                                                                                           |
+| Option    | Effect                                                                                                                                                                       |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `state`   | Seeds starting state. Merged via `patch()` for object state (provide only the fields you care about); replaced via `emit()` for non-object state.                            |
+| `methods` | Replaces specific methods on the instance. Everything else stays real.                                                                                                       |
 | `args`    | Runs the bloc's `init(args)` once via the same internal path the registry uses, so `init` and lifecycle hooks fire. Only allowed when the bloc declares a non-`void` `Args`. |
-| `deps`    | Pre-wires a [`deps`](/guide/inputs) slice so `onDepsChanged` fires during the test.                                                                                              |
+| `deps`    | Pre-wires a [`deps`](/guide/inputs) slice so `onDepsChanged` fires during the test.                                                                                          |
 
 The options apply in source order: `args` runs `init` first, then `state` overrides on top, then `methods` are swapped, then `deps` are wired (which may itself emit via `onDepsChanged`).
 
@@ -350,17 +350,6 @@ it('propagates async state', async () => {
 `flush()` awaits the microtask queue. If your code schedules work with `setTimeout`/`setInterval`, drive it with `vi.useFakeTimers()` + `vi.advanceTimersByTime()` instead — `flush()` will not advance real or fake timers. This is the mirror image of the once-per-flush batching described in [System Events](/core/system-events).
 :::
 
-<details>
-<summary>`flushBlocUpdates()` (deprecated alias)</summary>
-
-`flushBlocUpdates()` is a deprecated alias of `flush()` kept for backwards compatibility. New tests should call `flush()`.
-
-```ts
-import { flush } from '@blac/core/testing';
-```
-
-</details>
-
 ## Combining helpers
 
 The real power of these utilities comes from combining them. Here's a complete example testing a cubit that depends on two others:
@@ -451,7 +440,7 @@ The stub is a real `ShippingCubit` instance, so `cart`'s `.shipping.untracked()`
 
 - **Overriding a dependency _after_ the dependent bloc has already read it.** `depend()` resolves lazily on each call, but if your dependent bloc cached a value in `init()` from the dependency, register the override _before_ you `ensure` the dependent bloc.
 - **Forgetting that `depend()` uses `ensure` (no ref).** Within a test the registry is isolated, so this rarely bites — but in app code a depended-on bloc can be disposed if nothing holds a ref. See [Bloc Communication](/core/bloc-communication).
-:::
+  :::
 
 ## Testing keyed instances
 

@@ -192,12 +192,12 @@ describe('StateContainer $blac meta namespace', () => {
   describe('proxy safety (buildTrackedProxy pattern)', () => {
     // buildTrackedProxy invokes prototype getters with a Proxy(instance) as
     // the `this`-receiver. ES #private fields would throw here; the meta object
-    // and legacy getters close over the real instance / read TS-privates, so
-    // they must not throw and must return correct values.
+    // and prototype getters close over the real instance / read TS-privates,
+    // so they must not throw and must return correct values.
     function getterViaProxy(instance: object, key: string): unknown {
       const proto = Object.getPrototypeOf(instance);
       const receiver = new Proxy(instance, {});
-      // Walk the chain to find the getter (legacy members live on the proto).
+      // Walk the chain to find the getter (it lives on the prototype).
       let p: object | null = proto;
       while (p && p !== Object.prototype) {
         const desc = Object.getOwnPropertyDescriptor(p, key);

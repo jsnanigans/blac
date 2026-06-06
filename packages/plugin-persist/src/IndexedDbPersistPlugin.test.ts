@@ -106,7 +106,7 @@ function makeCtx(instance: StateContainer<any>): CtxMock {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('IndexedDbPersistPluginImpl — hook signature migration (C2)', () => {
+describe('IndexedDbPersistPluginImpl — hook signatures', () => {
   let adapter: MockAdapter;
   let plugin: IndexedDbPersistPluginImpl;
   let bloc: CounterBloc;
@@ -131,7 +131,7 @@ describe('IndexedDbPersistPluginImpl — hook signature migration (C2)', () => {
   });
 
   // -------------------------------------------------------------------------
-  describe('onCreated (renamed from onInstanceCreated)', () => {
+  describe('onCreated', () => {
     it('calls startHydration on the context', () => {
       plugin.onCreated(ctx);
       expect(ctx._startHydrationFn).toHaveBeenCalledWith(bloc);
@@ -156,7 +156,7 @@ describe('IndexedDbPersistPluginImpl — hook signature migration (C2)', () => {
   });
 
   // -------------------------------------------------------------------------
-  describe('onStateChange (renamed from onStateChanged, now ctx-first + paths)', () => {
+  describe('onStateChange (ctx-first + paths)', () => {
     beforeEach(() => {
       // Initialize runtime by going through onCreated first
       plugin.onCreated(ctx);
@@ -301,7 +301,7 @@ describe('IndexedDbPersistPluginImpl — hook signature migration (C2)', () => {
   });
 
   // -------------------------------------------------------------------------
-  describe('onDestroyed (renamed from onInstanceDisposed)', () => {
+  describe('onDestroyed', () => {
     it('cancels pending timer so no save fires after destroy', async () => {
       plugin.onCreated(ctx);
       plugin.onStateChange(ctx, { count: 0 }, { count: 1 }, ALL_PATHS);
@@ -344,23 +344,23 @@ describe('IndexedDbPersistPluginImpl — hook signature migration (C2)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Storage-key stability — M2a acceptance criterion
-// Verifies that the key built via $blac.id is byte-identical to the key
-// that was previously built via instance.instanceId (same underlying field).
+// Storage-key stability
+// Verifies the default storage key is `<ClassName>:<$blac.id>` and that the
+// id used by the key function is `$blac.id`.
 // ---------------------------------------------------------------------------
 
-describe('IndexedDbPersistPluginImpl — storage key stability ($blac migration)', () => {
-  it('defaultKey format is unchanged: "<ClassName>:<instanceId>"', () => {
+describe('IndexedDbPersistPluginImpl — storage key stability', () => {
+  it('defaultKey format is "<ClassName>:<id>"', () => {
     const bloc = new CounterBloc();
 
-    // The legacy instanceId delegate was deleted in the $blac migration —
-    // $blac.id is now the only accessor for the instance id.
+    // `$blac.id` is the only accessor for the instance id; there is no
+    // `instanceId` member on the instance.
     expect((bloc as any).instanceId).toBeUndefined();
     expect(bloc.$blac.id).toBeTypeOf('string');
 
     // The plugin's defaultKey builds: `${ClassName}:${$blac.id}`
     // Capture the key that onCreated assigns to runtime.key and compare
-    // against the pre-migration formula applied to the same instance.
+    // against that formula applied to the same instance.
     const adapter = makeAdapter();
     const plugin = new IndexedDbPersistPluginImpl({ adapter });
     plugin.persist(CounterBloc);
@@ -372,7 +372,7 @@ describe('IndexedDbPersistPluginImpl — storage key stability ($blac migration)
     expect(status).toBeDefined();
     if (!status) throw new Error('status must be defined after onCreated');
 
-    // Pre-migration key formula (now asserted against the live $blac.id):
+    // Key formula asserted against the live $blac.id:
     const expectedKey = `${bloc.constructor.name}:${bloc.$blac.id}`;
     expect(status.key).toBe(expectedKey);
 

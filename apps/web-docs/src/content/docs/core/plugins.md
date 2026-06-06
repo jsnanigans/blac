@@ -69,19 +69,6 @@ The interface also declares `onRefAcquired(ctx, refId)`, `onRefReleased(ctx, ref
 
 </details>
 
-:::caution[Breaking change from v1]
-Hook names were renamed for clarity and consistency. The `ctx` (context) parameter is now **first** on every hook. Update any existing plugins:
-
-| v1 name              | v2 name             | Notes                              |
-| -------------------- | ------------------- | ---------------------------------- |
-| `onInstanceCreated`  | `onCreated`         | `ctx` is now the first param       |
-| `onInstanceDisposed` | `onDestroyed`       | `ctx` is now the first param       |
-| `onStateChanged`     | `onStateChange`     | New `paths` 4th param; `ctx` first |
-| _(not present)_      | `onHydrationChange` | New in v2                          |
-
-For the full v1 → v2 migration (including non-plugin changes), see [Migrating from v1](/guide/migration-from-v1).
-:::
-
 ## Installing a plugin
 
 `getPluginManager()` returns the singleton `PluginManager` bound to the global registry. Call it once, near app startup, to install your plugins.

@@ -3,34 +3,17 @@ import type { GetterInfo } from '../types';
 
 const BASE_GETTERS = new Set([
   'state',
-  'dependencies',
   // `deps` is the NON-serializable lane by design — it holds DOM refs,
   // callbacks, and controllers. Evaluating + serializing it would drag a live
   // DOM node (and, via React's `__reactFiber$` expando, the entire fiber tree)
   // through the serializer and freeze the tab. Never touch it.
   'deps',
   'args',
-  // Former legacy public getters removed from StateContainer in M5 (the $blac
-  // meta-namespace migration). Kept here as a defensive exclusion so that if a
-  // userland subclass declares a getter with one of these names it does not
-  // appear in the devtools getter panel.
-  'isDisposed',
-  'hydrationStatus',
-  'hydrationError',
-  'isHydrated',
-  'changedWhileHydrating',
-  // StructuralContainer internals added in C2 migration — not user-defined.
+  // StructuralContainer internals — not user-defined.
   'interner',
   'channel',
   'consumerCount',
-  // Former identity members removed from StateContainer in M5 (the $blac
-  // meta-namespace migration). Kept as a defensive exclusion for the same
-  // reason as above. `$blac` is the reserved meta namespace and must always
-  // be excluded.
-  'name',
-  'debug',
-  'instanceId',
-  'createdAt',
+  // `$blac` is the reserved meta namespace and must always be excluded.
   '$blac',
 ]);
 

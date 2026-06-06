@@ -21,10 +21,9 @@ export interface InstanceMetadata {
 /**
  * Per-event context delivered to plugin hooks.
  *
- * Per Decision 6 (C2 migration): `PluginContext` is per-container — it
- * identifies the bloc, not the event. Per-event data (e.g. the changed
- * `PathSet`) is passed via dedicated method arguments, never via the
- * context object.
+ * `PluginContext` is per-container — it identifies the bloc, not the event.
+ * Per-event data (e.g. the changed `PathSet`) is passed via dedicated method
+ * arguments, never via the context object.
  *
  * The `container` field is the focal bloc for the event. For `onInstall`
  * (which fires once at install time, not bound to any container) the
@@ -76,9 +75,9 @@ export interface PluginContext {
 /**
  * BlaC plugin hook surface.
  *
- * Per C2 (Decision 6), state-change events carry the `PathSet` of paths
- * that changed in the flush. Lifecycle events (`onCreated`, `onDestroyed`)
- * are not tied to a state change and so do not carry `paths`.
+ * State-change events carry the `PathSet` of paths that changed in the flush.
+ * Lifecycle events (`onCreated`, `onDestroyed`) are not tied to a state change
+ * and so do not carry `paths`.
  *
  * Hook firing model:
  * - `onCreated` fires synchronously when a container is first acquired.
@@ -88,9 +87,9 @@ export interface PluginContext {
  * - `onDestroyed` fires synchronously when a container is disposed (after
  *   its system 'dispose' event).
  *
- * Legacy ref/deps hooks (`onRefAcquired`, `onRefReleased`, `onDepsChanged`)
- * are retained for devtools-connect compatibility — they are orthogonal to
- * the C2 event payload contract.
+ * The ref/deps hooks (`onRefAcquired`, `onRefReleased`, `onDepsChanged`) are
+ * devtools-only — they drive devtools-connect and are orthogonal to the
+ * state-change event payload.
  */
 export interface BlacPlugin {
   readonly name: string;
@@ -140,13 +139,13 @@ export interface BlacPlugin {
 
   /**
    * @internal Devtools-only — fires when a named ref is acquired.
-   * Not part of the C2 event payload contract.
+   * Not part of the state-change event payload.
    */
   onRefAcquired?(ctx: PluginContext, refId: string): void;
 
   /**
    * @internal Devtools-only — fires when a named ref is released.
-   * Not part of the C2 event payload contract.
+   * Not part of the state-change event payload.
    */
   onRefReleased?(ctx: PluginContext, refId: string): void;
 

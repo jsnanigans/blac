@@ -11,7 +11,7 @@ import type {
   ExtractState,
   StateContainerConstructor,
 } from '../types/utilities';
-import { APPLY_DEPS, EMIT, INIT_CONFIG, REMOVE_DEPS_OWNER } from './symbols';
+import { APPLY_DEPS, INIT_CONFIG, REMOVE_DEPS_OWNER } from './symbols';
 import { type EqualityFn, getBlacConfig } from '../config';
 import { getClassEquality } from '../utils/static-props';
 import { type BlacMeta, createMeta, META_BRAND } from './meta';
@@ -61,8 +61,6 @@ export interface StateContainerConfig {
 }
 
 export type HydrationStatus = 'idle' | 'hydrating' | 'hydrated' | 'error';
-
-type StateListener<S> = (state: S) => void;
 
 export type SystemEvent = 'stateChanged' | 'dispose' | 'hydrationChanged';
 
@@ -117,11 +115,9 @@ function shallowEqualRecord(
  *   - registry integration (config-driven equality, emit-rate circuit breaker)
  *
  * Subscribers can attach via:
- *   - `subscribe(listener)` — legacy state listener (back-compat); fires on
- *     every flush with the latest state.
  *   - `onSystemEvent('stateChanged' | 'dispose' | 'hydrationChanged', cb)` —
  *     coarse lifecycle events.
- *   - `this.channel.subscribe(interest, cb)` — path-scoped (new code).
+ *   - `this.channel.subscribe(interest, cb)` — path-scoped.
  */
 export abstract class StateContainer<
   S extends object = any,
@@ -138,7 +134,7 @@ export abstract class StateContainer<
   // ---------------------------------------------------------------------------
   // Per-consumer deps slices (APPLY_DEPS / REMOVE_DEPS_OWNER)
   //
-  // Kept until D0 ports `useBloc` off the adapter surface. See A2 audit:
+  // Framework adapters wire these per consumer:
   // `@blac/react/src/useBloc.ts` reads APPLY_DEPS / REMOVE_DEPS_OWNER.
   // ---------------------------------------------------------------------------
 
@@ -247,11 +243,6 @@ export abstract class StateContainer<
   private _emitCount = 0;
   private _emitRateWarned = false;
 
-  // Legacy listener-style subscribers (subscribe(listener)). Fires on every
-  // channel flush with the latest state. Kept for back-compat with code that
-  // hasn't migrated to `channel.subscribe(interest, cb)`.
-  private readonly _listeners = new Set<StateListener<S>>();
-
   // System-event handlers (stateChanged | dispose | hydrationChanged).
   private readonly _systemEventHandlers = new Map<
     SystemEvent,
@@ -263,11 +254,11 @@ export abstract class StateContainer<
 
   // Pending state-change capture; set by emit(), drained by the channel-bridge
   // callback on flush. Coalesced: multiple emits in one tick collapse to one
-  // (prev = the first prev, next = the latest next), matching Decision 7.
+  // (prev = the first prev, next = the latest next).
   private _pendingChange: { prev: S; next: S } | null = null;
 
   // Unsubscribe from the internal bridge that turns channel flushes into
-  // legacy listener calls + 'stateChanged' system events.
+  // 'stateChanged' system events.
   private _bridgeUnsub: (() => void) | null = null;
 
   private _registry = getRegistry();
@@ -351,7 +342,7 @@ export abstract class StateContainer<
   constructor(initialState: S, options?: StructuralContainerOptions) {
     super(initialState, options);
 
-    // Bridge channel flushes -> legacy listeners + 'stateChanged' system event.
+    // Bridge channel flushes -> 'stateChanged' system event.
     // Interest is ALL_PATHS so we wake on every flush. Coalesced via
     // `_pendingChange`: if no emit happened (e.g. a no-op patch), the bridge
     // sees null and skips.
@@ -406,25 +397,6 @@ export abstract class StateContainer<
   }
 
   // ---------------------------------------------------------------------------
-  // Subscribe (legacy listener-style) — back-compat.
-  //
-  // Old surface: subscribe(listener: (state) => void). New code should use
-  // `this.channel.subscribe(interest, cb)` directly. This override shadows
-  // `StructuralContainer.subscribe`'s richer signature on purpose — only one
-  // legacy consumer pattern exists (per A2 audit: tracking/, watch/, adapter).
-  // ---------------------------------------------------------------------------
-
-  subscribe(listener: StateListener<S>): () => void {
-    if (this._disposed) {
-      throw new Error(`Cannot subscribe to disposed container ${this._name}`);
-    }
-    this._listeners.add(listener);
-    return () => {
-      this._listeners.delete(listener);
-    };
-  }
-
-  // ---------------------------------------------------------------------------
   // Lifecycle: dispose
   // ---------------------------------------------------------------------------
 
@@ -457,7 +429,6 @@ export abstract class StateContainer<
     this._bridgeUnsub?.();
     this._bridgeUnsub = null;
 
-    this._listeners.clear();
     this._systemEventHandlers.clear();
     this._pendingChange = null;
 
@@ -479,7 +450,7 @@ export abstract class StateContainer<
   //   - `_changedWhileHydrating` flag tracking
   //   - registry-level stateChanged notification (microtask-deferred)
   //   - pending-change capture so the channel-bridge callback can fire the
-  //     legacy listeners + 'stateChanged' system event with prev/next.
+  //     'stateChanged' system event with prev/next.
   //
   // The actual change-detection (path diff, channel mark, single-consumer
   // skip) is delegated to `super.emit`.
@@ -492,9 +463,9 @@ export abstract class StateContainer<
   /**
    * Override of `StructuralContainer.patch` that routes through the
    * StateContainer concerns: disposed guard, dev-only emit-rate check,
-   * `_changedWhileHydrating` flag, pending-change capture (so legacy
-   * listeners and `stateChanged` system events see the merged prev/next),
-   * and the registry-level `stateChanged` notification. We still call
+   * `_changedWhileHydrating` flag, pending-change capture (so `stateChanged`
+   * system events see the merged prev/next), and the registry-level
+   * `stateChanged` notification. We still call
    * `super.patch` so path-marking semantics (the whole point of patch) are
    * preserved.
    */
@@ -511,8 +482,8 @@ export abstract class StateContainer<
 
     // Pre-spread skip: if every top-level key in `partial` is already
     // `Object.is`-equal to the current state's value at that key, the
-    // merge is a structural no-op — skip entirely. Matches the pre-C0
-    // `Cubit.patch` semantics (per-key Object.is short-circuit). This is
+    // merge is a structural no-op — skip entirely (per-key Object.is
+    // short-circuit). This is
     // shallow on purpose; deep no-op detection lives in `super.patch`'s
     // path-diff path which still wakes consumers if anything truly moved.
     let allEqual = true;
@@ -553,15 +524,6 @@ export abstract class StateContainer<
     }
   }
 
-  /**
-   * @internal @deprecated Symbol-keyed alias for `emit`. Kept only so legacy
-   * in-package tests that index with `[EMIT]` typecheck/run unchanged. C5
-   * removes this along with the `EMIT` symbol.
-   */
-  protected [EMIT](next: S): void {
-    this.applyState(next, 'default');
-  }
-
   private applyState(next: S, source: 'default' | 'hydration'): void {
     if (this._disposed) {
       throw new Error(
@@ -597,19 +559,16 @@ export abstract class StateContainer<
 
   /**
    * Called by the channel-bridge subscriber on each flush. Drains the
-   * pending change (if any) into legacy listeners and the 'stateChanged'
-   * system event. No pending change == flush from a no-op patch == skip.
+   * pending change (if any) into the 'stateChanged' system event.
+   * No pending change == flush from a no-op patch == skip.
    */
   private _drainPending(): void {
     const pending = this._pendingChange;
     if (!pending) return;
     this._pendingChange = null;
 
-    // Iterate against a fixed-size snapshot so a listener that subscribes a
-    // new listener mid-drain does not get the late one called in this flush.
-    // (Matches the pre-C0 contract; restored by counting against the size
-    // captured at drain entry.) Order matches pre-C0: 'stateChanged' system
-    // event fires *before* legacy subscribe() listeners.
+    // Iterate against a fixed-size snapshot so a handler that subscribes a
+    // new handler mid-drain does not get the late one called in this flush.
     const handlers = this._systemEventHandlers.get('stateChanged');
     if (handlers && handlers.size > 0) {
       const payload = { state: pending.next, previousState: pending.prev };
@@ -624,20 +583,6 @@ export abstract class StateContainer<
             `[${this._name}] Error in system event handler:`,
             error,
           );
-        }
-      }
-    }
-
-    if (this._listeners.size > 0) {
-      const current = this.state;
-      let count = 0;
-      const size = this._listeners.size;
-      for (const listener of this._listeners) {
-        if (++count > size) break;
-        try {
-          listener(current);
-        } catch (error) {
-          console.error(`[${this._name}] Error in listener:`, error);
         }
       }
     }

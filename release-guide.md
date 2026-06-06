@@ -87,5 +87,5 @@ No manual diffing required.
 | `pnpm release`         | Interactive menu for all of the above             |
 
 - Config: `.changeset/config.json` (`baseBranch: main`, `access: public`).
-- All `@blac/*` and `@dirtytalk/*` packages under `packages/*` publish publicly. Everything in `apps/*` and the `@9amhealth/blac-compat` shim are `private` **and** listed in the changeset `ignore` array, so they are never versioned or published to npm.
+- All `@blac/*` and `@dirtytalk/*` packages under `packages/*` publish publicly. Everything in `apps/*` is `private` **and** listed in the changeset `ignore` array, so it is never versioned or published to npm.
 - Requires npm auth with publish rights to the `@blac` and `@dirtytalk` scopes.

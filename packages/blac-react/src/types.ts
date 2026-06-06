@@ -23,12 +23,11 @@ type ArgsOption<T extends StateContainerConstructor> =
  *
  * @remarks
  * Instance identity is derived entirely from `args`. For a per-mount private
- * instance (like the old `instanceId: useId()` pattern) pass a stable unique
- * object: `{ args: { _id: useId() } }`.
+ * instance, pass a stable unique object: `{ args: { _id: useId() } }`.
  *
- * The `dependencies` option from BlaC v1 has been removed — use `select`
- * instead. Codemod: rename `dependencies` → `select`; the return value is
- * still a tuple/array compared per-index via `Object.is`.
+ * To re-render on a fixed set of values rather than on auto-tracked reads, pass
+ * `select` — it returns a tuple/array that is compared per-index via
+ * `Object.is`.
  */
 export type UseBlocOptions<TBloc extends StateContainerConstructor> =
   ArgsOption<TBloc> & {

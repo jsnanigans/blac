@@ -55,5 +55,5 @@ export const draftPersistPlugin = createIndexedDbPersistPlugin({
 );
 
 export const DRAFT_INSTANCE_ID = 'demo-draft';
-// After args-identity migration, resolved key = static key(args) = args.id
+// Instance identity comes from args, so the resolved key = key(args) = args.id.
 export const DRAFT_PERSIST_KEY = `examples:draft:${DRAFT_INSTANCE_ID}`;

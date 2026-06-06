@@ -18,7 +18,6 @@ import {
   getStats,
   getRefCount,
 } from '../registry';
-import { EMIT } from './symbols';
 
 // Test implementations.
 // Args carry an optional `id`; `static key` derives the instance key from it
@@ -32,7 +31,7 @@ class CounterBloc extends StateContainer<{ count: number }, { id?: string }> {
   static key = (a?: { id?: string }) => a?.id ?? 'default';
 
   increment = () => {
-    this[EMIT]({ count: this.state.count + 1 });
+    this.emit({ count: this.state.count + 1 });
   };
 }
 
@@ -47,7 +46,7 @@ class UserBloc extends StateContainer<
   static key = (a?: { id?: string }) => a?.id ?? 'default';
 
   setName = (name: string) => {
-    this[EMIT]({ ...this.state, name });
+    this.emit({ ...this.state, name });
   };
 }
 

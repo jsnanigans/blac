@@ -47,8 +47,7 @@ describe('useBloc - filtered list with getter', () => {
     { id: '3', name: 'Charlie', active: false },
   ];
 
-  // NOTE: The old getter-tracking model was deleted in C0/D0. The new
-  // auto-track records paths via the state proxy only; accessing a bloc
+  // NOTE: Auto-track records paths via the state proxy only; accessing a bloc
   // getter like `bloc.filteredProfiles` does NOT register interest in the
   // underlying state path. These tests therefore access `state.profiles`
   // via the proxy (which records `profiles` as a tracked path) and only

@@ -47,7 +47,7 @@ const depRefId = (consumerId: string): string => `useBloc@${consumerId}:dep`;
  *   {@link trackRender} + the container's path-scoped `DirtyChannel`.
  * - **Manual select**: pass `options.select` to opt out of auto-tracking.
  *   The hook re-renders only when the returned array's elements change
- *   (per-index `Object.is`). This replaces the v1 `dependencies` option.
+ *   (per-index `Object.is`).
  *
  * Lifecycle:
  * - The bloc is acquired from the registry on mount and released on
@@ -74,7 +74,7 @@ const depRefId = (consumerId: string): string => `useBloc@${consumerId}:dep`;
  * const [state, bloc] = useBloc(MyBloc);
  * ```
  *
- * @example Manual select (replaces v1 `dependencies`)
+ * @example Manual select
  * ```ts
  * const [state, bloc] = useBloc(MyBloc, {
  *   select: (state) => [state.count],
@@ -226,10 +226,10 @@ export function useBloc<
   // ---------------------------------------------------------------------------
   // Channel subscription
   //
-  // We bypass `bloc.subscribe(listener)` (the legacy listener surface, which
-  // StateContainer overrides) and talk directly to `bloc.channel`. The channel
-  // is the StructuralContainer's path-scoped DirtyChannel; subscribing with a
-  // dynamic interest function lets us narrow wakeups per consumer.
+  // We talk directly to `bloc.channel` — the StructuralContainer's path-scoped
+  // DirtyChannel. Subscribing with a dynamic interest function lets us narrow
+  // wakeups per consumer, so a component only re-renders when a path it
+  // actually read changes (rather than on every state change).
   // ---------------------------------------------------------------------------
   const [, force] = useReducer((x: number) => x + 1, 0);
   const pathRef = useRef<PathSet>(emptyPathSet());

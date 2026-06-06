@@ -14,6 +14,7 @@ import {
 import { clearAll } from '../registry';
 import { setRegistry } from '../registry/config';
 import { INIT_CONFIG } from './symbols';
+import { ALL_PATHS } from '@dirtytalk/structural';
 
 class TestCubit extends Cubit<{ count: number }> {
   constructor() {
@@ -42,7 +43,10 @@ describe('StateContainer performance optimizations', () => {
     it('direct subscribers still called when no system event handlers exist', async () => {
       const cubit = new TestCubit();
       const listener = vi.fn();
-      cubit.subscribe(listener);
+      cubit.channel.subscribe(
+        () => ALL_PATHS,
+        () => listener(cubit.state),
+      );
 
       for (let i = 1; i <= 100; i++) {
         cubit.patch({ count: i });
@@ -50,8 +54,7 @@ describe('StateContainer performance optimizations', () => {
       await flushMicrotasks();
 
       // 100 synchronous patches coalesce into a single channel flush →
-      // one listener call with the final state. Pre-C0 fired once per
-      // patch synchronously.
+      // one listener call with the final state.
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenLastCalledWith({ count: 100 });
       expect(cubit.state.count).toBe(100);

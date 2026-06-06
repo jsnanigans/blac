@@ -1,14 +1,13 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
 import { StateContainer } from './StateContainer';
-import { EMIT } from './symbols';
 
 class HydratableContainer extends StateContainer<{ v: number }> {
   constructor() {
     super({ v: 0 });
   }
   doEmit(state: { v: number }) {
-    this[EMIT](state);
+    this.emit(state);
   }
 }
 

@@ -281,8 +281,7 @@ export class PluginManager {
    *
    * Note: `prev` is captured once and reused across plugins — every
    * plugin sees the same `prev`/`next`/`paths` regardless of dispatch
-   * order, matching the "snapshot prev once per flush" invariant called
-   * out in the C2 spec pitfalls.
+   * order, matching the "snapshot prev once per flush" invariant.
    */
   private dispatchStateChange(
     container: StateContainer<any, any, any>,
@@ -317,7 +316,7 @@ export class PluginManager {
    *
    * Builds a fresh `PluginContext` per dispatch (instance becomes
    * `ctx.container`), so plugins can reach the focal bloc through
-   * `ctx.container` per Decision 6.
+   * `ctx.container`.
    */
   private notifyPlugins(
     hookName: Exclude<keyof BlacPlugin, 'onStateChange'>,
@@ -347,7 +346,7 @@ export class PluginManager {
    * so we create one per dispatch rather than caching per container.
    * This sidesteps the lifetime question of "when do we evict a cached
    * context?" and keeps `paths`-vs-`container` lifetimes cleanly
-   * separated per the C2 spec.
+   * separated.
    */
   private buildContext(
     container: StateContainer<any, any, any> | undefined,

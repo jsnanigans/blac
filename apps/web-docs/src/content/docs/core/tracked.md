@@ -7,8 +7,8 @@ Tracking is how BlaC knows which consumers care about a given state change. Inst
 
 This page explains the mechanism: what gets recorded, how the recording proxy works, how getters fold into it, and how it maps onto re-renders. If you only want the React-facing rules, jump to [Dependency Tracking](/react/dependency-tracking); for the design rationale, see the [Mental Model](/guide/mental-model).
 
-:::caution[The standalone `tracked()` function was removed in v2]
-There used to be a `tracked()` helper you could call explicitly. It is gone — it leaked internal details and is no longer needed. Tracking is now **automatic and unconditional**: there is no `@tracked` decorator, no `autoTrack` option, and nothing to opt into. The recording happens for you whenever a consumer reads state. To see which paths trigger re-renders at runtime, use the [BlaC DevTools](/plugins/devtools). To narrow or opt out of tracking in React, use the `select` option (see below).
+:::caution[Tracking is automatic — there is nothing to opt into]
+Tracking is **automatic and unconditional**: there is no `tracked()` helper, no `@tracked` decorator, no `autoTrack` option, and nothing to opt into. The recording happens for you whenever a consumer reads state. To see which paths trigger re-renders at runtime, use the [BlaC DevTools](/plugins/devtools). To narrow or opt out of tracking in React, use the `select` option (see below).
 :::
 
 ## What tracking is

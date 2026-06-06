@@ -199,25 +199,20 @@ export function withBlocMethod<T extends StateContainerConstructor>(
   return instance;
 }
 
-// --- flushBlocUpdates ---
+// --- flush ---
 
 /**
- * Drain pending microtasks so any channel-flushed effects (subscribe()
- * listeners, `onSystemEvent('stateChanged')` handlers, plugin hooks) run
+ * Drain pending microtasks so any channel-flushed effects (channel
+ * subscribers, `onSystemEvent('stateChanged')` handlers, plugin hooks) run
  * before the next assertion.
  *
  * The default `MicrotaskScheduler` coalesces emits within a tick; tests
- * that emit and then assert on listener side-effects need `await flush()`
- * (or its alias `flushBlocUpdates()`) between the two.
+ * that emit and then assert on subscriber side-effects need `await flush()`
+ * between the two.
  */
 export async function flush(): Promise<void> {
   // queueMicrotask wins the race against the channel's own queued flush —
   // we resolve after the channel has drained its current pending flush.
   await Promise.resolve();
   await Promise.resolve();
-}
-
-/** @deprecated Alias for `flush()`. */
-export async function flushBlocUpdates(): Promise<void> {
-  await flush();
 }

@@ -18,10 +18,10 @@ import type { HydrationStatus } from './StateContainer';
 import type { StateContainerConstructor } from '../types/utilities';
 
 /**
- * Hydration sub-surface of {@link BlacMeta}. Mirrors the legacy
- * `beginHydration`/`applyHydratedState`/`finishHydration`/`failHydration`/
- * `waitForHydration` methods and the `hydrationStatus`/`hydrationError`/
- * `isHydrated`/`changedWhileHydrating` getters, namespaced under `$blac`.
+ * Hydration sub-surface of {@link BlacMeta}. Exposes the container's
+ * hydration state machine — the `begin`/`apply`/`finish`/`fail`/`wait`
+ * methods and the `status`/`error`/`isHydrated`/`changedWhileHydrating`
+ * getters — namespaced under `$blac`.
  */
 export interface BlacHydration<S extends object> {
   readonly status: HydrationStatus;
@@ -29,20 +29,17 @@ export interface BlacHydration<S extends object> {
   readonly isHydrated: boolean;
   readonly changedWhileHydrating: boolean;
   begin(): void;
-  /** Was `applyHydratedState`. */
   apply(next: S): boolean;
   finish(): void;
   fail(error: Error): void;
-  /** Was `waitForHydration`. */
   wait(): Promise<void>;
 }
 
 /**
- * The reserved `$blac` instance member on every `StateContainer`. Collapses
- * the previously-scattered identity/lifecycle/hydration surface
- * (`name`, `instanceId`, `debug`, `createdAt`, `isDisposed`, `dependencies`,
- * and the hydration methods) under one namespace, freeing the generic names
- * for userland blocs.
+ * The reserved `$blac` instance member on every `StateContainer`. Gathers the
+ * container's identity/lifecycle/hydration surface (`name`, `id`, `debug`,
+ * `createdAt`, `disposed`, `dependencies`, and the hydration methods) under one
+ * namespace, keeping the generic names free for userland blocs.
  *
  * The object is allocated once per container, frozen, branded, and exposes
  * live getters that read the container's current `_`-private fields — values
@@ -50,11 +47,9 @@ export interface BlacHydration<S extends object> {
  */
 export interface BlacMeta<S extends object = any> {
   readonly name: string;
-  /** Was `instanceId`. */
   readonly id: string;
   readonly debug: boolean;
   readonly createdAt: number;
-  /** Was `isDisposed`. */
   readonly disposed: boolean;
   readonly dependencies: ReadonlyMap<StateContainerConstructor, string>;
   readonly hydration: BlacHydration<S>;
@@ -76,9 +71,8 @@ const EMPTY_DEPS: ReadonlyMap<StateContainerConstructor, string> = new Map();
  * reachable cross-module by name; `createMeta` performs a single internal cast
  * to this shape. This is purely a typing bridge — zero runtime indirection.
  *
- * Hydration methods are referenced by their legacy names: the `$blac.hydration`
- * surface delegates to the exact same implementations, so there is one source
- * of truth for the hydration state machine.
+ * The `$blac.hydration` surface delegates to these `_`-private methods, so the
+ * container has a single source of truth for the hydration state machine.
  */
 interface MetaInternals<S extends object> {
   _name: string;

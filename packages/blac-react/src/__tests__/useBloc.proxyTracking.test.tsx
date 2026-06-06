@@ -173,7 +173,7 @@ describe('useBloc with Proxy Tracking', () => {
     // only registered user.profile.bio. Structural-tracking records every
     // intermediate (`user`, `user.profile`, `user.profile.bio`) so a change
     // at `user` *does* wake the consumer — that is the documented behavior
-    // (see C0/D0 plan: tree-pulses-up semantics on the consumer side too).
+    // (tree-pulses-up semantics on the consumer side too).
     // Verify the displayed value remains correct.
     await act(async () => {
       bloc.updateUserName('Bob');

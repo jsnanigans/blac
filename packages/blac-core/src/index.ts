@@ -20,18 +20,9 @@ export type {
 export { Cubit } from './core/Cubit';
 /**
  * @internal symbols — read by `@blac/react` (APPLY_DEPS / REMOVE_DEPS_OWNER)
- * and in-package tests (EMIT / INIT_CONFIG).
- *
- * `EMIT` is deprecated: zero external consumers, only in-package tests still
- * index `[EMIT]`. Kept as a thin alias for `emit()` so those tests typecheck
- * and run unchanged.
+ * and in-package tests (INIT_CONFIG).
  */
-export {
-  EMIT,
-  APPLY_DEPS,
-  REMOVE_DEPS_OWNER,
-  INIT_CONFIG,
-} from './core/symbols';
+export { APPLY_DEPS, REMOVE_DEPS_OWNER, INIT_CONFIG } from './core/symbols';
 
 // `$blac` meta namespace (identity / lifecycle / hydration).
 export type { BlacMeta, BlacHydration } from './core/meta';

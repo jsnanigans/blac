@@ -4,6 +4,7 @@ import { Cubit } from './Cubit';
 import { ensure } from '../registry';
 import { configureBlac, resetBlacConfig, shallowEqualState } from '../config';
 import { blac } from '../decorators';
+import { ALL_PATHS } from '@dirtytalk/structural';
 
 class CounterCubit extends Cubit<{ count: number; label: string }> {
   constructor() {
@@ -27,7 +28,10 @@ describe('StateContainer shallow-equal short-circuit', () => {
   it('skips notify when emit() passes a structurally equal object', () => {
     const c = ensure(CounterCubit);
     const listener = vi.fn();
-    c.subscribe(listener);
+    c.channel.subscribe(
+      () => ALL_PATHS,
+      () => listener(c.state),
+    );
 
     c.emit({ ...c.state });
     c.emit({ count: 0, label: 'a' });
@@ -39,7 +43,10 @@ describe('StateContainer shallow-equal short-circuit', () => {
   it('proceeds when at least one key differs', async () => {
     const c = ensure(CounterCubit);
     const listener = vi.fn();
-    c.subscribe(listener);
+    c.channel.subscribe(
+      () => ALL_PATHS,
+      () => listener(c.state),
+    );
 
     c.emit({ ...c.state, count: 1 });
     await flush();
@@ -54,7 +61,10 @@ describe('StateContainer shallow-equal short-circuit', () => {
 
     const c = ensure(CounterCubit);
     const listener = vi.fn();
-    c.subscribe(listener);
+    c.channel.subscribe(
+      () => ALL_PATHS,
+      () => listener(c.state),
+    );
 
     c.emit({ count: 999, label: 'z' });
 
@@ -77,7 +87,10 @@ describe('StateContainer shallow-equal short-circuit', () => {
 
     const c = ensure(OverrideCubit);
     const listener = vi.fn();
-    c.subscribe(listener);
+    c.channel.subscribe(
+      () => ALL_PATHS,
+      () => listener(c.state),
+    );
 
     c.emit({ n: 0 });
     await flush();
@@ -103,7 +116,10 @@ describe('StateContainer shallow-equal short-circuit', () => {
   it('primitive Cubit state still emits on equal primitive (falls through to false)', async () => {
     const c = ensure(PrimitiveCubit);
     const listener = vi.fn();
-    c.subscribe(listener);
+    c.channel.subscribe(
+      () => ALL_PATHS,
+      () => listener(c.state),
+    );
 
     // 0 -> 0 still bails because of the `===` early return, not shallowEqualState
     c.emit(0);
@@ -119,7 +135,10 @@ describe('StateContainer shallow-equal short-circuit', () => {
   it('patch() pre-spread skip still fires for no-op patches', () => {
     const c = ensure(CounterCubit);
     const listener = vi.fn();
-    c.subscribe(listener);
+    c.channel.subscribe(
+      () => ALL_PATHS,
+      () => listener(c.state),
+    );
     const before = c.state;
 
     c.patch({ count: 0 });

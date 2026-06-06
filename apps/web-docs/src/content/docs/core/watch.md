@@ -256,15 +256,15 @@ function attachChart(el: HTMLElement) {
 }
 ```
 
-## `watch` vs `subscribe`
+## `watch` vs `channel.subscribe`
 
 Both observe a single container outside React; both fire once per microtask flush. The differences:
 
 - **`watch`** gives you the **instance** (so getters and methods are available), accepts multiple blocs, supports `instance()` references and the `watch.STOP` sentinel, and fires once immediately on setup.
-- **`subscribe`** is the lower-level legacy listener on a container; it gives you the raw **state** value and is single-bloc only. New code should prefer `watch`, or `container.channel.subscribe(interest, cb)` when you need path-scoped interest.
+- **`channel.subscribe`** is the lower-level path-scoped surface on a container's channel. You pass an _interest_ thunk (the paths you care about, or `ALL_PATHS` for everything) and a callback that fires when a matching path changes. It does not fire on setup and gives you the changed path set rather than the instance — read `state` off the container yourself. Prefer `watch` for whole-state observation; reach for `channel.subscribe` when you need path-scoped interest.
 
 ```ts twoslash
-import { watch, ensure } from '@blac/core';
+import { watch, ensure, ALL_PATHS } from '@blac/core';
 import { Cubit } from '@blac/core';
 
 class UserCubit extends Cubit<{ name: string }> {
@@ -273,14 +273,19 @@ class UserCubit extends Cubit<{ name: string }> {
   }
 }
 
-// subscribe: raw state, single bloc
-const unsub = ensure(UserCubit).subscribe((state) => {
-  console.log(state.name);
-});
+const user = ensure(UserCubit);
+
+// channel.subscribe: path-scoped, fires on change (not on setup)
+const unsub = user.channel.subscribe(
+  () => ALL_PATHS,
+  () => {
+    console.log(user.state.name);
+  },
+);
 
 // watch: the instance, fires immediately, supports STOP and multiple blocs
-const stop = watch(UserCubit, (user) => {
-  console.log(user.state.name);
+const stop = watch(UserCubit, (u) => {
+  console.log(u.state.name);
 });
 ```
 

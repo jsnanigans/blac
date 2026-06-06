@@ -4,7 +4,6 @@ import { buildData, resetId } from '../../shared/data';
 // Lift the dev-only emit-rate circuit breaker. Several ops intentionally emit
 // 1000× in a tight loop; the breaker is a soft warn-once runaway-loop guard,
 // not a measurement gate, and its per-emit bookkeeping would only add noise.
-// Matches `migration-bench/run.ts`.
 configureBlac({ maxEmitsPerSecond: Number.POSITIVE_INFINITY });
 import type {
   CounterState,
@@ -335,11 +334,11 @@ export const blacPureState: PureStateBenchmark = {
 
     // ── State Read Overhead ──
     //
-    // Post-dirtytalk migration there is no read-time proxy: `bloc.state` is
-    // the raw structural snapshot and reads are plain property access. These
-    // ops mirror the equivalent Zustand/Redux operations (raw `getState()`
-    // reads) so the columns line up. Path-interest tracking now lives in the
-    // `DirtyChannel` (subscribe-time), measured by `migration-bench/run.ts`.
+    // There is no read-time proxy: `bloc.state` is the raw structural
+    // snapshot and reads are plain property access. These ops mirror the
+    // equivalent Zustand/Redux operations (raw `getState()` reads) so the
+    // columns line up. Path-interest tracking lives in the `DirtyChannel`
+    // (subscribe-time).
 
     'proxy track 1 field': (h) => {
       const { counter } = h as BlacHandle;

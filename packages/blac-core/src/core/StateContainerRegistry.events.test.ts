@@ -9,7 +9,6 @@ import {
 import { globalRegistry } from './StateContainerRegistry';
 import { acquire, clearAll } from '../registry';
 import { StateContainer } from './StateContainer';
-import { EMIT } from './symbols';
 
 class EventBloc extends StateContainer<{ n: number }, { id?: string }> {
   constructor() {
@@ -17,7 +16,7 @@ class EventBloc extends StateContainer<{ n: number }, { id?: string }> {
   }
   static key = (a?: { id?: string }) => a?.id ?? 'default';
   doEmit(state: { n: number }) {
-    this[EMIT](state);
+    this.emit(state);
   }
 }
 

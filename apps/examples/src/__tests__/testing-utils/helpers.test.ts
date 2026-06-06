@@ -4,7 +4,7 @@ import {
   blacTestSetup,
   withBlocState,
   withBlocMethod,
-  flushBlocUpdates,
+  flush,
 } from '@blac/core/testing';
 import {
   CounterCubit,
@@ -114,7 +114,7 @@ describe('withBlocMethod', () => {
   });
 });
 
-describe('flushBlocUpdates', () => {
+describe('flush', () => {
   it('flushes microtasks so async state changes are visible', async () => {
     const cubit = ensure(AsyncDataCubit);
     void cubit.fetchData();
@@ -122,14 +122,14 @@ describe('flushBlocUpdates', () => {
     // State is loading immediately
     expect(cubit.state.loading).toBe(true);
 
-    await flushBlocUpdates();
+    await flush();
     // After flush, the setTimeout(10ms) inside fetchData may not have resolved yet
-    // flushBlocUpdates flushes microtasks, not timers.
+    // flush() drains microtasks, not timers.
     // This tests that the function itself resolves.
     expect(cubit.state.loading).toBe(true);
   });
 
   it('resolves even when no updates are pending', async () => {
-    await expect(flushBlocUpdates()).resolves.toBeUndefined();
+    await expect(flush()).resolves.toBeUndefined();
   });
 });

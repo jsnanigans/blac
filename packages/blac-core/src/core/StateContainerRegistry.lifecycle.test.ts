@@ -13,7 +13,7 @@ import {
   type LifecycleEvent,
 } from './StateContainerRegistry';
 import { acquire, release } from '../registry';
-import { EMIT, INIT_CONFIG } from './symbols';
+import { INIT_CONFIG } from './symbols';
 
 // ============ Test Implementations ============
 
@@ -25,11 +25,11 @@ class TestCubit extends StateContainer<{ value: number }, { id?: string }> {
   static key = (a?: { id?: string }) => a?.id ?? 'default';
 
   increment = () => {
-    this[EMIT]({ value: this.state.value + 1 });
+    this.emit({ value: this.state.value + 1 });
   };
 
   setValue = (value: number) => {
-    this[EMIT]({ value });
+    this.emit({ value });
   };
 }
 
