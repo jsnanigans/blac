@@ -360,16 +360,16 @@ export class PluginManager {
         instance: StateContainer<any, any, any>,
       ): InstanceMetadata => {
         return {
-          id: instance.instanceId,
+          id: instance.$blac.id,
           className: instance.constructor.name,
-          isDisposed: instance.isDisposed,
-          name: instance.name,
-          createdAt: instance.createdAt,
+          isDisposed: instance.$blac.disposed,
+          name: instance.$blac.name,
+          createdAt: instance.$blac.createdAt,
           state: instance.state,
-          hydrationStatus: instance.hydrationStatus,
-          isHydrated: instance.isHydrated,
-          hydrationError: instance.hydrationError,
-          changedWhileHydrating: instance.changedWhileHydrating,
+          hydrationStatus: instance.$blac.hydration.status,
+          isHydrated: instance.$blac.hydration.isHydrated,
+          hydrationError: instance.$blac.hydration.error,
+          changedWhileHydrating: instance.$blac.hydration.changedWhileHydrating,
           args: instance.args,
         };
       },
@@ -379,33 +379,33 @@ export class PluginManager {
       },
 
       getHydrationStatus: (instance: StateContainer<any, any, any>) => {
-        return instance.hydrationStatus;
+        return instance.$blac.hydration.status;
       },
 
       startHydration: (instance: StateContainer<any, any, any>) => {
-        instance.beginHydration();
+        instance.$blac.hydration.begin();
       },
 
       applyHydratedState: <S extends object = any>(
         instance: StateContainer<S>,
         state: S,
       ): boolean => {
-        return instance.applyHydratedState(state);
+        return instance.$blac.hydration.apply(state);
       },
 
       finishHydration: (instance: StateContainer<any, any, any>) => {
-        instance.finishHydration();
+        instance.$blac.hydration.finish();
       },
 
       failHydration: (
         instance: StateContainer<any, any, any>,
         error: Error,
       ) => {
-        instance.failHydration(error);
+        instance.$blac.hydration.fail(error);
       },
 
       waitForHydration: (instance: StateContainer<any, any, any>) => {
-        return instance.waitForHydration();
+        return instance.$blac.hydration.wait();
       },
 
       queryInstances: <T extends StateContainer<any, any, any>>(
@@ -426,7 +426,7 @@ export class PluginManager {
         for (const Type of registry.getTypes()) {
           const map = registry.getInstancesMap(Type);
           for (const [, entry] of map) {
-            if ((entry.instance as any).instanceId === instanceId) {
+            if (entry.instance.$blac.id === instanceId) {
               return Array.from(entry.refs.keys());
             }
           }

@@ -11,6 +11,7 @@ import {
   InstanceReadonlyState,
   StateContainerConstructor,
 } from '../types/utilities';
+import { INIT_CONFIG } from './symbols';
 
 /**
  * Entry in the instance registry, tracking the instance and its named references
@@ -169,7 +170,7 @@ export class StateContainerRegistry {
     if (
       existingEntry &&
       existingEntry.instance !== instance &&
-      !existingEntry.instance.isDisposed
+      !existingEntry.instance.$blac.disposed
     ) {
       existingEntry.instance.dispose();
     }
@@ -289,7 +290,7 @@ export class StateContainerRegistry {
     let entry = instances.get(resolvedKey);
 
     // Detect stale disposed entries (disposed directly, not through release)
-    if (entry?.instance.isDisposed) {
+    if (entry?.instance.$blac.disposed) {
       instances.delete(resolvedKey);
       entry = undefined;
     }
@@ -335,7 +336,7 @@ export class StateContainerRegistry {
 
     // Create new shared instance
     const instance = new Type() as InstanceType<T>;
-    instance.initConfig(config);
+    instance[INIT_CONFIG](config);
     const initialRefs = new Map<string, number>();
     let initialRefId: string | undefined;
     if (countRef) {
@@ -448,7 +449,7 @@ export class StateContainerRegistry {
 
     // Force dispose immediately
     if (forceDispose) {
-      if (!entry.instance.isDisposed) {
+      if (!entry.instance.$blac.disposed) {
         entry.instance.dispose();
       }
       instances.delete(instanceKey);
@@ -488,9 +489,9 @@ export class StateContainerRegistry {
     // Auto-dispose when refs are empty (unless keepAlive)
     if (entry.refs.size === 0 && !keepAlive) {
       // Collect dependencies before disposing so we can clean up orphans
-      const deps = entry.instance.dependencies;
+      const deps = entry.instance.$blac.dependencies;
 
-      if (!entry.instance.isDisposed) {
+      if (!entry.instance.$blac.disposed) {
         entry.instance.dispose();
       }
       instances.delete(instanceKey);
@@ -503,7 +504,7 @@ export class StateContainerRegistry {
           depEntry &&
           depEntry.refs.size === 0 &&
           !isKeepAliveClass(DepType) &&
-          !depEntry.instance.isDisposed
+          !depEntry.instance.$blac.disposed
         ) {
           depEntry.instance.dispose();
           depInstances.delete(depKey);
@@ -541,7 +542,7 @@ export class StateContainerRegistry {
     const instances = this.ensureInstancesMap(Type);
     for (const entry of instances.values()) {
       const instance = entry.instance;
-      if (!instance.isDisposed) {
+      if (!instance.$blac.disposed) {
         try {
           callback(instance);
         } catch (error) {
@@ -562,7 +563,7 @@ export class StateContainerRegistry {
     const instances = this.ensureInstancesMap(Type);
     // Dispose all instances
     for (const entry of instances.values()) {
-      if (!entry.instance.isDisposed) {
+      if (!entry.instance.$blac.disposed) {
         entry.instance.dispose();
       }
     }
