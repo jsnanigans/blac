@@ -160,7 +160,7 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
   loadFullData();
 
   const unsubscribe = api.subscribe((event: any) => {
-    if (instancesBloc.isDisposed) return;
+    if (instancesBloc.$blac.disposed) return;
 
     const evt = event as Record<string, any> & {
       type: string;
