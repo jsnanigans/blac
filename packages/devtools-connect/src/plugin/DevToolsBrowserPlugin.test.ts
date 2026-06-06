@@ -239,3 +239,38 @@ describe('DevToolsBrowserPlugin paths wire field', () => {
     expect(updatedEvent?.[0].data.paths).toBe('all');
   });
 });
+
+describe('DevToolsBrowserPlugin time-travel', () => {
+  beforeEach(resetState);
+  afterEach(resetState);
+
+  it('matches live instance by $blac.id and applies the state', async () => {
+    const plugin = fixture.plugin();
+    withPluginInstalled(plugin);
+
+    const instance = acquire(CounterCubit);
+    // $blac.id is the authoritative identity string
+    const id = instance.$blac.id;
+    expect(typeof id).toBe('string');
+    expect(id.length).toBeGreaterThan(0);
+
+    // timeTravel receives the same id string that was emitted via the wire
+    // protocol (cmd.instanceId) and must resolve back to the live instance.
+    const result = plugin.timeTravel(id, { count: 99 });
+
+    expect(result).toBe(true);
+    // The state was applied via emit()
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(instance.state.count).toBe(99);
+  });
+
+  it('returns false for an unknown instanceId', () => {
+    const plugin = fixture.plugin();
+    withPluginInstalled(plugin);
+
+    acquire(CounterCubit);
+
+    const result = plugin.timeTravel('non-existent-id', { count: 0 });
+    expect(result).toBe(false);
+  });
+});

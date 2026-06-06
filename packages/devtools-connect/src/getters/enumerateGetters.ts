@@ -19,6 +19,15 @@ const BASE_GETTERS = new Set([
   'interner',
   'channel',
   'consumerCount',
+  // Identity members — deprecated prototype getters since the $blac migration
+  // (M0). They were own properties before; now they live on the prototype and
+  // would be enumerated without this exclusion. `$blac` itself is the meta
+  // namespace and is never user-defined.
+  'name',
+  'debug',
+  'instanceId',
+  'createdAt',
+  '$blac',
 ]);
 
 // Reentrancy guard to prevent infinite loops when evaluating getters

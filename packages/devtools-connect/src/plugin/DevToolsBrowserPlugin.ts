@@ -239,7 +239,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     if (!instance) return;
     if (this.shouldExcludeInstance(instance)) return;
 
-    const id = (instance as Record<string, any>).instanceId as string;
+    const id = instance.$blac.id;
     if (!id) return;
 
     // Decode PathSet → wire-safe representation. A foreign/out-of-range id must
@@ -372,9 +372,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
     // Drop any coalesced update still pending for this instance, and clean up
     // ref-holder tracking.
-    this.pendingUpdates.delete(
-      (instance as Record<string, any>).instanceId as string,
-    );
+    this.pendingUpdates.delete(instance.$blac.id);
     this.refHolders.delete(data.id);
 
     this.emit({
@@ -390,7 +388,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     if (!instance) return;
     if (this.shouldExcludeInstance(instance)) return;
 
-    const instanceId = instance.instanceId as string;
+    const instanceId = instance.$blac.id;
     if (!instanceId || !this.instanceCache.has(instanceId)) return;
 
     let stackTrace: string | undefined;
@@ -425,7 +423,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     if (!instance) return;
     if (this.shouldExcludeInstance(instance)) return;
 
-    const instanceId = instance.instanceId as string;
+    const instanceId = instance.$blac.id;
     if (!instanceId || !this.instanceCache.has(instanceId)) return;
 
     const prevSer = safeSerialize(previousDeps);
@@ -451,7 +449,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     if (!instance) return;
     if (this.shouldExcludeInstance(instance)) return;
 
-    const instanceId = instance.instanceId as string;
+    const instanceId = instance.$blac.id;
     if (!instanceId) return;
 
     const holders = this.refHolders.get(instanceId);
