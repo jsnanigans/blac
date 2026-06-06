@@ -77,9 +77,9 @@ function createLocalStoragePlugin<S extends object>(
 
     onCreated(ctx) {
       const c = ctx.container;
-      if (!c || !targetNames.has(c.name)) return;
+      if (!c || !targetNames.has(c.$blac.name)) return;
 
-      const key = `${prefix}:${c.name}:${c.$blac.id}`;
+      const key = `${prefix}:${c.$blac.name}:${c.$blac.id}`;
       try {
         const raw = localStorage.getItem(key);
         if (raw !== null) {
@@ -95,9 +95,9 @@ function createLocalStoragePlugin<S extends object>(
 
     onStateChange(ctx, _prev, next, _paths: PathSet) {
       const c = ctx.container;
-      if (!c || !targetNames.has(c.name)) return;
+      if (!c || !targetNames.has(c.$blac.name)) return;
 
-      const key = `${prefix}:${c.name}:${c.$blac.id}`;
+      const key = `${prefix}:${c.$blac.name}:${c.$blac.id}`;
       try {
         localStorage.setItem(key, JSON.stringify(next));
       } catch {
@@ -158,9 +158,9 @@ function createDebouncedSavePlugin(opts: DebouncedSaveOptions): BlacPlugin {
     onStateChange(ctx, _prev, next, _paths: PathSet) {
       const c = ctx.container;
       if (!c) return;
-      if (includeSet && !includeSet.has(c.name)) return;
+      if (includeSet && !includeSet.has(c.$blac.name)) return;
 
-      const key = `${prefix}:${c.name}:${c.$blac.id}`;
+      const key = `${prefix}:${c.$blac.name}:${c.$blac.id}`;
 
       const existing = timers.get(key);
       if (existing !== undefined) clearTimeout(existing);
@@ -177,7 +177,7 @@ function createDebouncedSavePlugin(opts: DebouncedSaveOptions): BlacPlugin {
     onDestroyed(ctx) {
       const c = ctx.container;
       if (!c) return;
-      const key = `${prefix}:${c.name}:${c.$blac.id}`;
+      const key = `${prefix}:${c.$blac.name}:${c.$blac.id}`;
       const existing = timers.get(key);
       if (existing !== undefined) {
         // Flush immediately on disposal — don't lose the last state.
@@ -310,9 +310,9 @@ function createCrossTabSyncPlugin<S extends object>(
     onStateChange(ctx, _prev, next, _paths: PathSet) {
       const c = ctx.container;
       if (!c || !channel) return;
-      if (!targetNames.has(c.name)) return;
+      if (!targetNames.has(c.$blac.name)) return;
 
-      const key = `${c.name}:${c.$blac.id}`;
+      const key = `${c.$blac.name}:${c.$blac.id}`;
       if (receiving.has(key)) return; // avoid echo
 
       const payload = opts.serialize
@@ -321,7 +321,7 @@ function createCrossTabSyncPlugin<S extends object>(
 
       const msg: SyncMessage = {
         type: 'state-update',
-        className: c.name,
+        className: c.$blac.name,
         instanceId: c.$blac.id,
         state: payload,
       };
@@ -386,14 +386,14 @@ function createSentryPlugin(opts: SentryPluginOptions = {}): BlacPlugin {
     onStateChange(ctx, _prev, next, _paths: PathSet) {
       const c = ctx.container;
       if (!c) return;
-      if (includeSet && !includeSet.has(c.name)) return;
-      if (excludeSet && excludeSet.has(c.name)) return;
+      if (includeSet && !includeSet.has(c.$blac.name)) return;
+      if (excludeSet && excludeSet.has(c.$blac.name)) return;
 
-      const data = opts.sanitize ? opts.sanitize(next, c.name) : next;
+      const data = opts.sanitize ? opts.sanitize(next, c.$blac.name) : next;
 
       Sentry.addBreadcrumb({
         category: 'blac.state',
-        message: `${c.name} changed`,
+        message: `${c.$blac.name} changed`,
         level: 'info',
         data: data as Record<string, unknown>,
       });
@@ -484,19 +484,19 @@ function createAuditLogPlugin(opts: AuditLogOptions): BlacPlugin {
 
     onCreated(ctx) {
       const c = ctx.container;
-      if (!c || !allowed(c.name)) return;
+      if (!c || !allowed(c.$blac.name)) return;
       opts.onEntry({
         kind: 'created',
-        className: c.name,
+        className: c.$blac.name,
         instanceId: c.$blac.id,
         timestamp: Date.now(),
-        next: san(c.state, c.name),
+        next: san(c.state, c.$blac.name),
       });
     },
 
     onStateChange(ctx, prev, next, paths: PathSet) {
       const c = ctx.container;
-      if (!c || !allowed(c.name)) return;
+      if (!c || !allowed(c.$blac.name)) return;
 
       const changedPaths =
         paths === ALL_PATHS
@@ -505,24 +505,24 @@ function createAuditLogPlugin(opts: AuditLogOptions): BlacPlugin {
 
       opts.onEntry({
         kind: 'state-changed',
-        className: c.name,
+        className: c.$blac.name,
         instanceId: c.$blac.id,
         timestamp: Date.now(),
-        prev: san(prev, c.name),
-        next: san(next, c.name),
+        prev: san(prev, c.$blac.name),
+        next: san(next, c.$blac.name),
         paths: changedPaths,
       });
     },
 
     onDestroyed(ctx) {
       const c = ctx.container;
-      if (!c || !allowed(c.name)) return;
+      if (!c || !allowed(c.$blac.name)) return;
       opts.onEntry({
         kind: 'disposed',
-        className: c.name,
+        className: c.$blac.name,
         instanceId: c.$blac.id,
         timestamp: Date.now(),
-        prev: san(c.state, c.name),
+        prev: san(c.state, c.$blac.name),
       });
     },
   };

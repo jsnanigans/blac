@@ -528,7 +528,7 @@ Stage 4: deps resolve through the registry (no auto-bridge)
 ```
 
 `StateContainer` adds the rest of the lifecycle around these four stages:
-identity (`name`, `instanceId`), disposal, hydration, an
+identity (`$blac.name`, `$blac.id`), disposal, hydration, an
 `onSystemEvent('stateChanged' | 'dispose' | 'hydrationChanged', cb)` surface,
 and a dev-only emit-rate circuit breaker that warns once when a runaway loop
 pushes too many changes through state in a second. But the reactivity itself is

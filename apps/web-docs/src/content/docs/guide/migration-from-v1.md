@@ -192,7 +192,7 @@ All plugin lifecycle hooks are renamed, and the `ctx` (context) parameter is now
 | _(not present)_                             | `onHydrationChange(ctx, status, previousStatus)` | New hook for hydration status transitions                     |
 
 :::caution[Update both the parameter order and the parameter set]
-This is more than a rename: `onCreated`/`onDestroyed` no longer receive an `instance` argument at all. Code like `onCreated(ctx, instance) { use(instance.name) }` must become `onCreated(ctx) { use(ctx.container?.name) }`. Search your plugins for the old hook names and rewrite each call.
+This is more than a rename: `onCreated`/`onDestroyed` no longer receive an `instance` argument at all. Code like `onCreated(ctx, instance) { use(instance.name) }` must become `onCreated(ctx) { use(ctx.container?.$blac.name) }`. Search your plugins for the old hook names and rewrite each call.
 :::
 
 ### New `paths` parameter on `onStateChange`
@@ -253,7 +253,7 @@ Migration isn't only about what's gone. v2 adds capabilities a v1 codebase shoul
 - **The input model** — `args` (identity-keyed creation data), `deps` (non-serializable handles), and method-call events replace the old single `props` slot. This is the headline addition; start at [Passing Inputs](/guide/inputs).
 - **Per-mount instances** via a synthetic `args: { _id: useId() }` field + `static key` (the supported replacement for the nonexistent `autoInstance`/`instanceId` options).
 - **Automatic, path-scoped re-renders** — no `dependencies`/selector needed for the common case; the returned state proxy tracks exactly what your component reads. See [Dependency Tracking](/react/dependency-tracking).
-- **Hydration lifecycle** — `beginHydration`/`finishHydration`/`waitForHydration` and the `hydrationChanged` event, used by the [persistence plugin](/plugins/persistence).
+- **Hydration lifecycle** — `$blac.hydration.begin()`/`.finish()`/`.wait()` and the `hydrationChanged` event, used by the [persistence plugin](/plugins/persistence).
 - **Circuit breakers** — `configureBlac({ maxInstancesPerType, maxRefsPerInstance, maxEmitsPerSecond })` guard against leaks and emit storms. See [Configuration](/core/configuration).
 
 ---

@@ -200,6 +200,6 @@ The plugin automatically checks IndexedDB availability on install and disables i
 
 - [Plugin Overview](/plugins/overview) — the plugin catalog and the install API
 - [System Events](/core/system-events#hydrationchanged) — the `hydrationChanged` event behind the dirty-state logic
-- [Cubit](/core/cubit#public-properties) — `hydrationStatus`, `isHydrated`, and `waitForHydration()` on the container
+- [Cubit](/core/cubit#public-properties) — `$blac.hydration.status`, `$blac.hydration.isHydrated`, and `$blac.hydration.wait()` on the container
 - [Patterns](/guide/patterns) — hydration-aware loading recipes
 - [Glossary](/guide/glossary) — definitions for hydration, plugin, and registry

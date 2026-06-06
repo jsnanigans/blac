@@ -350,7 +350,7 @@ If you want this bloc visible, drop that option. The option is documented in [Co
 | Symptom                                        | Likely cause                                         | Fix                                                                    |
 | ---------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------- |
 | Hydration mismatch warning from React          | Server and client produced different first snapshots | Seed initial state from `args` in `init(args)` so both render the same |
-| Persisted state appears, then vanishes         | State changed _while_ hydrating → discarded          | Hold writes until `isHydrated`; observe `hydrationChanged`             |
+| Persisted state appears, then vanishes         | State changed _while_ hydrating → discarded          | Hold writes until `$blac.hydration.isHydrated`; observe `hydrationChanged`             |
 | Instance key differs between server and client | Relying on internal auto-ids for stable identity     | Key off stable `args` (or a `BlocProvider`) for SSR-stable identity    |
 
 <details>
@@ -360,7 +360,7 @@ A few facts that matter when rendering on the server:
 
 - **First snapshot is synchronous.** `args` are forwarded to `init(args)` **once, before the first state snapshot**, so a bloc keyed by `args` renders identical initial state on server and client — no flash, no mismatch — provided the `args` are the same on both sides.
 - **`useBloc` does not fight React for SSR id slots.** Internally it uses a plain module counter for its consumer id (a `useId()` slot is reserved but unused), so it will not desync SSR-streamed ids. For identity that must be **stable across server/client**, derive it from stable `args` or a [`BlocProvider`](/react/use-bloc); do not rely on auto-generated ids.
-- **State hydration is a guarded lifecycle.** `beginHydration()` → `applyHydratedState(next)` → `finishHydration()`. `applyHydratedState` returns `false` (and skips) if the bloc was disposed, is not hydrating, or **`changedWhileHydrating`** — i.e. a normal write landed mid-hydration, so the live state wins and the persisted snapshot is discarded. If persisted state seems to be ignored, you almost certainly wrote to the bloc before hydration finished. Observe transitions via the [`hydrationChanged`](/core/system-events) system event and gate writes on `isHydrated`.
+- **State hydration is a guarded lifecycle.** `$blac.hydration.begin()` → `$blac.hydration.apply(next)` → `$blac.hydration.finish()`. `apply` returns `false` (and skips) if the bloc was disposed, is not hydrating, or **`changedWhileHydrating`** — i.e. a normal write landed mid-hydration, so the live state wins and the persisted snapshot is discarded. If persisted state seems to be ignored, you almost certainly wrote to the bloc before hydration finished. Observe transitions via the [`hydrationChanged`](/core/system-events) system event and gate writes on `$blac.hydration.isHydrated`.
 
 See [Persistence](/plugins/persistence) for the full hydration story and [System events](/core/system-events) for `hydrationChanged`.
 

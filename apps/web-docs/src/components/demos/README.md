@@ -24,7 +24,7 @@ pages only. See its own section below.
 2. Define (or import) a `Cubit`, drive it with `useBloc`, render inside
    `<DemoFrame label="…">`. Keep one **default-exported** top-level component
    per island file; helper components stay internal.
-3. `useBloc` options are only `{ args, instanceId, select, onMount, onUnmount }`
+3. `useBloc` options are only `{ args, select, onMount, onUnmount }`
    — instance identity is derived from `args`. For a per-mount private instance,
    pass a stable unique object: `{ args: { _id: useId() } }`.
 4. `RenderCounter` increments a ref **in the render body**, never in

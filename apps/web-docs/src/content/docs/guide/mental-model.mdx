@@ -163,7 +163,7 @@ MOUNT
                             → provider context args → "default"
   2. acquire(UserCubit, { args, refId })
        ├─ exists?  → return it, refs[refId]++          (share)
-       └─ new?     → new UserCubit(); initConfig(config);
+       └─ new?     → new UserCubit(); registry configures instance;
                      init(args) runs once; refs = 1     (create)
   3. first render: trackRender wraps state → proxy + empty path set
   4. you read state.name in JSX → path "name" recorded

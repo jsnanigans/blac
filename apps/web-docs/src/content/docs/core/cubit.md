@@ -502,14 +502,18 @@ These are available inside your Cubit class but not from the outside:
 
 ## Public properties
 
-| Property          | Type              | Description                                                                                                               |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `state`           | `Readonly<S>`     | Current state value                                                                                                       |
-| `isDisposed`      | `boolean`         | Whether the instance has been disposed                                                                                    |
-| `name`            | `string`          | Display name (defaults to class name)                                                                                     |
-| `instanceId`      | `string`          | Unique instance identifier                                                                                                |
-| `createdAt`       | `number`          | Creation timestamp                                                                                                        |
-| `hydrationStatus` | `HydrationStatus` | Current hydration phase (`'idle'` \| `'hydrating'` \| `'hydrated'` \| `'error'`); see [Persistence](/plugins/persistence) |
+| Property            | Type              | Description                                                                                                                               |
+| ------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `state`             | `Readonly<S>`     | Current state value                                                                                                                       |
+| `$blac`             | `BlacMeta<S>`     | Identity and lifecycle metadata. See the table below.                                                                                     |
+| `$blac.name`        | `string`          | Display name (defaults to class name)                                                                                                     |
+| `$blac.id`          | `string`          | Unique instance identifier (formerly `instanceId`)                                                                                        |
+| `$blac.createdAt`   | `number`          | Creation timestamp                                                                                                                        |
+| `$blac.disposed`    | `boolean`         | Whether the instance has been disposed (formerly `isDisposed`)                                                                            |
+| `$blac.hydration`   | `BlacHydration<S>`| Hydration lifecycle object. See below.                                                                                                    |
+| `$blac.hydration.status` | `HydrationStatus` | Current hydration phase (`'idle'` \| `'hydrating'` \| `'hydrated'` \| `'error'`); see [Persistence](/plugins/persistence)            |
+| `$blac.hydration.isHydrated` | `boolean` | Shorthand: `status === 'hydrated'`                                                                                               |
+| `$blac.hydration.wait()` | `Promise<void>` | Resolves once hydration settles; see [Persistence](/plugins/persistence)                                                         |
 
 ## Async methods
 

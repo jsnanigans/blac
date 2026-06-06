@@ -39,7 +39,7 @@ const myPlugin: BlacPlugin = {
   onStateChange(ctx, prev, next, paths: PathSet) {},
 
   // Fires when any state container is disposed.
-  // The disposed container is ctx.container (isDisposed is already true).
+  // The disposed container is ctx.container ($blac.disposed is already true).
   onDestroyed(ctx) {},
 
   // Fires on every hydration status transition of any container.
@@ -123,7 +123,7 @@ Other `PluginManager` methods: `getPlugin(name)`, `getAllPlugins()`, `hasPlugin(
 
 The `ctx` parameter (always first) carries the focal container plus safe, read-only access to registry data. A fresh `ctx` is built per dispatch — it is cheap and closes over the registry.
 
-- **`ctx.container`** — the bloc this event is about (`StateContainer | undefined`). It is `undefined` only inside `onInstall`. For per-container hooks (`onCreated`, `onStateChange`, `onDestroyed`, `onHydrationChange`) it is the focal bloc. Use `ctx.container` to read `state`, `interner`, `instanceId`, etc.
+- **`ctx.container`** — the bloc this event is about (`StateContainer | undefined`). It is `undefined` only inside `onInstall`. For per-container hooks (`onCreated`, `onStateChange`, `onDestroyed`, `onHydrationChange`) it is the focal bloc. Use `ctx.container` to read `state`, `interner`, `$blac.id`, etc.
 
 The methods below take an `instance` argument so a plugin can also reach blocs other than the focal one (e.g. via `queryInstances`):
 

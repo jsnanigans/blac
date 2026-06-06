@@ -206,7 +206,7 @@ Creates a real instance of the cubit with optional pre-set state and method over
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `state`   | Seeds starting state. Merged via `patch()` for object state (provide only the fields you care about); replaced via `emit()` for non-object state.                                |
 | `methods` | Replaces specific methods on the instance. Everything else stays real.                                                                                                           |
-| `args`    | Runs the bloc's `init(args)` once via the same `initConfig` path the registry uses, so `init` and lifecycle hooks fire. Only allowed when the bloc declares a non-`void` `Args`. |
+| `args`    | Runs the bloc's `init(args)` once via the same internal path the registry uses, so `init` and lifecycle hooks fire. Only allowed when the bloc declares a non-`void` `Args`. |
 | `deps`    | Pre-wires a [`deps`](/guide/inputs) slice so `onDepsChanged` fires during the test.                                                                                              |
 
 The options apply in source order: `args` runs `init` first, then `state` overrides on top, then `methods` are swapped, then `deps` are wired (which may itself emit via `onDepsChanged`).

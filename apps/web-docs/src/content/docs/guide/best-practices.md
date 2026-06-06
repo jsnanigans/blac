@@ -226,7 +226,7 @@ class UserCubit extends Cubit<UserState, { userId: string }> {
 ```
 
 :::tip[Hydrating from storage]
-If state arrives asynchronously from the persistence plugin, await `waitForHydration()` inside a fire-and-forget `init` before touching the network, so you don't overwrite restored values. See [Persistence](/plugins/persistence) and the [hydration-aware loading recipe](/guide/patterns#hydration-aware-loading).
+If state arrives asynchronously from the persistence plugin, await `this.$blac.hydration.wait()` inside a fire-and-forget `init` before touching the network, so you don't overwrite restored values. See [Persistence](/plugins/persistence) and the [hydration-aware loading recipe](/guide/patterns#hydration-aware-loading).
 :::
 
 ## Cross-bloc dependencies: `this.depend`, and avoid cycles

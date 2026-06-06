@@ -152,7 +152,7 @@ The same constraint as the browser plugin applies: state must be JSON-serializab
 
 ## See also
 
-- [Persistence Plugin](/plugins/persistence) — full plugin API, registration options, status monitoring, and the `waitForHydration()` method
+- [Persistence Plugin](/plugins/persistence) — full plugin API, registration options, status monitoring, and `$blac.hydration.wait()`
 - [Instance Management](/core/instance-management) — `acquire`, `release`, and the registry lifecycle
 - [watch](/core/watch) — observing blocs outside React (useful for imperative React Native patterns)
 - [Passing Inputs](/guide/inputs) — `args` and instance identity
