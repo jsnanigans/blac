@@ -202,10 +202,10 @@ export function RegistryDemo() {
   return (
     <ExampleLayout
       title="Instance Registry"
-      description="Instance lifecycle management — instanceId controls whether components share one instance or each own their own, all ref-counted automatically."
+      description="Instance lifecycle management — the args key controls whether components share one instance or each own their own, all ref-counted automatically."
       features={[
-        'Per-component instances — use a unique instanceId per component mount',
-        'instanceId — multiple components share one ref-counted instance',
+        'Per-component instances — pass a unique args key per component mount',
+        'Shared args key — multiple components share one ref-counted instance',
         'getStats() — live snapshot of every registered type and its instance count',
         'Plugin tracks created/disposed events so the registry updates in real time',
       ]}
@@ -221,8 +221,8 @@ export function RegistryDemo() {
                     className="text-small text-muted"
                     style={{ marginBottom: 0 }}
                   >
-                    <code>instanceId</code> — each counter gets a unique ID so
-                    it owns its own Cubit instance. Removing it disposes the
+                    Unique <code>args.id</code> — each counter gets a unique ID
+                    so it owns its own Cubit instance. Removing it disposes the
                     instance.
                   </p>
                 </div>
@@ -251,9 +251,9 @@ export function RegistryDemo() {
               <div className="stack-xs">
                 <h3>Shared</h3>
                 <p className="text-small text-muted">
-                  <code>instanceId</code> — components with the same ID share
-                  one Cubit. Increment in any row and all rows with that ID
-                  update together.
+                  Shared <code>args.id</code> — components with the same ID
+                  share one Cubit. Increment in any row and all rows with that
+                  ID update together.
                 </p>
               </div>
 
@@ -294,14 +294,14 @@ export function RegistryDemo() {
           <div className="stack-xs text-small text-muted">
             <p>
               <strong>Per-component instances</strong> — give each component a
-              unique <code>instanceId</code> (e.g. a stable key) and it owns its
+              unique ID in <code>args</code> (e.g. a stable key) and it owns its
               own Cubit. The instance disposes automatically when that component
               unmounts. Add and remove counters above to see it in the live
               registry.
             </p>
             <p>
-              <strong>Shared instanceId</strong> — instances are shared by key
-              and ref-counted. All three "alpha" rows reference the same{' '}
+              <strong>Shared args key</strong> — instances are shared by key and
+              ref-counted. All three "alpha" rows reference the same{' '}
               <code>SharedCounterCubit</code>. The refCount is 3; the instance
               disposes automatically when the last consumer unmounts.
             </p>

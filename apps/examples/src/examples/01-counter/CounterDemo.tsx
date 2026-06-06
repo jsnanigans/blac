@@ -35,7 +35,8 @@ export function CounterDemo() {
         <div className="stack-sm">
           <h2>Named Instances</h2>
           <p className="text-muted">
-            Each counter has its own independent state using instanceId.
+            Each counter has its own independent state using args-based
+            identity.
           </p>
         </div>
 
@@ -66,8 +67,8 @@ export function CounterDemo() {
           </p>
           <p>
             • <strong>Instance management:</strong> Default instances are
-            shared. Use <code>instanceId</code> for separate state per
-            component.
+            shared. Pass a unique value in <code>args</code> for separate state
+            per component.
           </p>
           <p>
             • <strong>Lifecycle hooks:</strong> Open browser console to see

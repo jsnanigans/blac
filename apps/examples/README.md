@@ -114,7 +114,7 @@ Components only re-render when properties they access change. No manual optimiza
 ### Instance Management
 
 - Default instances are shared across all uses
-- Use `instanceId` for named instances
+- Use unique values in `args` for named/private instances
 - Named instances for multiple independent state containers
 
 ### Lifecycle Hooks

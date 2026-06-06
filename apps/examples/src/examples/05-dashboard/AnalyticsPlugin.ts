@@ -42,15 +42,15 @@ export const analyticsPlugin: BlacPlugin = {
   },
 
   onCreated(ctx: PluginContext) {
-    if (ctx.container) addEntry('created', ctx.container.name);
+    if (ctx.container) addEntry('created', ctx.container.$blac.name);
   },
 
   onStateChange(ctx: PluginContext) {
-    if (ctx.container) addEntry('stateChanged', ctx.container.name);
+    if (ctx.container) addEntry('stateChanged', ctx.container.$blac.name);
   },
 
   onDestroyed(ctx: PluginContext) {
-    if (ctx.container) addEntry('disposed', ctx.container.name);
+    if (ctx.container) addEntry('disposed', ctx.container.$blac.name);
   },
 
   onUninstall() {

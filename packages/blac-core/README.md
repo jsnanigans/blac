@@ -138,7 +138,7 @@ class AuthContainer extends StateContainer<{ token: string | null }> {
 }
 ```
 
-**Public API:** `state`, `subscribe(listener)`, `dispose()`, `isDisposed`, `name`, `instanceId`, `createdAt`
+**Public API:** `state`, `subscribe(listener)`, `dispose()`, `$blac` (`$blac.name`, `$blac.id`, `$blac.debug`, `$blac.createdAt`, `$blac.disposed`, `$blac.dependencies`, `$blac.hydration`)
 
 **Protected API:** `emit(state)`, `update(fn)`, `init(args)` (optional), `onDepsChanged(next, prev)` (optional), `onSystemEvent(event, handler)`, `depend(BlocClass, instanceKey?)`
 

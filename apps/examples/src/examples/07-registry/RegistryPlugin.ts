@@ -36,7 +36,7 @@ export const registryPlugin: BlacPlugin = {
     if (!ctx.container) return;
     push({
       type: 'created',
-      name: ctx.container.name,
+      name: ctx.container.$blac.name,
       time: new Date().toLocaleTimeString(),
     });
   },
@@ -45,7 +45,7 @@ export const registryPlugin: BlacPlugin = {
     if (!ctx.container) return;
     push({
       type: 'disposed',
-      name: ctx.container.name,
+      name: ctx.container.$blac.name,
       time: new Date().toLocaleTimeString(),
     });
   },

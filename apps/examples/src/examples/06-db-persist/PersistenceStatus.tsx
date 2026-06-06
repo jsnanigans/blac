@@ -90,7 +90,8 @@ export function PersistenceStatus({ draftId }: { draftId: string }) {
             <code>{actualBloc.$blac.hydration.status}</code>
           </p>
           <p>
-            <strong>waitForHydration():</strong> <code>{hydrationReady}</code>
+            <strong>$blac.hydration.wait():</strong>{' '}
+            <code>{hydrationReady}</code>
           </p>
           <p>
             <strong>Hydrated:</strong>{' '}

@@ -88,11 +88,11 @@ function UserCard({ userId }: { userId: string }) {
 - **Required when declared** — omitting `args` or passing the wrong shape is a type error.
 - **Drives identity** — different `args` ⇒ different instance. Same `args` ⇒ same instance (dev-warn if args mismatch on same-keyed second call).
 - **Serializable only** — non-serializable values (refs, callbacks) belong in the `deps` lane (below).
-- **Per-component private instances** — pass a per-mount `instanceId` (keyed by React's `useId()`) to give each mount its own instance, disposed on unmount:
+- **Per-component private instances** — embed a per-mount unique ID inside `args` (using React's `useId()`) to give each mount its own instance, disposed on unmount:
 
 ```tsx
-const instanceId = useId();
-const [state, cubit] = useBloc(FormCubit, { args: options, instanceId });
+const id = useId();
+const [state, cubit] = useBloc(FormCubit, { args: { ...options, _id: id } });
 ```
 
 ### `deps`: Non-Serializable Refs and Callbacks
@@ -204,24 +204,29 @@ const [state] = useBloc(CounterCubit, {
 
 ### Options
 
-| Option       | Type                         | Description                                                                      |
-| ------------ | ---------------------------- | -------------------------------------------------------------------------------- |
-| `args`       | `Args` type                  | Required when bloc declares `Args != void`; forbidden when `void`                |
-| `select`     | `(state, bloc) => unknown[]` | Manual dependency selector (renamed from `dependencies`); disables auto-tracking |
-| `instanceId` | `string \| number`           | Explicit identity key; pass `useId()` for a per-mount instance                   |
-| `onMount`    | `(bloc) => void`             | Called when component mounts                                                     |
-| `onUnmount`  | `(bloc) => void`             | Called when component unmounts                                                   |
+| Option      | Type                         | Description                                                                      |
+| ----------- | ---------------------------- | -------------------------------------------------------------------------------- |
+| `args`      | `Args` type                  | Required when bloc declares `Args != void`; forbidden when `void`                |
+| `select`    | `(state, bloc) => unknown[]` | Manual dependency selector (renamed from `dependencies`); disables auto-tracking |
+| `onMount`   | `(bloc) => void`             | Called when component mounts                                                     |
+| `onUnmount` | `(bloc) => void`             | Called when component unmounts                                                   |
 
-> Auto-tracking is always on when `select` is omitted — it is **not** a configurable option. `deps` and `autoInstance` are not `useBloc` options either: wire deps from a mount effect (`APPLY_DEPS` / `REMOVE_DEPS_OWNER`), and use `instanceId: useId()` for per-mount instances.
+> Auto-tracking is always on when `select` is omitted — it is **not** a configurable option. `deps`, `autoInstance`, and `instanceId` are not `useBloc` options: wire deps from a mount effect (`APPLY_DEPS` / `REMOVE_DEPS_OWNER`); for per-mount private instances, embed a stable unique ID in `args` (e.g. `{ args: { _id: useId() } }`).
 
 ### Identity and Keying
 
 Instance identity is resolved in precedence order:
 
-1. **Explicit `instanceId`** — hard override (pass `useId()` for a per-mount private instance)
-2. **`<BlocProvider>` context id** — inherited from an ancestor provider
-3. **`static key(args)` → structural hash of `args`** — default when the bloc declares `Args` (`static key` wins if defined; otherwise a stable hash of all `args`)
-4. **`'default'`** — singleton fallback
+1. **`<BlocProvider>` context id** — inherited from an ancestor provider
+2. **`static key(args)` → structural hash of `args`** — default when the bloc declares `Args` (`static key` wins if defined; otherwise a stable hash of all `args`)
+3. **`'default'`** — singleton fallback
+
+For a per-mount private instance, embed a stable unique ID inside `args` so each mount hashes to a distinct key:
+
+```tsx
+const id = useId();
+useBloc(FormCubit, { args: { ...options, _id: id } });
+```
 
 Blocs declare explicit identity via a static class property:
 
@@ -237,24 +242,24 @@ class DocumentCubit extends Cubit<
 
 ### Instance Sharing and Lifecycle
 
-By default, all components using `useBloc(MyBloc)` with the same identity share one instance. Pass a per-mount `instanceId` (via `useId()`) for per-component private instances:
+By default, all components using `useBloc(MyBloc)` with the same identity share one instance. For per-component private instances, embed a unique ID in `args` so each mount derives a distinct key:
 
 ```tsx
 // All users with userId=123 share one instance
 useBloc(UserCardCubit, { args: { userId: 123 } });
 
 // Each component mount gets its own instance, disposed on unmount
-const instanceId = useId();
-useBloc(FormCubit, { args: options, instanceId });
+const id = useId();
+useBloc(FormCubit, { args: { ...options, _id: id } });
 
-// Explicit id (escape hatch for non-derivable identity)
-useBloc(EditorCubit, { instanceId: 'editor-1' });
+// Explicit stable key (escape hatch for non-derivable identity)
+useBloc(EditorCubit, { args: { _id: 'editor-1' } });
 ```
 
 ### Breaking Changes (v2)
 
 - **`dependencies` option renamed to `select`** — avoids confusion with the `deps` (non-serializable handles) lane.
-- **`autoTrack`, `autoInstance`, and `deps` are no longer `useBloc` options** — auto-tracking is always on (opt out per-consumer with `select`); per-mount instances use `instanceId: useId()`; deps are wired from a mount effect via `APPLY_DEPS` / `REMOVE_DEPS_OWNER`.
+- **`autoTrack`, `autoInstance`, `instanceId`, and `deps` are no longer `useBloc` options** — auto-tracking is always on (opt out per-consumer with `select`); per-mount private instances embed a unique ID in `args`; deps are wired from a mount effect via `APPLY_DEPS` / `REMOVE_DEPS_OWNER`.
 - **Zero-arg constructor + `init(args)` lifecycle** — all blocs now use `new Type()` with no constructor args. Blocs that declare `Args` receive them via `init(args)` called by the framework before the first state snapshot.
 - **`args` is required when declared, forbidden when void** — enforced by the type system; no runtime guard needed.
 

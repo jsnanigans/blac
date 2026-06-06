@@ -64,7 +64,12 @@ export const exampleCatalog: RouteMeta[] = [
     badge: 'Intermediate',
     blurb:
       'Parallel forms show how instance IDs and computed getters keep validation reactive without memo plumbing.',
-    concepts: ['Getter tracking', 'Computed state', 'instanceId', 'Validation'],
+    concepts: [
+      'Getter tracking',
+      'Computed state',
+      'args identity',
+      'Validation',
+    ],
   },
   {
     id: '05',
