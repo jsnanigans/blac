@@ -27,3 +27,18 @@ export const APPLY_DEPS = Symbol('blac.applyDeps');
  * Kept until D0 ports `useBloc`. See A2 audit for the consumer list.
  */
 export const REMOVE_DEPS_OWNER = Symbol('blac.removeDepsOwner');
+
+/**
+ * @internal Symbol-keyed configuration entry point on `StateContainer`.
+ * Carries the body that used to live in the public `initConfig(config)`
+ * method: writes the instance's identity fields (`_name`/`_debug`/
+ * `_instanceId`), resolves per-class equality, emits the registry `created`
+ * event, and runs `init()` once.
+ *
+ * Framework-only — the registry (`StateContainerRegistry.ensure`) and testing
+ * helpers are the sole callers, mirroring the `APPLY_DEPS` precedent. The
+ * legacy public `initConfig()` is kept as a deprecated delegate until M5.
+ *
+ * Do not add new uses of the public `initConfig()`; call `[INIT_CONFIG]`.
+ */
+export const INIT_CONFIG = Symbol('blac.initConfig');

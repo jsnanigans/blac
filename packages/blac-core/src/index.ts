@@ -26,7 +26,15 @@ export { Cubit } from './core/Cubit';
  * in-package legacy tests still index `[EMIT]`. Kept as a thin alias for
  * `emit()` so those tests typecheck and run unchanged; C5 deletes it.
  */
-export { EMIT, APPLY_DEPS, REMOVE_DEPS_OWNER } from './core/symbols';
+export {
+  EMIT,
+  APPLY_DEPS,
+  REMOVE_DEPS_OWNER,
+  INIT_CONFIG,
+} from './core/symbols';
+
+// `$blac` meta namespace (identity / lifecycle / hydration).
+export type { BlacMeta, BlacHydration } from './core/meta';
 
 // Structural primitives — re-exported for plugins that need to compose
 // channel subscriptions on top of a `StateContainer`.
