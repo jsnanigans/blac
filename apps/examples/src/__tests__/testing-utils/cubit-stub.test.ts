@@ -149,9 +149,9 @@ describe('createCubitStub', () => {
 
     it('supports dispose', () => {
       const stub = createCubitStub(CounterCubit);
-      expect(stub.isDisposed).toBe(false);
+      expect(stub.$blac.disposed).toBe(false);
       stub.dispose();
-      expect(stub.isDisposed).toBe(true);
+      expect(stub.$blac.disposed).toBe(true);
     });
   });
 });

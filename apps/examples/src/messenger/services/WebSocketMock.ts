@@ -266,7 +266,7 @@ export class WebSocketMock {
         () => {
           try {
             const ch = borrowSafe(ChannelBloc, {
-              args: { channelId: channel.instanceId },
+              args: { channelId: channel.$blac.id },
             });
             if (!ch.error) {
               ch.instance.userTyping(botUserId, false);
@@ -295,7 +295,7 @@ export class WebSocketMock {
 
       this.BOT_USERS.forEach((userId) => {
         // Only update if this bot user is currently active
-        const isActive = activeUsers.some((u) => u.instanceId === userId);
+        const isActive = activeUsers.some((u) => u.$blac.id === userId);
         if (!isActive) return;
 
         try {

@@ -55,8 +55,8 @@ export function PersistenceStatus({ draftId }: { draftId: string }) {
     let cancelled = false;
 
     setHydrationReady('pending');
-    void actualBloc
-      .waitForHydration()
+    void actualBloc.$blac.hydration
+      .wait()
       .then(() => {
         if (!cancelled) {
           setHydrationReady('ready');
@@ -87,14 +87,16 @@ export function PersistenceStatus({ draftId }: { draftId: string }) {
           </p>
           <p>
             <strong>Core hydration:</strong>{' '}
-            <code>{actualBloc.hydrationStatus}</code>
+            <code>{actualBloc.$blac.hydration.status}</code>
           </p>
           <p>
             <strong>waitForHydration():</strong> <code>{hydrationReady}</code>
           </p>
           <p>
             <strong>Hydrated:</strong>{' '}
-            <code>{actualBloc.isHydrated ? 'true' : 'false'}</code>
+            <code>
+              {actualBloc.$blac.hydration.isHydrated ? 'true' : 'false'}
+            </code>
           </p>
           <p>
             <strong>Last saved:</strong> <code>{savedAt}</code>

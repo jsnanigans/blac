@@ -69,7 +69,7 @@ export class CanvasCubit extends Cubit<CanvasState, CanvasArgs, CanvasDeps> {
     dbg('Canvas.start', { gen });
 
     const draw = () => {
-      if (gen !== this._gen || this.isDisposed) return;
+      if (gen !== this._gen || this.$blac.disposed) return;
 
       // Keep the backing store matched to the displayed size × DPR so the
       // scene stays crisp and the blob keeps its aspect ratio instead of being
@@ -125,7 +125,7 @@ export class CanvasCubit extends Cubit<CanvasState, CanvasArgs, CanvasDeps> {
       this._rafId = null;
     }
     this._canvas = null;
-    if (this.state.running && !this.isDisposed) {
+    if (this.state.running && !this.$blac.disposed) {
       dbg('Canvas.stop', { reason });
       this.patch({ running: false });
     }
