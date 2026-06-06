@@ -200,7 +200,7 @@ const auditPlugin: BlacPlugin = {
 
   onCreated(ctx) {
     const c = ctx.container;
-    if (c) console.log(`[audit] created ${c.name} (${c.instanceId})`);
+    if (c) console.log(`[audit] created ${c.name} (${c.$blac.id})`);
   },
 
   onStateChange(ctx, _prev, _next, paths) {
@@ -217,7 +217,7 @@ const auditPlugin: BlacPlugin = {
 
   onDestroyed(ctx) {
     const c = ctx.container;
-    if (c) console.log(`[audit] disposed ${c.name} (${c.instanceId})`);
+    if (c) console.log(`[audit] disposed ${c.name} (${c.$blac.id})`);
   },
 };
 

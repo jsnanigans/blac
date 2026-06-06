@@ -371,8 +371,8 @@ class SearchCubit extends Cubit<SearchState> {
 
 `onSystemEvent('dispose', …)` fires when the instance is being torn down (its ref count hit zero, or it was cleared). Aborting there cancels the request, and the `AbortError` branch swallows the rejection — no emit reaches the disposed container. See [System Events](/core/system-events) for the full lifecycle.
 
-:::tip[Guard `isDisposed` if you skip the abort]
-If you don't use an `AbortController`, an async action that resumes after disposal can still hit a disposed bloc. Either check `this.isDisposed` before emitting, or — cleaner — abort on `dispose` as above so the request never resolves into an emit at all.
+:::tip[Guard `$blac.disposed` if you skip the abort]
+If you don't use an `AbortController`, an async action that resumes after disposal can still hit a disposed bloc. Either check `this.$blac.disposed` before emitting, or — cleaner — abort on `dispose` as above so the request never resolves into an emit at all.
 :::
 
 ## See also

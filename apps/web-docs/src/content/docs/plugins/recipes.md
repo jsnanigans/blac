@@ -79,7 +79,7 @@ function createLocalStoragePlugin<S extends object>(
       const c = ctx.container;
       if (!c || !targetNames.has(c.name)) return;
 
-      const key = `${prefix}:${c.name}:${c.instanceId}`;
+      const key = `${prefix}:${c.name}:${c.$blac.id}`;
       try {
         const raw = localStorage.getItem(key);
         if (raw !== null) {
@@ -97,7 +97,7 @@ function createLocalStoragePlugin<S extends object>(
       const c = ctx.container;
       if (!c || !targetNames.has(c.name)) return;
 
-      const key = `${prefix}:${c.name}:${c.instanceId}`;
+      const key = `${prefix}:${c.name}:${c.$blac.id}`;
       try {
         localStorage.setItem(key, JSON.stringify(next));
       } catch {
@@ -160,7 +160,7 @@ function createDebouncedSavePlugin(opts: DebouncedSaveOptions): BlacPlugin {
       if (!c) return;
       if (includeSet && !includeSet.has(c.name)) return;
 
-      const key = `${prefix}:${c.name}:${c.instanceId}`;
+      const key = `${prefix}:${c.name}:${c.$blac.id}`;
 
       const existing = timers.get(key);
       if (existing !== undefined) clearTimeout(existing);
@@ -177,7 +177,7 @@ function createDebouncedSavePlugin(opts: DebouncedSaveOptions): BlacPlugin {
     onDestroyed(ctx) {
       const c = ctx.container;
       if (!c) return;
-      const key = `${prefix}:${c.name}:${c.instanceId}`;
+      const key = `${prefix}:${c.name}:${c.$blac.id}`;
       const existing = timers.get(key);
       if (existing !== undefined) {
         // Flush immediately on disposal — don't lose the last state.
@@ -286,7 +286,7 @@ function createCrossTabSyncPlugin<S extends object>(
         );
 
         for (const inst of instances) {
-          if (inst.instanceId !== msg.instanceId) continue;
+          if (inst.$blac.id !== msg.instanceId) continue;
 
           const key = `${msg.className}:${msg.instanceId}`;
           receiving.add(key);
@@ -312,7 +312,7 @@ function createCrossTabSyncPlugin<S extends object>(
       if (!c || !channel) return;
       if (!targetNames.has(c.name)) return;
 
-      const key = `${c.name}:${c.instanceId}`;
+      const key = `${c.name}:${c.$blac.id}`;
       if (receiving.has(key)) return; // avoid echo
 
       const payload = opts.serialize
@@ -322,7 +322,7 @@ function createCrossTabSyncPlugin<S extends object>(
       const msg: SyncMessage = {
         type: 'state-update',
         className: c.name,
-        instanceId: c.instanceId,
+        instanceId: c.$blac.id,
         state: payload,
       };
       channel.postMessage(msg);
@@ -488,7 +488,7 @@ function createAuditLogPlugin(opts: AuditLogOptions): BlacPlugin {
       opts.onEntry({
         kind: 'created',
         className: c.name,
-        instanceId: c.instanceId,
+        instanceId: c.$blac.id,
         timestamp: Date.now(),
         next: san(c.state, c.name),
       });
@@ -506,7 +506,7 @@ function createAuditLogPlugin(opts: AuditLogOptions): BlacPlugin {
       opts.onEntry({
         kind: 'state-changed',
         className: c.name,
-        instanceId: c.instanceId,
+        instanceId: c.$blac.id,
         timestamp: Date.now(),
         prev: san(prev, c.name),
         next: san(next, c.name),
@@ -520,7 +520,7 @@ function createAuditLogPlugin(opts: AuditLogOptions): BlacPlugin {
       opts.onEntry({
         kind: 'disposed',
         className: c.name,
-        instanceId: c.instanceId,
+        instanceId: c.$blac.id,
         timestamp: Date.now(),
         prev: san(c.state, c.name),
       });

@@ -50,7 +50,7 @@ The `requestId` pattern is simpler than AbortController for most cases. Each new
 
 ### Hydration-aware loading
 
-When using the [persistence plugin](/plugins/persistence), state may arrive asynchronously from IndexedDB. Override `init` and `await this.waitForHydration()` before making API calls, so you don't overwrite restored values with a stale fetch:
+When using the [persistence plugin](/plugins/persistence), state may arrive asynchronously from IndexedDB. Override `init` and `await this.$blac.hydration.wait()` before making API calls, so you don't overwrite restored values with a stale fetch:
 
 ```ts
 class SettingsCubit extends Cubit<SettingsState> {
@@ -59,14 +59,14 @@ class SettingsCubit extends Cubit<SettingsState> {
   }
 
   protected override async init() {
-    await this.waitForHydration();
+    await this.$blac.hydration.wait();
     // Now this.state has restored values from IndexedDB
     await this.refreshFromServer();
   }
 }
 ```
 
-`init` is the framework's once-per-instance setup hook — a protected method called after construction, before the first state snapshot, with the bloc's `args`. `waitForHydration()` resolves once the persistence plugin finishes restoring (or immediately if nothing is persisted); see [system events](/core/system-events) for the `hydrationChanged` event that drives it.
+`init` is the framework's once-per-instance setup hook — a protected method called after construction, before the first state snapshot, with the bloc's `args`. `$blac.hydration.wait()` resolves once the persistence plugin finishes restoring (or immediately if nothing is persisted); see [system events](/core/system-events) for the `hydrationChanged` event that drives it.
 
 ## Action-only components
 

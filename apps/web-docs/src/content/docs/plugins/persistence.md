@@ -168,7 +168,7 @@ This is useful for testing or for environments where IndexedDB is not available.
 
 ## Waiting for hydration
 
-`waitForHydration()` is a public method on every state container, not something this plugin adds — it resolves once hydration settles (or immediately, if the bloc was never set up to hydrate). That makes it safe to call even on blocs you have not registered with `.persist()`. Use it in your Cubit to defer work until restored state is in place:
+`$blac.hydration.wait()` is available on every state container, not something this plugin adds — it resolves once hydration settles (or immediately, if the bloc was never set up to hydrate). That makes it safe to call even on blocs you have not registered with `.persist()`. Use it in your Cubit to defer work until restored state is in place:
 
 ```ts
 class AuthCubit extends Cubit<AuthState> {
@@ -177,7 +177,7 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   async initialize() {
-    await this.waitForHydration();
+    await this.$blac.hydration.wait();
     if (this.state.token) {
       await this.refreshSession();
     }
