@@ -1,6 +1,6 @@
 import { Cubit } from './core/Cubit';
 import { StateContainerRegistry } from './core/StateContainerRegistry';
-import { APPLY_DEPS } from './core/symbols';
+import { APPLY_DEPS, INIT_CONFIG } from './core/symbols';
 import { ensure, getRegistry, setRegistry } from './registry';
 import { resolveInstanceKey } from './registry/acquire';
 import type {
@@ -126,7 +126,7 @@ export function createCubitStub<T extends StateContainerConstructor>(
   // Run init() if args are supplied — goes through the same initConfig path
   // that the registry uses, so lifecycle hooks fire correctly.
   if (options?.args != null) {
-    instance.initConfig({ args: options.args });
+    instance[INIT_CONFIG]({ args: options.args });
   }
 
   if (options?.state != null) {
