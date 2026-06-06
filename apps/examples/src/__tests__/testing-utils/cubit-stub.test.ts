@@ -136,12 +136,15 @@ describe('createCubitStub', () => {
   });
 
   describe('stub instances are fully functional', () => {
-    it('supports subscribe/emit like real instances', () => {
+    it('supports subscribe/emit like real instances', async () => {
       const stub = createCubitStub(CounterCubit);
       const listener = vi.fn();
 
       stub.subscribe(listener);
       stub.increment();
+
+      // Channel flushes are microtask-coalesced; listeners fire after a tick.
+      await Promise.resolve();
 
       expect(listener).toHaveBeenCalledOnce();
       expect(stub.state.count).toBe(1);
