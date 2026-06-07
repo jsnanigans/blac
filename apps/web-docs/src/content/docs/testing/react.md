@@ -139,7 +139,8 @@ When a component renders a bloc that takes `args` or `deps`, you can pre-build t
 ```tsx
 it('renders a profile seeded from args and deps', () => {
   // function Profile() {
-  //   const [s] = useBloc(ProfileCubit, { args: { name: 'Alice' }, deps: { token } });
+  //   const [s] = useBloc(ProfileCubit, { args: { name: 'Alice' } });
+  //   // deps are wired from a mount effect in app code; the test seeds them below.
   //   ...
   // }
   const { bloc } = renderWithBloc(<Profile />, {

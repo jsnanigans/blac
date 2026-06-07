@@ -70,13 +70,11 @@ class SettingsCubit extends Cubit<SettingsState> {
 
 ## Action-only components
 
-Components that only trigger actions and never display state don't need tracking at all. Opt out of auto-tracking by passing a `select` that returns a constant empty array — it has nothing that can change, so the component never re-renders:
+Components that only trigger actions and never display state do not need a selector. Just avoid reading from `state`: auto-tracking records an empty dependency set, so state changes have nothing to wake.
 
 ```tsx
-const selectNothing = () => [];
-
 function QuickAdd() {
-  const [, todo] = useBloc(TodoCubit, { select: selectNothing });
+  const [, todo] = useBloc(TodoCubit);
 
   return <button onClick={() => todo.addItem('New item')}>Add Item</button>;
 }
@@ -84,8 +82,8 @@ function QuickAdd() {
 
 This component renders once and never re-renders, regardless of state changes.
 
-:::tip[Keep `select` referentially stable]
-Define the selector outside the component (or wrap it in `useCallback`). A fresh function every render re-keys the subscription. There is no `autoTrack` option — passing `select` _is_ how you opt out. See [Performance](/react/performance) for the full reader/writer split rationale and [useBloc](/react/use-bloc) for `select` semantics.
+:::tip[Use `select` for derived dependencies]
+Reach for `select` when a computed value or explicit dependency list should drive re-renders. Do not use it just to make an action-only component quiet. See [Performance](/react/performance) for the full reader/writer split rationale and [useBloc](/react/use-bloc) for `select` semantics.
 :::
 
 ## Named instances

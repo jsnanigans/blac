@@ -123,9 +123,9 @@ There are two tracking modes, chosen by whether you pass a `select` option — t
 | Mode                        | How                                                      | Best for                                           |
 | --------------------------- | -------------------------------------------------------- | -------------------------------------------------- |
 | **Auto-tracking** (default) | Proxy records property access during render              | Most components                                    |
-| **`select`** (manual)       | You return an array; re-render when it changes per-index | Complex conditions, computed values, or opting out |
+| **`select`** (manual)       | You return an array; re-render when it changes per-index | Complex conditions or computed values              |
 
-A component that wants to _never_ re-render on state (an action-only button, say) is just the `select` mode with a constant array. See [Dependency Tracking](/react/dependency-tracking) for the full story, including the conditional-read caveat.
+A component that only calls methods and never displays state needs no special option: do not read from `state`, and auto-tracking records nothing to wake it. See [Dependency Tracking](/react/dependency-tracking) for the full story, including the conditional-read caveat.
 
 ## Plugins
 

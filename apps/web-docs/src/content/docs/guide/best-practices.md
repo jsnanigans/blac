@@ -316,11 +316,11 @@ function CartSummary() {
 ```
 
 :::tip[Action-only components]
-A component that only triggers actions and never displays state doesn't need tracking at all. Pass a `select` returning an empty array to opt out of auto-tracking so it renders once and never re-renders:
+A component that only triggers actions and never displays state does not need a selector. Do not read from `state`, and auto-tracking records nothing to wake:
 
 ```tsx
 function QuickAdd() {
-  const [, todo] = useBloc(TodoCubit, { select: () => [] });
+  const [, todo] = useBloc(TodoCubit);
   return <button onClick={() => todo.addItem('New')}>Add</button>;
 }
 ```

@@ -350,7 +350,7 @@ class UserCubit extends Cubit<UserState> {
 
 ## Typing `select`
 
-`select` lets a consumer opt out of auto-tracking and re-render only when an explicit array of values changes (compared per-index with `Object.is`). Its signature is:
+`select` lets a consumer use an explicit dependency array instead of auto-tracked reads. The component re-renders only when one of those values changes (compared per-index with `Object.is`). Its signature is:
 
 ```ts twoslash
 import type {

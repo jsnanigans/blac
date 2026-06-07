@@ -137,7 +137,7 @@ Putting it together, one update flows like this:
 4. Consumers with a non-empty intersection re-render (React) or have their callback invoked. The rest stay asleep.
 5. On the next render, the proxy re-records the interest from scratch — so if a component conditionally reads different fields, the tracked set adapts automatically.
 
-The practical takeaway: read exactly the state you render, keep state immutable, and BlaC will re-render the minimum. To opt out of auto-tracking for a specific consumer — for example to derive a value array and re-render only on shallow changes — use the `select` option on `useBloc` (see [Dependency Tracking](/react/dependency-tracking#the-select-escape-hatch)).
+The practical takeaway: read exactly the state you render, keep state immutable, and BlaC will re-render the minimum. To drive a specific consumer from an explicit derived-value array instead of render-time reads, use the `select` option on `useBloc` (see [Dependency Tracking](/react/dependency-tracking#the-select-escape-hatch)).
 
 ## See also
 

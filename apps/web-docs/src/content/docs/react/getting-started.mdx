@@ -102,7 +102,7 @@ Auto-tracking is on by default and needs no configuration. The only knob is per 
 | Manual select | `select: (s) => [s.count]` | A selected value changes (per-index `Object.is`) |
 
 :::tip[There is no `autoTrack` flag and no required config]
-Tracking is automatic and structural — driven by a render-time proxy, not by decorating fields or flipping a switch. `configureBlacReact` exists but currently has no options. To opt out of auto-tracking for one component, use `select`. See [Dependency Tracking](/react/dependency-tracking) for the full model.
+Tracking is automatic and structural — driven by a render-time proxy, not by decorating fields or flipping a switch. `configureBlacReact` exists but currently has no options. Use `select` only when a computed value or explicit dependency list should drive re-renders. See [Dependency Tracking](/react/dependency-tracking) for the full model.
 :::
 
 ## Instance modes at a glance

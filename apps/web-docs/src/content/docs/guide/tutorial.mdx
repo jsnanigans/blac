@@ -226,7 +226,7 @@ function List() {
 }
 ```
 
-`select` returns an array; the component re-renders when any entry changes by identity. Because `visible` returns a fresh array only when `todos` or `filter` actually change, this wakes the list at the right moments and no more.
+`select` returns an array; the component re-renders when any entry changes by identity. That identity boundary matters: this getter may allocate a new filtered array when it runs, so keep the selector focused on values that should wake the list. In this tutorial, `todos` and `filter` are the only fields that affect `visible`, so this wakes the list at the right moments. If unrelated state changes also cause the selector to run, memoize the derived array or select the source fields instead.
 
 ### Checkpoint — it works
 
