@@ -23,7 +23,7 @@ expect(cart.total).toBe(20);
 
 Store-closure designs can be tested headless too, but it is less direct: you reach through the store's `getState`/`setState` rather than calling a method on an object, and shared mutable module state between tests is easy to leak. A fresh `new CartCubit()` per test is the natural isolation boundary.
 
-**Getters are derived state, for free.** A `get total()` recomputes from `items` on every read, so it can never drift from its source. The tracker records the getter's underlying reads, so a component that reads `cart.total` wakes only when `items` actually changes the computed result — no `useMemo`, no `reselect`, no memo input arrays to keep in sync. Derived state in an atom library is its own atom you compose and wire; here it is a method body.
+**Getters are derived state, for free.** A `get total()` recomputes from `items` on every read, so it can never drift from its source. The tracker records the getter's underlying reads, so a component that reads `cart.total` wakes when the source paths the getter touched change — no `useMemo`, no `reselect`, no memo input arrays to keep in sync. Use `select` when the computed result itself should gate re-renders. Derived state in an atom library is its own atom you compose and wire; here it is a method body.
 
 **The lineage is `flutter_bloc`, deliberately.** "Business Logic Component" is the Flutter pattern: a class that owns a slice of logic and emits state. BlaC keeps the `Cubit` half of that lineage (methods you call, not events you dispatch — there is no `Bloc` event class; see [Best Practices](/guide/best-practices)) because the testability and colocation win travels straight across from Flutter to React.
 

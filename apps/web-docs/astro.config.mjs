@@ -61,6 +61,72 @@ const headPropagationSeedFix = {
   },
 };
 
+/** @param {any} node */
+function hastText(node) {
+  if (!node) return '';
+  if (typeof node.value === 'string') return node.value;
+  if (!Array.isArray(node.children)) return '';
+  return node.children.map(hastText).join('');
+}
+
+/**
+ * @param {any} node
+ * @param {(node: any) => void} fn
+ */
+function visitHast(node, fn) {
+  fn(node);
+  if (!Array.isArray(node.children)) return;
+  for (const child of node.children) visitHast(child, fn);
+}
+
+function rehypeTableCellLabels() {
+  /** @param {any} tree */
+  return (tree) => {
+    visitHast(tree, (node) => {
+      if (node?.type !== 'element' || node.tagName !== 'table') return;
+
+      const thead = node.children?.find(
+        (child) => child?.type === 'element' && child.tagName === 'thead'
+      );
+      const headerRow = thead?.children?.find(
+        (child) => child?.type === 'element' && child.tagName === 'tr'
+      );
+      const headers =
+        headerRow?.children
+          ?.filter((child) => child?.type === 'element' && child.tagName === 'th')
+          .map((child) => hastText(child).replace(/\s+/g, ' ').trim())
+          .filter(Boolean) ?? [];
+
+      if (headers.length === 0) return;
+
+      const tbodies =
+        node.children?.filter(
+          (child) => child?.type === 'element' && child.tagName === 'tbody'
+        ) ?? [];
+
+      for (const tbody of tbodies) {
+        const rows =
+          tbody.children?.filter(
+            (child) => child?.type === 'element' && child.tagName === 'tr'
+          ) ?? [];
+
+        for (const row of rows) {
+          const cells =
+            row.children?.filter(
+              (child) => child?.type === 'element' && child.tagName === 'td'
+            ) ?? [];
+
+          cells.forEach((cell, index) => {
+            const label = headers[index];
+            if (!label) return;
+            cell.properties = { ...cell.properties, 'data-label': label };
+          });
+        }
+      }
+    });
+  };
+}
+
 // https://astro.build/config
 export default defineConfig({
   vite: { plugins: [headPropagationSeedFix] },
@@ -75,6 +141,7 @@ export default defineConfig({
   // interactive demo pages that were converted `.md` → `.mdx`.
   markdown: {
     remarkPlugins: [remarkGfm],
+    rehypePlugins: [rehypeTableCellLabels],
   },
   integrations: [
     // React renderer for the interactive demo islands under

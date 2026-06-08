@@ -149,8 +149,8 @@ class UserCubit extends Cubit<UserState> {
 }
 ```
 
-:::caution[Getters don't auto-subscribe by themselves]
-Auto-tracking records reads on the `state` proxy, **not** on the bloc instance. Reading `user.isLoading` directly off the bloc in render does _not_ register a dependency, so the component won't wake when `status` changes. Read the getter's source through `state` (e.g. `void state.status`) in render, or depend on the getter via `select: (_, bloc) => [bloc.isLoading]`. Full rule: [Dependency Tracking](/react/dependency-tracking) and [Performance](/react/performance#pattern-getters-as-computed-properties).
+:::tip[Loading getters track in render]
+Reading `user.isLoading` directly in render is reactive: the returned bloc is proxied, and `this.state.status` inside the getter records through the current state proxy. Use `select: (_, bloc) => [bloc.isLoading]` only when you want the boolean result to be the re-render boundary. Full rule: [Dependency Tracking](/react/dependency-tracking) and [Performance](/react/performance#pattern-getters-as-computed-properties).
 :::
 
 ## A reusable loadable surface

@@ -171,12 +171,12 @@ class TodoCubit extends Cubit<{ items: string[]; input: string }> {
 
 Notice the two write styles: `addTodo` uses `update` and lists _both_ keys (replacing the whole state), while `removeTodo` uses `patch` and mentions _only_ `items` (merging into the rest). Both are correct — the difference is exactly the replace-vs-merge rule from Step 1.
 
-Getters like `isEmpty` derive a value on every read, so they can never drift from `items`. One subtlety: auto-tracking records reads on the `state` proxy, _not_ on the bloc instance — so reading `todo.isEmpty` alone won't wake the component. Read the getter's source through `state` in render (e.g. `state.items.length`) to stay subscribed, or depend on the getter explicitly with `select`. The full rule is in [Dependency Tracking](/react/dependency-tracking). For async work (loading flags, fetches, request guards), see [Patterns & Recipes](/guide/patterns).
+Getters like `isEmpty` derive a value on every read, so they can never drift from `items`. When a component reads `todo.isEmpty` during render, auto-tracking records the getter's underlying `this.state.items.length` read through the proxy. Use `select` only when you want the getter's return value to be the explicit re-render boundary. The full rule is in [Dependency Tracking](/react/dependency-tracking). For async work (loading flags, fetches, request guards), see [Patterns & Recipes](/guide/patterns).
 
 :::caution[Component not re-rendering?]
 The two most common first-time causes:
 
-1. **Reading state off the bloc instead of the `state` proxy.** Auto-tracking only records reads on the destructured `state` value — `counter.state.count`, or a getter read directly on the instance, won't subscribe you. Read through `state` in render.
+1. **Reading raw state off the bloc instead of the `state` proxy.** Auto-tracking records reads on the destructured `state` value and on getters read from the returned `bloc` proxy during render. It does not track `counter.state.count`, because that reads raw state directly. Read through `state` in render, or expose a getter that reads `this.state`.
 2. **Expecting `emit`/`update` to merge.** They _replace_ the whole state, so any key you omit is dropped. Use `patch` to merge, or spread the previous state.
 
 The full symptom list is in [Troubleshooting & FAQ](/guide/troubleshooting).

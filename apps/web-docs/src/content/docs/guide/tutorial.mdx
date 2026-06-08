@@ -208,7 +208,7 @@ export class TodoCubit extends Cubit<TodoState> {
 }
 ```
 
-One subtlety carried over from [Quick Start](/guide/getting-started) and spelled out in [Dependency Tracking](/react/dependency-tracking): auto-tracking records reads on the `state` proxy, **not** on getters read off the bloc instance. A component that renders `todo.visible` but never touches `state` won't be subscribed to anything. The fix is to depend on the getter explicitly with `select`:
+Auto-tracking handles getters read during render: the `todo` value returned by `useBloc` is proxied, so `todo.visible` records the `todos` and `filter` reads inside the getter. Here we still use `select` because `visible` allocates a filtered array; the selector makes that computed array the explicit re-render boundary:
 
 ```tsx
 function List() {
@@ -521,7 +521,7 @@ Open `/TodoCubit.ts` and compare it with the Step 4 version above. The diff that
 
 - **One Cubit, many thin consumers.** Each component reads only its slice via `useBloc`; action-only components read nothing and never re-render.
 - **`patch` for the data path; the replace-vs-merge rule from [Quick Start](/guide/getting-started).** State is always handed over as a fresh immutable value, never mutated in place.
-- **Derived getters over stored duplicates.** `visible`, `remaining`, `canUndo` recompute on read and cannot drift; `select` subscribes a component to a getter.
+- **Derived getters over stored duplicates.** `visible`, `remaining`, `canUndo` recompute on read and cannot drift; auto-tracking records getter reads in render, and `select` can gate on getter results.
 - **View state lives apart from durable data.** `filter` and load `status` describe rendering, so they stay out of the history that records the todos.
 - **A single mutation funnel makes cross-cutting features cheap.** Once every change flowed through `commit`, undo/redo/time-travel was an afternoon, not a rewrite.
 - **Async is just methods that emit.** A request-id guard and an explicit status union replace Suspense — see the [Async guide](/guide/async).

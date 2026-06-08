@@ -30,7 +30,7 @@ function useBloc<T extends StateContainerConstructor>(
 | Index | Name    | Description                                                                                                                                                                                                                                |
 | ----- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 0     | `state` | Current state. In auto-tracking mode (the default) this is a tracking proxy that records which paths you read so re-renders stay scoped to them. In `select` mode it's the raw state object.                                               |
-| 1     | `bloc`  | The Cubit instance. Call its methods to drive changes (`bloc.increment()`). The instance itself is not proxied — to make a computed getter drive re-renders, read it inside [`select`](#select) (`select: (state, bloc) => [bloc.total]`). |
+| 1     | `bloc`  | A per-consumer proxy for the Cubit instance. Call its methods to drive changes (`bloc.increment()`). Getters read during render auto-track because `this.state` inside the getter is routed through the current state proxy. |
 | 2     | `ref`   | An advanced-use ref object for component-bloc binding. You almost never need it; destructure just the first two values.                                                                                                                    |
 
 Typically you destructure just the first two:
@@ -122,7 +122,7 @@ const [state] = useBloc(UserCubit, {
 });
 ```
 
-The function receives both state and the bloc instance, so you can depend on getters:
+The function receives both state and the bloc instance, so you can use getters as the explicit re-render boundary:
 
 ```tsx
 const [state, cart] = useBloc(CartCubit, {

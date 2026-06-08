@@ -44,7 +44,7 @@ If you genuinely want an event-sourced log (every intent recorded as a value bef
 Two rules keep state honest:
 
 1. **Prefer flat and serializable.** Deeply nested or non-serializable state (class instances, `Map`/`Set`/`Date`, DOM nodes, functions) is harder to diff, harder to persist, and is treated as an opaque leaf by auto-tracking — see [Dependency Tracking](/react/dependency-tracking). `patch` accepts a `DeepPartial<S>` so shallow shapes update cleanly. Deep nesting is supported, but flat shapes are easier to reason about; reach for nesting only when the domain truly is nested.
-2. **Never store what you can derive.** A derived value stored in state is a second source of truth you must remember to keep in sync. Expose it as a getter instead — the tracker records getter access and only re-renders consumers when the _computed result_ they read actually changes.
+2. **Never store what you can derive.** A derived value stored in state is a second source of truth you must remember to keep in sync. Expose it as a getter instead — auto-tracking records the state paths the getter reads, and `select` is available when a consumer should wake only when the computed result changes.
 
 ```ts
 // Good — totals are getters; state has one source of truth

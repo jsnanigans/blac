@@ -31,7 +31,7 @@ function useBloc<T extends StateContainerConstructor>(
 ];
 ```
 
-**Returns:** `[state, bloc, ref]` where `state` is a tracking Proxy. Any property accessed through `state` during render is recorded as a dependency. The component re-renders only when a recorded path changes.
+**Returns:** `[state, bloc, ref]` where `state` is a tracking Proxy and `bloc` is a per-consumer proxy for the instance. Any property accessed through `state` during render is recorded as a dependency. Getters read through `bloc` during render also record their underlying `this.state` reads. The component re-renders only when a recorded path changes.
 
 **Behavior.**
 
@@ -64,8 +64,7 @@ function UserAvatar() {
 | `state.items[0]`                                                 | `items.0`           | Indexed access on an array.                 |
 | `state.items.length`                                             | `items.length`      | `.length` is an own property read.          |
 | Reading the whole object: `const u = state.user` (no deeper key) | `user`              | Wakes on **any** change to `user`.          |
-
-Tracking is recorded by the **`state` proxy only**. Reading a getter on the `bloc` instance (`bloc.total`) does **not** register a dependency — see the warning below.
+| Getter read in render: `bloc.total`                              | getter source paths | The returned bloc is proxied; `this.state` inside the getter uses the tracking proxy. |
 
 :::tip[Sibling-leaf isolation]
 Recording is **leaf-only**: reading `state.user.name` records `user.name`, not `user`. So when an immutable update replaces the `user` object because a _sibling_ (`user.address`) changed, a component that only read `user.name` does **not** re-render — its observed leaf still resolves to the same value. Read the whole `user` object (with no deeper key) and you opt back into waking on any change beneath it.
@@ -83,7 +82,7 @@ These are the patterns newcomers expect to track but don't — or that track mor
 - **Iteration coarsens to the entry path** — `.map`, `.find`, `.reduce`, `for..of` record the array path (`items`) but **not** per-index paths, and their callbacks receive raw (un-proxied) values. A list re-renders when the array changes, not per item. See [Performance](/react/performance#list-rendering-patterns) for the per-item isolation pattern.
 - **Non-plain values are leaves, not deeply tracked** — only plain objects `{}` and arrays `[]` are proxied. A `Map`, `Set`, `Date`, or class instance in your state is treated as a single leaf: BlaC detects a _reference_ change at that value's own path, but reading _into_ it (`state.cache.get(id)`) records nothing finer. Replace the whole value on update, or model that data as plain objects/arrays.
 - **Methods read off the prototype don't record** — reading `bloc.increment` without calling it records nothing (methods live on the prototype, not as own properties). This is fine: action handlers shouldn't drive re-renders.
-- **Getters on the `bloc` instance do not auto-track** — only the `state` proxy records paths. Reading `bloc.total` (a getter) does **not** register the state it computes from. To wake on the getter's inputs, read the source path through `state` in the render body (e.g. `state.items.length`), which keeps the getter result current; or depend on the getter explicitly with `select: (state, bloc) => [bloc.total]`.
+- **Getter reads outside render do not track** — a getter read in an effect, event handler, async callback, or after commit sees live state but records no dependency. Read the getter in the render body if it should drive re-renders, or use `select: (state, bloc) => [bloc.total]` when you want the getter's return value to be the explicit boundary.
   :::
 
 ### Conditional reads
@@ -148,7 +147,7 @@ const [state, cart] = useBloc(CartCubit, {
 
 ### When to reach for `select`
 
-- You want re-renders driven by a **computed value** (a getter combining several fields) rather than the raw fields auto-tracking would pick up.
+- You want re-renders driven by a **computed value** (a getter combining several fields) rather than every source path the getter reads.
 - Auto-tracking records more paths than you want and you want to pin the dependency set explicitly, the way you would a `useMemo` dependency array.
 - You want a value that is intentionally _coarser_ or _derived_ (e.g. `[bloc.isEmpty]` re-renders on the empty/non-empty boundary, not on every item added).
 

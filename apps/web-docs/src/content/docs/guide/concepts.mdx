@@ -116,7 +116,7 @@ The tracking also works for:
 - Nested properties: `state.user.profile.name` (records the leaf path)
 - Array access: `state.items.length`, `state.items[0]`
 
-Only reads on the `state` proxy are recorded. Reading a getter on the `bloc` instance (`bloc.total`) does **not** auto-track on its own — wake the consumer by reading the getter's source path through `state` in render, or depend on the getter via `select`. See [Dependency Tracking](/react/dependency-tracking).
+Getter reads participate too: the `bloc` returned by `useBloc` is proxied, so reading `bloc.total` during render records the `this.state` paths the getter touches. Use `select` when you want a getter's return value, rather than its source paths, to decide re-renders. See [Dependency Tracking](/react/dependency-tracking).
 
 There are two tracking modes, chosen by whether you pass a `select` option — there is no separate on/off flag:
 

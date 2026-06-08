@@ -322,7 +322,7 @@ export const selectTotal = createSelector(
 ```
 
 BlaC derives values in a getter on the class. Auto-tracking records the getter's underlying reads, so
-a component that reaches `state.items` stays subscribed without a separate selector:
+a component can read `cart.total` and stay subscribed to the source paths without a separate selector:
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -344,8 +344,7 @@ class CartCubit extends Cubit<{ items: CartItem[] }> {
 }
 ```
 
-A component that reads `state.items` re-renders when `items` changes; the getter recomputes the total
-on that same render — no memoization layer, no Reselect import.
+A component that reads `cart.total` during render re-renders when the getter's source paths change — no memoization layer, no Reselect import. Use `select` if the computed total itself should gate re-renders.
 
 ## DevTools
 

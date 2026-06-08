@@ -71,11 +71,11 @@ class TagCubit extends Cubit<{ tags: Set<string> }> {
 
 :::
 
-## Getters do not auto-track
+## Getters auto-track during render
 
 A getter on the bloc is **derived state**: it reads other state and computes a value. Getters are the right way to model a value derived from state — a `get total()` is recomputed on every read and can never drift from `items`.
 
-But a getter does **not** participate in auto-tracking. The recording proxy wraps only the `state` value that `useBloc` returns — never the bloc instance. When a getter runs it reads `this.state`, the _raw_ state, so reading `bloc.total` in a component records **nothing**:
+In React auto-tracking mode, the `bloc` returned by `useBloc` is a per-consumer proxy too. Getter calls are invoked with a tracked `this`, so `this.state` inside the getter resolves to the current render's recording proxy:
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -86,24 +86,24 @@ interface CartItem {
 
 class CartCubit extends Cubit<{ items: CartItem[]; coupon: string | null }> {
   get total() {
-    // reads this.state.items — the RAW state, not the consumer's proxy
+    // During render, this records `items` through the consumer's proxy.
     return this.state.items.reduce((sum, i) => sum + i.price, 0);
   }
 }
 ```
 
-To make a derived value reactive, either read its **source paths through `state`**, or name the getter in a `select`:
+So a render can read the getter directly:
 
 ```tsx
-// A — touch the source path through `state`, so it joins the tracked set
 function Total() {
-  const [state, cart] = useBloc(CartCubit);
-  void state.items;
+  const [, cart] = useBloc(CartCubit);
   return <span>{cart.total}</span>;
 }
+```
 
-// B — depend on the getter explicitly; `select` gates re-renders and you
-//     still read the value off the bloc
+Use `select` when you want the getter's return value, rather than its source paths, to gate re-renders:
+
+```tsx
 function Total() {
   const [, cart] = useBloc(CartCubit, {
     select: (state, cart) => [cart.total],
@@ -176,21 +176,19 @@ class TagCubit extends Cubit<{ tags: Set<string> }> {
 }
 ```
 
-### Getter on `bloc` never wakes the component
+### Getter read outside render never wakes the component
 
-**Symptom:** A component reads `bloc.computedValue` (a getter) and never re-renders when the getter's inputs change.
+**Symptom:** Code reads `bloc.computedValue` (a getter) in an effect, event handler, async callback, or other post-render code and expects that read to subscribe the component.
 
-**Cause:** The recording proxy wraps `state` only — the bloc instance is never proxied. Reading a getter off the bloc runs internally against `this.state` (the raw state), so nothing is recorded in the consumer's interest set.
+**Cause:** The recording proxy is active only while React is evaluating the render body. After commit, getters fall through to live state and record nothing.
 
-**Fix:** Touch the getter's source paths through `state` during render, or depend on the getter via `select`:
+**Fix:** Read the getter during render, or depend on it via `select`:
 
 ```tsx
-// Touch the source path so the interest set includes it
 function Total() {
-  const [state, cart] = useBloc(CartCubit);
-  void state.items; // records `items`
+  const [, cart] = useBloc(CartCubit);
   return <span>${cart.total}</span>;
 }
 ```
 
-See [Getters do not auto-track](#getters-do-not-auto-track) above and [Performance: Getters as computed properties](/react/performance#pattern-getters-as-computed-properties).
+See [Getters auto-track during render](#getters-auto-track-during-render) above and [Performance: Getters as computed properties](/react/performance#pattern-getters-as-computed-properties).

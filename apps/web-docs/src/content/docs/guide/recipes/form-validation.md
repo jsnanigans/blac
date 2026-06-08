@@ -106,7 +106,8 @@ class RegisterCubit extends Cubit<RegisterState> {
 ```tsx
 function RegisterForm() {
   const [state, form] = useBloc(RegisterCubit);
-  const { errors, touched } = state;
+  const errors = form.errors;
+  const { touched } = state;
 
   return (
     <form
@@ -163,8 +164,9 @@ function RegisterForm() {
 :::tip[Errors as a getter, not state]
 Storing computed errors in state means every field change requires updating two
 places — they will eventually drift. A getter recalculates on read and is always
-in sync. Reading `form.errors` off the bloc in render needs a `select` or a
-`void state.*` dependency read; see [Dependency Tracking](/react/dependency-tracking).
+in sync. Reading `form.errors` in render auto-tracks the state fields the getter
+touches; use `select` only when the getter result should be the explicit
+re-render boundary. See [Dependency Tracking](/react/dependency-tracking).
 :::
 
 :::caution[PII in state]

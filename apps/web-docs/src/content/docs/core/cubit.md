@@ -212,10 +212,10 @@ class ProfileCubit extends Cubit<ProfileState> {
 
 Getters are how you model **derived state** — values computed from other state rather than stored. Prefer a getter over storing a computed field: a stored `total` can drift out of sync with `items`, but a `get total()` is recomputed on every read and can never be stale.
 
-A getter has no signature fence of its own — it is plain TypeScript on your subclass. The one rule that is easy to miss:
+A getter has no signature fence of its own — it is plain TypeScript on your subclass. In React render, it participates in auto-tracking:
 
-:::caution[Reading a getter off the bloc does not subscribe]
-Reading a getter **off the bloc instance** (`bloc.total`) does **not** subscribe a component to the state it derives from — auto-tracking only records reads on the `state` proxy, never on the bloc. To re-render when a getter's inputs change, read those inputs through `state` in the render body (e.g. `state.items`), or name the getter in a `select`: `useBloc(CartCubit, { select: (state, bloc) => [bloc.total] })`. See [Dependency Tracking](/react/dependency-tracking#what-does-not-register-a-dependency).
+:::tip[Getters auto-track in render]
+Reading a getter from the `bloc` returned by `useBloc` (`bloc.total`) records the `this.state` paths the getter touches. Name the getter in `select` only when the getter's return value should be the explicit re-render boundary: `useBloc(CartCubit, { select: (state, bloc) => [bloc.total] })`. See [Dependency Tracking](/react/dependency-tracking).
 :::
 
 ```ts twoslash
@@ -246,9 +246,8 @@ class CartCubit extends Cubit<{ items: CartItem[] }> {
 
 ```tsx
 function CartSummary() {
-  const [state, cart] = useBloc(CartCubit);
-  // re-renders when items change because we read state.items via the getter's input
-  void state.items.length;
+  const [, cart] = useBloc(CartCubit);
+  // re-renders when items change because the getter reads this.state.items
   return <span>Total: ${cart.total}</span>;
 }
 ```

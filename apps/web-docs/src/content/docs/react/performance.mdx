@@ -145,19 +145,19 @@ class CartCubit extends Cubit<{ items: CartItem[] }> {
 }
 ```
 
-:::caution[Getters on `bloc` are not auto-tracked]
-Auto-tracking records paths through the **`state` proxy only**. Reading `bloc.total` does _not_ register a dependency on `items`, so a component that reads only `bloc.total` won't re-render when items change. There are two correct ways to consume a getter:
+:::tip[Getters auto-track in render]
+The `bloc` returned by `useBloc` is also proxied for getters. When a render reads `cart.total`, the getter runs with a tracked `this.state`, so its source paths join the component's interest set automatically:
 
 ```tsx
-// 1. Read the getter's source path through `state` so the consumer wakes,
-//    then call the getter for the computed result.
 function CartTotal() {
-  const [state, cart] = useBloc(CartCubit);
-  void state.items; // track the source path
+  const [, cart] = useBloc(CartCubit);
   return <span>${cart.total}</span>;
 }
+```
 
-// 2. Or depend on the getter explicitly with `select` (it runs the getter).
+Use `select` when you want the getter's return value to be the boundary instead of the source paths. For example, this wakes only when `total` changes value:
+
+```tsx
 function CartTotalSelected() {
   const [, cart] = useBloc(CartCubit, {
     select: (_, bloc) => [bloc.total],
@@ -166,7 +166,7 @@ function CartTotalSelected() {
 }
 ```
 
-Option 1 wakes whenever `items` changes; option 2 wakes only when `total` actually changes value. Either is preferable to reading the raw array and reducing it inside the component.
+Auto-tracking wakes when one of the getter's tracked source paths changes; `select` wakes when the selected getter result changes by `Object.is`. Either is preferable to reading the raw array and reducing it inside the component.
 :::
 
 ## List-rendering patterns
@@ -267,7 +267,7 @@ These all manifest the same way in the Profiler: a component re-renders on a cha
   return <Icon badge={!cart.isEmpty} />;
   ```
 
-  Note `!cart.isEmpty` alone (without `select`) would **not** re-render — bloc getters aren't auto-tracked. See [Getters as computed properties](#pattern-getters-as-computed-properties).
+  Reading `!cart.isEmpty` without `select` also tracks correctly, but it wakes on the getter's source paths. Use `select` when only the empty/non-empty boundary should re-render. See [Getters as computed properties](#pattern-getters-as-computed-properties).
 
 - **Reading a whole object when you need one field** wakes on any sibling change. Read the leaf (`state.user.name`), not the object (`state.user`).
 - **Destructuring then drilling off the raw value** — `const { user } = state; user.name` tracks `user`, not `user.name`. Drill through the proxy: `state.user.name`.
@@ -302,25 +302,15 @@ This keeps the component body clean and avoids the usual `useEffect` dependency-
 
 For the full FAQ see [Troubleshooting](/guide/troubleshooting). Below are the performance-specific problems.
 
-### Getter on `bloc` does not trigger re-renders
+### Getter wakes more often than expected
 
-**Symptom:** A component reads `bloc.total` (a getter) and does not re-render when the values the getter derives from change.
+**Symptom:** A component reads `bloc.total` (a getter) and re-renders whenever its source paths change, even when the computed total is the same.
 
-**Cause:** Auto-tracking records reads on the `state` proxy only — never on the bloc instance. `bloc.total` reads `this.state` internally (the raw state, not the proxy), so the component records nothing.
+**Cause:** Auto-tracking records the getter's underlying `this.state` reads. That is usually what you want, but it means the source paths, not the computed return value, drive wakeups.
 
-**Fix:** Either touch the source path through `state` to join the tracked set, or depend on the getter explicitly with `select`:
-
-```tsx
-// A — touch the source path so it's tracked; getter provides the result
-function CartTotal() {
-  const [state, cart] = useBloc(CartCubit);
-  void state.items; // records `items` — component wakes when items change
-  return <span>${cart.total}</span>;
-}
-```
+**Fix:** Depend on the getter explicitly with `select` when the computed value should gate re-renders:
 
 ```tsx
-// B — select gates re-renders on the getter's return value changing
 function CartTotal() {
   const [, cart] = useBloc(CartCubit, {
     select: (_, bloc) => [bloc.total],
@@ -329,7 +319,7 @@ function CartTotal() {
 }
 ```
 
-Option A wakes on every `items` change; option B wakes only when `total` changes value. See [Getters as computed properties](#pattern-getters-as-computed-properties) above.
+Auto-tracking is still correct for the default case: `const [, cart] = useBloc(CartCubit); return <span>{cart.total}</span>;`. See [Getters as computed properties](#pattern-getters-as-computed-properties) above.
 
 ### `select` re-keys / re-subscribes every render
 

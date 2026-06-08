@@ -142,8 +142,7 @@ function TodoRow({ id, text, done }: { id: string; text: string; done: boolean }
 }
 
 function List() {
-  // Reads state.todos + state.filter (through the getter's source) and wakes
-  // only when those change.
+  // Select makes the computed visible array the re-render boundary.
   const [, todo] = useBloc(TodoCubit, {
     select: (_, bloc) => [bloc.visible],
   });

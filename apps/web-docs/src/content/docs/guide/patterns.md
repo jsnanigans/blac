@@ -316,7 +316,7 @@ Two `<UploadWidget />` siblings get two independent instances; each is disposed 
 
 ## Getter-based computed values
 
-Define getters on your Cubit for derived state instead of storing the computed value in state. One caveat: auto-tracking records reads on the `state` proxy only, so reading a getter off the `bloc` instance (`todo.activeCount`) does **not** register a dependency by itself. Wake the consumer either by reading the getter's source path through `state` in render, or by depending on the getter via `select`. See [Performance: getters as computed properties](/react/performance#pattern-getters-as-computed-properties).
+Define getters on your Cubit for derived state instead of storing the computed value in state. In React render, getters auto-track: reading `todo.activeCount` records the `this.state` paths the getter touches through the returned bloc proxy. Use `select` when you want the getter's return value, rather than its source paths, to decide re-renders. See [Performance: getters as computed properties](/react/performance#pattern-getters-as-computed-properties).
 
 ```ts
 class TodoCubit extends Cubit<TodoState> {
@@ -338,10 +338,7 @@ class TodoCubit extends Cubit<TodoState> {
 
 ```tsx
 function TodoStats() {
-  const [state, todo] = useBloc(TodoCubit);
-  // Read the getter's source path through `state` so the consumer wakes,
-  // then call the getter for the computed result.
-  void state.items;
+  const [, todo] = useBloc(TodoCubit);
   return (
     <span>
       {todo.activeCount} active, {todo.completedCount} done
@@ -349,7 +346,7 @@ function TodoStats() {
   );
 }
 
-// Or depend on the getters explicitly with `select` (each runs the getter):
+// Or use `select` so the getter results gate re-renders:
 function TodoStatsSelected() {
   const [, todo] = useBloc(TodoCubit, {
     select: (_, bloc) => [bloc.activeCount, bloc.completedCount],

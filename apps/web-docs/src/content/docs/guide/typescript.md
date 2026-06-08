@@ -165,8 +165,8 @@ class CartCubit extends Cubit<CartState> {
 }
 ```
 
-:::caution[A getter on the instance does not drive re-renders by itself]
-Auto-tracking records reads on the `state` proxy, not on the bloc instance. Reading `cart.total` directly in render won't subscribe the component to `items`. To make a getter reactive, read it through [`select`](#typing-select) (`select: (state, bloc) => [bloc.total]`) or read the underlying state path in render. This is a _runtime_ tracking rule, not a type rule — the types let you read `cart.total` anywhere. See [Dependency Tracking](/react/dependency-tracking).
+:::tip[Getters track in render]
+Reading `cart.total` directly in render is reactive: the `bloc` returned by `useBloc` is proxied, and `this.state` inside the getter records through the current state proxy. Use [`select`](#typing-select) (`select: (state, bloc) => [bloc.total]`) only when the getter's return value should be the explicit re-render boundary. This is a _runtime_ tracking rule, not a type rule — the types let you read `cart.total` anywhere. See [Dependency Tracking](/react/dependency-tracking).
 :::
 
 ## Discriminated unions and narrowing
@@ -597,4 +597,4 @@ These utilities, plus `ExtractArgs`, `ExtractDeps`, and the rest, are documented
 - [Cubit](/core/cubit) — `emit` / `update` / `patch`, `init`, getters, and lifecycle
 - [useBloc](/react/use-bloc) — the hook, its option surface, and `select`
 - [Passing Inputs](/guide/inputs) — the `args` / `deps` / events model in depth
-- [Dependency Tracking](/react/dependency-tracking) — why a getter needs `select` to re-render
+- [Dependency Tracking](/react/dependency-tracking) — how getter reads participate in auto-tracking
