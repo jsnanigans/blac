@@ -8,7 +8,7 @@ The lowest-level way to observe a bloc. Every container owns a `channel` — a `
 Almost no application code needs this. It exists for plugins, devtools, and infrastructure that must compose path-scoped subscriptions directly on a container. If you are inside a React component, use [`useBloc`](/react/use-bloc); if you are outside React, use [`watch`](/core/watch). `watch` is itself a thin wrapper around `channel.subscribe(() => ALL_PATHS, ...)`.
 
 :::note[Where this sits in the stack]
-`channel` is inherited from `StructuralContainer` (the structural layer under every `Cubit`). The same `subscribe` shape is also exposed one level up as a pass-through `container.channel.subscribe(...)`. This page documents the channel method directly, because that is the surface plugins compose against.
+`channel` is inherited from `StructuralContainer` (the structural layer under every `Cubit`). The same `subscribe` shape is also exposed one level up as a pass-through `container.subscribe(...)` (which internally delegates to `container.channel.subscribe(...)`). This page documents the channel method directly, because that is the surface plugins compose against.
 :::
 
 ## Stability

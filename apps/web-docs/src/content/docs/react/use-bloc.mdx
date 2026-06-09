@@ -54,7 +54,7 @@ By default, `useBloc` uses auto-tracking to keep re-renders scoped: the hook wra
 | Option      | Type                               | Required            | Description                                                                                        |
 | ----------- | ---------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------- |
 | `args`      | the bloc's `Args` type             | when `Args != void` | Typed construction data; derives instance identity. Required when declared, forbidden when `void`. |
-| `select`    | `(state: S, bloc: T) => unknown[]` | no                  | Explicit dependency selector; disables auto-tracking.                                              |
+| `select`    | `(state: S, bloc: InstanceReadonlyState<T>) => unknown[]` | no                  | Explicit dependency selector; disables auto-tracking.                                              |
 | `onMount`   | `(bloc: InstanceType<T>) => void`  | no                  | Called once when the component mounts with the bloc instance.                                      |
 | `onUnmount` | `(bloc: InstanceType<T>) => void`  | no                  | Called when the component unmounts (bloc still alive at this point).                               |
 
@@ -220,7 +220,7 @@ A note on `<BlocProvider>`: it supplies `args` to descendant `useBloc` calls tha
 ```tsx
 import { BlocProvider } from '@blac/react';
 
-<BlocProvider args={{ customerId: 'customer-42' }}>
+<BlocProvider bloc={CustomerCubit} args={{ customerId: 'customer-42' }}>
   <CustomerView />{' '}
   {/* useBloc(CustomerCubit) here inherits args from the provider */}
 </BlocProvider>;

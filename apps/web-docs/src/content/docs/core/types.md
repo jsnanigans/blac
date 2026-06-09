@@ -222,21 +222,11 @@ export type BlocConstructor<
     ...args: any[]
   ) => StateContainer<S, any, any>,
 > = (new (...args: any[]) => InstanceType<T>) & {
-  acquire(instanceKey?: string, ...args: any[]): InstanceType<T>;
-  borrow(instanceKey?: string, ...args: any[]): InstanceType<T> | null;
-  borrowSafe(
-    instanceKey?: string,
-    ...args: any[]
-  ):
-    | { error: Error; instance: null }
-    | { error: null; instance: InstanceType<T> };
-  ensure(instanceKey?: string): InstanceType<T>;
-  release(instanceKey?: string): void;
   keepAlive?: boolean;
 };
 ```
 
-A constructor type that, on top of being a container class, also declares a static registry surface (`acquire`, `borrow`, `borrowSafe`, `ensure`, `release`, plus the optional `keepAlive` flag). It is a structural description used by signatures that want to talk about that surface as static class members. Note that an ordinary `Cubit` / `Bloc` subclass does **not** satisfy `BlocConstructor` on its own — the base `StateContainer` declares no such static methods, so a plain class is missing all five. To operate the registry you pass the class to the standalone `acquire` / `release` functions, whose parameter type is the lighter [`StateContainerConstructor`](#statecontainerconstructor) (no static surface required). See [Instance Management](/core/instance-management) for what those functions do.
+A constructor type for a `StateContainer` subclass, with an optional `keepAlive` static flag. Any ordinary `Cubit` / `Bloc` subclass satisfies `BlocConstructor` directly. There is no static registry surface on the type itself — `acquire`, `borrow`, `borrowSafe`, `ensure`, and `release` are **standalone functions** imported from `@blac/core`, not static methods on the class. Their parameter type is the lighter [`StateContainerConstructor`](#statecontainerconstructor). See [Instance Management](/core/instance-management) for what those functions do.
 
 ```ts twoslash
 import { acquire, release } from '@blac/core';
@@ -262,8 +252,8 @@ function describe(Bloc: StateContainerConstructor) {
 
 describe(CounterCubit);
 
-// BlocConstructor is the heavier shape: a container class that ALSO exposes the
-// registry methods as statics. You annotate with it where that surface matters.
+// BlocConstructor is an alias for a constructable StateContainer with an
+// optional keepAlive flag — any Cubit/Bloc subclass satisfies it directly.
 type CounterCtor = BlocConstructor<CounterState>;
 //   ^?
 ```

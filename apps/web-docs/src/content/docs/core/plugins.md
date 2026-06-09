@@ -153,13 +153,13 @@ const pathLoggingPlugin: BlacPlugin = {
     if (!container) return;
 
     if (paths === ALL_PATHS) {
-      console.log(`[${container.name}] changed: (all paths)`);
+      console.log(`[${container.$blac.name}] changed: (all paths)`);
       return;
     }
 
     for (const pathId of paths) {
       const path = container.interner.lookup(pathId);
-      console.log(`[${container.name}] changed: ${path}`);
+      console.log(`[${container.$blac.name}] changed: ${path}`);
     }
   },
 };
@@ -187,7 +187,7 @@ const auditPlugin: BlacPlugin = {
 
   onCreated(ctx) {
     const c = ctx.container;
-    if (c) console.log(`[audit] created ${c.name} (${c.$blac.id})`);
+    if (c) console.log(`[audit] created ${c.$blac.name} (${c.$blac.id})`);
   },
 
   onStateChange(ctx, _prev, _next, paths) {
@@ -199,12 +199,12 @@ const auditPlugin: BlacPlugin = {
         ? ['(all)']
         : [...paths].map((id) => c.interner.lookup(id));
 
-    console.log(`[audit] ${c.name} changed:`, changed);
+    console.log(`[audit] ${c.$blac.name} changed:`, changed);
   },
 
   onDestroyed(ctx) {
     const c = ctx.container;
-    if (c) console.log(`[audit] disposed ${c.name} (${c.$blac.id})`);
+    if (c) console.log(`[audit] disposed ${c.$blac.name} (${c.$blac.id})`);
   },
 };
 

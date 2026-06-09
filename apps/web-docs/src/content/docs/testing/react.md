@@ -36,7 +36,6 @@ function renderWithBloc<T extends StateContainerConstructor>(
     methods?: Partial<Record<MethodKeys<InstanceType<T>>, Function>>;
     args?: ExtractArgs<T>;
     deps?: Partial<ExtractDeps<T>>;
-    instanceKey?: string;
   },
 ): RenderResult & { bloc: InstanceType<T> };
 ```
@@ -45,13 +44,13 @@ Renders a React component with a single bloc pre-configured in an isolated regis
 
 1. Creates a fresh test registry
 2. Creates a cubit stub with the provided options (`state`, `methods`, `args`, `deps`)
-3. Registers it as an override under `instanceKey`
+3. Registers it as an override keyed by the resolved `args` value
 4. Renders the component via `@testing-library/react`
 5. Wraps `unmount()` to restore the previous registry
 
 The returned object is the standard `RenderResult` from Testing Library, plus a `bloc` property containing the stub instance.
 
-Aside from `bloc` and `instanceKey`, the options are exactly the [`createCubitStub`](/testing/core#create-cubit-stub) options — including `args` (to run `init()`) and `deps` (to fire `onDepsChanged`). See [Inputs](/guide/inputs) for what those lanes mean.
+Aside from `bloc`, the options are exactly the [`createCubitStub`](/testing/core#create-cubit-stub) options — including `args` (to run `init()`) and `deps` (to fire `onDepsChanged`). See [Inputs](/guide/inputs) for what those lanes mean.
 
 ### Basic usage
 
@@ -327,7 +326,7 @@ The getter runs against real state, so you test real logic — not a mocked retu
 
 :::danger[Common mistakes]
 
-- **Mismatched `instanceKey`.** If the component resolves a named or args-keyed instance but you register the stub under `default`, the component will spin up its own real instance and ignore your stub. Match the key, or seed via `args`/`deps` so identity lines up.
+- **Mismatched args key.** If the component resolves a named or args-keyed instance but you register the stub under different args (or no args), the component will spin up its own real instance and ignore your stub. Pass the same `args` to `renderWithBloc` that the component passes to `useBloc` so the resolved keys match.
 - **Asserting before React commits.** Direct bloc mutations need `act()`; user-driven flows need `await userEvent...`; async data needs `await screen.findBy*` (or `await flush()` then a sync query). A missing `await` is the usual cause of "the test sees the old UI."
 :::
 

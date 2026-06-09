@@ -61,6 +61,11 @@ class TodoCubit extends Cubit<TodoState> {
 ```
 
 ```tsx
+// Hoisted to module level so the reference is stable across renders.
+// This component only calls actions and never reads state, so an empty
+// selector suppresses all re-renders.
+const selectNothing = () => [];
+
 function TodoItem({
   id,
   text,
@@ -70,7 +75,7 @@ function TodoItem({
   text: string;
   done: boolean;
 }) {
-  const [, todo] = useBloc(TodoCubit, { select: () => [] });
+  const [, todo] = useBloc(TodoCubit, { select: selectNothing });
 
   return (
     <li style={{ opacity: done ? 0.5 : 1 }}>

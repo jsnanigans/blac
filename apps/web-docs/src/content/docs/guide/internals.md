@@ -466,9 +466,10 @@ The final layer: one bloc leaning on another. This lives in `@blac/core`'s
 `StateContainer` (the class `Cubit` extends), not in the structural engine —
 deps are about _identity and lifecycle_, not path diffing.
 
-`this.depend(OtherBloc)` declares a dependency and returns a **getter**. Calling
-the getter resolves the dependency against the registry _on each call_, so the
-declaring bloc never holds a stale instance reference across dep churn:
+`this.depend(OtherBloc)` declares a dependency and returns a **DepHandle**.
+Calling `.untracked()` or `.track()` on the handle resolves the dependency
+against the registry, so the declaring bloc never holds a stale instance
+reference across dep churn:
 
 ```ts twoslash
 import { Cubit } from '@blac/core';

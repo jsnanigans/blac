@@ -45,7 +45,7 @@ A fixed rubric across the three. Read it as "how each library answers this quest
 | **Providers**           | None — global ref-counted registry                    | None by default (optional context store)           | `Provider` for scoping/SSR (optional at root)      |
 | **TS inference**        | State flows from the class type param                 | Strong; sometimes needs a typed `create<T>()`      | Strong; derived-atom types inferred                |
 | **Async**               | `async` methods on the class; explicit status state   | Async actions in the store closure                 | Async atoms (promise atoms, Suspense-friendly)     |
-| **DevTools**            | First-party `@blac/devtools` plugin                   | Redux DevTools middleware                          | Jotai DevTools / Redux DevTools integration        |
+| **DevTools**            | First-party `@blac/devtools-connect` plugin           | Redux DevTools middleware                          | Jotai DevTools / Redux DevTools integration        |
 | **SSR**                 | Per-request isolation via instance keys / registry    | Supported; hydrate store on the client             | Strong story via `Provider` + hydration            |
 | **Framework-agnostic**  | Core is framework-agnostic; React adapter is separate | Core is framework-agnostic; vanilla + React        | React-centric (Jotai core targets React)           |
 | **Bundle size**         | Measured: core ~6.88 kB, react ~2.6 kB (brotli)       | Tiny; see their published claims                   | Tiny core; grows with utility imports              |

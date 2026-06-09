@@ -46,7 +46,7 @@ export function Counter() {
 
 ## Persistence: writing an AsyncStorage adapter
 
-The official persist plugin ships one built-in adapter: `NativeIndexedDbAdapter`, which calls `window.indexedDB`. That API does not exist in React Native. The plugin's adapter interface is designed to be replaced — supply a custom `adapter` option that wraps React Native's `AsyncStorage` instead.
+The official persist plugin ships one built-in adapter: `NativeIndexedDbAdapter`, which uses the global `indexedDB` (`isAvailable()` checks `typeof indexedDB !== 'undefined'`). That API does not exist in React Native. The plugin's adapter interface is designed to be replaced — supply a custom `adapter` option that wraps React Native's `AsyncStorage` instead.
 
 ### The adapter interface
 

@@ -399,16 +399,16 @@ function cartTotal(): number {
 
 ## Conditional `args`
 
-When a bloc declares an `Args` type, passing `args` to `useBloc` is _required_. When it doesn't (the default `void`), passing `args` is _forbidden_. The type system enforces both directions through a conditional option type (verified in `@blac/react`'s `types.ts`):
+When a bloc declares an `Args` type, `args` in `useBloc` is _optional_ — you may omit it and the hook will inherit args from a `<BlocProvider>` ancestor, or fall back to the default instance key. When the bloc's `Args` is the default `void`, passing `args` is _forbidden_. The type system enforces both directions through a conditional option type (verified in `@blac/react`'s `types.ts`):
 
 ```ts twoslash
 import type { ExtractArgs, StateContainerConstructor } from '@blac/core';
 // ---cut---
 type ArgsOption<T extends StateContainerConstructor> =
-  ExtractArgs<T> extends void ? { args?: never } : { args: ExtractArgs<T> };
+  ExtractArgs<T> extends void ? { args?: never } : { args?: ExtractArgs<T> };
 ```
 
-`ExtractArgs<T>` pulls the second generic off the class. If it's `void`, the option becomes `{ args?: never }` — present-but-forbidden. Otherwise it's `{ args: Args }` — required and typed.
+`ExtractArgs<T>` pulls the second generic off the class. If it's `void`, the option becomes `{ args?: never }` — present-but-forbidden. Otherwise it's `{ args?: Args }` — optional and typed.
 
 A void-args bloc rejects `args` (the option's type there is `never`):
 
@@ -430,10 +430,9 @@ function count(): number {
 }
 ```
 
-A bloc that declares `Args` requires it, with the exact shape. Note the enforcement only kicks in once you pass an options object: the whole second parameter is optional, so `useBloc(UserCubit)` with _no_ options compiles, but `useBloc(UserCubit, {})` reports the missing `args`:
+A bloc that declares `Args` accepts it as optional — omitting it inherits args from a `<BlocProvider>` ancestor, else the default key is used. When you do pass `args`, it is type-checked against the declared shape:
 
 ```ts twoslash
-// @errors: 2345
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 // ---cut---
@@ -451,8 +450,8 @@ class UserCubit extends Cubit<UserState, { userId: string }> {
 }
 
 function userName(): string {
-  // passing options without `args` is a compile error
-  const [state] = useBloc(UserCubit, {});
+  // args is optional — omit to inherit from BlocProvider, or pass explicitly:
+  const [state] = useBloc(UserCubit, { args: { userId: '42' } });
   return state.name;
 }
 ```

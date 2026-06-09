@@ -223,7 +223,7 @@ A per-mount instance keyed off `useId()` always resolves to its own key, never t
 </details>
 
 :::caution[`args: { _id: useId() }`, not `autoInstance` or `instanceId`]
-You may see `autoInstance` or an `instanceId` option in old notes or stale comments — neither exists in the shipping API. The per-mount mechanism is a synthetic `args` field plus a `static key` that selects it (use `useId()` for a stable-per-mount value). A `static isolated` field exists but is **not** wired into `useBloc` in the current release, so do not rely on it. See the [glossary](/guide/glossary).
+You may see `autoInstance` or an `instanceId` option in old notes or stale comments — neither exists in the shipping API. The per-mount mechanism is a synthetic `args` field plus a `static key` that selects it (use `useId()` for a stable-per-mount value). There is no `isolated`, `autoInstance`, or `instanceId` field or hook option. See the [glossary](/guide/glossary).
 :::
 
 ---
@@ -274,29 +274,29 @@ release(JobCubit, { refId });
 
 ### Type errors
 
-| Symptom                                        | Likely cause                            | Fix                                                   |
-| ---------------------------------------------- | --------------------------------------- | ----------------------------------------------------- |
-| `args` is **required** but you did not pass it | The bloc declares a non-`void` `Args`   | Pass `{ args: … }` — it is mandatory and type-checked |
-| `args` is **forbidden** (`never`)              | The bloc's `Args` is the default `void` | Remove `args` from the `useBloc` call                 |
-| `select` "must be stable" re-keys constantly   | A fresh selector function each render   | Wrap the selector in `useCallback`                    |
+| Symptom                                      | Likely cause                            | Fix                                                                              |
+| -------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| `args` is **forbidden** (`never`)            | The bloc's `Args` is the default `void` | Remove `args` from the `useBloc` call                                            |
+| Wrong `args` shape causes a type error       | Passed `args` don't match the bloc type | Match the bloc's declared `Args` shape; `args` is optional but typed when passed |
+| `select` "must be stable" re-keys constantly | A fresh selector function each render   | Wrap the selector in `useCallback`                                               |
 
 <details>
-<summary>"Property 'args' is required / 'args' does not exist"</summary>
+<summary>"'args' does not exist / wrong args shape"</summary>
 
 `useBloc`'s `args` option is **conditional on the bloc's type**:
 
 ```ts
 type ArgsOption<T> =
-  ExtractArgs<T> extends void ? { args?: never } : { args: ExtractArgs<T> };
+  ExtractArgs<T> extends void ? { args?: never } : { args?: ExtractArgs<T> };
 ```
 
-- If the bloc extends `Cubit<S, SomeArgs>`, `args` is **required** — omitting it is a compile error.
+- If the bloc extends `Cubit<S, SomeArgs>`, `args` is **optional** — omitting it inherits args from a `<BlocProvider>` ancestor, or falls back to the default key. When passed, it must match the declared `Args` shape.
 - If the bloc uses the default `void` args, `args` is typed `never` — **passing** it is a compile error.
 
 ```tsx
 // bloc: class UserCubit extends Cubit<S, { userId: string }>
-useBloc(UserCubit); // ✗ Property 'args' is missing
-useBloc(UserCubit, { args: { userId } }); // ✓
+useBloc(UserCubit); // ✓ inherits BlocProvider args or uses default key
+useBloc(UserCubit, { args: { userId } }); // ✓ explicit args
 
 // bloc: class CounterCubit extends Cubit<S>  (void args)
 useBloc(CounterCubit, { args: {} }); // ✗ 'args' does not exist on type
