@@ -1,5 +1,13 @@
 # @dirtytalk/structural
 
+## 0.0.6
+
+### Patch Changes
+
+- Refine structural diff and path tracking: pin the array path when iterating and
+  reading `.length` so array reads subscribe correctly, with related updates to
+  the container, diff, path-interner, and tracker.
+
 ## 0.0.5
 
 ### Patch Changes

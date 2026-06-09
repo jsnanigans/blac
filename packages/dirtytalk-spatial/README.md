@@ -2,6 +2,12 @@
 
 Rect-based damage-tracking instantiation of @dirtytalk/engine, for canvas/GPU renderers and any 2D scene graph.
 
+> [!WARNING]
+> **BlaC v2 is in pre-release (beta).** While in beta, **breaking API changes may
+> ship in patch releases** without a major version bump. Pin an exact version and
+> check the changelog before upgrading. Strict semver resumes once v2 is officially
+> out of beta.
+
 ## Why this exists
 
 Two libraries — a WebGPU renderer and a state container — solve the same problem in different

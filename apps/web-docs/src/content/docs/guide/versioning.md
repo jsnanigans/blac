@@ -6,9 +6,19 @@ description: BlaC's semver policy, the React and browser support matrix, the sta
 This page documents BlaC's versioning policy, the React and browser support matrix,
 the stability tier of every package, and where to find the full deprecation record.
 
+:::caution[Beta / pre-release]
+BlaC v2 is in pre-release (beta). While in beta, **breaking API changes may ship in patch releases** without a major version bump — pin exact versions and check the changelog before upgrading. The strict semver policy below resumes once v2 is officially out of beta.
+:::
+
 ## Semver policy
 
-All published BlaC packages follow [Semantic Versioning 2.0](https://semver.org):
+BlaC v2 is currently in **beta**. Until it leaves beta, the team reserves the
+right to ship breaking public-API changes in **patch** releases (`2.0.x`) so the
+API can be refined ahead of a stable `2.x` line. Pin exact versions and read the
+changelog before every upgrade.
+
+Once v2 is out of beta, all published BlaC packages follow
+[Semantic Versioning 2.0](https://semver.org):
 
 - **PATCH** — backwards-compatible bug fixes. Safe to upgrade any time.
 - **MINOR** — new backwards-compatible features. Safe to upgrade.
@@ -30,20 +40,21 @@ bump may be breaking for `0.x` packages).
 
 | Package              | npm name                 | Version  | Stability    |
 | -------------------- | ------------------------ | -------- | ------------ |
-| Core                 | `@blac/core`             | `2.0.15` | Stable       |
-| React bindings       | `@blac/react`            | `2.0.15` | Stable       |
-| DevTools connect     | `@blac/devtools-connect` | `2.0.18` | Stable       |
-| DevTools UI          | `@blac/devtools-ui`      | `2.0.18` | Stable       |
-| Logging plugin       | `@blac/logging-plugin`   | `2.0.16` | Stable       |
-| Persistence plugin   | `@blac/plugin-persist`   | `0.0.12` | Experimental |
-| DirtyTalk engine     | `@dirtytalk/engine`      | `0.0.3`  | Experimental |
-| DirtyTalk structural | `@dirtytalk/structural`  | `0.0.3`  | Experimental |
-| DirtyTalk spatial    | `@dirtytalk/spatial`     | `0.0.3`  | Experimental |
+| Core                 | `@blac/core`             | `2.0.18` | Beta         |
+| React bindings       | `@blac/react`            | `2.0.18` | Beta         |
+| DevTools connect     | `@blac/devtools-connect` | `2.0.21` | Beta         |
+| DevTools UI          | `@blac/devtools-ui`      | `2.0.20` | Beta         |
+| Logging plugin       | `@blac/logging-plugin`   | `2.0.19` | Beta         |
+| Persistence plugin   | `@blac/plugin-persist`   | `0.0.14` | Experimental |
+| DirtyTalk engine     | `@dirtytalk/engine`      | `0.0.4`  | Experimental |
+| DirtyTalk structural | `@dirtytalk/structural`  | `0.0.6`  | Experimental |
+| DirtyTalk spatial    | `@dirtytalk/spatial`     | `0.0.4`  | Experimental |
 
 ### Why DirtyTalk ships at `0.0.x` alongside core `2.0.x`
 
-`@blac/core` and `@blac/react` are mature and have been in production use since
-their `2.0.0` release. The `@dirtytalk/*` packages are the reactive-tracking
+`@blac/core` and `@blac/react` are feature-complete and battle-tested in
+practice, but remain in **beta** while their v2 public API is finalized — see the
+beta notice above. The `@dirtytalk/*` packages are the reactive-tracking
 substrate extracted from that work — they power the proxy and path-interning
 inside core — but their own _public_ APIs are still being refined as additional
 use-cases (spatial dirty tracking, standalone reactive trees) are explored.
@@ -52,15 +63,16 @@ Publishing them at `0.0.x` is an honest signal: the implementations are
 production-proven inside core, but the DirtyTalk package boundaries, export
 shapes, and hook points are subject to change without a semver major. If you
 build directly on `@dirtytalk/*`, pin the exact version and watch the changelog.
-If you use only `@blac/core` and `@blac/react`, you get a stable surface and the
-DirtyTalk internals are opaque to you.
+If you use only `@blac/core` and `@blac/react`, the DirtyTalk internals are
+opaque to you.
 
 ## Stability badge legend
 
-Pages throughout these docs use three stability tiers:
+Pages throughout these docs use these stability tiers:
 
 | Badge            | Meaning                                                                                                                         |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Beta**         | Feature-complete and usable in production, but the v2 public API is still being finalized. Breaking changes may ship in patch releases until v2 leaves beta — pin exact versions. |
 | **Stable**       | Public API follows semver strictly. No breaking changes without a major bump. Safe to use in production.                        |
 | **Experimental** | The feature or package is usable but the API shape is still evolving. May see breaking changes in minor or even patch releases. |
 | **Internal**     | Tagged `@internal` in source. Not part of the public API contract. May change or disappear in any release.                      |

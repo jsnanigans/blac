@@ -2,6 +2,12 @@
 
 A reactive dirty-tracking and notification engine. Zero deps, pluggable space, pluggable scheduler.
 
+> [!WARNING]
+> **BlaC v2 is in pre-release (beta).** While in beta, **breaking API changes may
+> ship in patch releases** without a major version bump. Pin an exact version and
+> check the changelog before upgrading. Strict semver resumes once v2 is officially
+> out of beta.
+
 ## Why this exists
 
 Both insomni (a WebGPU renderer) and blac (a state container library) solve the same problem

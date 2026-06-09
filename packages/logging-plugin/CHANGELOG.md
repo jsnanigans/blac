@@ -1,5 +1,17 @@
 # @blac/logging-plugin
 
+## 2.0.19
+
+### Patch Changes
+
+- Read bloc identity, lifecycle, and hydration state through the `$blac` meta
+  namespace and drop references to the removed legacy `StateContainer` members.
+  Internal adaptation to the `@blac/core` changes; no public API changes in these
+  packages.
+- Updated dependencies [9c473ec]
+- Updated dependencies [a98329a]
+  - @blac/core@2.0.18
+
 ## 2.0.18
 
 ### Patch Changes

@@ -4,6 +4,12 @@ React bindings for BlaC — `useBloc` hook with proxy-based automatic re-render 
 
 **[Documentation](https://blac-docs.pages.dev/react/getting-started)** · **[npm](https://www.npmjs.com/package/@blac/react)**
 
+> [!WARNING]
+> **BlaC v2 is in pre-release (beta).** While in beta, **breaking API changes may
+> ship in patch releases** without a major version bump. Pin an exact version and
+> check the changelog before upgrading. Strict semver resumes once v2 is officially
+> out of beta.
+
 ## Installation
 
 ```bash

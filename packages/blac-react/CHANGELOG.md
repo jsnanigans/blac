@@ -1,5 +1,22 @@
 # @blac/react
 
+## 2.0.18
+
+### Patch Changes
+
+- Read bloc identity, lifecycle, and hydration state through the `$blac` meta
+  namespace and drop references to the removed legacy `StateContainer` members.
+  Internal adaptation to the `@blac/core` changes; no public API changes in these
+  packages.
+- Fix `useBloc` unmount cleanup to depend on the consumer id so the registry ref
+  is always released for the correct consumer, preventing a leaked ref that could
+  keep a bloc alive past unmount.
+- Updated dependencies [9c473ec]
+- Updated dependencies [a98329a]
+- Updated dependencies
+  - @blac/core@2.0.18
+  - @dirtytalk/structural@0.0.6
+
 ## 2.0.17
 
 ### Patch Changes

@@ -4,6 +4,12 @@ Embeddable DevTools UI for BlaC. Provides in-app state inspection as a draggable
 
 **[Documentation](https://blac-docs.pages.dev/plugins/devtools)** · **[npm](https://www.npmjs.com/package/@blac/devtools-ui)**
 
+> [!WARNING]
+> **BlaC v2 is in pre-release (beta).** While in beta, **breaking API changes may
+> ship in patch releases** without a major version bump. Pin an exact version and
+> check the changelog before upgrading. Strict semver resumes once v2 is officially
+> out of beta.
+
 ## Installation
 
 ```bash

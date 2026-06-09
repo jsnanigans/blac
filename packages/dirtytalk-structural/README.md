@@ -2,6 +2,12 @@
 
 Path-based dirty-tracking instantiation of @dirtytalk/engine, for state containers and structural data.
 
+> [!WARNING]
+> **BlaC v2 is in pre-release (beta).** While in beta, **breaking API changes may
+> ship in patch releases** without a major version bump. Pin an exact version and
+> check the changelog before upgrading. Strict semver resumes once v2 is officially
+> out of beta.
+
 ## Why this exists
 
 Both state containers and UI renderers ask the same question after a mutation: _what changed, who

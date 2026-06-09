@@ -4,6 +4,12 @@ Logging and debugging plugin for BlaC. Logs lifecycle events, state changes, and
 
 **[Documentation](https://blac-docs.pages.dev/plugins/logging)** · **[npm](https://www.npmjs.com/package/@blac/logging-plugin)**
 
+> [!WARNING]
+> **BlaC v2 is in pre-release (beta).** While in beta, **breaking API changes may
+> ship in patch releases** without a major version bump. Pin an exact version and
+> check the changelog before upgrading. Strict semver resumes once v2 is officially
+> out of beta.
+
 ## Installation
 
 ```bash

@@ -1,5 +1,17 @@
 # @blac/plugin-persist
 
+## 0.0.14
+
+### Patch Changes
+
+- Read bloc identity, lifecycle, and hydration state through the `$blac` meta
+  namespace and drop references to the removed legacy `StateContainer` members.
+  Internal adaptation to the `@blac/core` changes; no public API changes in these
+  packages.
+- Updated dependencies [9c473ec]
+- Updated dependencies [a98329a]
+  - @blac/core@2.0.18
+
 ## 0.0.13
 
 ### Patch Changes

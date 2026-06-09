@@ -166,7 +166,7 @@ export function ItemTitleConsumer({ index }: { index: number }) {
     <ConsumerChip
       title={`items[${index}].title`}
       reads={`state.items[${index}].title`}
-      accent={item?.done ? 'var(--color-success)' : 'var(--color-primary)'}
+      accent={'var(--color-primary)'}
       value={
         item ? (
           item.title
