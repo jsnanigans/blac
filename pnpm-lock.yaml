@@ -178,7 +178,7 @@ importers:
         version: 0.1.23(@types/node@25.9.1)(@voidzero-dev/vite-plus-core@0.1.24(@types/node@25.9.1)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(happy-dom@20.9.0)(jiti@2.6.1)(jsdom@29.1.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0)
       vitest:
         specifier: npm:@voidzero-dev/vite-plus-test@latest
-        version: '@voidzero-dev/vite-plus-test@0.1.24(@types/node@25.9.1)(@voidzero-dev/vite-plus-core@0.1.24(@types/node@25.9.1)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(happy-dom@20.9.0)(jiti@2.6.1)(jsdom@29.1.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0)'
+        version: '@voidzero-dev/vite-plus-test@0.1.24(@types/node@25.9.1)(esbuild@0.27.3)(happy-dom@20.9.0)(jiti@2.6.1)(jsdom@29.1.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(vite@8.0.3(@types/node@25.9.1)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.9.0))(yaml@2.9.0)'
       wrangler:
         specifier: ^4.95.0
         version: 4.95.0
@@ -292,52 +292,6 @@ importers:
       wrangler:
         specifier: ^4.95.0
         version: 4.95.0
-
-  packages/blac-compat:
-    dependencies:
-      '@blac/core':
-        specifier: workspace:*
-        version: link:../blac-core
-      '@blac/react':
-        specifier: workspace:*
-        version: link:../blac-react
-    devDependencies:
-      '@testing-library/dom':
-        specifier: 'catalog:'
-        version: 10.4.1
-      '@testing-library/jest-dom':
-        specifier: 'catalog:'
-        version: 6.9.1
-      '@testing-library/react':
-        specifier: ^16.3.2
-        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      '@types/node':
-        specifier: 'catalog:'
-        version: 25.9.1
-      '@types/react':
-        specifier: 'catalog:'
-        version: 19.2.15
-      happy-dom:
-        specifier: 'catalog:'
-        version: 20.9.0
-      react:
-        specifier: 'catalog:'
-        version: 19.2.6
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.2.6(react@19.2.6)
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
-      vite:
-        specifier: npm:@voidzero-dev/vite-plus-core@latest
-        version: '@voidzero-dev/vite-plus-core@0.1.24(@types/node@25.9.1)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0)'
-      vite-plus:
-        specifier: 'catalog:'
-        version: 0.1.23(@types/node@25.9.1)(@voidzero-dev/vite-plus-core@0.1.24(@types/node@25.9.1)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(happy-dom@20.9.0)(jiti@2.6.1)(jsdom@29.1.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0)
-      vitest:
-        specifier: npm:@voidzero-dev/vite-plus-test@latest
-        version: '@voidzero-dev/vite-plus-test@0.1.24(@types/node@25.9.1)(@voidzero-dev/vite-plus-core@0.1.24(@types/node@25.9.1)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(happy-dom@20.9.0)(jiti@2.6.1)(jsdom@29.1.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0)'
 
   packages/blac-core:
     dependencies:
@@ -462,7 +416,7 @@ importers:
         version: 0.1.23(@types/node@25.9.1)(@voidzero-dev/vite-plus-core@0.1.24(@types/node@25.9.1)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(happy-dom@20.9.0)(jiti@2.6.1)(jsdom@29.1.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0)
       vitest:
         specifier: npm:@voidzero-dev/vite-plus-test@latest
-        version: '@voidzero-dev/vite-plus-test@0.1.24(@types/node@25.9.1)(@voidzero-dev/vite-plus-core@0.1.24(@types/node@25.9.1)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(happy-dom@20.9.0)(jiti@2.6.1)(jsdom@29.1.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0)'
+        version: '@voidzero-dev/vite-plus-test@0.1.24(@types/node@25.9.1)(esbuild@0.27.3)(happy-dom@20.9.0)(jiti@2.6.1)(jsdom@29.1.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(vite@8.0.3(@types/node@25.9.1)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.9.0))(yaml@2.9.0)'
 
   packages/devtools-connect:
     devDependencies:
@@ -7390,48 +7344,6 @@ snapshots:
       tinyexec: 1.2.3
       tinyglobby: 0.2.16
       vite: 8.0.3(@types/node@25.9.1)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.9.0)
-      ws: 8.21.0
-    optionalDependencies:
-      '@types/node': 25.9.1
-      happy-dom: 20.9.0
-      jsdom: 29.1.1
-    transitivePeerDependencies:
-      - '@arethetypeswrong/core'
-      - '@tsdown/css'
-      - '@tsdown/exe'
-      - '@vitejs/devtools'
-      - bufferutil
-      - esbuild
-      - jiti
-      - less
-      - publint
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - terser
-      - tsx
-      - typescript
-      - unplugin-unused
-      - unrun
-      - utf-8-validate
-      - yaml
-
-  '@voidzero-dev/vite-plus-test@0.1.24(@types/node@25.9.1)(@voidzero-dev/vite-plus-core@0.1.24(@types/node@25.9.1)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(happy-dom@20.9.0)(jiti@2.6.1)(jsdom@29.1.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0)':
-    dependencies:
-      '@standard-schema/spec': 1.1.0
-      '@types/chai': 5.2.3
-      '@voidzero-dev/vite-plus-core': 0.1.24(@types/node@25.9.1)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0)
-      es-module-lexer: 1.7.0
-      obug: 2.1.1
-      pixelmatch: 7.2.0
-      pngjs: 7.0.0
-      sirv: 3.0.2
-      std-env: 4.1.0
-      tinybench: 2.9.0
-      tinyexec: 1.2.3
-      tinyglobby: 0.2.16
-      vite: '@voidzero-dev/vite-plus-core@0.1.24(@types/node@25.9.1)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.21)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(yaml@2.9.0)'
       ws: 8.21.0
     optionalDependencies:
       '@types/node': 25.9.1
