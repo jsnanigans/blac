@@ -227,6 +227,15 @@ export abstract class StructuralContainer<S> {
     // Apply state mutation atomically *before* mark so consumers see the new
     // state when they read it inside the dirty callback.
     this._state = next;
+    // Zero-consumer skip (mirrors `emit`): with no path-scoped consumer
+    // registered, no subscriber can use precise per-path marks — ALL_PATHS
+    // subscribers (blac bridge, plugins, watch, manual `subscribe`) wake on
+    // any mark regardless. So skip the `changedPathsFromPatch` +
+    // `_refineAncestorMarks` diff work entirely and mark the whole space.
+    if (this._consumerPaths.size === 0) {
+      this._channel.mark(ALL_PATHS);
+      return;
+    }
     const rough = changedPathsFromPatch(
       prev,
       next,

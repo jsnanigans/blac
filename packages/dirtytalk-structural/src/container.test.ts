@@ -264,6 +264,17 @@ describe('StructuralContainer — multi-consumer diff', () => {
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb.mock.calls[0]?.[0]).toBe(ALL_PATHS);
   });
+
+  it('zero-consumer patch still wakes an ALL_PATHS subscriber', () => {
+    const c = make({ count: 0, label: 'a' });
+    const cb = vi.fn();
+    c.subscribe(() => ALL_PATHS, cb);
+
+    c.patch({ count: 1 });
+
+    expect(cb).toHaveBeenCalledTimes(1);
+    expect(cb.mock.calls[0]?.[0]).toBe(ALL_PATHS);
+  });
 });
 
 describe('StructuralContainer — root-sentinel wakes ALL_PATHS on off-skeleton emit', () => {
