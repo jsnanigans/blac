@@ -150,6 +150,21 @@ export abstract class StructuralContainer<S> {
         this.interner,
         this._equalsFn(),
       );
+      // The skeleton only covers registered consumers' watched paths. A
+      // change outside every skeleton path (e.g. an untracked field) yields
+      // an empty diff here, which would otherwise make `#flush`'s empty
+      // fast-path swallow the mark before ALL_PATHS subscribers (the blac
+      // bridge, plugins, watch/select) ever run. Since we already know
+      // `prev !== next` (reference short-circuit above), union in the
+      // reserved root-sentinel id so ALL_PATHS interests still wake while
+      // leaf `Set` interests (which never request the sentinel) stay asleep.
+      if (
+        dirty !== ALL_PATHS &&
+        (dirty as Set<PathId>).size === 0 &&
+        !Object.is(prev, next)
+      ) {
+        dirty = new Set<PathId>([this.interner.rootId()]);
+      }
     }
     this._channel.mark(dirty);
   }

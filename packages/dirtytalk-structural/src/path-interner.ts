@@ -18,6 +18,15 @@ import type { PathId } from './types';
  */
 const ANCESTOR_SENTINEL = '\0a:';
 
+/**
+ * Sentinel path string for the reserved **root** id (see {@link PathInterner.rootId}).
+ * Also NUL-prefixed like {@link ANCESTOR_SENTINEL} but distinct from it, so
+ * `lookup`/`isAncestorId` must check for it explicitly *before* falling back
+ * to the ancestor-watch NUL-guard — otherwise `'\0root'.slice(ANCESTOR_SENTINEL.length)`
+ * would silently mangle it into `'oot'`.
+ */
+const ROOT_SENTINEL = '\0root';
+
 export class PathInterner {
   private readonly _map = new Map<string, PathId>();
   private readonly _paths: string[] = [];
@@ -40,6 +49,24 @@ export class PathInterner {
     return this.intern(`${ANCESTOR_SENTINEL}${path}`);
   }
 
+  /**
+   * Reserved **root-sentinel** id: not a real path, used by `emit` to wake
+   * `ALL_PATHS` interests when a change lands outside every consumer's
+   * skeleton (so the skeleton diff is otherwise empty). Idempotent — repeated
+   * calls return the same id via `intern`'s dedup. Never intersects a leaf
+   * consumer's `Set<PathId>` interest since no consumer ever requests it.
+   */
+  rootId(): PathId {
+    return this.intern(ROOT_SENTINEL);
+  }
+
+  /** True when `id` is the reserved root-sentinel id (see {@link rootId}). */
+  isRootId(id: PathId): boolean {
+    return (
+      id >= 0 && id < this._paths.length && this._paths[id] === ROOT_SENTINEL
+    );
+  }
+
   lookup(id: PathId): string {
     if (id < 0 || !Number.isInteger(id) || id >= this._paths.length) {
       throw new RangeError(
@@ -47,6 +74,10 @@ export class PathInterner {
       );
     }
     const path = this._paths[id];
+    // Root-sentinel guard *before* the ancestor NUL-slice below — both are
+    // NUL-prefixed, but the root sentinel has no real path to decode to, so
+    // it must not be sliced as if it were an ancestor-watch id.
+    if (path === ROOT_SENTINEL) return path;
     // Decode ancestor-watch ids back to the real path so callers never see the
     // internal sentinel. Cheap NUL-byte guard before the slice.
     return path.charCodeAt(0) === 0
@@ -56,9 +87,10 @@ export class PathInterner {
 
   /** True when `id` was interned via {@link internAncestor} (sentinel prefix). */
   isAncestorId(id: PathId): boolean {
-    return (
-      id >= 0 && id < this._paths.length && this._paths[id].charCodeAt(0) === 0
-    );
+    if (id < 0 || id >= this._paths.length) return false;
+    const path = this._paths[id];
+    // Exclude the root sentinel: also NUL-prefixed, but not an ancestor-watch id.
+    return path !== ROOT_SENTINEL && path.charCodeAt(0) === 0;
   }
 
   get size(): number {

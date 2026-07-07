@@ -220,6 +220,60 @@ describe('StructuralContainer — multi-consumer diff', () => {
   });
 });
 
+describe('StructuralContainer — root-sentinel wakes ALL_PATHS on off-skeleton emit', () => {
+  // Wider state: `serverData` is never watched by any registered consumer, so
+  // the skeleton never includes it and `diffAlongSkeleton` returns empty when
+  // only `serverData` changes.
+  type WideState = { count: number; label: string; serverData: string };
+  class Wide extends StructuralContainer<WideState> {}
+  const makeWide = (initial: WideState): Wide =>
+    new Wide(initial, { scheduler: new SyncScheduler() });
+  const setOfWide = (c: Wide, ...paths: string[]): PathSet =>
+    new Set<PathId>(paths.map((p) => c.interner.intern(p)));
+
+  it('(a) an ALL_PATHS subscribe() callback fires when the change is outside every consumer skeleton', () => {
+    const c = makeWide({ count: 0, label: 'a', serverData: 'x' });
+    // Two registered auto-track consumers, both on `count` → forces the
+    // multi-consumer diff branch, skeleton = {count}.
+    c.registerConsumerPaths('A', setOfWide(c, 'count'));
+    c.registerConsumerPaths('B', setOfWide(c, 'count'));
+
+    const allPathsCb = vi.fn();
+    c.subscribe(() => ALL_PATHS, allPathsCb);
+
+    // Only `serverData` changes — outside the {count} skeleton.
+    c.emit({ count: 0, label: 'a', serverData: 'y' });
+
+    expect(allPathsCb).toHaveBeenCalledTimes(1);
+  });
+
+  it('(b) a leaf consumer of `count` does not wake on the off-skeleton `serverData` emit', () => {
+    const c = makeWide({ count: 0, label: 'a', serverData: 'x' });
+    c.registerConsumerPaths('A', setOfWide(c, 'count'));
+    c.registerConsumerPaths('B', setOfWide(c, 'count'));
+
+    const countCb = vi.fn();
+    c.subscribe(() => setOfWide(c, 'count'), countCb);
+
+    c.emit({ count: 0, label: 'a', serverData: 'y' });
+
+    expect(countCb).not.toHaveBeenCalled();
+  });
+
+  it('(c) an Object.is-equal emit (same reference) still no-ops — sentinel is not unioned', () => {
+    const c = makeWide({ count: 0, label: 'a', serverData: 'x' });
+    c.registerConsumerPaths('A', setOfWide(c, 'count'));
+    c.registerConsumerPaths('B', setOfWide(c, 'count'));
+
+    const allPathsCb = vi.fn();
+    c.subscribe(() => ALL_PATHS, allPathsCb);
+
+    c.emit(c.state); // same reference — reference short-circuit, no mark at all
+
+    expect(allPathsCb).not.toHaveBeenCalled();
+  });
+});
+
 describe('StructuralContainer — consumer registry', () => {
   it('registerConsumerPaths fast-path skip on identical re-register', () => {
     const c = make();
