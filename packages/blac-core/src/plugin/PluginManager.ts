@@ -238,9 +238,17 @@ export class PluginManager {
           currentDeps,
         );
       }),
-      this.registry.on('hydrationChanged', (instance, status, previousStatus) => {
-        this.notifyPlugins('onHydrationChange', instance, status, previousStatus);
-      }),
+      this.registry.on(
+        'hydrationChanged',
+        (instance, status, previousStatus) => {
+          this.notifyPlugins(
+            'onHydrationChange',
+            instance,
+            status,
+            previousStatus,
+          );
+        },
+      ),
     ];
   }
 

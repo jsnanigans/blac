@@ -2,7 +2,13 @@ import { describe, it, expect } from 'vite-plus/test';
 import { blacTestSetup, flush } from '@blac/core/testing';
 import { watch, instance } from './watch';
 import { Cubit } from '../core/Cubit';
-import { acquire, release, clearAll, hasInstance, getRefCount } from '../registry';
+import {
+  acquire,
+  release,
+  clearAll,
+  hasInstance,
+  getRefCount,
+} from '../registry';
 
 class CounterCubit extends Cubit<{ count: number }, { id?: string }> {
   constructor() {

@@ -121,7 +121,11 @@ interface WatchTarget {
 function toWatchTarget(input: BlocInput): WatchTarget {
   const registry = getRegistry();
   if (isBlocRef(input)) {
-    return { blocClass: input.blocClass, key: input.instanceId, args: input.args };
+    return {
+      blocClass: input.blocClass,
+      key: input.instanceId,
+      args: input.args,
+    };
   }
   return {
     blocClass: input,
@@ -137,7 +141,10 @@ let watchRefSeq = 0;
  * through so a not-yet-created instance is initialized correctly. The
  * caller is responsible for releasing `refId` in cleanup.
  */
-function resolveBloc(target: WatchTarget, refId: string): StateContainerInstance {
+function resolveBloc(
+  target: WatchTarget,
+  refId: string,
+): StateContainerInstance {
   const registry = getRegistry();
   return registry.acquire(target.blocClass, target.key, {
     countRef: true,
