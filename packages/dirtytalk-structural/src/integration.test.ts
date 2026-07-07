@@ -12,13 +12,14 @@ import { SyncScheduler } from '@dirtytalk/engine';
 import {
   ALL_PATHS,
   diffAlongSkeleton,
-  pathsFromPatch,
   PathInterner,
   PathSet,
   PathSetSpace,
   StructuralContainer,
   trackRender,
 } from './index';
+// pathsFromPatch is @internal (de-barreled); import from source for this test.
+import { pathsFromPatch } from './diff';
 import { useStructural } from './react';
 
 // ---------------------------------------------------------------------------

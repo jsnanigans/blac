@@ -9,13 +9,8 @@ export {
   PathSetSpace,
 } from './path-set';
 export type { PathSet, AllPaths } from './path-set';
-export { trackRender } from './tracker';
+export { trackRender, raw } from './tracker';
 export type { TrackResult } from './tracker';
-export {
-  diffAlongSkeleton,
-  pathsFromPatch,
-  changedPathsFromPatch,
-  getAt,
-} from './diff';
+export { diffAlongSkeleton, changedPathsFromPatch, getAt } from './diff';
 export { StructuralContainer } from './container';
 export type { StructuralContainerOptions, DeepPartial } from './container';

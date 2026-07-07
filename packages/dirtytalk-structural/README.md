@@ -131,10 +131,25 @@ required.
 | `pathSetUnion`                    | Pure union of two `PathSet` values                              |
 | `pathSetEquals`                   | Equality check for two `PathSet` values                         |
 | `trackRender`                     | `(state, interner) => { value: S, paths: PathSet }`             |
+| `raw`                             | `(v) => v` — unwrap a tracked proxy to its raw target           |
 | `diffAlongSkeleton`               | `(prev, next, skeleton, interner) => PathSet`                   |
-| `pathsFromPatch`                  | `(partial, interner) => PathSet`                                |
 | `getAt`                           | `(obj, dottedPath) => unknown`                                  |
 | `useStructural` _(react subpath)_ | `(container, options?) => [state, container]`                   |
+
+## Tracking hazards
+
+`trackRender` returns a recording proxy; values read off it are themselves
+proxies. Two situations need `raw()` to unwrap them:
+
+1. **Identity `===` callbacks.** Comparing a value read from the proxy against a
+   raw object reference (directly, or via an identity-search like
+   `Array.prototype.includes`) fails because the value is wrapped. Compare
+   `raw(value) === rawRef`.
+2. **Derived-array / escaped proxy.** A proxy (or a sub-proxy inside a derived
+   array such as a `.filter` result) that escapes the render frame keeps
+   recording into a stale `paths` set and breaks reference identity against the
+   underlying state. Call `raw()` on anything stored or handed to code that
+   expects the raw object.
 
 ## What it is not
 

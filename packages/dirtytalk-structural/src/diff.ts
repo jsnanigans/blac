@@ -87,6 +87,8 @@ export const diffAlongSkeleton = <S>(
  * path and stop. Arrays are atomic replacements in patch semantics.
  *
  * `basePath` is an internal recursion seed; callers normally omit it.
+ *
+ * @internal Not part of the public barrel; retained for internal use only.
  */
 export const pathsFromPatch = <S>(
   patch: Partial<S>,

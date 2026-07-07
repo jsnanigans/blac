@@ -27,7 +27,7 @@ describe('StructuralContainer — reads', () => {
 });
 
 describe('StructuralContainer — emit', () => {
-  it('updates state and notifies the sole consumer (single-consumer skip → ALL_PATHS)', () => {
+  it('updates state and notifies the sole consumer on a tracked-field change (single-consumer diff, not ALL_PATHS skip)', () => {
     const c = make();
     const cb = vi.fn();
     const interest = setOf(c, 'count');
@@ -41,7 +41,6 @@ describe('StructuralContainer — emit', () => {
 
     expect(c.state).toEqual({ count: 1, label: 'a' });
     expect(cb).toHaveBeenCalledTimes(1);
-    expect(cb.mock.calls[0]?.[0]).toBe(ALL_PATHS);
   });
 
   it('reference-equal next state is a no-op (no mark, no notify)', () => {
@@ -205,15 +204,41 @@ describe('StructuralContainer — multi-consumer diff', () => {
     expect(labelCb).not.toHaveBeenCalled();
   });
 
-  it('single-consumer skip uses ALL_PATHS even when the change does not overlap interest', () => {
+  it('single registered consumer stays asleep on an untracked-field change, but an ALL_PATHS subscriber still wakes via the root sentinel', () => {
     const c = make({ count: 0, label: 'a' });
     c.registerConsumerPaths('A', setOf(c, 'count'));
-    const cb = vi.fn();
-    c.subscribe(() => setOf(c, 'count'), cb);
+    const leafCb = vi.fn();
+    const allPathsCb = vi.fn();
+    c.subscribe(() => setOf(c, 'count'), leafCb);
+    c.subscribe(() => ALL_PATHS, allPathsCb);
 
-    // Change `label` only. With one consumer we still mark ALL_PATHS — the
-    // sole consumer wakes regardless of overlap.
+    // Change `label` only — outside the {count} skeleton. The registered
+    // leaf consumer's interest doesn't intersect, so it stays asleep; the
+    // root-sentinel still wakes the ALL_PATHS subscriber (blac bridge,
+    // plugins, watch/select).
     c.emit({ count: 0, label: 'b' });
+
+    expect(leafCb).not.toHaveBeenCalled();
+    expect(allPathsCb).toHaveBeenCalledTimes(1);
+  });
+
+  it('single registered consumer wakes when its own tracked field changes', () => {
+    const c = make({ count: 0, label: 'a' });
+    c.registerConsumerPaths('A', setOf(c, 'count'));
+    const leafCb = vi.fn();
+    c.subscribe(() => setOf(c, 'count'), leafCb);
+
+    c.emit({ count: 1, label: 'a' });
+
+    expect(leafCb).toHaveBeenCalledTimes(1);
+  });
+
+  it('zero-consumer emit still uses ALL_PATHS', () => {
+    const c = make({ count: 0, label: 'a' });
+    const cb = vi.fn();
+    c.subscribe(() => ALL_PATHS, cb);
+
+    c.emit({ count: 1, label: 'a' });
 
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb.mock.calls[0]?.[0]).toBe(ALL_PATHS);
@@ -340,6 +365,29 @@ describe('StructuralContainer — equality option', () => {
     c.emit({ count: 99, label: 'a' }); // real change to count
     expect(c.state.count).toBe(99);
     expect(countCb).not.toHaveBeenCalled(); // equality override said "equal"
+  });
+});
+
+describe('StructuralContainer — onError option', () => {
+  it('forwards onError to the underlying DirtyChannel so a throwing subscriber routes there instead of throwing', () => {
+    const onError = vi.fn();
+    const c = make(
+      { count: 0, label: 'a' },
+      { scheduler: new SyncScheduler(), onError },
+    );
+    c.registerConsumerPaths('A', setOf(c, 'count'));
+
+    const err = new Error('boom');
+    c.subscribe(
+      () => setOf(c, 'count'),
+      () => {
+        throw err;
+      },
+    );
+
+    expect(() => c.emit({ count: 1, label: 'a' })).not.toThrow();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledWith(err);
   });
 });
 

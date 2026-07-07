@@ -21,6 +21,25 @@ export interface TrackResult<S> {
   paths: PathSet;
 }
 
+// Registry of every recording proxy → its raw target, populated by `wrap` on
+// each `trackRender` call. Keyed weakly by the proxy, so entries vanish once a
+// render's proxies are collected. Backs the exported `raw()` escape hatch.
+const proxyToTarget = new WeakMap<object, object>();
+
+/**
+ * Unwrap a recording proxy to its underlying raw target. Returns `v` unchanged
+ * when it is not a tracked proxy (including primitives, `null`, `undefined`).
+ * Use this to defuse the identity/escaped-proxy hazards documented on
+ * {@link trackRender}.
+ */
+export const raw = <T>(v: T): T => {
+  if (v !== null && typeof v === 'object') {
+    const target = proxyToTarget.get(v as object);
+    if (target !== undefined) return target as T;
+  }
+  return v;
+};
+
 const childPath = (parent: string, key: string): string =>
   parent === '' ? key : `${parent}.${key}`;
 
@@ -58,8 +77,10 @@ const isStructurallyWrappable = (v: object): boolean => {
  *   object (no deeper key) keeps `user` as its leaf and wakes on any change.
  * - Primitives, `null`, and `undefined` short-circuit and are returned as-is.
  * - Nested objects/arrays return a child proxy that records into the same
- *   `paths` set. Proxies are cached per-target via a per-call `WeakMap`, so
- *   `value.user === value.user` within one render.
+ *   `paths` set. Proxies are cached per (target, prefix) via a per-call
+ *   `WeakMap<object, Map<prefix, proxy>>`, so `value.user === value.user`
+ *   within one render, while the same object reached via two different paths
+ *   gets two distinct proxies that each record their own prefix.
  * - Iteration (when {@link TRACK_ARRAY_ITERATION} is true, the default): array
  *   methods and `for..of` / spread bind to the proxy, so the method's internal
  *   index reads (`this.length`, `this[0]`, …) go through the `get` trap.
@@ -75,6 +96,17 @@ const isStructurallyWrappable = (v: object): boolean => {
  *
  * The returned `paths` is always a `Set<PathId>` — never the `ALL_PATHS`
  * sentinel (that sentinel is for source-side signalling).
+ *
+ * Hazards (use {@link raw} to unwrap when either bites):
+ * 1. Identity `===` callbacks: values read off the proxy are themselves
+ *    recording proxies, so comparing a wrapped value against a raw object with
+ *    `===` (or passing it to an identity-search that does) fails. Unwrap with
+ *    `raw(value)` before comparing to a raw reference.
+ * 2. Derived-array / escaped-proxy: a proxy (or a sub-proxy inside a derived
+ *    array such as a `.filter` result) that escapes the render frame keeps
+ *    recording into a stale `paths` set and breaks reference identity against
+ *    the underlying state. Call `raw()` on anything stored or handed to code
+ *    that expects the raw object.
  */
 export const trackRender = <S>(
   state: S,
@@ -94,12 +126,21 @@ export const trackRender = <S>(
     return { value: state, paths };
   }
 
-  // Per-call cache. Dies with this function frame so each render gets fresh
-  // recordings; do not promote to module scope.
-  const proxyByTarget = new WeakMap<object, unknown>();
+  // Per-call cache keyed by (target, prefix): target -> prefix -> proxy. Dies
+  // with this function frame so each render gets fresh recordings; do not
+  // promote to module scope. Keying by prefix (not target alone) means the
+  // same object reached via two distinct paths gets two proxies, each
+  // recording its own prefix, while a repeat read at the same path is
+  // ===-identical.
+  const proxyByTarget = new WeakMap<object, Map<string, unknown>>();
 
   const wrap = (target: object, prefix: string): unknown => {
-    const cached = proxyByTarget.get(target);
+    let byPrefix = proxyByTarget.get(target);
+    if (byPrefix === undefined) {
+      byPrefix = new Map<string, unknown>();
+      proxyByTarget.set(target, byPrefix);
+    }
+    const cached = byPrefix.get(prefix);
     if (cached !== undefined) return cached;
 
     const isArray = Array.isArray(target);
@@ -218,12 +259,43 @@ export const trackRender = <S>(
           return value;
         }
 
+        // Non-configurable, non-writable own data property (e.g. a field of an
+        // Object.freeze'd state). The Proxy [[Get]] invariant forbids returning
+        // anything other than the exact target value for such a property, so
+        // wrapping it would throw a TypeError. Return the raw value; the path
+        // was already recorded above as a coarse leaf.
+        const desc = Object.getOwnPropertyDescriptor(t, key);
+        if (desc && !desc.configurable && !desc.writable) {
+          return value;
+        }
+
         return wrap(value as object, path);
+      },
+
+      ownKeys(t) {
+        // Enumeration (Object.keys, for..in, spread of an object) depends on
+        // the object's shape, so pin its own entry path — a later deeper read
+        // must not narrow it away, and it must wake on key add/remove. Skips
+        // the root (prefix === '') via pinArrayPath's own guard. Array
+        // length/iteration behaviour is unaffected: for..of / spread / methods
+        // never route through ownKeys.
+        pinArrayPath();
+        return Reflect.ownKeys(t);
+      },
+
+      has(t, key) {
+        // `key in obj` queries a specific child path — record it so the
+        // consumer wakes when that key is added or removed.
+        if (typeof key !== 'symbol') {
+          paths.add(interner.intern(childPath(prefix, key as string)));
+        }
+        return Reflect.has(t, key);
       },
     };
 
     const proxy = new Proxy(target, handler);
-    proxyByTarget.set(target, proxy);
+    byPrefix.set(prefix, proxy);
+    proxyToTarget.set(proxy, target);
     return proxy;
   };
 

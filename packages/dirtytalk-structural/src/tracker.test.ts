@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { PathInterner } from './path-interner';
-import { trackRender } from './tracker';
+import { raw, trackRender } from './tracker';
 import type { PathSet } from './path-set';
 import { ALL_PATHS } from './path-set';
 
@@ -329,5 +329,74 @@ describe('trackRender', () => {
     const { value, paths } = trackRender(state, interner);
     expect(value.c.get()).toBe(5);
     expect(asPathStrings(paths, interner)).toContain('c');
+  });
+
+  it('12. (A1) an object aliased at two paths records both leaf paths', () => {
+    const interner = new PathInterner();
+    const shared = { name: 'z' };
+    const { value, paths } = trackRender({ a: shared, b: shared }, interner);
+    void value.a.name;
+    void value.b.name;
+    const strings = asPathStrings(paths, interner);
+    // The same object reached via two paths records both leaves.
+    expect(strings).toContain('a.name');
+    expect(strings).toContain('b.name');
+    // Same (target, prefix) repeat read is ===-identical …
+    expect(value.a).toBe(value.a);
+    // … while distinct paths yield distinct proxies.
+    expect(value.a).not.toBe(value.b);
+  });
+
+  it('13. (A2) reading a nested property of a frozen state does not throw; path recorded', () => {
+    const interner = new PathInterner();
+    const state = { user: Object.freeze({ profile: { name: 'a' } }) };
+    const { value, paths } = trackRender(state, interner);
+    let profile: { name: string } | undefined;
+    // Without the descriptor guard this throws a Proxy [[Get]] invariant
+    // TypeError (non-configurable, non-writable frozen property must return
+    // the exact target value, not a wrapping proxy).
+    expect(() => {
+      profile = value.user.profile;
+    }).not.toThrow();
+    expect(profile?.name).toBe('a');
+    const strings = asPathStrings(paths, interner);
+    expect(strings).toContain('user.profile');
+  });
+
+  it('14. (A3) Object.keys over an object records its path', () => {
+    const interner = new PathInterner();
+    const { value, paths } = trackRender({ dict: { a: 1, b: 2 } }, interner);
+    const keys = Object.keys(value.dict).sort();
+    expect(keys).toEqual(['a', 'b']);
+    const strings = asPathStrings(paths, interner);
+    expect(strings).toContain('dict');
+  });
+
+  it('14b. (A3) `key in obj` records the queried child path', () => {
+    const interner = new PathInterner();
+    const { value, paths } = trackRender(
+      { dict: { k: 1 } as Record<string, number> },
+      interner,
+    );
+    expect('k' in value.dict).toBe(true);
+    const strings = asPathStrings(paths, interner);
+    expect(strings).toContain('dict.k');
+  });
+
+  it('15. (A4) raw() unwraps a tracked proxy and passes non-proxies through', () => {
+    const interner = new PathInterner();
+    const target = { name: 'a' };
+    const { value } = trackRender({ user: target }, interner);
+    const proxy = value.user;
+    // It is a recording proxy, not the raw target …
+    expect(proxy).not.toBe(target);
+    // … and raw() unwraps it to the underlying target.
+    expect(raw(proxy)).toBe(target);
+    // Non-proxies pass through unchanged.
+    const plain = { x: 1 };
+    expect(raw(plain)).toBe(plain);
+    expect(raw(42)).toBe(42);
+    expect(raw(null)).toBeNull();
+    expect(raw(undefined)).toBeUndefined();
   });
 });

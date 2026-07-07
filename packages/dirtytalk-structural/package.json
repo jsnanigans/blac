@@ -14,9 +14,6 @@
   "types": "./dist/index.d.ts",
   "typesVersions": {
     "*": {
-      "core": [
-        "./dist/index.d.ts"
-      ],
       "react": [
         "./dist/react.d.ts"
       ]

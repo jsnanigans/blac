@@ -49,6 +49,13 @@ export interface StructuralContainerOptions {
    * is a follow-up.
    */
   equality?: ReadonlyMap<string, (a: unknown, b: unknown) => boolean>;
+
+  /**
+   * Error handler forwarded to the underlying `DirtyChannel`. Invoked when a
+   * subscriber callback throws during flush, instead of letting the error
+   * propagate. Unset preserves the channel's default (throw) behavior.
+   */
+  onError?: (err: unknown) => void;
 }
 
 /**
@@ -58,7 +65,9 @@ export interface StructuralContainerOptions {
  * `patch` value-filters the patch shape (`changedPathsFromPatch`). Consumers
  * (and raw subscribers) whose observed paths didn't change value stay asleep.
  *
- * Single-consumer flows short-circuit to `ALL_PATHS` to avoid the diff cost.
+ * Zero-consumer flows short-circuit to `ALL_PATHS` to avoid the diff cost;
+ * with one or more registered consumers, `emit` always diffs along the
+ * skeleton so precise per-leaf wake-ups apply even for a single consumer.
  */
 export abstract class StructuralContainer<S> {
   // Per-class interner registry — keyed by constructor so GC can reclaim
@@ -87,7 +96,9 @@ export abstract class StructuralContainer<S> {
   constructor(initial: S, options: StructuralContainerOptions = {}) {
     this._state = initial;
     const scheduler = options.scheduler ?? new MicrotaskScheduler();
-    this._channel = new DirtyChannel<PathSet>(PathSetSpace, scheduler);
+    this._channel = new DirtyChannel<PathSet>(PathSetSpace, scheduler, {
+      onError: options.onError,
+    });
 
     this._equalsByPathId = new Map();
     if (options.equality) {
@@ -138,9 +149,10 @@ export abstract class StructuralContainer<S> {
     this._state = next;
 
     let dirty: PathSet;
-    if (this._consumerPaths.size <= 1) {
-      // Single-consumer skip: with at most one consumer, the diff cost isn't
-      // worth it — mark the whole space so the sole consumer (if any) wakes.
+    if (this._consumerPaths.size === 0) {
+      // Zero-consumer skip: nothing is registered to diff against, so mark
+      // the whole space for any ALL_PATHS subscribers (blac bridge, plugins,
+      // watch/select).
       dirty = ALL_PATHS;
     } else {
       dirty = diffAlongSkeleton(
