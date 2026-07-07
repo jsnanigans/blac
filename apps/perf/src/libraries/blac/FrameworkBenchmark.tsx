@@ -90,7 +90,17 @@ const Row: React.FC<{ item: DataItem; isSelected: boolean }> = memo(
 export const BlacFrameworkBenchmark: React.FC<{
   onReady: (api: BenchmarkAPI) => void;
 }> = ({ onReady }) => {
-  const [state] = useBloc(DemoBloc);
+  // Use `select` mode (blac's explicit-selector API) rather than auto-tracking.
+  // Auto-track returns a recording proxy that hands `.map` a fresh sub-proxy per
+  // element every render, so every `item` is a new reference and the memoized
+  // `Row` re-renders even when its data is unchanged — re-rendering all 1,000
+  // rows on every op. `select` returns the raw state: items keep their identity,
+  // so `React.memo` skips unchanged rows. This mirrors how the Zustand
+  // (`useStore(store, s => s.data)`) and Redux (`useSelector`) benchmarks read
+  // their lists, keeping the comparison apples-to-apples.
+  const [state] = useBloc(DemoBloc, {
+    select: (s) => [s.data, s.selected],
+  });
   const bloc = useMemo(() => borrow(DemoBloc), []);
 
   useEffect(() => {

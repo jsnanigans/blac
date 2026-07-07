@@ -13,5 +13,17 @@ export default defineConfig({
   },
   server: {
     port: 3001, // Optional: specify port if needed
+    headers: {
+      // Enable cross-origin isolation so `performance.now()` gets 5µs
+      // resolution (vs the default 100µs clamp) for the pure-state benchmark.
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+  },
+  preview: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
   },
 });
