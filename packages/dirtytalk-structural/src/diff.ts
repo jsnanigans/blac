@@ -24,9 +24,19 @@ const isPlainPatchObject = (v: unknown): v is Record<string, unknown> => {
  * Only walks own properties via bracket access. No prototype walking is
  * performed beyond what bracket access naturally does for plain objects.
  */
-export const getAt = (state: unknown, path: string): unknown => {
-  if (path === '') return state;
-  const segments = path.split('.');
+export const getAt = (state: unknown, path: string): unknown =>
+  getAtSegments(state, path === '' ? [] : path.split('.'));
+
+/**
+ * Like {@link getAt}, but takes a pre-split `segments` array — the hot-path
+ * form used with `PathInterner.lookupSegments`, which memoizes the split so
+ * repeated reads of the same path never re-`split('.')`. An empty `segments`
+ * array returns `state` itself, matching `getAt`'s empty-path behavior.
+ */
+export const getAtSegments = (
+  state: unknown,
+  segments: readonly string[],
+): unknown => {
   let cursor: unknown = state;
   for (const segment of segments) {
     if (cursor === null || cursor === undefined) return undefined;
@@ -65,9 +75,9 @@ export const diffAlongSkeleton = <S>(
 
   const result = new Set<PathId>();
   for (const id of ids) {
-    const pathStr = interner.lookup(id);
-    const pv = getAt(prev, pathStr);
-    const nv = getAt(next, pathStr);
+    const segments = interner.lookupSegments(id);
+    const pv = getAtSegments(prev, segments);
+    const nv = getAtSegments(next, segments);
     const eq = equalsAt ? equalsAt(id, pv, nv) : Object.is(pv, nv);
     if (!eq) result.add(id);
   }

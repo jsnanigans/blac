@@ -5,7 +5,12 @@ import {
   type DeepPartial,
   type StructuralContainerOptions,
 } from './container';
-import { ALL_PATHS, type PathSet } from './path-set';
+import {
+  ALL_PATHS,
+  pathSetEquals,
+  pathSetUnion,
+  type PathSet,
+} from './path-set';
 import type { PathId } from './types';
 
 // A minimal concrete subclass used across the suite.
@@ -500,5 +505,201 @@ describe('StructuralContainer — per-class interner', () => {
     // about 'shared.path' without being told.
     expect(second.interner.lookup(id)).toBe('shared.path');
     expect(second.interner.intern('shared.path')).toBe(id);
+  });
+});
+
+describe('StructuralContainer — patch ancestor-mark refinement (P4b)', () => {
+  interface ListState {
+    items: { id: number; name: string }[];
+    label: string;
+  }
+  class ListBox extends StructuralContainer<ListState> {}
+  const makeList = () =>
+    new ListBox(
+      {
+        items: [
+          { id: 1, name: 'a' },
+          { id: 2, name: 'b' },
+        ],
+        label: 'L',
+      },
+      { scheduler: new SyncScheduler() },
+    );
+  const setOfList = (c: ListBox, ...paths: string[]): PathSet =>
+    new Set<PathId>(paths.map((p) => c.interner.intern(p)));
+
+  it('array replacement with an unchanged element does not wake a descendant reader, but wakes a whole-array reader', () => {
+    const c = makeList();
+    c.registerConsumerPaths('leaf', setOfList(c, 'items.0.name'));
+    c.registerConsumerPaths('whole', setOfList(c, 'items'));
+
+    const leafCb = vi.fn();
+    const wholeCb = vi.fn();
+    c.subscribe(() => setOfList(c, 'items.0.name'), leafCb);
+    c.subscribe(() => setOfList(c, 'items'), wholeCb);
+
+    // New array reference, identical values at items.0.name.
+    c.patch({
+      items: [
+        { id: 1, name: 'a' },
+        { id: 2, name: 'b' },
+      ],
+    });
+
+    // Ancestor-watch on `items` is refined away: items.0.name is unchanged.
+    expect(leafCb).not.toHaveBeenCalled();
+    // The whole-array reader pinned `items` directly → preserved mark wakes it.
+    expect(wholeCb).toHaveBeenCalledTimes(1);
+  });
+
+  it('array replacement with a changed element wakes the descendant reader', () => {
+    const c = makeList();
+    c.registerConsumerPaths('leaf', setOfList(c, 'items.0.name'));
+
+    const leafCb = vi.fn();
+    c.subscribe(() => setOfList(c, 'items.0.name'), leafCb);
+
+    c.patch({
+      items: [
+        { id: 1, name: 'CHANGED' },
+        { id: 2, name: 'b' },
+      ],
+    });
+
+    expect(c.state.items[0]?.name).toBe('CHANGED');
+    expect(leafCb).toHaveBeenCalledTimes(1);
+  });
+
+  it('mixed patch (array replace + primitive) wakes only the consumers whose values changed', () => {
+    const c = makeList();
+    c.registerConsumerPaths('leaf', setOfList(c, 'items.0.name'));
+    c.registerConsumerPaths('label', setOfList(c, 'label'));
+
+    const leafCb = vi.fn();
+    const labelCb = vi.fn();
+    c.subscribe(() => setOfList(c, 'items.0.name'), leafCb);
+    c.subscribe(() => setOfList(c, 'label'), labelCb);
+
+    // items.0.name unchanged, label changed.
+    c.patch({
+      items: [
+        { id: 1, name: 'a' },
+        { id: 2, name: 'b' },
+      ],
+      label: 'NEW',
+    });
+
+    expect(leafCb).not.toHaveBeenCalled();
+    expect(labelCb).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('StructuralContainer — incremental skeleton refcounting (P5)', () => {
+  // `_skeleton` is private; read it at runtime (TS `private` is compile-only)
+  // to compare the incrementally-maintained skeleton against a from-scratch
+  // union of every currently-registered consumer's paths.
+  const skeletonOf = (c: Counter): PathSet =>
+    (c as unknown as { _skeleton: PathSet })._skeleton;
+  const fromScratch = (c: Counter): PathSet => {
+    let s: PathSet = new Set<PathId>();
+    for (const p of c.getConsumerPaths().values()) s = pathSetUnion(s, p);
+    return s;
+  };
+
+  it('shared path across consumers survives until its last referrer unregisters', () => {
+    const c = make();
+    c.registerConsumerPaths('A', setOf(c, 'count', 'label'));
+    c.registerConsumerPaths('B', setOf(c, 'count'));
+    expect(pathSetEquals(skeletonOf(c), fromScratch(c))).toBe(true);
+
+    // Drop B — `count` is still referenced by A, so it stays in the skeleton.
+    c.unregisterConsumer('B');
+    expect(pathSetEquals(skeletonOf(c), fromScratch(c))).toBe(true);
+    expect((skeletonOf(c) as Set<PathId>).has(c.interner.intern('count'))).toBe(
+      true,
+    );
+
+    // Drop A — now the skeleton is empty.
+    c.unregisterConsumer('A');
+    expect((skeletonOf(c) as Set<PathId>).size).toBe(0);
+  });
+
+  it('re-registration with changed paths updates refcounts correctly', () => {
+    const c = make();
+    c.registerConsumerPaths('A', setOf(c, 'count'));
+    c.registerConsumerPaths('A', setOf(c, 'label')); // A no longer refs count
+    expect(pathSetEquals(skeletonOf(c), fromScratch(c))).toBe(true);
+    expect((skeletonOf(c) as Set<PathId>).has(c.interner.intern('count'))).toBe(
+      false,
+    );
+  });
+
+  it('an ALL_PATHS-interest consumer forces an ALL_PATHS skeleton until it leaves', () => {
+    const c = make();
+    c.registerConsumerPaths('A', setOf(c, 'count'));
+    c.registerConsumerPaths('W', ALL_PATHS);
+    expect(skeletonOf(c)).toBe(ALL_PATHS);
+
+    c.unregisterConsumer('W');
+    expect(skeletonOf(c)).not.toBe(ALL_PATHS);
+    expect(pathSetEquals(skeletonOf(c), fromScratch(c))).toBe(true);
+  });
+
+  it('property: skeleton is set-equal to a from-scratch union for randomized register/unregister sequences', () => {
+    const c = make();
+    const pathPool = ['count', 'label', 'a.b', 'a.c', 'x'];
+    const consumers = ['C0', 'C1', 'C2', 'C3'];
+    const registered = new Set<string>();
+
+    const randomInterest = (): PathSet => {
+      // ~1 in 5 consumers is an ALL_PATHS-interest consumer.
+      if (Math.random() < 0.2) return ALL_PATHS;
+      const set = new Set<PathId>();
+      for (const p of pathPool) {
+        if (Math.random() < 0.5) set.add(c.interner.intern(p));
+      }
+      return set;
+    };
+
+    for (let i = 0; i < 300; i++) {
+      const id = consumers[Math.floor(Math.random() * consumers.length)]!;
+      // Bias toward register (including re-register with changed paths); still
+      // exercise unregister frequently.
+      if (Math.random() < 0.65) {
+        c.registerConsumerPaths(id, randomInterest());
+        registered.add(id);
+      } else {
+        c.unregisterConsumer(id);
+        registered.delete(id);
+      }
+      // The invariant must hold after every single operation.
+      expect(pathSetEquals(skeletonOf(c), fromScratch(c))).toBe(true);
+    }
+  });
+});
+
+describe('StructuralContainer — dispose', () => {
+  it('forwards to the underlying channel, cancelling a pending flush', () => {
+    const scheduler = new MicrotaskScheduler();
+    const cancelSpy = vi.spyOn(scheduler, 'cancel');
+    const c = make({ count: 0, label: 'a' }, { scheduler });
+
+    c.emit({ count: 1, label: 'a' }); // marks dirty, schedules a pending flush
+
+    c.dispose();
+
+    expect(cancelSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('is safe to call twice', () => {
+    const scheduler = new MicrotaskScheduler();
+    const c = make({ count: 0, label: 'a' }, { scheduler });
+
+    c.emit({ count: 1, label: 'a' });
+
+    expect(() => {
+      c.dispose();
+      c.dispose();
+    }).not.toThrow();
   });
 });

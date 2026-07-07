@@ -5,6 +5,7 @@ import {
   changedPathsFromPatch,
   diffAlongSkeleton,
   getAt,
+  getAtSegments,
   pathsFromPatch,
 } from './diff';
 import type { PathId } from './types';
@@ -43,6 +44,33 @@ describe('getAt', () => {
 
   it('path into a primitive returns undefined', () => {
     expect(getAt({ count: 5 }, 'count.toString')).toBeUndefined();
+  });
+
+  // getAt now delegates to getAtSegments; confirm its contract is unchanged.
+  it('empty-path and missing-intermediate behaviour is unchanged after the segment delegation', () => {
+    const state = { a: 1 };
+    expect(getAt(state, '')).toBe(state);
+    expect(getAt({ a: 1 }, 'a.b.c')).toBeUndefined();
+    expect(() => getAt({ a: 1 }, 'a.b.c')).not.toThrow();
+  });
+});
+
+describe('getAtSegments', () => {
+  it('empty segments array returns the state itself (matches empty-path getAt)', () => {
+    const state = { a: 1 };
+    expect(getAtSegments(state, [])).toBe(state);
+  });
+
+  it('walks segments like getAt splits a dotted path', () => {
+    expect(getAtSegments({ user: { email: 'x@y.z' } }, ['user', 'email'])).toBe(
+      'x@y.z',
+    );
+    expect(getAtSegments({ items: ['a', 'b', 'c'] }, ['items', '2'])).toBe('c');
+  });
+
+  it('missing intermediate returns undefined (no throw)', () => {
+    expect(() => getAtSegments({ a: 1 }, ['a', 'b', 'c'])).not.toThrow();
+    expect(getAtSegments({ a: 1 }, ['a', 'b', 'c'])).toBeUndefined();
   });
 });
 
@@ -178,6 +206,53 @@ describe('diffAlongSkeleton', () => {
     expect(prev).toEqual({ a: 1 });
     expect(next).toEqual({ a: 2 });
     expect(skeleton).toEqual(skeletonSnapshot);
+  });
+
+  // Segment-cache correctness: the interner memoizes `path.split('.')` per id,
+  // so repeated diffs on the same interner must yield identical results (the
+  // second call reads the cached, reference-stable segment arrays).
+  it('repeated diffs on the same interner give identical results (segment cache)', () => {
+    const interner = new PathInterner();
+    const skeleton = skeletonFromPaths(interner, [
+      'user.email',
+      'user.name',
+      'items.0.id',
+      'count',
+    ]);
+    const prev = {
+      user: { email: 'a@b.c', name: 'A' },
+      items: [{ id: 1 }],
+      count: 1,
+    };
+    const next = {
+      user: { email: 'a@b.c', name: 'B' },
+      items: [{ id: 1 }],
+      count: 2,
+    };
+
+    const first = diffAlongSkeleton(
+      prev,
+      next,
+      skeleton,
+      interner,
+    ) as Set<PathId>;
+    const second = diffAlongSkeleton(
+      prev,
+      next,
+      skeleton,
+      interner,
+    ) as Set<PathId>;
+
+    const expected = new Set<PathId>([
+      interner.intern('user.name'),
+      interner.intern('count'),
+    ]);
+    expect(new Set(first)).toEqual(expected);
+    expect(new Set(second)).toEqual(expected);
+    // Cached segment arrays are reference-stable across lookups.
+    expect(interner.lookupSegments(interner.intern('user.email'))).toBe(
+      interner.lookupSegments(interner.intern('user.email')),
+    );
   });
 });
 

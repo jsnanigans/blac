@@ -3,7 +3,11 @@ import {
   MicrotaskScheduler,
   type Scheduler,
 } from '@dirtytalk/engine';
-import { changedPathsFromPatch, diffAlongSkeleton, getAt } from './diff';
+import {
+  changedPathsFromPatch,
+  diffAlongSkeleton,
+  getAtSegments,
+} from './diff';
 import { PathInterner } from './path-interner';
 
 /**
@@ -28,7 +32,6 @@ import {
   ALL_PATHS,
   emptyPathSet,
   pathSetEquals,
-  pathSetUnion,
   PathSetSpace,
   type PathSet,
 } from './path-set';
@@ -68,6 +71,8 @@ export interface StructuralContainerOptions {
  * Zero-consumer flows short-circuit to `ALL_PATHS` to avoid the diff cost;
  * with one or more registered consumers, `emit` always diffs along the
  * skeleton so precise per-leaf wake-ups apply even for a single consumer.
+ *
+ * `dispose()` exists for embedders that need to tear down a container's channel.
  */
 export abstract class StructuralContainer<S> {
   // Per-class interner registry — keyed by constructor so GC can reclaim
@@ -88,6 +93,14 @@ export abstract class StructuralContainer<S> {
   private readonly _consumerPaths = new Map<ConsumerId, PathSet>();
   private _state: S;
   private _skeleton: PathSet = emptyPathSet();
+  // Incremental skeleton refcounting (replaces the O(consumers × paths)
+  // from-scratch union). `_skeletonSet` is the live backing set for `_skeleton`
+  // when no ALL_PATHS consumer is registered; `_pathRefCounts` tracks how many
+  // consumers reference each id so an id leaves the skeleton only on its final
+  // 1→0 transition; `_allPathsConsumers` counts ALL_PATHS-interest consumers.
+  private readonly _pathRefCounts = new Map<PathId, number>();
+  private _allPathsConsumers = 0;
+  private readonly _skeletonSet = new Set<PathId>();
   private readonly _equalsByPathId: Map<
     PathId,
     (a: unknown, b: unknown) => boolean
@@ -122,6 +135,10 @@ export abstract class StructuralContainer<S> {
 
   get channel(): DirtyChannel<PathSet> {
     return this._channel;
+  }
+
+  dispose(): void {
+    this._channel.dispose();
   }
 
   get consumerCount(): number {
@@ -235,11 +252,12 @@ export abstract class StructuralContainer<S> {
     if (prev && pathSetEquals(prev, paths)) return; // fast-path skip
 
     this._consumerPaths.set(id, paths);
-    this._recomputeSkeleton();
+    this._applyRefDelta(prev, paths);
   }
 
   unregisterConsumer(id: ConsumerId): void {
-    if (this._consumerPaths.delete(id)) this._recomputeSkeleton();
+    const prev = this._consumerPaths.get(id);
+    if (this._consumerPaths.delete(id)) this._applyRefDelta(prev, undefined);
   }
 
   // ---------------------------------------------------------------------------
@@ -259,11 +277,42 @@ export abstract class StructuralContainer<S> {
     };
   }
 
-  // O(consumers × paths); incremental update is a future optimisation.
-  private _recomputeSkeleton(): void {
-    let s: PathSet = emptyPathSet();
-    for (const p of this._consumerPaths.values()) s = pathSetUnion(s, p);
-    this._skeleton = s;
+  // Incrementally fold a single consumer's `prev`→`next` interest change into
+  // the refcounted skeleton, then republish `_skeleton`. `undefined` on either
+  // side means "no interest" (register of a new id / unregister). `ALL_PATHS`
+  // interests are counted separately: while any exist the skeleton is
+  // `ALL_PATHS`; otherwise it is the live `_skeletonSet`. An id is added on its
+  // 0→1 refcount transition and dropped on its final 1→0 transition, so the
+  // result is always set-equal to a from-scratch union of all current
+  // consumers' paths.
+  private _applyRefDelta(
+    prev: PathSet | undefined,
+    next: PathSet | undefined,
+  ): void {
+    if (prev === ALL_PATHS) {
+      this._allPathsConsumers--;
+    } else if (prev !== undefined) {
+      for (const id of prev as Set<PathId>) {
+        const count = (this._pathRefCounts.get(id) ?? 0) - 1;
+        if (count <= 0) {
+          this._pathRefCounts.delete(id);
+          this._skeletonSet.delete(id);
+        } else {
+          this._pathRefCounts.set(id, count);
+        }
+      }
+    }
+    if (next === ALL_PATHS) {
+      this._allPathsConsumers++;
+    } else if (next !== undefined) {
+      for (const id of next as Set<PathId>) {
+        const count = (this._pathRefCounts.get(id) ?? 0) + 1;
+        this._pathRefCounts.set(id, count);
+        if (count === 1) this._skeletonSet.add(id);
+      }
+    }
+    this._skeleton =
+      this._allPathsConsumers > 0 ? ALL_PATHS : this._skeletonSet;
   }
 
   /**
@@ -291,18 +340,20 @@ export abstract class StructuralContainer<S> {
     if (rough === ALL_PATHS) return rough;
     const roughSet = rough as Set<PathId>;
 
-    // Collect the decoded prefix of every ancestor-watch mark in one pass.
-    // `lookup` strips the sentinel so we get the real ancestor path; the
-    // trailing dot makes `startsWith` a true descendant test ("items." does
-    // not match a sibling "itemsExtra").
-    const prefixes: string[] = [];
+    // Collect the real-path id every ancestor-watch mark decodes to, in one
+    // pass. These are the refine *targets*: a skeleton leaf is refined iff one
+    // of these ids is a strict ancestor of it (via `interner.ancestorIds`),
+    // which is the interned-id equivalent of the old `startsWith(prefix + '.')`
+    // descendant test — "items" does not match a sibling "itemsExtra".
+    const targetIds = new Set<PathId>();
     for (const id of roughSet) {
       if (this.interner.isAncestorId(id)) {
-        prefixes.push(this.interner.lookup(id) + '.');
+        const target = this.interner.ancestorTargetId(id);
+        if (target !== undefined) targetIds.add(target);
       }
     }
     // Fast exit: no ancestor-watch marks → plain-object patch, zero overhead.
-    if (prefixes.length === 0) return rough;
+    if (targetIds.size === 0) return rough;
 
     // Fast exit: nothing in the skeleton to refine against.
     if (this._skeleton === ALL_PATHS) return rough;
@@ -321,20 +372,16 @@ export abstract class StructuralContainer<S> {
     }
 
     // Single pass over the skeleton: a leaf that descends from any refined
-    // ancestor is marked iff its value actually changed (one `getAt` per leaf,
+    // ancestor is marked iff its value actually changed (one read per leaf,
     // never re-walked per ancestor). Same value-compare as diffAlongSkeleton.
     for (const skelId of skeleton) {
-      const skelPath = this.interner.lookup(skelId);
-      let descends = false;
-      for (const prefix of prefixes) {
-        if (skelPath.startsWith(prefix)) {
-          descends = true;
-          break;
-        }
-      }
+      const descends = this.interner
+        .ancestorIds(skelId)
+        .some((a) => targetIds.has(a));
       if (!descends) continue;
-      const pv = getAt(prev, skelPath);
-      const nv = getAt(next, skelPath);
+      const segments = this.interner.lookupSegments(skelId);
+      const pv = getAtSegments(prev, segments);
+      const nv = getAtSegments(next, segments);
       const eq = equalsFn ? equalsFn(skelId, pv, nv) : Object.is(pv, nv);
       if (!eq) result.add(skelId);
     }
