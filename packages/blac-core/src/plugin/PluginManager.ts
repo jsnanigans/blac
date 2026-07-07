@@ -305,6 +305,7 @@ export class PluginManager {
     const next = container.state;
     bridge.prevState = next;
 
+    let ctx: PluginContext | undefined;
     for (const { plugin, config } of this.plugins.values()) {
       if (!config.enabled) continue;
       // eslint-disable-next-line @typescript-eslint/unbound-method -- invoked via .call below
@@ -312,7 +313,8 @@ export class PluginManager {
       if (typeof hook !== 'function') continue;
 
       try {
-        hook.call(plugin, this.buildContext(container), prev, next, paths);
+        ctx ??= this.buildContext(container);
+        hook.call(plugin, ctx, prev, next, paths);
       } catch (error) {
         console.error(
           `[BlaC] Error in plugin "${plugin.name}" onStateChange:`,
@@ -327,13 +329,16 @@ export class PluginManager {
    *
    * Builds a fresh `PluginContext` per dispatch (instance becomes
    * `ctx.container`), so plugins can reach the focal bloc through
-   * `ctx.container`.
+   * `ctx.container`. The context is built lazily on the first matching
+   * hook and reused for every other plugin in this dispatch — zero
+   * builds if no enabled plugin implements `hookName`.
    */
   private notifyPlugins(
     hookName: Exclude<keyof BlacPlugin, 'onStateChange'>,
     instance: StateContainer<any, any, any>,
     ...extraArgs: any[]
   ): void {
+    let ctx: PluginContext | undefined;
     for (const { plugin, config } of this.plugins.values()) {
       if (!config.enabled) continue;
 
@@ -341,7 +346,8 @@ export class PluginManager {
       if (typeof hook !== 'function') continue;
 
       try {
-        (hook as any).call(plugin, this.buildContext(instance), ...extraArgs);
+        ctx ??= this.buildContext(instance);
+        (hook as any).call(plugin, ctx, ...extraArgs);
       } catch (error) {
         console.error(
           `[BlaC] Error in plugin "${plugin.name}" ${hookName}:`,

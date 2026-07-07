@@ -386,6 +386,38 @@ describe('PluginManager', () => {
         expect(p1.mock.calls[0][2]).toEqual(p2.mock.calls[0][2]);
         expect(p1.mock.calls[0][3]).toBe(p2.mock.calls[0][3]);
       });
+
+      it('builds the PluginContext once per dispatch for multiple plugins', async () => {
+        const buildContextSpy = vi.spyOn(manager as any, 'buildContext');
+
+        const p1 = vi.fn();
+        const p2 = vi.fn();
+        manager.install({ name: 'p1', version: '1.0.0', onStateChange: p1 });
+        manager.install({ name: 'p2', version: '1.0.0', onStateChange: p2 });
+        buildContextSpy.mockClear();
+
+        const counter = acquire(CounterCubit, { args: { id: 'main' } });
+        counter.increment();
+        await new Promise<void>((r) => queueMicrotask(r));
+
+        expect(buildContextSpy).toHaveBeenCalledOnce();
+        expect(p1).toHaveBeenCalledOnce();
+        expect(p2).toHaveBeenCalledOnce();
+        expect(p1.mock.calls[0][0]).toBe(p2.mock.calls[0][0]);
+      });
+
+      it('builds zero PluginContexts when no enabled plugin implements onStateChange', async () => {
+        const buildContextSpy = vi.spyOn(manager as any, 'buildContext');
+
+        manager.install({ name: 'no-hook', version: '1.0.0' });
+        buildContextSpy.mockClear();
+
+        const counter = acquire(CounterCubit, { args: { id: 'main' } });
+        counter.increment();
+        await new Promise<void>((r) => queueMicrotask(r));
+
+        expect(buildContextSpy).not.toHaveBeenCalled();
+      });
     });
 
     describe('onDestroyed', () => {
