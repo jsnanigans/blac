@@ -680,6 +680,7 @@ export abstract class StateContainer<
       error,
       changedWhileHydrating: this._changedWhileHydrating,
     });
+    this._registry.emit('hydrationChanged', this, status, previousStatus);
   }
 
   private ensureHydrationPromise(): Promise<void> {

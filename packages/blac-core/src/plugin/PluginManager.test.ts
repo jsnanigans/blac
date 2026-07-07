@@ -408,6 +408,89 @@ describe('PluginManager', () => {
       });
     });
 
+    describe('onHydrationChange', () => {
+      it('should call onHydrationChange on begin -> hydrated transitions', () => {
+        const onHydrationChange = vi.fn();
+        let capturedContext: any;
+        const plugin: BlacPlugin = {
+          name: 'test-plugin',
+          version: '1.0.0',
+          onHydrationChange,
+          onInstall: (context) => {
+            capturedContext = context;
+          },
+        };
+
+        manager.install(plugin);
+
+        const counter = acquire(CounterCubit, {
+          args: { id: 'hydration-dispatch' },
+        });
+
+        capturedContext.startHydration(counter);
+        capturedContext.finishHydration(counter);
+
+        expect(onHydrationChange).toHaveBeenCalledTimes(2);
+        expect(onHydrationChange.mock.calls[0]).toEqual([
+          expect.objectContaining({ container: counter }),
+          'hydrating',
+          'idle',
+        ]);
+        expect(onHydrationChange.mock.calls[1]).toEqual([
+          expect.objectContaining({ container: counter }),
+          'hydrated',
+          'hydrating',
+        ]);
+      });
+
+      it('should call onHydrationChange on error transition', () => {
+        const onHydrationChange = vi.fn();
+        let capturedContext: any;
+        const plugin: BlacPlugin = {
+          name: 'test-plugin',
+          version: '1.0.0',
+          onHydrationChange,
+          onInstall: (context) => {
+            capturedContext = context;
+          },
+        };
+
+        manager.install(plugin);
+
+        const counter = acquire(CounterCubit, {
+          args: { id: 'hydration-error' },
+        });
+
+        capturedContext.startHydration(counter);
+        onHydrationChange.mockClear();
+        capturedContext.failHydration(counter, new Error('boom'));
+
+        expect(onHydrationChange).toHaveBeenCalledWith(
+          expect.objectContaining({ container: counter }),
+          'error',
+          'hydrating',
+        );
+      });
+
+      it('should not break if plugin hook throws error', () => {
+        const plugin: BlacPlugin = {
+          name: 'test-plugin',
+          version: '1.0.0',
+          onHydrationChange: () => {
+            throw new Error('Hook error');
+          },
+        };
+
+        manager.install(plugin);
+
+        const counter = acquire(CounterCubit, {
+          args: { id: 'hydration-throw' },
+        });
+
+        expect(() => counter.$blac.hydration.begin()).not.toThrow();
+      });
+    });
+
     it('should only call hooks for enabled plugins', () => {
       const onStateChange = vi.fn();
       const plugin: BlacPlugin = {

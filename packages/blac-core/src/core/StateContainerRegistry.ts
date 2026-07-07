@@ -1,4 +1,8 @@
-import type { StateContainer, StateContainerConfig } from './StateContainer';
+import type {
+  HydrationStatus,
+  StateContainer,
+  StateContainerConfig,
+} from './StateContainer';
 import {
   createPluginManager,
   type PluginManager,
@@ -35,7 +39,8 @@ export type LifecycleEvent =
   | 'disposed'
   | 'refAcquired'
   | 'refReleased'
-  | 'depsChanged';
+  | 'depsChanged'
+  | 'hydrationChanged';
 
 /**
  * Listener function type for each lifecycle event
@@ -61,7 +66,13 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
                 previousDeps: Readonly<Record<string, unknown>>,
                 currentDeps: Readonly<Record<string, unknown>>,
               ) => void
-            : never;
+            : E extends 'hydrationChanged'
+              ? (
+                  container: StateContainer<any, any, any>,
+                  status: HydrationStatus,
+                  previousStatus: HydrationStatus,
+                ) => void
+              : never;
 
 /**
  * Central registry for managing StateContainer instances.
@@ -740,6 +751,12 @@ export class StateContainerRegistry {
     container: StateContainer<any, any, any>,
     previousDeps: Readonly<Record<string, unknown>>,
     currentDeps: Readonly<Record<string, unknown>>,
+  ): void;
+  emit(
+    event: 'hydrationChanged',
+    container: StateContainer<any, any, any>,
+    status: HydrationStatus,
+    previousStatus: HydrationStatus,
   ): void;
   emit(event: LifecycleEvent, ...args: any[]): void {
     const listeners = this.listeners.get(event);
