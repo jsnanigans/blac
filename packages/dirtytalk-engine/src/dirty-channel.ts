@@ -21,6 +21,10 @@ export class DirtyChannel<Region> {
   // True while a flush has been requested but not yet drained.
   #scheduled = false;
 
+  // True once dispose() has been called. Guards mark()/subscribe()/#flush()
+  // against post-disposal use and makes dispose() idempotent.
+  #disposed = false;
+
   // True while subscriber callbacks are being invoked. Used to detect
   // re-entrant mark() calls so we don't double-schedule.
   #flushing = false;
@@ -48,6 +52,8 @@ export class DirtyChannel<Region> {
   }
 
   mark(r: Region): void {
+    if (this.#disposed) return;
+
     // Accumulate the dirty region regardless of whether we are flushing.
     // If flushing, the current flush already snapshotted `accumulated` and
     // reset it; so writing here is safe — it queues work for the *next* flush.
@@ -63,6 +69,8 @@ export class DirtyChannel<Region> {
   }
 
   subscribe(interest: () => Region, cb: (dirty: Region) => void): () => void {
+    if (this.#disposed) return () => {};
+
     const id = this.#nextId++;
     const entry: SubscriberEntry<Region> = { interest, cb, alive: true };
     this.#subscribers.set(id, entry);
@@ -77,6 +85,8 @@ export class DirtyChannel<Region> {
   }
 
   #flush(): void {
+    if (this.#disposed) return;
+
     // Step 1 — snapshot the dirty region and reset state.
     const dirty = this.#accumulated;
     this.#accumulated = this.#space.empty();
@@ -147,5 +157,18 @@ export class DirtyChannel<Region> {
         'DirtyChannel: subscriber errors during flush',
       );
     }
+  }
+
+  dispose(): void {
+    if (this.#disposed) return;
+    this.#disposed = true;
+
+    if (this.#scheduled) {
+      this.#scheduler.cancel?.();
+      this.#scheduled = false;
+    }
+
+    this.#accumulated = this.#space.empty();
+    this.#subscribers.clear();
   }
 }

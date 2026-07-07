@@ -18,6 +18,9 @@ class TestScheduler {
   request(flush: () => void) {
     this.pending = flush;
   }
+  cancel() {
+    this.pending = null;
+  }
   pump() {
     const f = this.pending;
     this.pending = null;
@@ -425,5 +428,54 @@ describe('DirtyChannel — sanity', () => {
     // Pump without any mark — nothing is pending, pump is a no-op
     sched.pump();
     expect(interest).not.toHaveBeenCalled();
+  });
+});
+
+describe('DirtyChannel — dispose', () => {
+  it('25. dispose after a pending mark calls scheduler.cancel once', () => {
+    const sched = new TestScheduler();
+    const cancelSpy = vi.spyOn(sched, 'cancel');
+    const ch = new DirtyChannel(NumberBitsetSpace, sched);
+    ch.mark(0b001);
+    ch.dispose();
+    expect(cancelSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('26. dispose with nothing pending does not call cancel', () => {
+    const sched = new TestScheduler();
+    const cancelSpy = vi.spyOn(sched, 'cancel');
+    const ch = new DirtyChannel(NumberBitsetSpace, sched);
+    ch.dispose();
+    expect(cancelSpy).not.toHaveBeenCalled();
+  });
+
+  it('27. after dispose, mark() is a no-op and subscribe() never fires', () => {
+    const sched = new TestScheduler();
+    const requestSpy = vi.spyOn(sched, 'request');
+    const ch = new DirtyChannel(NumberBitsetSpace, sched);
+    ch.dispose();
+    requestSpy.mockClear();
+
+    ch.mark(0b001);
+    expect(requestSpy).not.toHaveBeenCalled();
+    expect(sched.isPending).toBe(false);
+
+    const cb = vi.fn();
+    ch.subscribe(() => 0b001, cb);
+    ch.mark(0b001);
+    sched.pump();
+    expect(cb).not.toHaveBeenCalled();
+  });
+
+  it('28. dispose called twice is safe and does not double-invoke cancel', () => {
+    const sched = new TestScheduler();
+    const cancelSpy = vi.spyOn(sched, 'cancel');
+    const ch = new DirtyChannel(NumberBitsetSpace, sched);
+    ch.mark(0b001);
+    expect(() => {
+      ch.dispose();
+      ch.dispose();
+    }).not.toThrow();
+    expect(cancelSpy).toHaveBeenCalledTimes(1);
   });
 });
