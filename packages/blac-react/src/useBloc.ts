@@ -20,6 +20,7 @@ import {
 import {
   ALL_PATHS,
   emptyPathSet,
+  pathSetEquals,
   trackRender,
   PathInterner,
   type PathSet,
@@ -29,6 +30,11 @@ import { buildTrackedProxy } from './buildTrackedProxy';
 import type { ComponentRef, UseBlocOptions, UseBlocReturn } from './types';
 
 let nextConsumerId = 0;
+
+// Sentinel that can never `Object.is`-equal a real args value (including
+// `undefined`). Used to lazily seed args-key refs so the structural key is
+// computed only when the guard actually runs, never on every render.
+const ARGS_UNSET: unique symbol = Symbol('blac.argsKeyUnset');
 
 // Registry refId formats for a consumer's primary bloc and its tracked deps.
 // Centralised so the `acquire` and `release` sites can never drift apart — a
@@ -130,15 +136,39 @@ export function useBloc<
   const ownArgs = (options as { args?: ExtractArgs<T> } | undefined)?.args;
   const ownArgsRef = useRef(ownArgs);
   ownArgsRef.current = ownArgs;
-  const ownArgsKey =
-    ownArgs === undefined ? undefined : JSON.stringify(ownArgs);
+  // Fast-path: only recompute the structural key when the args REFERENCE
+  // changes. Callers commonly pass a stable args object (e.g. memoised or
+  // module-level), so this skips a JSON.stringify call every render.
+  const ownArgsKeyRef = useRef<{ ref: unknown; key: string | undefined }>({
+    ref: ARGS_UNSET,
+    key: undefined,
+  });
+  if (!Object.is(ownArgsKeyRef.current.ref, ownArgs)) {
+    ownArgsKeyRef.current = {
+      ref: ownArgs,
+      key: ownArgs === undefined ? undefined : JSON.stringify(ownArgs),
+    };
+  }
+  const ownArgsKey = ownArgsKeyRef.current.key;
 
   // Read provided args from the nearest BlocProvider for this bloc class.
   const providerArgs = useProvidedArgs(BlocClass);
   const providerArgsRef = useRef(providerArgs);
   providerArgsRef.current = providerArgs;
-  const providerArgsKey =
-    providerArgs === undefined ? undefined : JSON.stringify(providerArgs);
+  // Same reference fast-path as ownArgsKey above.
+  const providerArgsKeyRef = useRef<{ ref: unknown; key: string | undefined }>(
+    {
+      ref: ARGS_UNSET,
+      key: undefined,
+    },
+  );
+  if (!Object.is(providerArgsKeyRef.current.ref, providerArgs)) {
+    providerArgsKeyRef.current = {
+      ref: providerArgs,
+      key: providerArgs === undefined ? undefined : JSON.stringify(providerArgs),
+    };
+  }
+  const providerArgsKey = providerArgsKeyRef.current.key;
 
   // Current render's tracking proxy. Declared before the memo so the stable
   // ref object can be passed to buildTrackedProxy at acquisition time. The
@@ -166,6 +196,11 @@ export function useBloc<
   // Per-handle wrapper cache, allocated once per bloc acquisition (in the memo)
   // so wrappers are stable across renders. handle -> session-bound wrapper.
   const depWrapperCacheRef = useRef<Map<object, unknown>>(new Map());
+  // Snapshot of the last FULL reconcile's shape, used by the layout-effect
+  // below to short-circuit when nothing actually changed. `null` means "no
+  // prior full run to compare against" (first commit, or the previous commit
+  // was in select-mode) — always forces a full reconcile in that case.
+  const lastReconcileRef = useRef<ReconcileSignature | null>(null);
 
   // Rebind nonce: bumped by the ownership layout-effect when the instance the
   // render captured was disposed + recreated out from under us. This happens on
@@ -482,9 +517,53 @@ export function useBloc<
     // method→getter chains) fall through to live state instead of reading this
     // render's frozen snapshot. The render body re-seeds it next render.
     trackedStateRef.current = null;
-    if (selectRef.current !== undefined) return;
+    if (selectRef.current !== undefined) {
+      // Switching into (or staying in) select-mode: invalidate any prior full
+      // reconcile so a later switch back to auto-track mode never mistakes a
+      // stale signature for "unchanged" and skips a needed reconcile.
+      lastReconcileRef.current = null;
+      return;
+    }
     const container = bloc as unknown as StateContainer;
     const paths = pathRef.current;
+    const session = sessionRef.current;
+
+    // ---------------------------------------------------------------------
+    // Short-circuit: if the primary path set AND the full dep session are
+    // set-equal (paths + key/refId/args) to the last FULL reconcile, none of
+    // registerConsumerPaths/subscribe/unsubscribe/expandWithAncestors below
+    // can have anything new to do — skip the whole block. Any mismatch, or
+    // `lastReconcileRef.current === null` (first commit, or the immediately
+    // preceding commit was select-mode / uncertain), falls through to the
+    // full reconcile. Never skip on uncertainty — a missed re-subscribe would
+    // leave a stale/dropped subscription.
+    // ---------------------------------------------------------------------
+    const last = lastReconcileRef.current;
+    if (
+      last !== null &&
+      last.primaryContainer === container &&
+      pathSetEquals(last.primaryPaths, paths)
+    ) {
+      let unchanged = last.deps.size === session.size - 1;
+      if (unchanged) {
+        for (const [depContainer, entry] of session) {
+          if (entry.kind === 'primary') continue;
+          const prevEntry = last.deps.get(depContainer);
+          if (
+            prevEntry === undefined ||
+            prevEntry.key !== entry.key ||
+            prevEntry.refId !== entry.refId ||
+            !Object.is(prevEntry.args, entry.args) ||
+            !pathSetEquals(prevEntry.paths, entry.paths)
+          ) {
+            unchanged = false;
+            break;
+          }
+        }
+      }
+      if (unchanged) return;
+    }
+
     container.registerConsumerPaths(consumerId, paths);
     // Register the *normal* leaf paths above for the source-side skeleton, then
     // build the channel interest as leaves + ancestor-watch ids so that an
@@ -507,7 +586,6 @@ export function useBloc<
     //   - dropped      -> unsubscribe, unregisterConsumer, and release its ref.
     // -----------------------------------------------------------------------
     const subs = depSubsRef.current;
-    const session = sessionRef.current;
 
     // Pass 1: drop containers no longer in the session.
     for (const [depContainer, sub] of subs) {
@@ -551,6 +629,26 @@ export function useBloc<
         args: entry.args,
       });
     }
+
+    // Capture this full reconcile's shape for the NEXT commit's short-circuit
+    // check above. `paths`/`entry.paths` are fresh Sets seeded this render
+    // (trackRender/unionPaths always allocate new Sets, never mutate one from
+    // a prior render) — safe to keep direct references without cloning.
+    const depsSignature = new Map<StateContainer, ReconcileDepSignature>();
+    for (const [depContainer, entry] of session) {
+      if (entry.kind === 'primary') continue;
+      depsSignature.set(depContainer, {
+        paths: entry.paths,
+        key: entry.key,
+        refId: entry.refId,
+        args: entry.args,
+      });
+    }
+    lastReconcileRef.current = {
+      primaryContainer: container,
+      primaryPaths: paths,
+      deps: depsSignature,
+    };
   });
 
   // Unmount: tear down every dep subscription + ref exactly once. Kept in its
@@ -616,6 +714,28 @@ interface DepSub {
   key: string;
   refId: string;
   args: unknown;
+}
+
+/**
+ * Snapshot of one dep's shape from the last FULL reconcile, compared against
+ * the current session entry to decide whether the dep-reconcile layout effect
+ * can short-circuit (see `lastReconcileRef` in `useBloc`).
+ */
+interface ReconcileDepSignature {
+  paths: PathSet;
+  key: string;
+  refId: string;
+  args: unknown;
+}
+
+/** Snapshot of the last FULL dep-reconcile layout effect run. */
+interface ReconcileSignature {
+  /** The primary container this signature was captured against (identity
+   * check — a rebind/re-key swaps this even if the tracked paths happen to
+   * be textually identical, and must never be mistaken for "unchanged"). */
+  primaryContainer: StateContainer;
+  primaryPaths: PathSet;
+  deps: Map<StateContainer, ReconcileDepSignature>;
 }
 
 /** Per-access options shared by both dep accessors. */

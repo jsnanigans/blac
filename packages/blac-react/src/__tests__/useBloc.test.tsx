@@ -4,9 +4,9 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, render, screen } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
-import { Cubit, borrow } from '@blac/core';
+import { Cubit, borrow, ensure, getRefCount } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { blacTestSetup } from '@blac/core/testing';
 
@@ -52,6 +52,59 @@ class IsolatedBloc extends Cubit<{ count: number }, { _id: string }> {
   increment = () => {
     this.patch({ count: this.state.count + 1 });
   };
+}
+
+// Used in BR2 tests (dep-reconcile short-circuit).
+class DepBloc extends Cubit<{ val: number }> {
+  constructor() {
+    super({ val: 0 });
+  }
+  inc = () => {
+    this.emit({ val: this.state.val + 1 });
+  };
+}
+
+class ToggleDepConsumerBloc extends Cubit<{ watch: boolean }> {
+  private dep = this.depend(DepBloc);
+  constructor() {
+    super({ watch: true });
+  }
+  setWatch = (w: boolean) => {
+    this.emit({ watch: w });
+  };
+  get value() {
+    if (this.state.watch) {
+      const [d] = this.dep.track();
+      return d.val;
+    }
+    return -1;
+  }
+}
+
+class TwoFieldBloc extends Cubit<{ a: number; b: number }> {
+  constructor() {
+    super({ a: 0, b: 0 });
+  }
+  setA = (v: number) => {
+    this.emit({ ...this.state, a: v });
+  };
+  setB = (v: number) => {
+    this.emit({ ...this.state, b: v });
+  };
+}
+
+class FieldSwitchConsumerBloc extends Cubit<{ useA: boolean }> {
+  private dep = this.depend(TwoFieldBloc);
+  constructor() {
+    super({ useA: true });
+  }
+  setUseA = (v: boolean) => {
+    this.emit({ useA: v });
+  };
+  get value() {
+    const [s] = this.dep.track();
+    return this.state.useA ? s.a : s.b;
+  }
 }
 
 describe('useBloc', () => {
@@ -240,6 +293,169 @@ describe('useBloc', () => {
       unmount();
 
       expect(onUnmount).toHaveBeenCalledWith(bloc);
+    });
+  });
+
+  describe('BR3: args-key Object.is fast-path', () => {
+    it('stable args object across re-renders does not restringify', () => {
+      const stableArgs = { _id: 'stable-1' };
+      const spy = vi.spyOn(JSON, 'stringify');
+
+      const { rerender } = renderHook(
+        ({ args }) => useBloc(ArgsCounterBloc, { args }),
+        { initialProps: { args: stableArgs } },
+      );
+
+      const callsAfterMount = spy.mock.calls.length;
+      rerender({ args: stableArgs });
+      expect(spy.mock.calls.length).toBe(callsAfterMount);
+
+      spy.mockRestore();
+    });
+
+    it('changed args object recomputes the key', () => {
+      const spy = vi.spyOn(JSON, 'stringify');
+
+      const { rerender, result } = renderHook(
+        ({ args }) => useBloc(ArgsCounterBloc, { args }),
+        { initialProps: { args: { _id: 'change-a' } } },
+      );
+      const [, bloc1] = result.current;
+      const callsAfterMount = spy.mock.calls.length;
+
+      rerender({ args: { _id: 'change-b' } });
+      const [, bloc2] = result.current;
+
+      expect(spy.mock.calls.length).toBeGreaterThan(callsAfterMount);
+      expect(bloc1).not.toBe(bloc2);
+
+      spy.mockRestore();
+    });
+
+    it('void args still collapse to an undefined key across re-renders', () => {
+      const { rerender, result } = renderHook(() => useBloc(CounterBloc));
+      const [, bloc1] = result.current;
+
+      rerender();
+      const [, bloc2] = result.current;
+
+      expect(bloc1).toBe(bloc2);
+    });
+  });
+
+  describe('BR2: guarded dep-reconcile layout effect', () => {
+    it('identical tracked paths on the primary bloc skip re-registration', () => {
+      const instance = ensure(CounterBloc);
+      const spy = vi.spyOn(instance, 'registerConsumerPaths');
+
+      const { rerender } = renderHook(() => {
+        const [state] = useBloc(CounterBloc);
+        const _ = state.count; // record the 'count' leaf path
+        return state;
+      });
+
+      const callsAfterMount = spy.mock.calls.length;
+      expect(callsAfterMount).toBeGreaterThan(0);
+
+      rerender();
+
+      expect(spy.mock.calls.length).toBe(callsAfterMount);
+      spy.mockRestore();
+    });
+
+    it('identical dep set and paths skip dep reconciliation', () => {
+      const depInstance = ensure(DepBloc);
+      const spy = vi.spyOn(depInstance, 'registerConsumerPaths');
+
+      const { rerender } = renderHook(() => {
+        const [, bloc] = useBloc(ToggleDepConsumerBloc);
+        const _ = bloc.value;
+        return bloc;
+      });
+
+      const callsAfterMount = spy.mock.calls.length;
+      expect(callsAfterMount).toBeGreaterThan(0);
+
+      rerender();
+
+      expect(spy.mock.calls.length).toBe(callsAfterMount);
+      spy.mockRestore();
+    });
+
+    it('dropping a dep still unsubscribes and stops waking the consumer', async () => {
+      let renders = 0;
+      function Comp() {
+        renders++;
+        const [, bloc] = useBloc(ToggleDepConsumerBloc);
+        return <span data-testid="out">{bloc.value}</span>;
+      }
+      render(<Comp />);
+      expect(screen.getByTestId('out').textContent).toBe('0');
+
+      await act(async () => {
+        ensure(ToggleDepConsumerBloc).setWatch(false);
+      });
+      expect(screen.getByTestId('out').textContent).toBe('-1');
+      expect(getRefCount(DepBloc)).toBe(0);
+
+      const countAfterDrop = renders;
+      await act(async () => {
+        ensure(DepBloc).inc();
+      });
+
+      // Dep emitted, but the reconcile dropped the subscription on the
+      // previous commit — no re-render should be triggered.
+      expect(renders).toBe(countAfterDrop);
+    });
+
+    it('re-adding a dep subscribes again and wakes the consumer on change', async () => {
+      let renders = 0;
+      function Comp() {
+        renders++;
+        const [, bloc] = useBloc(ToggleDepConsumerBloc);
+        return <span data-testid="out">{bloc.value}</span>;
+      }
+      render(<Comp />);
+
+      await act(async () => {
+        ensure(ToggleDepConsumerBloc).setWatch(false);
+      });
+      await act(async () => {
+        ensure(ToggleDepConsumerBloc).setWatch(true);
+      });
+      expect(getRefCount(DepBloc)).toBe(1);
+
+      const countAfterReEnable = renders;
+      await act(async () => {
+        ensure(DepBloc).inc();
+      });
+
+      expect(screen.getByTestId('out').textContent).toBe('1');
+      expect(renders).toBeGreaterThan(countAfterReEnable);
+    });
+
+    it('changing tracked dep paths still reconciles (re-registers)', async () => {
+      const depInstance = ensure(TwoFieldBloc);
+      const spy = vi.spyOn(depInstance, 'registerConsumerPaths');
+
+      function Comp() {
+        const [, bloc] = useBloc(FieldSwitchConsumerBloc);
+        return <span data-testid="out">{bloc.value}</span>;
+      }
+      render(<Comp />);
+
+      const callsAfterMount = spy.mock.calls.length;
+      expect(callsAfterMount).toBeGreaterThan(0);
+
+      await act(async () => {
+        ensure(FieldSwitchConsumerBloc).setUseA(false);
+      });
+
+      // Tracked leaf switched from 'a' to 'b' — the path set changed, so the
+      // reconcile must NOT be skipped.
+      expect(spy.mock.calls.length).toBeGreaterThan(callsAfterMount);
+
+      spy.mockRestore();
     });
   });
 });
