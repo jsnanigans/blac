@@ -18,20 +18,20 @@ export class SyncScheduler implements Scheduler {
 // ---------------------------------------------------------------------------
 
 export class ManualScheduler implements Scheduler {
-  #pending = false;
-  #flush: (() => void) | null = null;
+  #scheduled = false;
+  #pending: Set<() => void> = new Set();
 
   request(flush: () => void): void {
-    this.#pending = true;
-    this.#flush = flush;
+    this.#scheduled = true;
+    this.#pending.add(flush);
   }
 
   pump(): void {
-    if (!this.#pending) return;
-    this.#pending = false;
-    const fn = this.#flush;
-    this.#flush = null;
-    fn?.();
+    if (!this.#scheduled) return;
+    this.#scheduled = false;
+    const fns = this.#pending;
+    this.#pending = new Set();
+    for (const fn of fns) fn();
   }
 }
 
@@ -40,28 +40,28 @@ export class ManualScheduler implements Scheduler {
 // ---------------------------------------------------------------------------
 
 export class MicrotaskScheduler implements Scheduler {
-  #pending = false;
-  #flush: (() => void) | null = null;
+  #scheduled = false;
+  #pending: Set<() => void> = new Set();
 
   request(flush: () => void): void {
-    this.#flush = flush;
-    if (!this.#pending) {
-      this.#pending = true;
+    this.#pending.add(flush);
+    if (!this.#scheduled) {
+      this.#scheduled = true;
       queueMicrotask(() => this.#drain());
     }
   }
 
   cancel(): void {
-    this.#pending = false;
-    this.#flush = null;
+    this.#scheduled = false;
+    this.#pending = new Set();
   }
 
   #drain(): void {
-    if (!this.#pending) return;
-    this.#pending = false;
-    const fn = this.#flush;
-    this.#flush = null;
-    fn?.();
+    if (!this.#scheduled) return;
+    this.#scheduled = false;
+    const fns = this.#pending;
+    this.#pending = new Set();
+    for (const fn of fns) fn();
   }
 }
 
@@ -73,7 +73,7 @@ export class MicrotaskScheduler implements Scheduler {
 export class RAFScheduler implements Scheduler {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   #handle: any = null;
-  #flush: (() => void) | null = null;
+  #pending: Set<() => void> = new Set();
   readonly #useRAF: boolean;
 
   constructor() {
@@ -98,7 +98,7 @@ export class RAFScheduler implements Scheduler {
   }
 
   request(flush: () => void): void {
-    this.#flush = flush;
+    this.#pending.add(flush);
     if (this.#handle == null) {
       this.#schedule(() => this.#drain());
     }
@@ -107,14 +107,14 @@ export class RAFScheduler implements Scheduler {
   cancel(): void {
     if (this.#handle != null) {
       this.#unschedule();
-      this.#flush = null;
+      this.#pending = new Set();
     }
   }
 
   #drain(): void {
     this.#handle = null;
-    const fn = this.#flush;
-    this.#flush = null;
-    fn?.();
+    const fns = this.#pending;
+    this.#pending = new Set();
+    for (const fn of fns) fn();
   }
 }

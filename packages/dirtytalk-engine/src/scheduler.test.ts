@@ -62,15 +62,35 @@ describe('ManualScheduler', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('request → request → pump: flush runs once (idempotent within window)', () => {
+  it('request → request → pump: both distinct fns run', () => {
     const s = new ManualScheduler();
     const fn1 = vi.fn();
     const fn2 = vi.fn();
     s.request(fn1);
     s.request(fn2);
     s.pump();
-    expect(fn1).not.toHaveBeenCalled();
+    expect(fn1).toHaveBeenCalledTimes(1);
     expect(fn2).toHaveBeenCalledTimes(1);
+  });
+
+  it('same fn requested twice → runs once (dedup)', () => {
+    const s = new ManualScheduler();
+    const fn = vi.fn();
+    s.request(fn);
+    s.request(fn);
+    s.pump();
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('two channels sharing one scheduler: both flushes fire', () => {
+    const s = new ManualScheduler();
+    const channelAFlush = vi.fn();
+    const channelBFlush = vi.fn();
+    s.request(channelAFlush);
+    s.request(channelBFlush);
+    s.pump();
+    expect(channelAFlush).toHaveBeenCalledTimes(1);
+    expect(channelBFlush).toHaveBeenCalledTimes(1);
   });
 
   it('pump → pump: second pump runs nothing', () => {
@@ -128,26 +148,35 @@ describe('MicrotaskScheduler', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('two requests in the same tick coalesce to one flush', async () => {
+  it('two distinct fns in the same tick both run on the coalesced flush', async () => {
     const s = new MicrotaskScheduler();
     const fn1 = vi.fn();
     const fn2 = vi.fn();
     s.request(fn1);
     s.request(fn2);
     await Promise.resolve();
-    expect(fn1).not.toHaveBeenCalled();
+    expect(fn1).toHaveBeenCalledTimes(1);
     expect(fn2).toHaveBeenCalledTimes(1);
   });
 
-  it('latest flush wins', async () => {
+  it('same fn requested twice in the same tick runs once (dedup)', async () => {
     const s = new MicrotaskScheduler();
-    const cb1 = vi.fn();
-    const cb2 = vi.fn();
-    s.request(cb1);
-    s.request(cb2);
+    const fn = vi.fn();
+    s.request(fn);
+    s.request(fn);
     await Promise.resolve();
-    expect(cb1).not.toHaveBeenCalled();
-    expect(cb2).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('two channels sharing one scheduler: both flushes fire', async () => {
+    const s = new MicrotaskScheduler();
+    const channelAFlush = vi.fn();
+    const channelBFlush = vi.fn();
+    s.request(channelAFlush);
+    s.request(channelBFlush);
+    await Promise.resolve();
+    expect(channelAFlush).toHaveBeenCalledTimes(1);
+    expect(channelBFlush).toHaveBeenCalledTimes(1);
   });
 
   it('request inside flush schedules another microtask; runs after next await', async () => {
@@ -205,15 +234,35 @@ describe('RAFScheduler (Node setTimeout fallback)', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('two requests coalesce to one flush per timer tick', () => {
+  it('two distinct fns coalesce to one timer tick and both run', () => {
     const s = new RAFScheduler();
     const fn1 = vi.fn();
     const fn2 = vi.fn();
     s.request(fn1);
     s.request(fn2);
     vi.advanceTimersByTime(20);
-    expect(fn1).not.toHaveBeenCalled();
+    expect(fn1).toHaveBeenCalledTimes(1);
     expect(fn2).toHaveBeenCalledTimes(1);
+  });
+
+  it('same fn requested twice runs once (dedup)', () => {
+    const s = new RAFScheduler();
+    const fn = vi.fn();
+    s.request(fn);
+    s.request(fn);
+    vi.advanceTimersByTime(20);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('two channels sharing one scheduler: both flushes fire', () => {
+    const s = new RAFScheduler();
+    const channelAFlush = vi.fn();
+    const channelBFlush = vi.fn();
+    s.request(channelAFlush);
+    s.request(channelBFlush);
+    vi.advanceTimersByTime(20);
+    expect(channelAFlush).toHaveBeenCalledTimes(1);
+    expect(channelBFlush).toHaveBeenCalledTimes(1);
   });
 
   it('cancel() clears the timer; advancing time runs nothing', () => {
