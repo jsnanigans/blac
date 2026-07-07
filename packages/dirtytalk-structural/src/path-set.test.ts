@@ -32,12 +32,23 @@ describe('pathSetUnion', () => {
     expect(b.size).toBe(2);
   });
 
-  it('union with empty equals the other by value, is a fresh Set', () => {
+  it('union(empty, r) returns r by reference (empty-operand fast-path)', () => {
     const r = new Set([1, 2]);
-    const result = pathSetUnion(emptyPathSet(), r) as Set<number>;
-    expect(result).toBeInstanceOf(Set);
-    expect(result).not.toBe(r);
-    expect([...result].sort((a, b) => a - b)).toEqual([1, 2]);
+    expect(pathSetUnion(emptyPathSet(), r)).toBe(r);
+  });
+
+  it('union(a, empty) returns a by reference (empty-operand fast-path)', () => {
+    const a = new Set([1, 2]);
+    expect(pathSetUnion(a, emptyPathSet())).toBe(a);
+  });
+
+  it('non-empty union non-empty still copies (no fast-path)', () => {
+    const a = new Set([1, 2]);
+    const b = new Set([3, 4]);
+    const result = pathSetUnion(a, b) as Set<number>;
+    expect(result).not.toBe(a);
+    expect(result).not.toBe(b);
+    expect([...result].sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
   });
 
   it('union with ALL_PATHS on right returns ALL_PATHS', () => {

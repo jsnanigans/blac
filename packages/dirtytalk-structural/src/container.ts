@@ -105,6 +105,7 @@ export abstract class StructuralContainer<S> {
     PathId,
     (a: unknown, b: unknown) => boolean
   >;
+  private _equalsFnCached?: (id: PathId, a: unknown, b: unknown) => boolean;
 
   constructor(initial: S, options: StructuralContainerOptions = {}) {
     this._state = initial;
@@ -212,7 +213,12 @@ export abstract class StructuralContainer<S> {
    * value changed.
    */
   patch(partial: DeepPartial<S>): void {
-    if (Object.keys(partial as object).length === 0) return;
+    let _empty = true;
+    for (const _k in partial as object) {
+      _empty = false;
+      break;
+    }
+    if (_empty) return;
     const prev = this._state;
     const next = deepMerge(prev, partial as Partial<S>);
     // `deepMerge` returns `prev` by reference when nothing actually changed
@@ -271,10 +277,10 @@ export abstract class StructuralContainer<S> {
     | ((id: PathId, a: unknown, b: unknown) => boolean)
     | undefined {
     if (this._equalsByPathId.size === 0) return undefined;
-    return (id, a, b) => {
+    return (this._equalsFnCached ??= (id, a, b) => {
       const eq = this._equalsByPathId.get(id);
       return eq ? eq(a, b) : Object.is(a, b);
-    };
+    });
   }
 
   // Incrementally fold a single consumer's `prev`→`next` interest change into
@@ -340,16 +346,19 @@ export abstract class StructuralContainer<S> {
     if (rough === ALL_PATHS) return rough;
     const roughSet = rough as Set<PathId>;
 
-    // Collect the real-path id every ancestor-watch mark decodes to, in one
-    // pass. These are the refine *targets*: a skeleton leaf is refined iff one
-    // of these ids is a strict ancestor of it (via `interner.ancestorIds`),
-    // which is the interned-id equivalent of the old `startsWith(prefix + '.')`
-    // descendant test — "items" does not match a sibling "itemsExtra".
+    // Single pass over `roughSet`: build the refine *targets* (real-path ids
+    // every ancestor-watch mark decodes to) and, in the same pass, collect the
+    // non-ancestor marks to keep (e.g. PathId("items") for whole-array readers
+    // that pinned the parent directly, e.g. via .map()). Ancestor-watch marks
+    // are dropped — they are replaced by the precise leaf marks below.
     const targetIds = new Set<PathId>();
+    const nonAncestorIds: PathId[] = [];
     for (const id of roughSet) {
       if (this.interner.isAncestorId(id)) {
         const target = this.interner.ancestorTargetId(id);
         if (target !== undefined) targetIds.add(target);
+      } else {
+        nonAncestorIds.push(id);
       }
     }
     // Fast exit: no ancestor-watch marks → plain-object patch, zero overhead.
@@ -361,23 +370,23 @@ export abstract class StructuralContainer<S> {
     if (skeleton.size === 0) return rough;
 
     const equalsFn = this._equalsFn();
-    const result = new Set<PathId>();
-
-    // Keep every non-ancestor mark (e.g. PathId("items") for whole-array
-    // readers that pinned the parent directly, e.g. via .map()). Ancestor-watch
-    // marks are dropped — they are replaced by the precise leaf marks below.
-    // Consumers whose expanded interest relied on them match those leaves.
-    for (const id of roughSet) {
-      if (!this.interner.isAncestorId(id)) result.add(id);
-    }
+    // Seed with the non-ancestor marks collected above. Consumers whose
+    // expanded interest relied on the dropped ancestor-watch marks match the
+    // precise leaves added below instead.
+    const result = new Set<PathId>(nonAncestorIds);
 
     // Single pass over the skeleton: a leaf that descends from any refined
     // ancestor is marked iff its value actually changed (one read per leaf,
     // never re-walked per ancestor). Same value-compare as diffAlongSkeleton.
     for (const skelId of skeleton) {
-      const descends = this.interner
-        .ancestorIds(skelId)
-        .some((a) => targetIds.has(a));
+      const ancestors = this.interner.ancestorIds(skelId);
+      let descends = false;
+      for (let i = 0; i < ancestors.length; i++) {
+        if (targetIds.has(ancestors[i])) {
+          descends = true;
+          break;
+        }
+      }
       if (!descends) continue;
       const segments = this.interner.lookupSegments(skelId);
       const pv = getAtSegments(prev, segments);

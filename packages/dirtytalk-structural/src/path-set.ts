@@ -11,6 +11,10 @@ export const emptyPathSet = (): PathSet => new Set<PathId>();
 
 export const pathSetUnion = (a: PathSet, b: PathSet): PathSet => {
   if (a === ALL_PATHS || b === ALL_PATHS) return ALL_PATHS;
+  const sa = a as Set<PathId>;
+  const sb = b as Set<PathId>;
+  if (sa.size === 0) return sb;
+  if (sb.size === 0) return sa;
   const result = new Set<PathId>(a as Set<PathId>);
   for (const id of b as Set<PathId>) result.add(id);
   return result;

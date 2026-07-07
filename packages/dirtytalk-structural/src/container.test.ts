@@ -140,6 +140,22 @@ describe('StructuralContainer — patch', () => {
     expect(c.state).toBe(before);
     expect(cb).not.toHaveBeenCalled();
   });
+
+  it('(PN10) empty partial early-returns (allocation-free check); non-empty proceeds', () => {
+    const c = make({ count: 0, label: 'a' });
+    c.registerConsumerPaths('A', setOf(c, 'count'));
+    const cb = vi.fn();
+    c.subscribe(() => setOf(c, 'count'), cb);
+
+    const before = c.state;
+    c.patch({}); // no own enumerable keys → early return, no state change/mark
+    expect(c.state).toBe(before);
+    expect(cb).not.toHaveBeenCalled();
+
+    c.patch({ count: 1 }); // non-empty → proceeds
+    expect(c.state).toEqual({ count: 1, label: 'a' });
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('StructuralContainer — DeepPartial patch type-checking', () => {
@@ -371,6 +387,36 @@ describe('StructuralContainer — equality option', () => {
     expect(c.state.count).toBe(99);
     expect(countCb).not.toHaveBeenCalled(); // equality override said "equal"
   });
+
+  it('(PN6) _equalsFn is memoized: same closure across calls when configured, undefined when not', () => {
+    // No custom equality → always undefined (unchanged fast path).
+    const plain = make();
+    const plainFn = plain as unknown as { _equalsFn: () => unknown };
+    expect(plainFn._equalsFn()).toBeUndefined();
+    expect(plainFn._equalsFn()).toBeUndefined();
+
+    // With custom equality → one closure reused across many calls.
+    const c = make(
+      { count: 0, label: 'a' },
+      {
+        scheduler: new SyncScheduler(),
+        equality: new Map([['count', () => true]]),
+      },
+    );
+    const withFn = c as unknown as {
+      _equalsFn: () => (id: PathId, a: unknown, b: unknown) => boolean;
+    };
+    const f1 = withFn._equalsFn();
+    const f2 = withFn._equalsFn();
+    expect(f1).toBe(f2); // memoized — same reference
+
+    // Still produces correct results: matched path → custom eq, others → Object.is.
+    const countId = c.interner.intern('count');
+    const labelId = c.interner.intern('label');
+    expect(f1(countId, 1, 2)).toBe(true); // custom eq says equal
+    expect(f1(labelId, 'x', 'y')).toBe(false); // falls back to Object.is
+    expect(f1(labelId, 'x', 'x')).toBe(true);
+  });
 });
 
 describe('StructuralContainer — onError option', () => {
@@ -591,6 +637,77 @@ describe('StructuralContainer — patch ancestor-mark refinement (P4b)', () => {
 
     expect(leafCb).not.toHaveBeenCalled();
     expect(labelCb).toHaveBeenCalledTimes(1);
+  });
+
+  // (PN2) Lock the exact refined dirty set (the marks _refineAncestorMarks
+  // produces) for array-replace and mixed patches — the folded single-pass +
+  // inner-loop rewrite must be byte-identical to the prior two-pass version.
+  const dirtyStrings = (c: ListBox, dirty: PathSet): string[] => {
+    if (dirty === ALL_PATHS || !(dirty instanceof Set)) {
+      throw new Error('expected Set<PathId>');
+    }
+    return [...dirty].map((id) => c.interner.lookup(id)).sort();
+  };
+
+  it('(PN2) array-replace refined marks: unchanged element yields exactly {items}, changed element yields {items, items.0.name}', () => {
+    // Unchanged element.
+    const c1 = makeList();
+    c1.registerConsumerPaths('leaf', setOfList(c1, 'items.0.name'));
+    c1.registerConsumerPaths('whole', setOfList(c1, 'items'));
+    let dirty1: PathSet | undefined;
+    c1.subscribe(
+      () => ALL_PATHS,
+      (d) => {
+        dirty1 = d;
+      },
+    );
+    c1.patch({
+      items: [
+        { id: 1, name: 'a' },
+        { id: 2, name: 'b' },
+      ],
+    });
+    expect(dirtyStrings(c1, dirty1!)).toEqual(['items']);
+
+    // Changed element.
+    const c2 = makeList();
+    c2.registerConsumerPaths('leaf', setOfList(c2, 'items.0.name'));
+    c2.registerConsumerPaths('whole', setOfList(c2, 'items'));
+    let dirty2: PathSet | undefined;
+    c2.subscribe(
+      () => ALL_PATHS,
+      (d) => {
+        dirty2 = d;
+      },
+    );
+    c2.patch({
+      items: [
+        { id: 1, name: 'CHANGED' },
+        { id: 2, name: 'b' },
+      ],
+    });
+    expect(dirtyStrings(c2, dirty2!)).toEqual(['items', 'items.0.name']);
+  });
+
+  it('(PN2) mixed patch refined marks: array unchanged + label changed yields exactly {items, label}', () => {
+    const c = makeList();
+    c.registerConsumerPaths('leaf', setOfList(c, 'items.0.name'));
+    c.registerConsumerPaths('label', setOfList(c, 'label'));
+    let dirty: PathSet | undefined;
+    c.subscribe(
+      () => ALL_PATHS,
+      (d) => {
+        dirty = d;
+      },
+    );
+    c.patch({
+      items: [
+        { id: 1, name: 'a' },
+        { id: 2, name: 'b' },
+      ],
+      label: 'NEW',
+    });
+    expect(dirtyStrings(c, dirty!)).toEqual(['items', 'label']);
   });
 });
 

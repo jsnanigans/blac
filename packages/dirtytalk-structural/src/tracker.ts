@@ -145,11 +145,16 @@ export const trackRender = <S>(
 
     const isArray = Array.isArray(target);
 
+    // Lazily intern this proxy's own prefix at most once. Must stay lazy — do
+    // not compute at wrap() entry, or interning timing/size would change.
+    let _prefixId: PathId | undefined;
+    const prefixId = (): PathId => (_prefixId ??= interner.intern(prefix));
+
     // Pin this array's own entry path as a content dependency. Called when an
     // iteration entry point (Symbol.iterator) or any array method is accessed.
     const pinArrayPath = (): void => {
       if (prefix === '') return;
-      const id = interner.intern(prefix);
+      const id = prefixId();
       paths.add(id);
       pinned.add(id);
     };
@@ -225,7 +230,7 @@ export const trackRender = <S>(
         const path = childPath(prefix, key as string);
         paths.add(interner.intern(path));
         if (prefix !== '') {
-          const parentId = interner.intern(prefix);
+          const parentId = prefixId();
           // Keep an iteration-pinned array path: `.length` (or any own read)
           // must not narrow away a content dependency the consumer also has.
           if (!pinned.has(parentId)) paths.delete(parentId);

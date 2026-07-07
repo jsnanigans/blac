@@ -383,6 +383,32 @@ describe('trackRender', () => {
     expect(strings).toContain('dict.k');
   });
 
+  it('16. (PN5) lazy prefix memo — interner.size stable + identical paths across renders', () => {
+    const interner = new PathInterner();
+    const fixture = () => ({
+      user: { profile: { name: 'a' } },
+      items: [{ price: 1 }, { price: 2 }],
+    });
+
+    const first = trackRender(fixture(), interner);
+    void first.value.user.profile.name; // nested read
+    const total = first.value.items.reduce((s, it) => s + it.price, 0); // iteration
+    expect(total).toBe(3);
+    const firstPaths = asPathStrings(first.paths, interner);
+    const sizeAfterFirst = interner.size;
+
+    // A second render doing the identical reads must record identical paths and
+    // must not grow the interner — every prefix was interned already, and the
+    // lazy per-proxy memo interns each prefix at most once per proxy.
+    const second = trackRender(fixture(), interner);
+    void second.value.user.profile.name;
+    second.value.items.reduce((s, it) => s + it.price, 0);
+    const secondPaths = asPathStrings(second.paths, interner);
+
+    expect(secondPaths).toEqual(firstPaths);
+    expect(interner.size).toBe(sizeAfterFirst);
+  });
+
   it('15. (A4) raw() unwraps a tracked proxy and passes non-proxies through', () => {
     const interner = new PathInterner();
     const target = { name: 'a' };
