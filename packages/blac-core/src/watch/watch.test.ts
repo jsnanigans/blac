@@ -35,6 +35,18 @@ class NameCubit extends Cubit<NameState> {
   setName = (name: string) => this.emit({ name });
 }
 
+class ArgsSeededCubit extends Cubit<{ id: string | null }, { id: string }> {
+  constructor() {
+    super({ id: null });
+  }
+
+  static key = (a?: { id: string }) => a?.id ?? 'default';
+
+  protected init(args: { id: string }) {
+    this.emit({ id: args.id });
+  }
+}
+
 class DependentCubit extends Cubit<{ value: number }> {
   private counterDep = this.depend(CounterCubit);
 
@@ -288,6 +300,16 @@ describe('watch', () => {
       await flush();
       expect(states.length).toBe(3);
       expect(states[2][1]).toBe(3);
+    });
+
+    it('watching a not-yet-created instance passes args through to init (not undefined)', () => {
+      const values: (string | null)[] = [];
+
+      watch(instance(ArgsSeededCubit, { id: 'seeded-value' }), (bloc) => {
+        values.push(bloc.state.id);
+      });
+
+      expect(values).toEqual(['seeded-value']);
     });
   });
 

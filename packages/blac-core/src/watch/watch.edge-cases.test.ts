@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vite-plus/test';
 import { blacTestSetup, flush } from '@blac/core/testing';
 import { watch, instance } from './watch';
 import { Cubit } from '../core/Cubit';
-import { acquire, release, clearAll } from '../registry';
+import { acquire, release, clearAll, hasInstance, getRefCount } from '../registry';
 
 class CounterCubit extends Cubit<{ count: number }, { id?: string }> {
   constructor() {
@@ -164,5 +164,40 @@ describe('watch edge cases', () => {
     const dispose = watch(CounterCubit, () => {});
     clearAll();
     expect(() => dispose()).not.toThrow();
+  });
+
+  it('watch holds a real ref: instance stays alive while watched, disposes on cleanup', () => {
+    expect(hasInstance(CounterCubit)).toBe(false);
+
+    const unwatch = watch(CounterCubit, () => {});
+
+    expect(hasInstance(CounterCubit)).toBe(true);
+    expect(getRefCount(CounterCubit)).toBeGreaterThan(0);
+
+    unwatch();
+
+    expect(hasInstance(CounterCubit)).toBe(false);
+  });
+
+  it('resubscribes and notifies (not silent) when the watched instance is disposed elsewhere', async () => {
+    const cubit = acquire(CounterCubit);
+    cubit.emit({ count: 7 });
+    await flush();
+
+    const values: number[] = [];
+    watch(CounterCubit, (bloc) => {
+      values.push(bloc.state.count);
+    });
+    expect(values).toEqual([7]);
+
+    // Dispose the watched instance out from under the watcher.
+    release(CounterCubit, { forceDispose: true });
+    await flush();
+
+    // Watch re-acquired a fresh instance and notified the callback instead
+    // of going silent.
+    expect(values.length).toBeGreaterThan(1);
+    expect(values[values.length - 1]).toBe(0);
+    expect(hasInstance(CounterCubit)).toBe(true);
   });
 });
