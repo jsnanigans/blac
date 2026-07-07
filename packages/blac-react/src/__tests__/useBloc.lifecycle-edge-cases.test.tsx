@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { renderHook, act } from '@testing-library/react';
-import { StrictMode } from 'react';
-import { Cubit } from '@blac/core';
+import { renderHook, render, screen, act } from '@testing-library/react';
+import { StrictMode, useLayoutEffect } from 'react';
+import { Cubit, getRefCount, hasInstance } from '@blac/core';
 import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
@@ -11,6 +11,15 @@ class LifecycleBloc extends Cubit<{ n: number }> {
   }
   inc() {
     this.emit({ n: this.state.n + 1 });
+  }
+}
+
+class GapBloc extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+  increment() {
+    this.emit({ count: this.state.count + 1 });
   }
 }
 
@@ -106,5 +115,49 @@ describe('useBloc — lifecycle edge cases', () => {
     unmount();
     expect(onUnmount).toHaveBeenCalledOnce();
     expect(isDisposedAtUnmount).toBe(false);
+  });
+
+  // R2: an emit that lands after a subscriber's render read but before its
+  // passive subscribe (here, from a sibling's useLayoutEffect during commit)
+  // must not leave the subscriber stale after paint.
+  it('R2: emit in a sibling useLayoutEffect during commit is not missed', async () => {
+    function Sibling() {
+      const [, bloc] = useBloc(GapBloc);
+      useLayoutEffect(() => {
+        (bloc as GapBloc).increment();
+      }, [bloc]);
+      return null;
+    }
+    function Subscriber() {
+      const [state] = useBloc(GapBloc);
+      return <div data-testid="count">{state.count}</div>;
+    }
+    await act(async () => {
+      render(
+        <>
+          <Subscriber />
+          <Sibling />
+        </>,
+      );
+    });
+    expect(screen.getByTestId('count').textContent).toBe('1');
+  });
+
+  // R3/R4: StrictMode double-invokes effects (mount→unmount→mount). The
+  // ownership ref is taken/released in a layout effect, so the net is a single
+  // ref while mounted and full disposal on unmount.
+  it('StrictMode double-invoke leaves the refcount balanced', () => {
+    function Comp() {
+      useBloc(LifecycleBloc);
+      return null;
+    }
+    const { unmount } = render(
+      <StrictMode>
+        <Comp />
+      </StrictMode>,
+    );
+    expect(getRefCount(LifecycleBloc)).toBe(1);
+    unmount();
+    expect(hasInstance(LifecycleBloc)).toBe(false);
   });
 });

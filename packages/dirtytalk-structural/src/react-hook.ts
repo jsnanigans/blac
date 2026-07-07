@@ -22,6 +22,10 @@ export function useStructural<S, C extends StructuralContainer<S>>(
   const consumerId = useId();
   const pathRef = useRef<PathSet>(emptyPathSet());
   const [, force] = useReducer((x: number) => x + 1, 0);
+  // Render-time state snapshot, read by the subscription effect to close the
+  // mount gap (T6): an emit landing between the render read and this passive
+  // subscribe would otherwise be lost.
+  const renderStateRef = useRef<unknown>(undefined);
 
   useEffect(() => {
     // Re-register paths in case this effect is re-running after a StrictMode
@@ -31,6 +35,11 @@ export function useStructural<S, C extends StructuralContainer<S>>(
       () => pathRef.current,
       () => force(),
     );
+    // Close the mount gap (T6): if state advanced between the render snapshot
+    // and this subscribe, force one re-render so we don't stay stale.
+    if (container.state !== renderStateRef.current) {
+      force();
+    }
     return () => {
       unsub();
       container.unregisterConsumer(consumerId);
@@ -39,6 +48,7 @@ export function useStructural<S, C extends StructuralContainer<S>>(
 
   const { value, paths } = trackRender(container.state, container.interner);
   pathRef.current = paths;
+  renderStateRef.current = container.state;
   // NOTE: registerConsumerPaths is intentionally NOT called here. The proxy
   // hasn't been accessed yet, so `paths` is an empty Set that the proxy will
   // mutate during JSX evaluation. Registering at this point would store an

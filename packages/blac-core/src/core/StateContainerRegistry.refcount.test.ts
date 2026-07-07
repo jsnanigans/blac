@@ -128,4 +128,27 @@ describe('StateContainerRegistry ref counting', () => {
     expect(getRefCount(RefCountBloc)).toBe(1);
     expect(getRefCount(RefCountBloc, { args: { id: 'custom' } })).toBe(1);
   });
+
+  // A double-acquire under the SAME refId bumps that refId's count (refs.size
+  // stays 1), so ONE release leaves a residual count and does NOT dispose — it
+  // takes a matching second release. This is the registry behavior that made a
+  // divergent useBloc memo re-run leak (R3): the fix keeps acquire out of the
+  // render so this double-count can never be created there.
+  it('same-refId double-acquire needs a matching double-release (residual count)', () => {
+    const instance = acquire(RefCountBloc, { refId: 'r' });
+    acquire(RefCountBloc, { refId: 'r' });
+    // refs.size counts distinct refIds — reads 1 even though 'r' has count 2.
+    expect(getRefCount(RefCountBloc)).toBe(1);
+
+    release(RefCountBloc, { refId: 'r' });
+    // One release decrements the count but leaves the refId → NOT disposed.
+    expect(getRefCount(RefCountBloc)).toBe(1);
+    expect(instance.$blac.disposed).toBe(false);
+
+    release(RefCountBloc, { refId: 'r' });
+    // Second release drops the refId → disposed and removed.
+    expect(getRefCount(RefCountBloc)).toBe(0);
+    expect(instance.$blac.disposed).toBe(true);
+    expect(hasInstance(RefCountBloc)).toBe(false);
+  });
 });

@@ -4,6 +4,7 @@
 
 import { describe, it, expect } from 'vite-plus/test';
 import { render, screen, act } from '@testing-library/react';
+import { useLayoutEffect } from 'react';
 import { Cubit } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { blacTestSetup } from '@blac/core/testing';
@@ -293,5 +294,33 @@ describe('useBloc with select', () => {
 
     expect(renderSpy).toHaveBeenCalledTimes(2);
     expect(screen.getByTestId('value').textContent).toBe('changed');
+  });
+
+  // R2 (select-mode): an emit that lands between the render's selector seed and
+  // the passive subscribe (here from a sibling's useLayoutEffect during commit)
+  // must be picked up by the post-subscribe recheck, not silently dropped.
+  it('mount-window emit is not missed in select-mode', async () => {
+    function Sibling() {
+      const [, bloc] = useBloc(CounterCubit, { select: () => [] });
+      useLayoutEffect(() => {
+        (bloc as CounterCubit).increment();
+      }, [bloc]);
+      return null;
+    }
+    function Subscriber() {
+      const [state] = useBloc(CounterCubit, {
+        select: (s) => [s.count],
+      });
+      return <div data-testid="count">{state.count}</div>;
+    }
+    await act(async () => {
+      render(
+        <>
+          <Subscriber />
+          <Sibling />
+        </>,
+      );
+    });
+    expect(screen.getByTestId('count').textContent).toBe('1');
   });
 });

@@ -367,4 +367,42 @@ describe('useStructural', () => {
 
     unsub();
   });
+
+  it('11. emit in the render→subscribe window is not missed (T6)', () => {
+    const c = makeContainer({ count: 0, label: 'a' });
+    const seen: number[] = [];
+
+    // Layout effects run BEFORE passive effects, and `useStructural` subscribes
+    // in a passive effect. So this patch lands after App has rendered (snapshot
+    // seeded) but before App subscribes — the exact mount gap. Without the
+    // post-subscribe recheck the advanced state would be silently missed.
+    function Mutator() {
+      React.useLayoutEffect(() => {
+        c.patch({ count: 7 });
+      }, []);
+      return null;
+    }
+
+    function App() {
+      const [state] = useStructural(c);
+      seen.push((state as CounterState).count);
+      return null;
+    }
+
+    act(() => {
+      render(
+        React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(Mutator),
+          React.createElement(App),
+        ),
+      );
+    });
+
+    // App recovered: it re-rendered with the advanced state rather than staying
+    // stale at the render-time snapshot of 0.
+    expect(seen).toContain(7);
+    expect(seen[seen.length - 1]).toBe(7);
+  });
 });

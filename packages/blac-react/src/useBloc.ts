@@ -167,6 +167,19 @@ export function useBloc<
   // so wrappers are stable across renders. handle -> session-bound wrapper.
   const depWrapperCacheRef = useRef<Map<object, unknown>>(new Map());
 
+  // Rebind nonce: bumped by the ownership layout-effect when the instance the
+  // render captured was disposed + recreated out from under us. This happens on
+  // a same-commit ownership handoff of a shared (non-keepAlive) key — the sole
+  // prior owner's effect cleanup releases refs→0 and SYNCHRONOUSLY disposes the
+  // instance before this consumer's layout setup re-acquires (creating a fresh
+  // one) — and equivalently under StrictMode's setup→cleanup→setup double-invoke
+  // for a lone owner. Threaded into the memo deps so bumping it re-ensures `bloc`
+  // against the LIVE registry entry instead of the disposed instance.
+  const [rebindNonce, bumpRebind] = useReducer((x: number) => x + 1, 0);
+  // The live instance actually owned (ref held) by the ownership layout-effect,
+  // read by its cleanup so onUnmount always fires with the owned instance.
+  const ownedBlocRef = useRef<TBloc | null>(null);
+
   const { bloc, instanceKey, trackedBloc } = useMemo<{
     bloc: TBloc;
     instanceKey: string;
@@ -179,12 +192,13 @@ export function useBloc<
         : providerArgsRef.current;
 
     const resolvedKey = resolveInstanceKey(BlocClass, effectiveArgs);
-    const refId = primaryRefId(consumerId);
     const registry = getRegistry();
+    // Render only ENSUREs the instance exists (no ref). Ownership is claimed in
+    // the layout effect below, so an abandoned/uncommitted render can never
+    // leak a ref and a memo re-run can never double-count one (R3/R4).
     const instance = registry.acquire(BlocClass, resolvedKey, {
       canCreate: true,
-      countRef: true,
-      refId,
+      countRef: false,
       args: effectiveArgs,
     }) as TBloc;
 
@@ -202,7 +216,6 @@ export function useBloc<
         consumerId,
         trackedStateRef,
         sessionRef,
-        depSubsRef,
         onDepHandle,
       );
       cache.set(handle, wrapper);
@@ -221,7 +234,7 @@ export function useBloc<
       trackedBloc: proxy as TBloc,
     };
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [BlocClass, ownArgsKey, providerArgsKey]);
+  }, [BlocClass, ownArgsKey, providerArgsKey, rebindNonce]);
 
   // ---------------------------------------------------------------------------
   // Channel subscription
@@ -245,11 +258,26 @@ export function useBloc<
   // For select-mode: cache the last selected array so we can compare against
   // the next one before forcing a re-render.
   const lastSelectionRef = useRef<unknown[] | null>(null);
+  // Render-time raw-state snapshot, seeded each render (below) and read by the
+  // subscription effect to close the mount gap (R2): an emit landing between the
+  // render read and the passive subscribe would otherwise be lost.
+  const renderStateRef = useRef<unknown>(undefined);
+  // Bloc identity from the previous render, so select-mode can reset its cached
+  // selection when the underlying instance changes (re-key).
+  const prevBlocRef = useRef<unknown>(null);
 
   useEffect(() => {
     // Subscribe via the channel directly. For auto-track we re-register the
     // current path interest on each commit (below); for select-mode we use
     // ALL_PATHS and compare selections in the callback.
+    //
+    // Self-healing note: this effect can run once against a pre-rebind (possibly
+    // disposed) `bloc` before the ownership layout-effect's nonce bump triggers a
+    // re-render that swaps `bloc` to the live instance (the memo dep array
+    // includes `rebindNonce`). That's benign — `channel.subscribe` and
+    // `unregisterConsumer` are plain Map operations that don't check disposal
+    // state and never throw on a disposed container — so this effect's cleanup
+    // runs cleanly and the re-render re-subscribes against the live instance.
     const channel = (bloc as unknown as StateContainer).channel;
     const isSelectMode = selectRef.current !== undefined;
 
@@ -272,6 +300,21 @@ export function useBloc<
           force();
         },
       );
+      // Close the mount gap (R2): an emit between the render's selector seed and
+      // this subscribe would be lost. Recompute against LIVE state and force if
+      // the selection advanced.
+      const select = selectRef.current;
+      if (select) {
+        const next = select(
+          (bloc as unknown as StateContainer).state as ExtractState<T>,
+          bloc as InstanceState<T>,
+        );
+        const prev = lastSelectionRef.current;
+        if (prev === null || !shallowArrayEqual(prev, next)) {
+          lastSelectionRef.current = next;
+          force();
+        }
+      }
       return unsub;
     }
 
@@ -293,6 +336,12 @@ export function useBloc<
       consumerId,
       pathRef.current,
     );
+    // Close the mount gap (R2): if the container's state advanced between the
+    // render snapshot (renderStateRef) and this subscribe, the emit was lost —
+    // force one re-render so we don't stay stale.
+    if ((bloc as unknown as StateContainer).state !== renderStateRef.current) {
+      force();
+    }
     return () => {
       unsub();
       (bloc as unknown as StateContainer).unregisterConsumer(consumerId);
@@ -300,16 +349,56 @@ export function useBloc<
   }, [bloc, consumerId]);
 
   // ---------------------------------------------------------------------------
-  // Mount / unmount lifecycle.
+  // Ownership + mount / unmount lifecycle.
   //
-  // Order on unmount: onUnmount(bloc) -> release(...). The bloc must still be
-  // alive when onUnmount runs (release may dispose it).
+  // The ownership ref is claimed HERE (a layout effect), not in the render/memo,
+  // so acquire and release are perfectly paired: a memo re-run can no longer
+  // double-count (R3) and an uncommitted render can no longer leak (R4). Keyed
+  // on [BlocClass, instanceKey, consumerId] — NOT `bloc` — so a genuine re-key
+  // (args change, OR a BlocClass swap) releases the old ref and acquires the new
+  // one, while a pure rebind (same class+key, instance replaced under us) does
+  // NOT re-run this effect and therefore never releases the single ref we just
+  // took (which, for a sole owner, would synchronously dispose the
+  // freshly-created instance and churn indefinitely).
+  //
+  // `BlocClass` MUST stay in the dep array even though `instanceKey` alone often
+  // determines identity: `resolveInstanceKey`/`resolveKey` collapse to the same
+  // `DEFAULT_STRUCTURAL_KEY` sentinel across DIFFERENT classes when neither has
+  // args nor a `static key` (e.g. `useBloc(cond ? AdminBloc : UserBloc)`). Without
+  // `BlocClass` here, swapping classes at that shared key would never re-run this
+  // effect: the old class's ref would leak until unmount, and the new class's
+  // instance (only `ensure`d by the render memo, countRef:false) would be held
+  // with zero ownership refs — exposed to disposal by unrelated traffic on that
+  // class+key, with no rebind path to recover it.
+  //
+  // `acquire` returns the authoritative LIVE instance for the key. If it differs
+  // from the instance the render captured (`bloc`), the render read a disposed /
+  // replaced instance (same-commit shared-key handoff, or StrictMode remount);
+  // we bump the rebind nonce so the memo re-ensures `bloc` against this live one.
+  // onMount/onUnmount fire with the owned live instance and stay co-located with
+  // acquire/release so onUnmount(bloc) runs BEFORE release(...) within one
+  // cleanup, keeping the instance alive while the callback runs.
   // ---------------------------------------------------------------------------
-  useEffect(() => {
-    onMountRef.current?.(bloc as InstanceType<T>);
+  useLayoutEffect(() => {
+    const registry = getRegistry();
+    const live = registry.acquire(BlocClass, instanceKey, {
+      canCreate: true,
+      countRef: true,
+      refId: primaryRefId(consumerId),
+    }) as TBloc;
+    ownedBlocRef.current = live;
+    onMountRef.current?.(live as InstanceType<T>);
+    // Rebind if the render captured a stale (disposed/replaced) instance so the
+    // component renders + subscribes against the live registry entry, not a
+    // disposed one. Only bumps on an actual mismatch, so it can fire at most once
+    // per handoff and never loops (the re-ensured `bloc` equals `live`, and this
+    // effect is not keyed on `bloc` so it won't re-run and re-release).
+    if (live !== bloc) {
+      bumpRebind();
+    }
     return () => {
-      onUnmountRef.current?.(bloc as InstanceType<T>);
-      getRegistry().release(
+      onUnmountRef.current?.((ownedBlocRef.current ?? bloc) as InstanceType<T>);
+      registry.release(
         BlocClass,
         instanceKey,
         false,
@@ -317,7 +406,7 @@ export function useBloc<
       );
     };
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [bloc, instanceKey]);
+  }, [BlocClass, instanceKey, consumerId]);
 
   // ---------------------------------------------------------------------------
   // Snapshot
@@ -328,6 +417,16 @@ export function useBloc<
   //   selections to decide whether to re-render.
   // ---------------------------------------------------------------------------
   const rawState = (bloc as unknown as StateContainer).state as ExtractState<T>;
+  // Seed the render-time snapshot so the subscription effect can detect an emit
+  // that landed in the render→subscribe window (R2 mount gap).
+  renderStateRef.current = rawState;
+  // Reset the cached selection when the bloc identity changes (re-key) so the
+  // select seed below re-seeds against the NEW instance instead of comparing
+  // against a stale selection from the previous instance.
+  if (prevBlocRef.current !== bloc) {
+    prevBlocRef.current = bloc;
+    lastSelectionRef.current = null;
+  }
   let state: ExtractState<T>;
   if (selectRef.current !== undefined) {
     state = rawState;
@@ -430,6 +529,14 @@ export function useBloc<
         existing.interestRef.current = interest;
         continue;
       }
+      // First commit that sees this dep: take the ownership ref HERE (not in
+      // render/`.track()`), so an uncommitted render can never leak it (R4).
+      getRegistry().acquire(entry.Type, entry.key, {
+        canCreate: true,
+        countRef: true,
+        refId: entry.refId,
+        args: entry.args,
+      });
       const interestRef: { current: PathSet } = { current: interest };
       const unsubscribe = depContainer.channel.subscribe(
         () => interestRef.current,
@@ -441,6 +548,7 @@ export function useBloc<
         Type: entry.Type,
         key: entry.key,
         refId: entry.refId,
+        args: entry.args,
       });
     }
   });
@@ -496,6 +604,8 @@ type SessionEntry =
       key: string;
       /** refId held for this dep (released on drop/unmount). */
       refId: string;
+      /** Construction args, used by the reconcile pass to acquire the ref. */
+      args: unknown;
     };
 
 /** A live dep-channel subscription tracked between renders for reconciliation. */
@@ -505,6 +615,7 @@ interface DepSub {
   Type: StateContainerConstructor;
   key: string;
   refId: string;
+  args: unknown;
 }
 
 /** Per-access options shared by both dep accessors. */
@@ -527,10 +638,11 @@ interface DepHandleLike {
  * tracked getter's `this`. The wrapper exposes the same accessors as the core
  * handle and overrides `.track()`:
  *
- * - **Inside a render** (`trackedStateRef.current != null`): resolve the dep,
- *   take a refcount (once per consumer), `trackRender` its state, merge the
- *   recorded paths into the session entry, build/reuse a tracked proxy for the
- *   dep so its OWN getters track too, and return `[trackedValue, depProxy]`.
+ * - **Inside a render** (`trackedStateRef.current != null`): resolve (ENSURE,
+ *   no ref) the dep, `trackRender` its state, merge the recorded paths into the
+ *   session entry, build/reuse a tracked proxy for the dep so its OWN getters
+ *   track too, and return `[trackedValue, depProxy]`. The ownership ref is taken
+ *   by the layout-effect reconcile pass, not here.
  * - **Outside a render**: degrade to live `[dep.state, dep]` — matches the core
  *   base impl, safe in event handlers/effects/methods.
  *
@@ -548,7 +660,6 @@ function makeDepWrapper(
   consumerId: string,
   trackedStateRef: { current: unknown },
   sessionRef: { current: Map<StateContainer, SessionEntry> },
-  depSubsRef: { current: Map<StateContainer, DepSub> },
   onDepHandle: (handle: object) => unknown,
 ): DepHandleLike {
   const brand = handle[DEP_BRAND];
@@ -585,22 +696,11 @@ function makeDepWrapper(
       const session = sessionRef.current;
       const existing = session.get(dep);
 
-      // Take a refcount the FIRST time this dep is tracked, held across renders
-      // and released by the reconcile (on drop) or unmount. The session map is
-      // rebuilt every render, so it can't tell us whether we already hold a ref;
-      // `depSubsRef` does — it persists across renders and is populated by the
-      // reconcile after the first tracking render. If neither the (cleared) per-
-      // render session nor the persistent sub set knows this dep, acquire once.
-      // React runs the layout-effect reconcile before the next render, so the
-      // sub is registered before a subsequent track sees it → no double-acquire.
-      if (existing === undefined && !depSubsRef.current.has(dep)) {
-        registry.acquire(brand.Type, key, {
-          canCreate: true,
-          countRef: true,
-          refId,
-          args,
-        });
-      }
+      // Render only ENSUREs the dep instance (via `resolve()` above); it does
+      // NOT take a ref. Ownership is claimed by the layout-effect reconcile
+      // pass-2 the first commit it sees this dep, and released on drop/unmount.
+      // This keeps acquire/release paired so an uncommitted render can't leak a
+      // dep ref (R4).
 
       const tracked = trackRender(dep.state, dep.interner);
       let cache = perDep.get(dep);
@@ -623,6 +723,7 @@ function makeDepWrapper(
           Type: brand.Type,
           key,
           refId,
+          args,
         });
       }
 
