@@ -82,6 +82,15 @@ describe('DirtyChannel — flush behaviour', () => {
     expect(cb2).toHaveBeenCalledWith(0b011);
   });
 
+  it('4b. clean single-subscriber flush fires the callback and throws nothing', () => {
+    const { sched, ch } = make();
+    const cb = vi.fn();
+    ch.subscribe(() => 0b001, cb);
+    ch.mark(0b001);
+    expect(() => sched.pump()).not.toThrow();
+    expect(cb).toHaveBeenCalledWith(0b001);
+  });
+
   it('5. subscriber whose interest does not intersect is NOT called', () => {
     const { sched, ch } = make();
     const cb = vi.fn();

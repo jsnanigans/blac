@@ -103,7 +103,7 @@ export class DirtyChannel<Region> {
     // callbacks will not be in this list and will NOT run this cycle.
     const live = Array.from(this.#subscribers.values());
 
-    const errors: unknown[] = [];
+    let errors: unknown[] | undefined;
 
     // Step 5 — iterate the snapshot.
     for (const entry of live) {
@@ -120,7 +120,7 @@ export class DirtyChannel<Region> {
         if (this.#onError) {
           this.#onError(err);
         } else {
-          errors.push(err);
+          (errors ??= []).push(err);
         }
         continue;
       }
@@ -133,7 +133,7 @@ export class DirtyChannel<Region> {
         if (this.#onError) {
           this.#onError(err);
         } else {
-          errors.push(err);
+          (errors ??= []).push(err);
         }
       }
     }
@@ -150,8 +150,8 @@ export class DirtyChannel<Region> {
     }
 
     // Step 8 — surface errors after all callbacks have run and state is clean.
-    if (errors.length === 1) throw errors[0];
-    if (errors.length > 1) {
+    if (errors) {
+      if (errors.length === 1) throw errors[0];
       throw new AggregateError(
         errors,
         'DirtyChannel: subscriber errors during flush',
