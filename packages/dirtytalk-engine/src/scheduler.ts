@@ -31,7 +31,21 @@ export class ManualScheduler implements Scheduler {
     this.#scheduled = false;
     const fns = this.#pending;
     this.#pending = new Set();
-    for (const fn of fns) fn();
+    const errors: unknown[] = [];
+    for (const fn of fns) {
+      try {
+        fn();
+      } catch (err) {
+        errors.push(err);
+      }
+    }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1) {
+      throw new AggregateError(
+        errors,
+        'ManualScheduler: flush errors during pump',
+      );
+    }
   }
 }
 
@@ -61,7 +75,21 @@ export class MicrotaskScheduler implements Scheduler {
     this.#scheduled = false;
     const fns = this.#pending;
     this.#pending = new Set();
-    for (const fn of fns) fn();
+    const errors: unknown[] = [];
+    for (const fn of fns) {
+      try {
+        fn();
+      } catch (err) {
+        errors.push(err);
+      }
+    }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1) {
+      throw new AggregateError(
+        errors,
+        'MicrotaskScheduler: flush errors during drain',
+      );
+    }
   }
 }
 
@@ -115,6 +143,20 @@ export class RAFScheduler implements Scheduler {
     this.#handle = null;
     const fns = this.#pending;
     this.#pending = new Set();
-    for (const fn of fns) fn();
+    const errors: unknown[] = [];
+    for (const fn of fns) {
+      try {
+        fn();
+      } catch (err) {
+        errors.push(err);
+      }
+    }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1) {
+      throw new AggregateError(
+        errors,
+        'RAFScheduler: flush errors during drain',
+      );
+    }
   }
 }

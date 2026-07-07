@@ -368,6 +368,55 @@ describe('DirtyChannel — errors', () => {
   });
 });
 
+describe('DirtyChannel — onError option', () => {
+  it('22. onError routes callback errors and flush does not throw', () => {
+    const sched = new TestScheduler();
+    const onError = vi.fn();
+    const ch = new DirtyChannel(NumberBitsetSpace, sched, { onError });
+    const err = new Error('cb boom');
+    const afterCb = vi.fn();
+    ch.subscribe(
+      () => 0b001,
+      () => {
+        throw err;
+      },
+    );
+    ch.subscribe(() => 0b001, afterCb);
+    ch.mark(0b001);
+    expect(() => sched.pump()).not.toThrow();
+    expect(onError).toHaveBeenCalledWith(err);
+    expect(afterCb).toHaveBeenCalledTimes(1);
+  });
+
+  it('23. onError routes interest thunk errors and flush does not throw', () => {
+    const sched = new TestScheduler();
+    const onError = vi.fn();
+    const ch = new DirtyChannel(NumberBitsetSpace, sched, { onError });
+    const err = new Error('thunk boom');
+    const goodCb = vi.fn();
+    ch.subscribe(() => {
+      throw err;
+    }, vi.fn());
+    ch.subscribe(() => 0b001, goodCb);
+    ch.mark(0b001);
+    expect(() => sched.pump()).not.toThrow();
+    expect(onError).toHaveBeenCalledWith(err);
+    expect(goodCb).toHaveBeenCalledTimes(1);
+  });
+
+  it('24. without onError, flush still rethrows (unchanged behavior)', () => {
+    const { sched, ch } = make();
+    ch.subscribe(
+      () => 0b001,
+      () => {
+        throw new Error('still throws');
+      },
+    );
+    ch.mark(0b001);
+    expect(() => sched.pump()).toThrow('still throws');
+  });
+});
+
 describe('DirtyChannel — sanity', () => {
   it('21. isEmpty fast-path: no subscribers consulted when dirty is empty', () => {
     const { sched, ch } = make();

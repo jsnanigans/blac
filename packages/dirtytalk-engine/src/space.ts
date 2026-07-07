@@ -2,7 +2,7 @@
  * The algebra of "what changed" and "what I care about."
  *
  * Both are values of type `Region`. Implementations live in consuming
- * libraries (e.g. RectSpace in insomni, PathSetSpace in blac).
+ * libraries (e.g. RectSpace in a canvas renderer, PathSetSpace in blac).
  *
  * Contracts:
  *   - `union(empty(), r)` equals `r`.

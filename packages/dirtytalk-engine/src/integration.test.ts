@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vite-plus/test';
-import { Signal, DirtyChannel, SyncScheduler } from './index';
+import { DirtyChannel, SyncScheduler } from './index';
 import type { Space } from './index';
+// Signal is de-barreled; import from source for this cross-unit test.
+import { Signal } from './primitives';
 
 // ---------------------------------------------------------------------------
 // Shared test double — bitset Space (mirrors dirty-channel.test.ts)

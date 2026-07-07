@@ -1,6 +1,3 @@
-export type { Observable } from './primitives';
-export { Signal } from './primitives';
-
 export type { Space } from './space';
 
 export type { Scheduler } from './scheduler';

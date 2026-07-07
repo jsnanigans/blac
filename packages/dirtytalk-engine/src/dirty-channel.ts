@@ -33,11 +33,18 @@ export class DirtyChannel<Region> {
   // Allocating it once avoids GC churn and lets identity-keying schedulers work.
   readonly #boundFlush: () => void;
 
-  constructor(space: Space<Region>, scheduler: Scheduler) {
+  readonly #onError?: (err: unknown) => void;
+
+  constructor(
+    space: Space<Region>,
+    scheduler: Scheduler,
+    options?: { onError?: (err: unknown) => void },
+  ) {
     this.#space = space;
     this.#scheduler = scheduler;
     this.#accumulated = space.empty();
     this.#boundFlush = () => this.#flush();
+    this.#onError = options?.onError;
   }
 
   mark(r: Region): void {
@@ -100,7 +107,11 @@ export class DirtyChannel<Region> {
         interest = entry.interest();
       } catch (err) {
         // Treat a throwing thunk as "no interest this flush" and record it.
-        errors.push(err);
+        if (this.#onError) {
+          this.#onError(err);
+        } else {
+          errors.push(err);
+        }
         continue;
       }
 
@@ -109,7 +120,11 @@ export class DirtyChannel<Region> {
       try {
         entry.cb(dirty);
       } catch (err) {
-        errors.push(err);
+        if (this.#onError) {
+          this.#onError(err);
+        } else {
+          errors.push(err);
+        }
       }
     }
 

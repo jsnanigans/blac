@@ -124,6 +124,17 @@ describe('ManualScheduler', () => {
     s.pump();
     expect(inner).toHaveBeenCalledTimes(1);
   });
+
+  it('per-fn isolation: first of two throws, second still runs; throw surfaces after loop', () => {
+    const s = new ManualScheduler();
+    const second = vi.fn();
+    s.request(() => {
+      throw new Error('first boom');
+    });
+    s.request(second);
+    expect(() => s.pump()).toThrow('first boom');
+    expect(second).toHaveBeenCalledTimes(1);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -215,6 +226,27 @@ describe('MicrotaskScheduler', () => {
     expect(fn1).not.toHaveBeenCalled();
     expect(fn2).toHaveBeenCalledTimes(1);
   });
+
+  it('per-fn isolation: first of two throws, second still runs; throw surfaces after loop', () => {
+    const s = new MicrotaskScheduler();
+    const second = vi.fn();
+    // Intercept queueMicrotask so we can invoke the drain callback directly
+    // inside a synchronous try/catch, instead of letting a real microtask
+    // throw become an uncaught exception in the test process.
+    let capturedDrain: (() => void) | undefined;
+    const spy = vi
+      .spyOn(globalThis, 'queueMicrotask')
+      .mockImplementation((cb: () => void) => {
+        capturedDrain = cb;
+      });
+    s.request(() => {
+      throw new Error('first boom');
+    });
+    s.request(second);
+    spy.mockRestore();
+    expect(() => capturedDrain?.()).toThrow('first boom');
+    expect(second).toHaveBeenCalledTimes(1);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -288,5 +320,16 @@ describe('RAFScheduler (Node setTimeout fallback)', () => {
 
     vi.advanceTimersByTime(20); // second tick: inner runs
     expect(inner).toHaveBeenCalledTimes(1);
+  });
+
+  it('per-fn isolation: first of two throws, second still runs; throw surfaces after loop', () => {
+    const s = new RAFScheduler();
+    const second = vi.fn();
+    s.request(() => {
+      throw new Error('first boom');
+    });
+    s.request(second);
+    expect(() => vi.advanceTimersByTime(20)).toThrow('first boom');
+    expect(second).toHaveBeenCalledTimes(1);
   });
 });
