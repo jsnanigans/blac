@@ -493,6 +493,13 @@ export function useBloc<
       kind: 'primary',
       paths: tracked.paths,
     });
+    // Freeze this render's tracking proxy after the synchronous render+commit
+    // pass. The microtask fires only once the current task unwinds, so all
+    // render-time JSX reads still record; reads afterwards — effects, event
+    // handlers, async callbacks, devtools inspecting `state` — hit the
+    // disarmed proxy and record nothing, so this render's path set can't be
+    // polluted by work that outlives the render that owns it.
+    queueMicrotask(tracked.disarm);
     // NOTE: registerConsumerPaths is intentionally NOT called here. The
     // proxy hasn't been accessed yet, so `tracked.paths` is an empty Set
     // that the proxy will mutate during JSX evaluation. Registering at

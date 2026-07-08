@@ -9,6 +9,12 @@ export default defineConfig({
       '@blac/adapter': path.resolve(__dirname, '../blac-adapter/src'),
       '@blac/react/testing': path.resolve(__dirname, './src/testing'),
       '@blac/react': path.resolve(__dirname, './src'),
+      // Resolve structural to source so tests see live tracker features
+      // (disarm, __setTrackTrace) instead of the stale built dist.
+      '@dirtytalk/structural': path.resolve(
+        __dirname,
+        '../dirtytalk-structural/src',
+      ),
       '@blac/devtools-connect': path.resolve(
         __dirname,
         '../devtools-connect/src',

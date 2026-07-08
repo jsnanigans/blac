@@ -19,7 +19,51 @@ const TRACK_ARRAY_ITERATION = true;
 export interface TrackResult<S> {
   value: S;
   paths: PathSet;
+  /**
+   * Stop this render's proxy from recording. After calling, every trap on
+   * this proxy tree (and its cached sub-proxies) becomes a transparent
+   * pass-through: reads return the raw underlying value and record nothing.
+   * `useBloc` calls this on a microtask so reads after the synchronous
+   * render+commit pass (effects, handlers, async, devtools) can't pollute
+   * `paths`.
+   */
+  disarm: () => void;
 }
+
+// ---- Test-only trace seam (zero-cost in production) --------------------
+// Production never installs a hook, so every `traceHook?.(…)` guard below is
+// a single null check. A test calls `__setTrackTrace(fn)` to observe every
+// recording decision, then `__setTrackTrace(null)` to detach.
+export interface TrackTraceEvent {
+  /** Monotonic id of the trackRender() call whose proxy tree emitted this. */
+  instance: number;
+  kind:
+    | 'root-wrap' // root proxy created for this render
+    | 'record' // a leaf path was added to `paths`
+    | 'drop-parent' // the immediate parent path was superseded/removed
+    | 'pin' // an array entry path was pinned as a content dependency
+    | 'ownKeys' // enumeration trap fired
+    | 'has' // `key in obj` trap fired
+    | 'pass-through' // read after disarm(); recorded nothing
+    | 'disarm'; // this render's proxy tree was frozen
+  prefix: string;
+  key?: string;
+  path?: string;
+  armed: boolean;
+}
+
+let traceHook: ((e: TrackTraceEvent) => void) | null = null;
+let traceInstanceSeq = 0;
+
+/**
+ * Install (or clear with `null`) a global trace hook fired on every recording
+ * decision inside every live tracking proxy. Test-only.
+ */
+export const __setTrackTrace = (
+  hook: ((e: TrackTraceEvent) => void) | null,
+): void => {
+  traceHook = hook;
+};
 
 // Registry of every recording proxy → its raw target, populated by `wrap` on
 // each `trackRender` call. Keyed weakly by the proxy, so entries vanish once a
@@ -39,6 +83,24 @@ export const raw = <T>(v: T): T => {
   }
   return v;
 };
+
+/**
+ * Semantic alias of {@link raw}, expressing intent at a component boundary: pass
+ * a tracked value as an **untracked snapshot** so reads on it (and nested reads)
+ * never record into any tracking scope.
+ *
+ * When a parent does `<Child item={untracked(item)} />`, the child reads a plain,
+ * detached value — its reads are NOT attributed to the parent's tracker, so the
+ * parent stops re-rendering for paths only the child reads. The trade-off is
+ * intentional: the child is **not** reactive to that value unless it re-reads the
+ * data through its own `useBloc`. This is BlaC's model — a component is reactive
+ * only to the paths it reads during its *own* render; props are snapshots.
+ *
+ * This is the explicit, no-build-step form of the ambient/compiler-plugin scoping
+ * described in the @blac/react README. Identical mechanism to {@link raw}; the
+ * separate name documents the intent at the call site.
+ */
+export const untracked = raw;
 
 const childPath = (parent: string, key: string): string =>
   parent === '' ? key : `${parent}.${key}`;
@@ -122,8 +184,16 @@ export const trackRender = <S>(
   // the array path survives.
   const pinned = new Set<PathId>();
 
+  // When false, every trap short-circuits to a raw pass-through and records
+  // nothing. Flipped by the returned `disarm()` (see TrackResult). Closed over
+  // by every proxy in this render's tree, so one flag disarms all of them.
+  let armed = true;
+
+  // Identifies this render's proxy tree in trace events (see __setTrackTrace).
+  const instance = ++traceInstanceSeq;
+
   if (!isWrappable(state)) {
-    return { value: state, paths };
+    return { value: state, paths, disarm: () => {} };
   }
 
   // Per-call cache keyed by (target, prefix): target -> prefix -> proxy. Dies
@@ -157,10 +227,25 @@ export const trackRender = <S>(
       const id = prefixId();
       paths.add(id);
       pinned.add(id);
+      traceHook?.({ instance, kind: 'pin', prefix, path: prefix, armed });
     };
 
     const handler: ProxyHandler<object> = {
       get(t, key, receiver) {
+        // Frozen (post-render): behave as a transparent pass-through. Return
+        // the raw underlying value with no recording and no sub-proxy wrapping.
+        // Two-arg Reflect.get (receiver = target) avoids re-entering this trap.
+        if (!armed) {
+          traceHook?.({
+            instance,
+            kind: 'pass-through',
+            prefix,
+            key: String(key),
+            armed,
+          });
+          return Reflect.get(t, key);
+        }
+
         // Symbol keys (Symbol.iterator, Symbol.toStringTag, ...) never
         // record. On arrays we additionally bind any function value to the
         // raw target so iteration coarsens — the iterator's internal reads
@@ -229,11 +314,28 @@ export const trackRender = <S>(
         // a consumer that only read a specific leaf beneath it.
         const path = childPath(prefix, key as string);
         paths.add(interner.intern(path));
+        traceHook?.({
+          instance,
+          kind: 'record',
+          prefix,
+          key: key as string,
+          path,
+          armed,
+        });
         if (prefix !== '') {
           const parentId = prefixId();
           // Keep an iteration-pinned array path: `.length` (or any own read)
           // must not narrow away a content dependency the consumer also has.
-          if (!pinned.has(parentId)) paths.delete(parentId);
+          if (!pinned.has(parentId)) {
+            paths.delete(parentId);
+            traceHook?.({
+              instance,
+              kind: 'drop-parent',
+              prefix,
+              path: prefix,
+              armed,
+            });
+          }
         }
 
         if (!isWrappable(value)) {
@@ -284,15 +386,27 @@ export const trackRender = <S>(
         // the root (prefix === '') via pinArrayPath's own guard. Array
         // length/iteration behaviour is unaffected: for..of / spread / methods
         // never route through ownKeys.
-        pinArrayPath();
+        if (armed) {
+          pinArrayPath();
+          traceHook?.({ instance, kind: 'ownKeys', prefix, armed });
+        }
         return Reflect.ownKeys(t);
       },
 
       has(t, key) {
         // `key in obj` queries a specific child path — record it so the
         // consumer wakes when that key is added or removed.
-        if (typeof key !== 'symbol') {
-          paths.add(interner.intern(childPath(prefix, key as string)));
+        if (armed && typeof key !== 'symbol') {
+          const path = childPath(prefix, key as string);
+          paths.add(interner.intern(path));
+          traceHook?.({
+            instance,
+            kind: 'has',
+            prefix,
+            key: key as string,
+            path,
+            armed,
+          });
         }
         return Reflect.has(t, key);
       },
@@ -304,5 +418,13 @@ export const trackRender = <S>(
     return proxy;
   };
 
-  return { value: wrap(state as object, '') as S, paths };
+  traceHook?.({ instance, kind: 'root-wrap', prefix: '', armed });
+  return {
+    value: wrap(state as object, '') as S,
+    paths,
+    disarm: () => {
+      armed = false;
+      traceHook?.({ instance, kind: 'disarm', prefix: '', armed: false });
+    },
+  };
 };

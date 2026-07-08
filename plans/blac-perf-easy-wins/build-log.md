@@ -1,0 +1,7 @@
+# Build log — blac-perf-easy-wins
+
+- [phase 2] BR3 latent: lazy args-key cache no longer detects **in-place mutation** of a reference-stable args object (old eager JSON.stringify-every-render did) — `useBloc.ts:146` — accepted tradeoff of the BR3 optimization (args are conventionally immutable; caller should pass a new ref to change args). Consider a doc note on `useBloc` args if this ever surprises a consumer.
+- [phase 2] PN1 caveat: `pathSetUnion` is a public export and may now return an operand by reference; all in-repo callers safe (V-A confirmed). Suggested fix: JSDoc "result may alias an operand; do not mutate" on the export.
+- [phase 2] PN10 caveat (theoretical, out of DeepPartial contract): `for..in` sees inherited enumerable keys vs old `Object.keys().length`; only diverges for a non-plain-prototype patch with zero own keys — not a real-world case.
+- [phase 1] lint nit: 4 `no-non-null-assertion` **warnings** in the new PN2 test block — `container.test.ts:670,689,710,782` (`dirty1!` etc.) — warnings only, lint exits 0; replace with a null-guard if tightening later.
+- [phase 2] BC1: no test for the `notifyPlugins` (lifecycle-hook) path's once-per-dispatch ctx build (only `dispatchStateChange`/onStateChange covered); impl is symmetric. Also latent: `PluginContext.container` is now shared-by-ref across plugins in one dispatch — a plugin reassigning `ctx.container` could affect siblings (no in-repo plugin does).

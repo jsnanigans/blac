@@ -1,8 +1,8 @@
-import { Cubit, borrow } from '@blac/core';
-import { useBloc } from '@blac/react';
-import React, { memo, useEffect, useMemo } from 'react';
-import { buildData, resetId } from '../../shared/data';
-import type { BenchmarkAPI, DataItem } from '../../shared/types';
+import { Cubit, borrow } from "@blac/core";
+import { useBloc } from "@blac/react";
+import React, { memo, useEffect, useMemo } from "react";
+import { buildData, resetId } from "../../shared/data";
+import type { BenchmarkAPI, DataItem } from "../../shared/types";
 
 interface DemoState {
   data: DataItem[];
@@ -32,7 +32,7 @@ class DemoBloc extends Cubit<DemoState> {
     const newData = this.state.data.slice(0);
     for (let i = 0, len = newData.length; i < len; i += 10) {
       const r = newData[i];
-      newData[i] = { id: r.id, label: r.label + ' !!!' };
+      newData[i] = { id: r.id, label: r.label + " !!!" };
     }
     this.patch({ data: newData });
   };
@@ -66,42 +66,28 @@ class DemoBloc extends Cubit<DemoState> {
   };
 }
 
-const Row: React.FC<{ item: DataItem; isSelected: boolean }> = memo(
-  ({ item, isSelected }) => {
-    const bloc = useMemo(() => borrow(DemoBloc), []);
-
-    return (
-      <tr className={isSelected ? 'danger' : ''}>
-        <td className="col-md-1">{item.id}</td>
-        <td className="col-md-4">
-          <a onClick={() => bloc.select(item.id)}>{item.label}</a>
-        </td>
-        <td className="col-md-1">
-          <a onClick={() => bloc.remove(item.id)}>
-            <span className="glyphicon glyphicon-remove" aria-hidden="true" />
-          </a>
-        </td>
-        <td className="col-md-6" />
-      </tr>
-    );
-  },
-);
+const Row: React.FC<{ item: DataItem }> = memo(({ item }) => {
+  const [{ selected }, { remove, select }] = useBloc(DemoBloc);
+  return (
+    <tr className={selected === item.id ? "danger" : ""}>
+      <td className="col-md-1">{item.id}</td>
+      <td className="col-md-4">
+        <a onClick={() => select(item.id)}>{item.label}</a>
+      </td>
+      <td className="col-md-1">
+        <a onClick={() => remove(item.id)}>
+          <span className="glyphicon glyphicon-remove" aria-hidden="true" />
+        </a>
+      </td>
+      <td className="col-md-6" />
+    </tr>
+  );
+});
 
 export const BlacFrameworkBenchmark: React.FC<{
   onReady: (api: BenchmarkAPI) => void;
 }> = ({ onReady }) => {
-  // Use `select` mode (blac's explicit-selector API) rather than auto-tracking.
-  // Auto-track returns a recording proxy that hands `.map` a fresh sub-proxy per
-  // element every render, so every `item` is a new reference and the memoized
-  // `Row` re-renders even when its data is unchanged — re-rendering all 1,000
-  // rows on every op. `select` returns the raw state: items keep their identity,
-  // so `React.memo` skips unchanged rows. This mirrors how the Zustand
-  // (`useStore(store, s => s.data)`) and Redux (`useSelector`) benchmarks read
-  // their lists, keeping the comparison apples-to-apples.
-  const [state] = useBloc(DemoBloc, {
-    select: (s) => [s.data, s.selected],
-  });
-  const bloc = useMemo(() => borrow(DemoBloc), []);
+  const [state, bloc] = useBloc(DemoBloc);
 
   useEffect(() => {
     onReady({
@@ -121,11 +107,7 @@ export const BlacFrameworkBenchmark: React.FC<{
       <table className="table table-hover table-striped test-data">
         <tbody>
           {state.data.map((item) => (
-            <Row
-              key={item.id}
-              item={item}
-              isSelected={state.selected === item.id}
-            />
+            <Row key={item.id} item={item} />
           ))}
         </tbody>
       </table>

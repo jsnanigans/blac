@@ -9,6 +9,12 @@ export default defineConfig({
     alias: {
       '@blac/core': path.resolve(__dirname, '../../packages/blac-core/src'),
       '@blac/react': path.resolve(__dirname, '../../packages/blac-react/src'),
+      // Resolve to source (like core/react above) so tracker changes are picked
+      // up live — otherwise this consumes the prebuilt dist and drifts stale.
+      '@dirtytalk/structural': path.resolve(
+        __dirname,
+        '../../packages/dirtytalk-structural/src',
+      ),
     },
   },
   server: {
