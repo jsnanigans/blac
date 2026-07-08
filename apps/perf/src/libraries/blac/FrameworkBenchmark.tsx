@@ -1,5 +1,5 @@
 import { Cubit, borrow } from "@blac/core";
-import { useBloc } from "@blac/react";
+import { untracked, useBloc } from "@blac/react";
 import React, { memo, useEffect, useMemo } from "react";
 import { buildData, resetId } from "../../shared/data";
 import type { BenchmarkAPI, DataItem } from "../../shared/types";
@@ -107,7 +107,7 @@ export const BlacFrameworkBenchmark: React.FC<{
       <table className="table table-hover table-striped test-data">
         <tbody>
           {state.data.map((item) => (
-            <Row key={item.id} item={item} />
+            <Row key={item.id} item={untracked(item)} />
           ))}
         </tbody>
       </table>
