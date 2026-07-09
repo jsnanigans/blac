@@ -12,6 +12,7 @@ catalog:
   '@types/react': ^19.2.15
   happy-dom: ^20.9.0
   jsdom: ^29.1.1
+  lit-html: ^3.2.1
   publint: ^0.3.21
   react: ^19.2.6
   react-dom: ^19.2.6

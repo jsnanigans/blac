@@ -1,0 +1,235 @@
+:root {
+  color-scheme: dark;
+  --bg: #0c0d10;
+  --panel: #15171c;
+  --panel-2: #1b1e25;
+  --border: #262a33;
+  --text: #e7e9ee;
+  --text-dim: #9aa1ad;
+  --accent: #7c9dff;
+  --accent-2: #5a7bff;
+  --danger: #ff6b7a;
+  --radius: 12px;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 48px 24px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.hero {
+  text-align: center;
+  padding: 24px 0 8px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 2.4rem;
+}
+
+.mark {
+  font-family: 'SF Mono', 'Fira Code', ui-monospace, Menlo, monospace;
+  background: linear-gradient(135deg, var(--accent), #b98bff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tagline {
+  color: var(--text-dim);
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+}
+
+h2 {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+}
+
+.hint {
+  margin: 0 0 16px;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  min-width: 160px;
+  flex: 1 1 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.card__label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.card__value {
+  font-family: 'SF Mono', 'Fira Code', ui-monospace, Menlo, monospace;
+  font-size: 2.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card__controls {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 14px;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.05s ease;
+}
+
+button:hover {
+  background: #22262f;
+  border-color: #343945;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button.primary {
+  background: var(--accent-2);
+  border-color: var(--accent-2);
+  color: #fff;
+}
+
+button.primary:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--text-dim);
+}
+
+button.ghost:hover {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.todo-app {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.todo-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.todo-input {
+  flex: 1;
+  font: inherit;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text);
+}
+
+.todo-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.todo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+}
+
+.todo__text {
+  flex: 1;
+}
+
+.todo-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.filters {
+  display: flex;
+  gap: 6px;
+}
+
+.chip {
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  border-radius: 999px;
+}
+
+.empty {
+  color: var(--text-dim);
+  text-align: center;
+  padding: 16px 0;
+  margin: 0;
+}

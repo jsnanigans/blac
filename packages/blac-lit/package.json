@@ -1,0 +1,96 @@
+{
+  "name": "@blac/lit",
+  "version": "2.0.18",
+  "license": "MIT",
+  "author": "Brendan Mullins <jsnanigans@gmail.com>",
+  "description": "lit-html bindings for BlaC — render-once, fine-grained DOM updates driven entirely by blac",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jsnanigans/blac.git",
+    "directory": "packages/blac-lit"
+  },
+  "homepage": "https://github.com/jsnanigans/blac#readme",
+  "bugs": {
+    "url": "https://github.com/jsnanigans/blac/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false,
+  "keywords": [
+    "lit",
+    "lit-html",
+    "typescript",
+    "state-management",
+    "observer-pattern",
+    "bloc",
+    "bloc-pattern"
+  ],
+  "size-limit": [
+    {
+      "name": "@blac/lit (ESM, brotli, excl. peers)",
+      "path": "dist/index.js",
+      "limit": "3 kB",
+      "ignore": [
+        "lit-html",
+        "@blac/core"
+      ]
+    }
+  ],
+  "scripts": {
+    "dev": "vp pack --watch",
+    "build": "vp pack && tsc -p tsconfig.build.json && cp dist/index.d.ts dist/index.d.cts",
+    "clean": "rm -rf dist",
+    "format": "vp fmt \".\"",
+    "format:check": "vp fmt \".\" --check",
+    "lint": "vp lint src",
+    "lint:fix": "vp lint src --fix",
+    "test": "vp test run",
+    "test:watch": "vp test --watch",
+    "verify": "node ../../scripts/run-workspace-bin.mjs publint",
+    "typecheck": "tsc --noEmit",
+    "size": "size-limit",
+    "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
+    "deploy": "pnpm publish --access public"
+  },
+  "dependencies": {
+    "@dirtytalk/structural": "workspace:^"
+  },
+  "peerDependencies": {
+    "@blac/core": "workspace:^",
+    "lit-html": "^3.2.0"
+  },
+  "devDependencies": {
+    "@size-limit/preset-small-lib": "^11.1.6",
+    "size-limit": "^11.1.6",
+    "@blac/core": "workspace:*",
+    "happy-dom": "catalog:",
+    "lit-html": "^3.2.1",
+    "publint": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
+  }
+}
