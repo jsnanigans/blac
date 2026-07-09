@@ -9,7 +9,14 @@ export {
   PathSetSpace,
 } from './path-set';
 export type { PathSet, AllPaths } from './path-set';
-export { trackRender, raw, untracked, __setTrackTrace } from './tracker';
+export {
+  trackRender,
+  raw,
+  untracked,
+  __setTrackTrace,
+  __setPersistTrackingProxies,
+  ProxyCache,
+} from './tracker';
 export type { TrackResult, TrackTraceEvent } from './tracker';
 export { diffAlongSkeleton, changedPathsFromPatch, getAt } from './diff';
 export { StructuralContainer } from './container';

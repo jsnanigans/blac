@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { PathInterner } from './path-interner';
-import { raw, trackRender } from './tracker';
+import {
+  __setPersistTrackingProxies,
+  ProxyCache,
+  raw,
+  trackRender,
+} from './tracker';
 import type { PathSet } from './path-set';
 import { ALL_PATHS } from './path-set';
 
@@ -424,5 +429,160 @@ describe('trackRender', () => {
     expect(raw(42)).toBe(42);
     expect(raw(null)).toBeNull();
     expect(raw(undefined)).toBeUndefined();
+  });
+});
+
+describe('trackRender — ProxyCache', () => {
+  it('17. (PC1) ProxyCache reuses the proxy for an unchanged (target, prefix)', () => {
+    __setPersistTrackingProxies(true);
+    try {
+      const interner = new PathInterner();
+      const cache = new ProxyCache();
+      const state = { items: [{ id: 1 }, { id: 2 }] };
+      const first = trackRender(state, interner, cache);
+      const firstItemProxy = first.value.items[0];
+      const second = trackRender(state, interner, cache);
+      const secondItemProxy = second.value.items[0];
+      expect(secondItemProxy).toBe(firstItemProxy);
+    } finally {
+      __setPersistTrackingProxies(null);
+    }
+  });
+
+  it('18. (PC2) an object moved to a new index gets a fresh proxy at the new path, not the old one', () => {
+    __setPersistTrackingProxies(true);
+    try {
+      const interner = new PathInterner();
+      const cache = new ProxyCache();
+      const shared = { id: 42 };
+      const before = { items: [shared, { id: 2 }] };
+      const first = trackRender(before, interner, cache);
+      const proxyAtIndex0 = first.value.items[0];
+      void proxyAtIndex0.id;
+
+      const after = { items: [{ id: 2 }, shared] };
+      const second = trackRender(after, interner, cache);
+      const proxyAtIndex1 = second.value.items[1];
+      void proxyAtIndex1.id;
+
+      // Different (target, prefix) key ⇒ different proxy — no cross-index reuse.
+      expect(proxyAtIndex1).not.toBe(proxyAtIndex0);
+      // The leaf path recorded reflects the CURRENT index, not the old one.
+      const strings = asPathStrings(second.paths, interner);
+      expect(strings).toContain('items.1.id');
+      expect(strings).not.toContain('items.0.id');
+      // raw() still unwraps to the actual shared target regardless of path.
+      expect(raw(proxyAtIndex1)).toBe(shared);
+      expect(raw(proxyAtIndex0)).toBe(shared);
+    } finally {
+      __setPersistTrackingProxies(null);
+    }
+  });
+
+  it('19. (PC3) removing an item between renders does not throw or leak a stale proxy', () => {
+    __setPersistTrackingProxies(true);
+    try {
+      const interner = new PathInterner();
+      const cache = new ProxyCache();
+      const state1 = { items: [{ id: 1 }, { id: 2 }, { id: 3 }] };
+      const first = trackRender(state1, interner, cache);
+      for (const item of first.value.items) void item.id;
+
+      // ids 1 and 3 are the SAME object references as in state1.
+      const state2 = { items: [state1.items[0], state1.items[2]] };
+      expect(() => {
+        const second = trackRender(state2, interner, cache);
+        for (const item of second.value.items) void item.id;
+      }).not.toThrow();
+    } finally {
+      __setPersistTrackingProxies(null);
+    }
+  });
+
+  it('20. (PC4) aliasing still produces two independent proxies with a ProxyCache present', () => {
+    __setPersistTrackingProxies(true);
+    try {
+      const interner = new PathInterner();
+      const cache = new ProxyCache();
+      const shared = { name: 'z' };
+      const { value, paths } = trackRender({ a: shared, b: shared }, interner, cache);
+      void value.a.name;
+      void value.b.name;
+      const strings = asPathStrings(paths, interner);
+      expect(strings).toContain('a.name');
+      expect(strings).toContain('b.name');
+      expect(value.a).toBe(value.a);
+      expect(value.a).not.toBe(value.b);
+    } finally {
+      __setPersistTrackingProxies(null);
+    }
+  });
+
+  it('21. (PC5) disarm freezes a reused proxy; the next render reusing it re-arms correctly', () => {
+    __setPersistTrackingProxies(true);
+    try {
+      const interner = new PathInterner();
+      const cache = new ProxyCache();
+      const state = { items: [{ id: 1 }] };
+      const first = trackRender(state, interner, cache);
+      const itemProxy = first.value.items[0];
+      void itemProxy.id;
+      first.disarm();
+      // After disarm, further reads on the SAME proxy record nothing and return raw values.
+      expect(itemProxy.id).toBe(1);
+
+      const second = trackRender(state, interner, cache);
+      const reusedProxy = second.value.items[0];
+      expect(reusedProxy).toBe(itemProxy); // same proxy object, reused
+      void reusedProxy.id; // should record into the SECOND render's paths now
+      const strings = asPathStrings(second.paths, interner);
+      expect(strings).toContain('items.0.id');
+    } finally {
+      __setPersistTrackingProxies(null);
+    }
+  });
+
+  it('22. (PC6) two independent ProxyCache instances never cross-contaminate sessions', () => {
+    __setPersistTrackingProxies(true);
+    try {
+      const interner = new PathInterner();
+      const cacheA = new ProxyCache();
+      const cacheB = new ProxyCache();
+      const shared = { items: [{ id: 1 }] };
+
+      const rA1 = trackRender(shared, interner, cacheA);
+      void rA1.value.items[0].id;
+      const rB1 = trackRender(shared, interner, cacheB);
+      void rB1.value.items[0].id;
+
+      // Each cache's proxy for the same target+prefix is independent.
+      expect(rA1.value.items[0]).not.toBe(rB1.value.items[0]);
+
+      const rA2 = trackRender(shared, interner, cacheA);
+      // cacheA's second render reuses cacheA's own proxy, not cacheB's.
+      expect(rA2.value.items[0]).toBe(rA1.value.items[0]);
+      expect(rA2.value.items[0]).not.toBe(rB1.value.items[0]);
+
+      // cacheA's paths are populated only from reads through cacheA's proxies.
+      void rA2.value.items[0].id;
+      const stringsA = asPathStrings(rA2.paths, interner);
+      expect(stringsA).toContain('items.0.id');
+    } finally {
+      __setPersistTrackingProxies(null);
+    }
+  });
+
+  it('23. (PC7) explicitly disabling via the override prevents reuse regardless of the production default', () => {
+    __setPersistTrackingProxies(false);
+    try {
+      const interner = new PathInterner();
+      const cache = new ProxyCache();
+      const state = { items: [{ id: 1 }] };
+      const first = trackRender(state, interner, cache);
+      const second = trackRender(state, interner, cache);
+      expect(second.value.items[0]).not.toBe(first.value.items[0]);
+    } finally {
+      __setPersistTrackingProxies(null);
+    }
   });
 });

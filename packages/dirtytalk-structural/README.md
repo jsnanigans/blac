@@ -35,7 +35,11 @@ proportional to N.
   single-consumer-skip fires (or for opt-in blanket interest), making `intersects` unconditionally
   true without enumerating paths.
 - `trackRender` — Proxy-based per-consumer path recorder. Wraps state, records every field access
-  as an interned `PathId`, and returns the access set alongside the proxied value.
+  as an interned `PathId`, and returns the access set alongside the proxied value. Optionally
+  accepts a `ProxyCache` to reuse proxies across renders — see
+  [Cross-render proxy reuse](#cross-render-proxy-reuse-proxycache) below.
+- `ProxyCache` — opt-in, caller-owned cache that lets `trackRender` skip re-allocating a `Proxy`
+  for array items (or any nested value) that didn't change between renders.
 - `diffAlongSkeleton`, `pathsFromPatch`, `getAt` — diffing helpers. `pathsFromPatch` extracts
   dotted paths from a partial object; `diffAlongSkeleton` walks only the observed skeleton to find
   changed paths; `getAt` reads a value at a dotted path string.
@@ -130,7 +134,8 @@ required.
 | `ALL_PATHS`                       | Sentinel `PathSet` — `intersects` always returns true           |
 | `pathSetUnion`                    | Pure union of two `PathSet` values                              |
 | `pathSetEquals`                   | Equality check for two `PathSet` values                         |
-| `trackRender`                     | `(state, interner) => { value: S, paths: PathSet }`             |
+| `trackRender`                     | `(state, interner, proxyCache?) => { value: S, paths: PathSet }` |
+| `ProxyCache`                      | Opt-in cache: reuses proxies across `trackRender` calls          |
 | `raw`                             | `(v) => v` — unwrap a tracked proxy to its raw target           |
 | `diffAlongSkeleton`               | `(prev, next, skeleton, interner) => PathSet`                   |
 | `getAt`                           | `(obj, dottedPath) => unknown`                                  |
@@ -150,6 +155,52 @@ proxies. Two situations need `raw()` to unwrap them:
    recording into a stale `paths` set and breaks reference identity against the
    underlying state. Call `raw()` on anything stored or handed to code that
    expects the raw object.
+
+## Cross-render proxy reuse (ProxyCache)
+
+By default, `trackRender` allocates a brand-new `Proxy` for every object it touches, every single
+call. For a component that maps over a large array (`items.map(item => <Row key={item.id} .../>)`),
+that means a full re-render pays O(array length) proxy allocations even when almost every item is
+the exact same object reference as last render — e.g. reordering two rows in a 1000-row list still
+allocates ~1000 proxies for a change that only touched 2. `ProxyCache`, passed as `trackRender`'s
+optional third argument, fixes this: a `(target, prefix)` pair unchanged since the caller's last
+`trackRender` call reuses the same `Proxy` object instead of allocating a new one.
+
+```ts
+import { trackRender, ProxyCache } from '@dirtytalk/structural';
+
+// Scoped per call-site — e.g. one per component instance, created once and
+// reused across that component's renders (a React `useRef(new ProxyCache())`
+// is the typical home for it; see @blac/react's `useBloc` for a worked
+// example of wiring this into a hook).
+const proxyCache = new ProxyCache();
+
+function renderList(state: { items: Item[] }) {
+  const { value, paths, disarm } = trackRender(state, interner, proxyCache);
+  // ...read value.items, etc...
+  disarm();
+}
+```
+
+Key properties:
+
+- **Keyed by `(target, prefix)`, not target alone.** The same object read at two different paths in
+  one render (aliasing) still gets two independent proxies, exactly as the no-cache behavior
+  guarantees — only a genuine repeat read at the *same* path across calls is reused. This is also
+  why reordering an item to a brand-new index it has never occupied before still allocates a fresh
+  proxy for it: the `(target, prefix)` pair is new, so there's nothing to reuse. The win is
+  proportional to how many items keep their index across a render, which is exactly the common case
+  (a two-item swap in a 1000-item list reuses 998 proxies and allocates 2).
+- **Scope one `ProxyCache` per call-site, never globally or per-container.** An entry holds exactly
+  one live "session" (the render's `paths`/`armed` state) at a time; sharing a cache across two
+  independently-timed callers would let one caller's render silently repoint an entry the other
+  caller is still reading from. If a consumer tracks more than one independent thing per render
+  (e.g. a primary state plus a separate dependency), give each its own `ProxyCache`.
+- **No explicit eviction needed.** The cache is `WeakMap`-keyed by the target object, so entries for
+  objects no longer referenced anywhere else are collected normally.
+- **`disarm()`, `raw()`/`untracked()`, and removal all keep working unchanged.** A reused proxy still
+  unwraps to the same raw target via `raw()` regardless of how many renders old it is, and `disarm()`
+  still freezes exactly the entries touched by the render that called it.
 
 ## What it is not
 

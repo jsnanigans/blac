@@ -1,6 +1,8 @@
 import { bench, describe } from 'vite-plus/test';
 import { SyncScheduler } from '@dirtytalk/engine';
 import { StructuralContainer } from './container';
+import { trackRender, ProxyCache, __setPersistTrackingProxies } from './tracker';
+import { PathInterner } from './path-interner';
 
 /**
  * Micro-benchmarks for the `@dirtytalk/structural` emit/patch/consumer-registry
@@ -162,5 +164,56 @@ describe('P5 consumer-registry churn', () => {
     bench(`P5 register+unregister — N=${N}`, registryScenario(N), {
       time: 500,
     });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// PC1 — trackRender / ProxyCache (cross-render proxy reuse on array reorder)
+// ---------------------------------------------------------------------------
+
+function swapRowsScenario(n: number, persist: boolean): () => void {
+  const interner = new PathInterner();
+  const proxyCache = new ProxyCache();
+
+  const makeItems = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({ id: i, label: 'row' + i }));
+
+  const original = { data: makeItems(n) };
+  // Same item object references as `original`, with two positions swapped —
+  // mirrors the js-framework-benchmark "swap rows" operation (indices 1, 998
+  // for n=1000), matching apps/perf's swapRows exactly.
+  const swappedData = original.data.slice();
+  if (swappedData.length > 998) {
+    const tmp = swappedData[1];
+    swappedData[1] = swappedData[998];
+    swappedData[998] = tmp;
+  }
+  const swapped = { data: swappedData };
+
+  // Simulates the list component's render: read `.id` per item, as
+  // `key={item.id}` does in apps/perf/src/libraries/blac/FrameworkBenchmark.tsx.
+  const renderList = (state: typeof original): void => {
+    __setPersistTrackingProxies(persist);
+    const tracked = trackRender(state, interner, persist ? proxyCache : undefined);
+    for (const item of tracked.value.data) void item.id;
+    tracked.disarm();
+  };
+
+  renderList(original); // seed: first "render" always allocates fresh proxies
+
+  let flip = false;
+  return () => {
+    flip = !flip;
+    renderList(flip ? swapped : original);
+  };
+}
+
+describe('PC1 trackRender swap reuse', () => {
+  for (const persist of [false, true]) {
+    bench(
+      `PC1 swap 998/1000 unchanged — persist=${persist}`,
+      swapRowsScenario(1000, persist),
+      { time: 500 },
+    );
   }
 });

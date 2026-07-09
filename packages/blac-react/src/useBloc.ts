@@ -23,6 +23,7 @@ import {
   pathSetEquals,
   trackRender,
   PathInterner,
+  ProxyCache,
   type PathSet,
 } from '@dirtytalk/structural';
 import { useProvidedArgs } from './BlocProvider';
@@ -196,6 +197,7 @@ export function useBloc<
   // Per-handle wrapper cache, allocated once per bloc acquisition (in the memo)
   // so wrappers are stable across renders. handle -> session-bound wrapper.
   const depWrapperCacheRef = useRef<Map<object, unknown>>(new Map());
+  const proxyCacheRef = useRef(new ProxyCache());
   // Snapshot of the last FULL reconcile's shape, used by the layout-effect
   // below to short-circuit when nothing actually changed. `null` means "no
   // prior full run to compare against" (first commit, or the previous commit
@@ -477,6 +479,7 @@ export function useBloc<
     const tracked = trackRender(
       rawState,
       (bloc as unknown as StateContainer).interner,
+      proxyCacheRef.current,
     );
     state = tracked.value as ExtractState<T>;
     trackedStateRef.current = tracked.value;
@@ -798,6 +801,11 @@ function makeDepWrapper(
     StateContainer,
     { ref: { current: unknown }; proxy: StateContainer }
   >();
+  // One ProxyCache shared across every instance this handle resolves to
+  // (call-time args can resolve different dep instances across calls) — safe
+  // because ProxyCache's internal map is keyed by target object identity, so
+  // unrelated instances' objects never collide in it.
+  const proxyCache = new ProxyCache();
 
   const resolve = (options?: DepAccessOptionsLike) => {
     const args = options?.args ?? brand.defaultArgs;
@@ -829,7 +837,7 @@ function makeDepWrapper(
       // This keeps acquire/release paired so an uncommitted render can't leak a
       // dep ref (R4).
 
-      const tracked = trackRender(dep.state, dep.interner);
+      const tracked = trackRender(dep.state, dep.interner, proxyCache);
       let cache = perDep.get(dep);
       if (cache === undefined) {
         const ref = { current: tracked.value as unknown };
