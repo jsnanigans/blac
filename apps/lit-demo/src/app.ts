@@ -1,39 +1,39 @@
-import { component, html } from '@blac/lit';
-import { CounterCard, CounterBoard } from './counter.ui';
-import { TodoApp } from './todo.ui';
+import { html, select, match } from '@blac/lit';
+import { component } from './dev/component';
+import { RouterBloc, type Route } from './router/router.bloc';
+import { Nav } from './router/nav.ui';
+import { BasicsPage } from './basics.ui';
+import { MarketPage } from './market/market.ui';
 
-export const App = component(() => {
+export const App = component(RouterBloc, (r) => {
   return html`
     <main class="app">
       <header class="hero">
         <h1><span class="mark">@blac/lit</span></h1>
-        <p class="tagline">render-once · fine-grained · blac is the backend</p>
+        <p class="tagline">
+          render-once · fine-grained · watch what actually patches
+        </p>
       </header>
 
-      <section>
-        <h2>Shared instance</h2>
-        <p class="hint">
-          Both cards address the default instance — they move together.
-        </p>
-        <div class="board">${CounterCard()} ${CounterCard()}</div>
-      </section>
+      ${Nav()}
 
-      <section>
-        <h2>Isolated instances · nested components</h2>
-        <p class="hint">
-          Each card owns its own Counter, keyed by id. Clicking one never
-          touches another.
-        </p>
-        ${CounterBoard()}
-      </section>
-
-      <section>
-        <h2>Todo · each / model / when / nested rows</h2>
-        <p class="hint">
-          Every row is a nested component sharing one TodoBloc — no props
-          drilled, only an id.
-        </p>
-        ${TodoApp()}
+      <section class="page">
+        ${
+          // Each case is its OWN html template (distinct template identity), so
+          // lit tears down the previous page's ComponentDirective and builds the
+          // next one fresh. Returning the bare `Page()` directive here instead
+          // would let lit reuse the same ComponentDirective instance — whose
+          // render() short-circuits on `this.started` and returns the stale
+          // first page (the "only updates after reload" bug).
+          match(
+            select(r, (s: { path: Route }) => s.path),
+            {
+              basics: () => html`<div class="route">${BasicsPage()}</div>`,
+              market: () =>
+                html`<div class="route route--market">${MarketPage()}</div>`,
+            },
+          )
+        }
       </section>
     </main>
   `;

@@ -1,4 +1,6 @@
-import { component, html, each, when, model, select } from '@blac/lit';
+import { html, each, when, model, select } from '@blac/lit';
+import { component } from './dev/component';
+import { pulse } from './dev/pulse';
 import {
   TodoBloc,
   type Todo,
@@ -18,7 +20,7 @@ const TodoRow = component((ctx) => {
         .checked=${select(todo, (s: TodoState) => item(s)?.done ?? false)}
         @change=${() => todo.toggle(id)}
       />
-      <span class="todo__text"
+      <span class="todo__text" ${pulse()}
         >${select(todo, (s: TodoState) => item(s)?.text ?? '')}</span
       >
       <button class="ghost" @click=${() => todo.remove(id)} aria-label="remove">
@@ -54,7 +56,7 @@ export const TodoApp = component(TodoBloc, (t) => {
         select(t, (s: TodoState) => s.items.length > 0),
         () => html`
           <footer class="todo-footer">
-            <span
+            <span ${pulse()}
               >${select(t, (_s: TodoState, b: TodoBloc) => b.activeCount)}
               left</span
             >
