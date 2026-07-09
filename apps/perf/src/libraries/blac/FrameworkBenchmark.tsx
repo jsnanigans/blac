@@ -1,7 +1,7 @@
 import { Cubit, borrow } from "@blac/core";
 import { untracked, useBloc } from "@blac/react";
 import React, { memo, useEffect, useMemo } from "react";
-import { buildData, resetId } from "../../shared/data";
+import { buildData } from "../../shared/data";
 import type { BenchmarkAPI, DataItem } from "../../shared/types";
 
 interface DemoState {
@@ -15,12 +15,10 @@ class DemoBloc extends Cubit<DemoState> {
   }
 
   run = (): void => {
-    resetId();
     this.emit({ data: buildData(1000), selected: null });
   };
 
   runLots = (): void => {
-    resetId();
     this.emit({ data: buildData(10000), selected: null });
   };
 
@@ -106,6 +104,7 @@ export const BlacFrameworkBenchmark: React.FC<{
     <div className="container">
       <table className="table table-hover table-striped test-data">
         <tbody>
+          {/* adding untracked here prevents the child from registering new paths for reactive rerending, when the label or id change then the whole item is a new object */}
           {state.data.map((item) => (
             <Row key={item.id} item={untracked(item)} />
           ))}

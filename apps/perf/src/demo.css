@@ -60,6 +60,15 @@
   font-size: 14px;
 }
 
+/* TEMP diagnostic: default table-layout:auto forces the browser to rescan
+   every row's content to recompute column widths on any row content/order
+   change, a cost proportional to total rows regardless of how many actually
+   changed. Testing whether this (not JS/React work) dominates "Swap rows"
+   end-to-end time — revert if it doesn't help or the layout looks wrong. */
+.demo-page .table {
+  table-layout: fixed;
+}
+
 /* Override bootstrap's light-theme table to match the app's dark theme. */
 .demo-page .table > tbody > tr > td,
 .demo-page .table > tbody > tr > th {

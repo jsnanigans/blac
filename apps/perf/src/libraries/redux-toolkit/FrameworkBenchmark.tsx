@@ -5,7 +5,7 @@ import {
 } from '@reduxjs/toolkit';
 import React, { memo, useEffect, useRef } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
-import { buildData, resetId } from '../../shared/data';
+import { buildData } from '../../shared/data';
 import type { BenchmarkAPI, DataItem } from '../../shared/types';
 
 interface DemoState {
@@ -20,12 +20,10 @@ const demoSlice = createSlice({
   initialState,
   reducers: {
     run(state) {
-      resetId();
       state.data = buildData(1000);
       state.selected = null;
     },
     runLots(state) {
-      resetId();
       state.data = buildData(10000);
       state.selected = null;
     },

@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useRef } from 'react';
 import { createStore, useStore } from 'zustand';
-import { buildData, resetId } from '../../shared/data';
+import { buildData } from '../../shared/data';
 import type { BenchmarkAPI, DataItem } from '../../shared/types';
 
 interface DemoState {
@@ -22,12 +22,10 @@ function createDemoStore() {
     selected: null,
 
     run: () => {
-      resetId();
       set({ data: buildData(1000), selected: null });
     },
 
     runLots: () => {
-      resetId();
       set({ data: buildData(10000), selected: null });
     },
 
