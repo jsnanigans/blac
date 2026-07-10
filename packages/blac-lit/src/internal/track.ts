@@ -21,7 +21,8 @@ export interface Trackable {
       cb: (dirty: PathSet) => void,
     ): () => void;
   };
-  registerConsumerPaths?(id: string, paths: PathSet): void;
+  registerConsumerPaths(id: string, paths: PathSet): void;
+  unregisterConsumer(id: string): void;
 }
 
 export const asTrackable = (bloc: unknown): Trackable => bloc as Trackable;

@@ -1,7 +1,7 @@
 // Traced wrapper around @blac/lit's `component`: bumps devStats.bumpBody() on
 // every render-body execution. Everything in the demo imports `component` from
 // here (not from `@blac/lit`) so all component bodies get counted.
-import { component as litComponent, type Ctx } from '@blac/lit';
+import { component as litComponent, type BlocView, type Ctx } from '@blac/lit';
 import type { StateContainerConstructor, ExtractArgs } from '@blac/core';
 import { devStats } from './devStats';
 
@@ -9,7 +9,7 @@ export type { Ctx };
 
 export function component<T extends StateContainerConstructor>(
   Bloc: T,
-  render: (bloc: any, ctx: Ctx<ExtractArgs<T>>) => unknown,
+  render: (bloc: BlocView<T>, ctx: Ctx<ExtractArgs<T>>) => unknown,
 ): ReturnType<typeof litComponent>;
 export function component<A = unknown>(
   render: (ctx: Ctx<A>) => unknown,

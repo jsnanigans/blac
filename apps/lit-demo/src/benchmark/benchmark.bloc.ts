@@ -45,6 +45,7 @@ export class BenchmarkBloc extends Cubit<BenchmarkState> {
 
   remove = (id: number): void => {
     const idx = this.state.data.findIndex((d) => d.id === id);
+    if (idx < 0) return;
     this.patch(
       withIndex([
         ...this.state.data.slice(0, idx),

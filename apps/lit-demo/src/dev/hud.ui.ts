@@ -41,10 +41,10 @@ export const Hud = component((ctx) => {
     };
     rafId = requestAnimationFrame(tick);
 
-    ctx.onUnmount(() => {
+    return () => {
       unsubscribe();
       cancelAnimationFrame(rafId);
-    });
+    };
   });
 
   return html`

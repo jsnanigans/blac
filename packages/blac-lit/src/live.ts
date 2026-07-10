@@ -1,15 +1,12 @@
 import { directive, type DirectiveResult } from 'lit-html/directive.js';
 import { AsyncDirective } from 'lit-html/async-directive.js';
-import type { StateContainer } from '@blac/core';
-import {
-  asTrackable,
-  expandWithAncestors,
-  trackedBloc,
-  trackRender,
-  ProxyCache,
-  emptyPathSet,
-  type PathSet,
-} from './internal/track';
+import type {
+  ExtractState,
+  InstanceReadonlyState,
+  StateContainer,
+  StateContainerConstructor,
+} from '@blac/core';
+import { BindingSession } from './internal/binding-session';
 
 export type ReadFn<S = any, T = unknown> = (state: S, bloc: any) => T;
 export type ProjectFn = (value: any) => unknown;
@@ -22,48 +19,45 @@ export interface Binding<T = unknown> extends DirectiveResult {
   map<U>(fn: (value: T) => U): Binding<U>;
 }
 
+/**
+ * The reactive state surface exposed as `view.$`.
+ *
+ * This intentionally types the common top-level state-path case. Nested
+ * path inference is a separate ergonomic enhancement; every declared state
+ * key still produces the Binding for that key's actual value type.
+ */
+export type ReactiveState<S extends object> = {
+  readonly [K in keyof S]: Binding<S[K]>;
+};
+
+/** A live bloc instance augmented with its reactive `.$` state view. */
+export type BlocView<T extends StateContainerConstructor> =
+  InstanceReadonlyState<T> & {
+    readonly $: ReactiveState<ExtractState<T>>;
+  };
+
 class BindDirective extends AsyncDirective {
-  private cache = new ProxyCache();
-  private unsub?: () => void;
-  private interest: PathSet = emptyPathSet();
-  private bloc!: StateContainer;
   private readFn!: ReadFn;
   private project?: ProjectFn;
+  private readonly session = new BindingSession<unknown>((value) => {
+    this.setValue(this.project ? this.project(value) : value);
+  });
 
   render(bloc: StateContainer, readFn: ReadFn, project?: ProjectFn): unknown {
-    this.bloc = bloc;
     this.readFn = readFn;
     this.project = project;
-    const out = this.compute();
-    if (this.isConnected && !this.unsub) this.subscribe();
-    return out;
-  }
-
-  private compute(): unknown {
-    const t = asTrackable(this.bloc);
-    const tracked = trackRender(t.state, t.interner, this.cache);
-    const value = this.readFn(
-      tracked.value,
-      trackedBloc(this.bloc, tracked.value),
+    const value = this.session.compute(bloc, (state, trackedBloc) =>
+      this.readFn(state, trackedBloc),
     );
-    queueMicrotask(tracked.disarm);
-    this.interest = expandWithAncestors(tracked.paths, t.interner);
+    if (this.isConnected) this.session.connect();
     return this.project ? this.project(value) : value;
   }
 
-  private subscribe(): void {
-    this.unsub = asTrackable(this.bloc).channel.subscribe(
-      () => this.interest,
-      () => this.setValue(this.compute()),
-    );
-  }
-
   protected disconnected(): void {
-    this.unsub?.();
-    this.unsub = undefined;
+    this.session.disconnect();
   }
   protected reconnected(): void {
-    this.subscribe();
+    this.session.reconnect();
   }
 }
 

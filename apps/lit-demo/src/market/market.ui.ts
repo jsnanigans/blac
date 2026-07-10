@@ -43,8 +43,10 @@ const MarketRow = component<{ symbol: string; name: string; index: number }>(
 );
 
 export const MarketPage = component(MarketBloc, (m, ctx) => {
-  ctx.onMount(() => m.start());
-  ctx.onUnmount(() => m.stop());
+  ctx.onMount(() => {
+    m.start();
+    return () => m.stop();
+  });
   return html`
     <div class="page">
       <div class="market-toolbar">

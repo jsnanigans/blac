@@ -20,20 +20,12 @@ export const App = component(RouterBloc, (r) => {
 
       <section class="page">
         ${
-          // Each case is its OWN html template (distinct template identity), so
-          // lit tears down the previous page's ComponentDirective and builds the
-          // next one fresh. Returning the bare `Page()` directive here instead
-          // would let lit reuse the same ComponentDirective instance — whose
-          // render() short-circuits on `this.started` and returns the stale
-          // first page (the "only updates after reload" bug).
           match(
             select(r, (s: { path: Route }) => s.path),
             {
-              basics: () => html`<div class="route">${BasicsPage()}</div>`,
-              market: () =>
-                html`<div class="route route--market">${MarketPage()}</div>`,
-              benchmark: () =>
-                html`<div class="route route--benchmark">${BenchmarkPage()}</div>`,
+              basics: () => BasicsPage(),
+              market: () => MarketPage(),
+              benchmark: () => BenchmarkPage(),
             },
           )
         }

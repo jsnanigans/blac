@@ -6,7 +6,15 @@ export { component, type Ctx, type ComponentFactory } from './component';
 export { mount, type MountHandle } from './mount';
 
 // Reactive reads.
-export { select, isBinding, bind, type Binding, type ReadFn } from './live';
+export {
+  select,
+  isBinding,
+  bind,
+  type Binding,
+  type BlocView,
+  type ReactiveState,
+  type ReadFn,
+} from './live';
 
 // Control flow.
 export { when, each, match } from './control-flow';
