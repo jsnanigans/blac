@@ -1,5 +1,15 @@
 # @blac/react
 
+## 2.0.19
+
+### Patch Changes
+
+- Fix bloc ownership pairing in effects to close a mount-gap where an owned instance could be released before a re-render reacquired it. Skip unchanged dependency reconciliation and cache the args key to reduce per-render work.
+- Updated dependencies
+- Updated dependencies
+  - @blac/core@2.0.19
+  - @dirtytalk/structural@0.0.7
+
 ## 2.0.18
 
 ### Patch Changes

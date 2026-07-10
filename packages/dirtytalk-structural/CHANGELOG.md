@@ -1,5 +1,13 @@
 # @dirtytalk/structural
 
+## 0.0.7
+
+### Patch Changes
+
+- Fix tracker aliasing/frozen-object/enumeration edge cases and ensure precise emit on off-skeleton wakes for `ALL_PATHS` subscribers. Add a `ProxyCache` for cross-render proxy reuse, a segment cache with integer ancestor lookup, a union fast-path with closureless refine and lazy prefix/equals memoization, and skip patch diffing when there are no consumers.
+- Updated dependencies
+  - @dirtytalk/engine@0.1.0
+
 ## 0.0.6
 
 ### Patch Changes

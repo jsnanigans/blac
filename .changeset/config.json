@@ -11,6 +11,8 @@
     "@blac/devtools-extension",
     "@blac/web-docs",
     "examples",
-    "perf"
+    "perf",
+    "@blac/lit",
+    "lit-demo"
   ]
 }

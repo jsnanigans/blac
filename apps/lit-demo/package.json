@@ -2,7 +2,9 @@
   "name": "lit-demo",
   "version": "1.0.0",
   "private": true,
-  "publishConfig": { "access": "restricted" },
+  "publishConfig": {
+    "access": "restricted"
+  },
   "type": "module",
   "scripts": {
     "format": "vp fmt src",

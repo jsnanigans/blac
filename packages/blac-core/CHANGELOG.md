@@ -1,5 +1,13 @@
 # @blac/core
 
+## 2.0.19
+
+### Patch Changes
+
+- Fix `onHydrationChange` plugin hook dispatch and make `watch()` forward args, hold a ref, and resubscribe on dispose. Raise default instance/ref/emit ceilings, and build the plugin context once per dispatch instead of per hook call for lower overhead.
+- Updated dependencies
+  - @dirtytalk/structural@0.0.7
+
 ## 2.0.18
 
 ### Patch Changes

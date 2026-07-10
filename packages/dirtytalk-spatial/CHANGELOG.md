@@ -1,5 +1,12 @@
 # @dirtytalk/spatial
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @dirtytalk/engine@0.1.0
+
 ## 0.0.4
 
 ### Patch Changes
