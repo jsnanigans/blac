@@ -58,7 +58,7 @@ export const MarketPage = component(MarketBloc, (m, ctx) => {
           min="60"
           max="6000"
           step="60"
-          ${model(m.$.ratePerSec, (v: string) => m.setRate(+v))}
+          ${model(m.$.ratePerSec, (v: number) => m.setRate(v))}
         />
         <span ${pulse()}
           >${select(m, (s: MarketState) => s.ratePerSec)} ticks/sec</span

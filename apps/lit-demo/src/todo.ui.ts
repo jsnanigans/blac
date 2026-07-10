@@ -46,7 +46,7 @@ export const TodoApp = component(TodoBloc, (t) => {
 
       <ul class="todo-list">
         ${each(
-          select(t, (_s: TodoState, b: TodoBloc) => b.visible),
+          select(t, (_s, b) => b.visible),
           (item: Todo) => TodoRow({ id: item.id }),
           (item: Todo) => item.id,
         )}
@@ -57,7 +57,7 @@ export const TodoApp = component(TodoBloc, (t) => {
         () => html`
           <footer class="todo-footer">
             <span ${pulse()}
-              >${select(t, (_s: TodoState, b: TodoBloc) => b.activeCount)}
+              >${select(t, (_s, b) => b.activeCount)}
               left</span
             >
             <span class="filters">

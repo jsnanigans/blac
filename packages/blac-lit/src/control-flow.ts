@@ -3,7 +3,7 @@ import { directive } from 'lit-html/directive.js';
 import { AsyncDirective } from 'lit-html/async-directive.js';
 import { repeat } from 'lit-html/directives/repeat.js';
 import type { StateContainer } from '@blac/core';
-import { bind, type Binding } from './live';
+import { bind, getBindingMeta, type Binding } from './live';
 import { BindingSession } from './internal/binding-session';
 
 /** Swap templates on a boolean-ish Binding. */
@@ -12,7 +12,8 @@ export function when(
   then: () => unknown,
   otherwise?: () => unknown,
 ): unknown {
-  return bind(condition.bloc, condition.read, (v) =>
+  const { bloc, read } = getBindingMeta(condition);
+  return bind(bloc, read, (v) =>
     v ? then() : otherwise ? otherwise() : nothing,
   );
 }
@@ -114,9 +115,10 @@ export function each<T>(
   renderItem: (item: T, index: number) => unknown,
   key?: (item: T, index: number) => unknown,
 ): unknown {
+  const { bloc, read } = getBindingMeta(list);
   return eachDirective(
-    list.bloc,
-    list.read as (state: unknown, bloc: unknown) => readonly unknown[],
+    bloc,
+    read as (state: unknown, bloc: unknown) => readonly unknown[],
     renderItem as RenderItem,
     key as KeyFn | undefined,
   );
@@ -125,10 +127,20 @@ export function each<T>(
 /** Switch on a Binding's value. */
 export function match<K extends string | number>(
   selector: Binding<K>,
+  cases: Record<K, () => unknown>,
+): unknown;
+export function match<K extends string | number>(
+  selector: Binding<K>,
+  cases: Partial<Record<K, () => unknown>>,
+  fallback: () => unknown,
+): unknown;
+export function match<K extends string | number>(
+  selector: Binding<K>,
   cases: Partial<Record<K, () => unknown>>,
   fallback?: () => unknown,
 ): unknown {
-  return bind(selector.bloc, selector.read, (v: K) => {
+  const { bloc, read } = getBindingMeta(selector);
+  return bind(bloc, read, (v: K) => {
     const c = cases[v];
     return c ? c() : fallback ? fallback() : nothing;
   });

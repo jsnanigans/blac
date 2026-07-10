@@ -18,8 +18,22 @@ const nextLocalKey = () => `blac-lit-local:${(counter += 1)}`;
 type Cleanup = () => void;
 type MountSetup = () => void | Cleanup;
 
+/** A component's args param: required when `A` is a required args type, optional otherwise, absent when `A` is `void`. */
+type ArgsParam<A> = [A] extends [void]
+  ? []
+  : undefined extends A
+    ? [args?: A]
+    : [args: A];
+
+/** `ctx.args`'s type: mirrors `ArgsParam`, so a required args type is never `| undefined` inside the body. */
+type CtxArgs<A> = [A] extends [void]
+  ? undefined
+  : undefined extends A
+    ? A | undefined
+    : A;
+
 export interface Ctx<A = any> {
-  readonly args: A | undefined;
+  readonly args: CtxArgs<A>;
   use<T extends StateContainerConstructor>(
     Bloc: T,
     opts?: { args?: ExtractArgs<T> },
@@ -468,9 +482,9 @@ class ComponentDirective extends AsyncDirective {
 const componentDirective = directive(ComponentDirective);
 
 export interface ComponentFactory<A> {
-  (args?: A): unknown;
+  (...args: ArgsParam<A>): unknown;
   /** A fresh, mount-private instance under a unique key. */
-  local(args?: A): unknown;
+  local(...args: ArgsParam<A>): unknown;
 }
 
 // Overloads: bound component vs pure component.

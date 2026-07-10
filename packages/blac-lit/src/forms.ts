@@ -2,7 +2,7 @@ import { nothing } from 'lit-html';
 import { directive, type ElementPart } from 'lit-html/directive.js';
 import { AsyncDirective } from 'lit-html/async-directive.js';
 import { BindingSession } from './internal/binding-session';
-import type { Binding } from './live';
+import { getBindingMeta, type Binding } from './live';
 
 type Settable = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 type WriteEvent = 'input' | 'change';
@@ -53,12 +53,18 @@ class ModelDirective extends AsyncDirective {
   private readonly listener = (event: Event) => {
     const element = event.currentTarget;
     if (!isSettableElement(element)) return;
-    this.setter(
-      element.localName.toLowerCase() === 'input' &&
-        (element as HTMLInputElement).type === 'checkbox'
-        ? (element as HTMLInputElement).checked
-        : element.value,
-    );
+    if (element.localName.toLowerCase() === 'input') {
+      const input = element as HTMLInputElement;
+      if (input.type === 'checkbox') {
+        this.setter(input.checked);
+        return;
+      }
+      if (input.type === 'number' || input.type === 'range') {
+        this.setter(input.valueAsNumber);
+        return;
+      }
+    }
+    this.setter(element.value);
   };
   private readonly session = new BindingSession<unknown>((value) => {
     this.applyValue(value);
@@ -74,7 +80,8 @@ class ModelDirective extends AsyncDirective {
   ): unknown {
     this.setter = setter;
     this.setElement(modelElement(part));
-    const value = this.session.compute(binding.bloc, binding.read);
+    const { bloc, read } = getBindingMeta(binding);
+    const value = this.session.compute(bloc, read);
     if (this.isConnected) this.session.connect();
     this.applyValue(value);
     return nothing;
@@ -128,6 +135,9 @@ class ModelDirective extends AsyncDirective {
 const modelDirective = directive(ModelDirective);
 
 /** Two-way bind: reads into the element, writes via its default control event. */
-export function model(binding: Binding, setter: (value: any) => void): unknown {
+export function model<T>(
+  binding: Binding<T>,
+  setter: (value: T) => void,
+): unknown {
   return modelDirective(binding, setter);
 }

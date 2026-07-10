@@ -154,7 +154,7 @@ html`
 component(CartBloc, (cart, ctx) => {
   const user = ctx.use(UserBloc); // consume another bloc (ref-counted for this component)
   ctx.onMount(() => cart.refresh());
-  ctx.effect(() => console.log(cart.$.total)); // autorun: re-runs when read paths change (bridges `watch`)
+  ctx.effect(cart, () => console.log(cart.$.total)); // autorun: re-runs on any change to `cart`
   return html`<h1>${user.$.name}'s cart · ${cart.$.total}</h1>`;
 });
 ```
@@ -549,7 +549,7 @@ export const live = directive(LiveDirective);
 - **`select` / `bloc.$`** → `live(bloc, readFn)`. The `$` proxy just records the property-access chain into a `readFn` and hands it to `live`.
 - **`component`** → `acquire(Bloc, key, args)` on entry (registry ref++), run body once, `release` when the host part disconnects. Reuses `acquire`/`release`/`resolveInstanceKey` from `@blac/core`'s registry — the same functions `@blac/react` uses.
 - **`each`** → `live` producing the array + lit-html's `repeat` directive for keyed reconciliation.
-- **`ctx.effect`** → `watch(bloc, fn)` from `@blac/core/watch`, torn down on disconnect.
+- **`ctx.effect`** → `bloc.channel.subscribe(() => ALL_PATHS, fn)` directly, torn down on disconnect.
 - **`model`** → `live` for the value + a plain event listener calling the setter.
 
 No new reactivity. No vdom. The binding is glue between two things blac already exposes (`track` + `subscribe`/`acquire`) and two things lit already exposes (`AsyncDirective` + `repeat`).
@@ -570,7 +570,7 @@ packages/blac-lit/
     attrs.ts            # classes / styles
 ```
 
-**Exports mirror `@blac/react`'s conventions** (a `configureBlacLit`, a testing entry) so the two bindings feel like siblings. Target size budget: **≤ 2 kB brotli** on top of lit-html.
+**Exports mirror `@blac/react`'s conventions** (a testing entry) so the two bindings feel like siblings. There is no `configureBlacLit` — the package has no global config surface. Target size budget: **≤ 2 kB brotli** on top of lit-html.
 
 ### v1 implementation status (shipped)
 
@@ -579,10 +579,10 @@ Implemented and typecheck-clean; the `apps/lit-demo` app runs against it:
 - `component(Bloc?, render)` + `.local()`, `mount()` — acquire/release wired to lit directive `disconnected`/`reconnected`.
 - `select(bloc, fn)`, the `bloc.$` state-path proxy, `Binding` (+`.map`), `bind` (low-level).
 - `when` / `each` (keyed via lit `repeat`) / `match`, and `model` (two-way input).
-- `ctx`: `args`, `use`, `onMount`, `onUnmount`, and `effect(bloc, fn)` (coarse — re-runs on any change to the given bloc, via core `watch`).
+- `ctx`: `args`, `use`, `onMount`, `onUnmount`, and `effect(bloc, fn)` (coarse — re-runs on any change to the given bloc, via a direct channel subscription).
 - The reactive hole reuses `trackRender` → `channel.subscribe`, with `expandWithAncestors` **ported verbatim** from `@blac/react`.
 
-Files: `src/{component,live,control-flow,forms,mount,config,index}.ts` + `src/internal/track.ts` (no `attrs.ts` yet — see deferred).
+Files: `src/{component,live,control-flow,forms,mount,index}.ts` + `src/internal/track.ts` (no `attrs.ts` yet — see deferred).
 
 **Deferred (design lists them; not in v1):**
 

@@ -13,11 +13,34 @@ export type ProjectFn = (value: any) => unknown;
 
 /** A reactive value bound to a bloc. Renderable directly AND chainable via .map. */
 export interface Binding<T = unknown> extends DirectiveResult {
-  readonly __blacBinding: true;
-  readonly bloc: StateContainer;
-  readonly read: ReadFn<any, T>;
   map<U>(fn: (value: T) => U): Binding<U>;
 }
+
+/** @internal Binding source/reader metadata, kept off the public Binding surface. */
+export interface BindingMeta<T> {
+  bloc: StateContainer;
+  read: ReadFn<any, T>;
+}
+
+const bindingMeta = new WeakMap<object, BindingMeta<any>>();
+
+/** @internal Look up the bloc/read pair backing a Binding produced by this module. */
+export function getBindingMeta<T>(binding: Binding<T>): BindingMeta<T> {
+  const meta = bindingMeta.get(binding as object);
+  if (!meta) {
+    throw new Error(
+      'getBindingMeta: value is not a Binding produced by @blac/lit.',
+    );
+  }
+  return meta;
+}
+
+/**
+ * Anything that exposes a readonly `state` — a raw {@link StateContainer} or the
+ * {@link BlocView} handed to a `component` render / returned by `ctx.use`. `select`
+ * accepts either and infers the state type from `.state`.
+ */
+type StatefulSource = { readonly state: unknown };
 
 /**
  * The reactive state surface exposed as `view.$`.
@@ -77,28 +100,28 @@ function makeBinding<T>(
   readFn: ReadFn<any, T>,
 ): Binding<T> {
   const result = bind(bloc, readFn) as DirectiveResult;
-  return Object.assign(result, {
-    __blacBinding: true as const,
-    bloc,
-    read: readFn,
+  const binding = Object.assign(result, {
     map<U>(fn: (v: T) => U): Binding<U> {
       return makeBinding<U>(bloc, (s, b) => fn(readFn(s, b)));
     },
   }) as Binding<T>;
+  bindingMeta.set(binding, { bloc, read: readFn });
+  return binding;
 }
 
 /** Reactive selector: subscribes to exactly the paths the read touches (getters included). */
-export function select<S = any, T = unknown>(
-  bloc: StateContainer,
-  readFn: (state: S, bloc: any) => T,
-): Binding<T> {
-  return makeBinding<T>(bloc, readFn as ReadFn<any, T>);
+export function select<B extends StatefulSource, R>(
+  bloc: B,
+  readFn: (state: B['state'], bloc: B) => R,
+): Binding<R> {
+  return makeBinding<R>(
+    bloc as unknown as StateContainer,
+    readFn as unknown as ReadFn<any, R>,
+  );
 }
 
 export function isBinding(v: unknown): v is Binding {
-  return (
-    typeof v === 'object' && v !== null && (v as any).__blacBinding === true
-  );
+  return typeof v === 'object' && v !== null && bindingMeta.has(v as object);
 }
 
 /**
@@ -118,9 +141,6 @@ export function reactive(bloc: StateContainer): any {
         if (
           prop === '_$litDirective$' ||
           prop === 'values' ||
-          prop === '__blacBinding' ||
-          prop === 'bloc' ||
-          prop === 'read' ||
           prop === 'map' ||
           typeof prop === 'symbol'
         ) {

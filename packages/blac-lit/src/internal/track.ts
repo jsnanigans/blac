@@ -6,6 +6,7 @@ import {
   type PathSet,
   type PathInterner,
 } from '@dirtytalk/structural';
+import { DEP_BRAND } from '@blac/core';
 
 /**
  * Runtime members of a blac StateContainer that the binding relies on. The
@@ -79,6 +80,23 @@ export function expandWithAncestors(
   return expanded;
 }
 
+/** A value is a branded depend() handle. Detection is by symbol only. */
+export function isDepHandle(v: unknown): v is object {
+  return (
+    v !== null &&
+    (typeof v === 'object' || typeof v === 'function') &&
+    (v as Record<symbol, unknown>)[DEP_BRAND] !== undefined
+  );
+}
+
+/** Union two PathSets (ALL_PATHS dominates). Mirror of useBloc.ts unionPaths. */
+export function unionPaths(a: PathSet, b: PathSet): PathSet {
+  if (a === ALL_PATHS || b === ALL_PATHS) return ALL_PATHS;
+  const out = new Set<number>(a as Set<number>);
+  for (const id of b as Set<number>) out.add(id);
+  return out;
+}
+
 /**
  * A tracked view of a bloc so prototype getters record their real state deps.
  * Reading `.state` returns the tracking proxy; getters invoked with this proxy
@@ -87,14 +105,21 @@ export function expandWithAncestors(
 export function trackedBloc<B extends object>(
   bloc: B,
   trackedState: unknown,
+  onDepHandle?: (handle: object) => unknown,
 ): B {
   return new Proxy(bloc, {
     get(target, prop, receiver) {
       if (prop === 'state') return trackedState;
-      return Reflect.get(target, prop, receiver);
+      const value = Reflect.get(target, prop, receiver);
+      // A branded dep handle read off `this` (e.g. `this.getOther`) is routed
+      // through onDepHandle so the current binding's session can wrap .track().
+      if (onDepHandle !== undefined && isDepHandle(value)) {
+        return onDepHandle(value as object);
+      }
+      return value;
     },
   }) as B;
 }
 
-export { trackRender, ProxyCache, ALL_PATHS, emptyPathSet };
+export { trackRender, ProxyCache, ALL_PATHS, emptyPathSet, DEP_BRAND };
 export type { PathSet, PathInterner };

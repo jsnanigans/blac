@@ -21,6 +21,3 @@ export { when, each, match } from './control-flow';
 
 // Forms.
 export { model } from './forms';
-
-// Config.
-export { configureBlacLit, type BlacLitConfig } from './config';

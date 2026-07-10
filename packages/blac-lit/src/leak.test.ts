@@ -80,12 +80,9 @@ describe('blac-lit create/clear leak harness', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
 
-    const Row = component(
-      RowBloc,
-      (bloc: RowBloc, _ctx: Ctx<{ id: number }>) => {
-        return html`<div>${select(bloc, (s) => s.id)}</div>`;
-      },
-    );
+    const Row = component(RowBloc, (bloc) => {
+      return html`<div>${select(bloc, (s) => s.id)}</div>`;
+    });
 
     const handle = mount(
       each(
@@ -253,7 +250,7 @@ describe('blac-lit create/clear leak harness', () => {
     document.body.appendChild(container);
     const Row = component(
       RowBloc,
-      (bloc: RowBloc) => html`<div>${select(bloc, (s) => s.id)}</div>`,
+      (bloc) => html`<div>${select(bloc, (s) => s.id)}</div>`,
     );
     const handle = mount(
       each(
@@ -320,7 +317,7 @@ describe('blac-lit create/clear leak harness', () => {
     document.body.appendChild(container);
     const Row = component(
       RowBloc,
-      (bloc: RowBloc) => html`<div>${select(bloc, (s) => s.id)}</div>`,
+      (bloc) => html`<div>${select(bloc, (s) => s.id)}</div>`,
     );
     const handle = mount(
       each(
@@ -360,7 +357,7 @@ describe('blac-lit create/clear leak harness', () => {
     document.body.appendChild(container);
     const Row = component(
       RowBloc,
-      (bloc: RowBloc) => html`<div>${select(bloc, (s) => s.id)}</div>`,
+      (bloc) => html`<div>${select(bloc, (s) => s.id)}</div>`,
     );
     const handle = mount(
       each(
