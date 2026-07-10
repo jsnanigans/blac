@@ -17,6 +17,15 @@ import {
 
 let sessionCounter = 0;
 let depRefCounter = 0;
+let recomputeCount = 0;
+
+/** @internal test-only: real (non-memoized) computeCurrent invocations. */
+export const __recomputeProbe = {
+  count: (): number => recomputeCount,
+  reset: (): void => {
+    recomputeCount = 0;
+  },
+};
 
 const nextConsumerId = () => `blac-lit-binding@${(sessionCounter += 1)}`;
 const nextDepRefId = () => `blac-lit-dep@${(depRefCounter += 1)}`;
@@ -71,6 +80,18 @@ export class BindingSession<T> {
   private reader?: Reader<T>;
   private connected = false;
 
+  // Per-tick recompute memo: two paths funnel into `computeCurrent` within
+  // the same flush (the `each`/`repeat` re-commit AND this session's own
+  // channel subscription callback). Both run against the SAME state
+  // snapshot, so the second is redundant work. The memo is valid only when
+  // EVERY tracked container (primary + all deps) is still byref-identical to
+  // what the last real compute saw, AND the reader identity is unchanged —
+  // keying on all of them (not just the primary) is what keeps a cross-bloc
+  // `depend()` change correct even when the primary hasn't moved.
+  private lastValue?: T;
+  private lastReader?: Reader<T>;
+  private memoValid = false;
+
   // Per-compute scratch, only meaningful while the reader runs (see
   // `computeCurrent`/`onDepHandle`).
   private trackingActive = false;
@@ -100,6 +121,11 @@ export class BindingSession<T> {
         acquired: false,
         refId: '',
       };
+      // A new primary invalidates the memo — the old snapshots refer to a
+      // container this session no longer tracks.
+      this.memoValid = false;
+      this.lastValue = undefined;
+      this.lastReader = undefined;
     }
 
     this.reader = reader;
@@ -127,6 +153,9 @@ export class BindingSession<T> {
   disconnect(): void {
     this.connected = false;
     this.detachAll();
+    this.memoValid = false;
+    this.lastValue = undefined;
+    this.lastReader = undefined;
   }
 
   private computeCurrent(): T {
@@ -138,6 +167,27 @@ export class BindingSession<T> {
       );
     }
     const source = primary.container;
+
+    // Memo short-circuit: if the reader identity and every tracked
+    // container's live state (primary + all deps) are byref-identical to
+    // what the last real compute saw, the result is provably unchanged —
+    // return it without re-running the reader or re-touching registration.
+    if (
+      this.memoValid &&
+      reader === this.lastReader &&
+      primary.snapshot === asTrackable(source).state
+    ) {
+      let depsUnchanged = true;
+      for (const rec of this.deps.values()) {
+        if (rec.snapshot !== asTrackable(rec.container).state) {
+          depsUnchanged = false;
+          break;
+        }
+      }
+      if (depsUnchanged) return this.lastValue as T;
+    }
+
+    recomputeCount += 1;
 
     const trackable = asTrackable(source);
     const snapshot = trackable.state;
@@ -181,6 +231,10 @@ export class BindingSession<T> {
     if (primary.unsubscribe) this.registerPaths(primary);
 
     this.reconcileDeps(pending);
+
+    this.lastReader = reader;
+    this.lastValue = value;
+    this.memoValid = true;
     return value;
   }
 
@@ -280,6 +334,9 @@ export class BindingSession<T> {
       if (rec) {
         rec.paths = p.paths;
         rec.interest = interest;
+        // This compute just read this dep's live state — stamp it so the
+        // memo key stays complete for the next `computeCurrent`.
+        rec.snapshot = asTrackable(container).state;
         if (rec.unsubscribe) t.registerConsumerPaths(this.consumerId, p.paths);
         continue;
       }
@@ -296,6 +353,7 @@ export class BindingSession<T> {
         Type: p.Type,
         key: p.key,
         args: p.args,
+        snapshot: asTrackable(container).state,
       };
       this.deps.set(container, fresh);
       // Only wire up when already connected/subscribed; otherwise `attach()`
@@ -443,5 +501,8 @@ export class BindingSession<T> {
       // registered here.
     }
     this.resetInterest();
+    this.memoValid = false;
+    this.lastValue = undefined;
+    this.lastReader = undefined;
   }
 }

@@ -1,71 +1,102 @@
 import { Cubit } from '@blac/core';
 import { buildData, type DataItem } from './data';
 
-export interface BenchmarkState {
-  data: DataItem[];
-  indexById: Map<number, number>;
-  selected: number | null;
+export interface Row {
+  id: number;
+  label: string;
+  selected: boolean;
 }
 
-function withIndex(
-  data: DataItem[],
-): Pick<BenchmarkState, 'data' | 'indexById'> {
-  return { data, indexById: new Map(data.map((d, i) => [d.id, i])) };
+export interface BenchmarkState {
+  order: number[];
+  byId: Record<number, Row>;
+}
+
+function buildRows(items: DataItem[]): Pick<BenchmarkState, 'order' | 'byId'> {
+  const order: number[] = [];
+  const byId: Record<number, Row> = {};
+  for (const item of items) {
+    order.push(item.id);
+    byId[item.id] = { id: item.id, label: item.label, selected: false };
+  }
+  return { order, byId };
 }
 
 export class BenchmarkBloc extends Cubit<BenchmarkState> {
+  #selectedId: number | null = null;
+
   constructor() {
-    super({ data: [], indexById: new Map(), selected: null });
+    super({ order: [], byId: {} });
   }
 
   run = (): void => {
-    this.emit({ ...withIndex(buildData(1000)), selected: null });
+    this.#selectedId = null;
+    this.emit(buildRows(buildData(1000)));
   };
 
   runLots = (): void => {
-    this.emit({ ...withIndex(buildData(10000)), selected: null });
+    this.#selectedId = null;
+    this.emit(buildRows(buildData(10000)));
   };
 
   add = (): void => {
-    this.patch(withIndex([...this.state.data, ...buildData(1000)]));
+    const newItems = buildData(1000);
+    const byId = { ...this.state.byId };
+    for (const item of newItems) {
+      byId[item.id] = { id: item.id, label: item.label, selected: false };
+    }
+    this.patch({
+      order: [...this.state.order, ...newItems.map((d) => d.id)],
+      byId,
+    });
   };
 
   updateEveryTenth = (): void => {
-    const newData = this.state.data.slice(0);
-    for (let i = 0, len = newData.length; i < len; i += 10) {
-      const r = newData[i];
-      newData[i] = { id: r.id, label: r.label + ' !!!' };
+    const { order, byId: oldById } = this.state;
+    const byId = { ...oldById };
+    for (let i = 0, len = order.length; i < len; i += 10) {
+      const id = order[i];
+      const row = oldById[id];
+      if (row) byId[id] = { ...row, label: row.label + ' !!!' };
     }
-    this.patch(withIndex(newData));
+    this.patch({ byId });
   };
 
   select = (id: number): void => {
-    this.patch({ selected: id });
+    const byId = { ...this.state.byId };
+    const prevId = this.#selectedId;
+    if (prevId !== null && byId[prevId]) {
+      byId[prevId] = { ...byId[prevId], selected: false };
+    }
+    if (byId[id]) {
+      byId[id] = { ...byId[id], selected: true };
+    }
+    this.#selectedId = id;
+    this.patch({ byId });
   };
 
   remove = (id: number): void => {
-    const idx = this.state.data.findIndex((d) => d.id === id);
-    if (idx < 0) return;
-    this.patch(
-      withIndex([
-        ...this.state.data.slice(0, idx),
-        ...this.state.data.slice(idx + 1),
-      ]),
-    );
+    if (!this.state.byId[id]) return;
+    const order = this.state.order.filter((rowId) => rowId !== id);
+    const byId = { ...this.state.byId };
+    delete byId[id];
+    if (this.#selectedId === id) this.#selectedId = null;
+    this.patch({ order, byId });
   };
 
   clear = (): void => {
-    this.emit({ data: [], indexById: new Map(), selected: null });
+    this.#selectedId = null;
+    this.emit({ order: [], byId: {} });
   };
 
   swapRows = (): void => {
-    const d = this.state.data.slice(0);
-    if (d.length > 998) {
-      const tmp = d[1];
-      d[1] = d[998];
-      d[998] = tmp;
+    const order = this.state.order.slice(0);
+    if (order.length > 998) {
+      const tmp = order[1];
+      order[1] = order[998];
+      order[998] = tmp;
     }
-    this.patch(withIndex(d));
+    this.patch({ order });
   };
 }
 

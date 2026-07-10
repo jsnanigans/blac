@@ -1,4 +1,4 @@
-import { html, nothing } from 'lit-html';
+import { html, noChange, nothing } from 'lit-html';
 import { directive } from 'lit-html/directive.js';
 import { AsyncDirective } from 'lit-html/async-directive.js';
 import {
@@ -169,7 +169,13 @@ class ComponentDirective extends AsyncDirective {
       this.definition?.token === definition.token &&
       this.identity === identity
     ) {
-      return this.result;
+      // Unchanged identity: return `noChange` so lit skips re-committing this
+      // component's template on a parent re-commit (e.g. an `each`/`repeat`
+      // reorder). The row's own reactive bindings keep their live
+      // subscriptions and patch themselves independently — re-committing would
+      // needlessly re-render every inner binding for every sibling row,
+      // reintroducing O(N) fan-out on any list reorder.
+      return noChange;
     }
 
     if (this.initialized) this.teardownIdentity();

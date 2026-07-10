@@ -38,8 +38,9 @@ const OPERATIONS: OperationName[] = [
 
 // Row is keyed only by `id` — never an index. ComponentDirective ignores a
 // row's args after first mount, so an `index` arg goes stale once
-// remove/swapRows reorder existing rows; `indexById` is read fresh via
-// `select` on every render instead.
+// remove/swapRows reorder existing rows; each row's label/selected are read
+// fresh via `select` against the `byId.<id>` leaf on every render instead,
+// so an op that only touches other ids never wakes this row.
 const BenchmarkRow = component<{ id: number }>(
   (ctx: Ctx<{ id: number }>) => {
     const b = ctx.use(BenchmarkBloc);
@@ -47,16 +48,13 @@ const BenchmarkRow = component<{ id: number }>(
     return html`
       <tr
         class=${select(b, (s: BenchmarkState) =>
-          s.selected === id ? 'selected' : '',
+          s.byId[id]?.selected ? 'selected' : '',
         )}
       >
         <td>${id}</td>
         <td ${pulse()}>
           <a @click=${() => b.select(id)}
-            >${select(b, (s: BenchmarkState) => {
-              const i = s.indexById.get(id);
-              return i === undefined ? '' : s.data[i].label;
-            })}</a
+            >${select(b, (s: BenchmarkState) => s.byId[id]?.label ?? '')}</a
           >
         </td>
         <td><a @click=${() => b.remove(id)}>&times;</a></td>
@@ -155,9 +153,9 @@ export const BenchmarkPage = component(BenchmarkBloc, (b, ctx) => {
         </thead>
         <tbody>
           ${each(
-            select(b, (s: BenchmarkState) => s.data),
-            (item) => BenchmarkRow({ id: item.id }),
-            (item) => item.id,
+            select(b, (s: BenchmarkState) => s.order),
+            (id: number) => BenchmarkRow({ id }),
+            (id: number) => id,
           )}
         </tbody>
       </table>
