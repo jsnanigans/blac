@@ -32,7 +32,7 @@ function modelElement(part: ElementPart): Settable {
     throw new Error('model() does not support <input type="file">.');
   }
 
-  return element;
+  return element as Settable;
 }
 
 function writeEventFor(element: Settable): WriteEvent {

@@ -1,4 +1,4 @@
-import { nothing } from 'lit-html';
+import { html, nothing } from 'lit-html';
 import { directive } from 'lit-html/directive.js';
 import { AsyncDirective } from 'lit-html/async-directive.js';
 import {
@@ -85,7 +85,7 @@ function pureReferenceKey(value: unknown): string {
   const reference = value as object;
   let id = pureReferences.get(reference);
   if (id === undefined) {
-    id = (pureReferenceCounter += 1);
+    id = pureReferenceCounter += 1;
     pureReferences.set(reference, id);
   }
   return `ref:${id}`;
@@ -196,13 +196,17 @@ class ComponentDirective extends AsyncDirective {
       } catch (rollbackError) {
         rollbackErrors.push(rollbackError);
       }
-      throwCollected(rollbackErrors, 'Failed to initialize a Blac Lit component.');
+      throwCollected(
+        rollbackErrors,
+        'Failed to initialize a Blac Lit component.',
+      );
     }
   }
 
   private executeBody(): void {
     const definition = this.definition;
-    if (!definition) throw new Error('Cannot execute a component without a definition.');
+    if (!definition)
+      throw new Error('Cannot execute a component without a definition.');
 
     this.mountSetups = [];
     this.legacyUnmounts = [];
@@ -278,7 +282,10 @@ class ComponentDirective extends AsyncDirective {
       } catch (rollbackError) {
         rollbackErrors.push(rollbackError);
       }
-      throwCollected(rollbackErrors, 'Failed to reconnect a Blac Lit component.');
+      throwCollected(
+        rollbackErrors,
+        'Failed to reconnect a Blac Lit component.',
+      );
     }
   }
 
@@ -308,14 +315,24 @@ class ComponentDirective extends AsyncDirective {
       const rollbackErrors: unknown[] = [error];
       for (const acquired of reacquired) {
         try {
-          getRegistry().release(acquired.Bloc, acquired.key, false, acquired.refId);
+          getRegistry().release(
+            acquired.Bloc,
+            acquired.key,
+            false,
+            acquired.refId,
+          );
         } catch (rollbackError) {
           rollbackErrors.push(rollbackError);
         } finally {
           acquired.active = false;
         }
       }
-      throwCollected(rollbackErrors, 'Failed to reacquire Blac Lit component refs.');
+      throwCollected(
+        rollbackErrors,
+        'Failed to reacquire Blac Lit component refs.',
+      );
+      // throwCollected always throws here (rollbackErrors is non-empty); unreachable.
+      return false;
     }
   }
 
@@ -329,9 +346,12 @@ class ComponentDirective extends AsyncDirective {
     }
 
     for (const effect of this.effectSetups) {
-      const unsubscribe = effect.bloc.channel.subscribe(() => ALL_PATHS, () => {
-        effect.fn();
-      });
+      const unsubscribe = effect.bloc.channel.subscribe(
+        () => ALL_PATHS,
+        () => {
+          effect.fn();
+        },
+      );
       this.activeEffectCleanups.push(unsubscribe);
       effect.fn();
     }
@@ -399,7 +419,10 @@ class ComponentDirective extends AsyncDirective {
         errors.push(error);
       }
     }
-    throwCollected(errors, 'Failed to clean up a Blac Lit component connection.');
+    throwCollected(
+      errors,
+      'Failed to clean up a Blac Lit component connection.',
+    );
   }
 
   private releaseAcquired(): void {
@@ -407,7 +430,12 @@ class ComponentDirective extends AsyncDirective {
     for (const acquired of this.acquired) {
       if (!acquired.active) continue;
       try {
-        getRegistry().release(acquired.Bloc, acquired.key, false, acquired.refId);
+        getRegistry().release(
+          acquired.Bloc,
+          acquired.key,
+          false,
+          acquired.refId,
+        );
       } catch (error) {
         errors.push(error);
       } finally {
@@ -461,9 +489,15 @@ export function component(a: any, b?: any): ComponentFactory<any> {
     renderFn: hasBloc ? b : a,
   };
 
+  // Wrap the directive in a template so the removable item root is a
+  // TemplateInstance, not the directive itself. When a bare `component()` is
+  // the direct item of `each`/`repeat`, lit's `_$clear(isClearingValue=true)`
+  // skips disconnecting the item-root directive, so `disconnected()` never
+  // fires and acquired refs/subscriptions leak. A nested directive under a
+  // TemplateInstance always gets disconnected on removal.
   const factory = ((args?: any) =>
-    componentDirective(definition, args, undefined)) as ComponentFactory<any>;
+    html`${componentDirective(definition, args, undefined)}`) as ComponentFactory<any>;
   factory.local = (args?: any) =>
-    componentDirective(definition, args, nextLocalKey());
+    html`${componentDirective(definition, args, nextLocalKey())}`;
   return factory;
 }
