@@ -1,10 +1,11 @@
 import { Cubit } from '@blac/core';
 
-export type Route = 'basics' | 'market';
+export type Route = 'basics' | 'market' | 'benchmark';
 
 export const ROUTES: { path: Route; label: string }[] = [
   { path: 'basics', label: 'Basics' },
   { path: 'market', label: 'Live Market Board' },
+  { path: 'benchmark', label: 'Benchmark' },
 ];
 
 interface RouterState {

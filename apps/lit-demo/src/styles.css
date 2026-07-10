@@ -429,3 +429,90 @@ button.ghost:hover {
 .cell.down {
   color: var(--danger);
 }
+
+.benchmark-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.benchmark-forms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.benchmark-forms form {
+  display: flex;
+  gap: 8px;
+}
+
+.benchmark-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-size: 0.88rem;
+  margin-bottom: 20px;
+}
+
+.benchmark-table thead th {
+  position: sticky;
+  top: 0;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  background: var(--panel-2);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.benchmark-table tbody tr:nth-child(even) {
+  background: var(--panel-2);
+}
+
+.benchmark-table td {
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.benchmark-table tr.selected {
+  background: rgba(255, 107, 122, 0.14);
+}
+
+.bench-log {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-size: 0.82rem;
+  margin-bottom: 20px;
+}
+
+.bench-log thead th {
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  background: var(--panel-2);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bench-log tbody tr:nth-child(even) {
+  background: var(--panel-2);
+}
+
+.bench-log td {
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--border);
+}

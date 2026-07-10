@@ -4,6 +4,7 @@ import { RouterBloc, type Route } from './router/router.bloc';
 import { Nav } from './router/nav.ui';
 import { BasicsPage } from './basics.ui';
 import { MarketPage } from './market/market.ui';
+import { BenchmarkPage } from './benchmark/benchmark.ui';
 
 export const App = component(RouterBloc, (r) => {
   return html`
@@ -31,6 +32,8 @@ export const App = component(RouterBloc, (r) => {
               basics: () => html`<div class="route">${BasicsPage()}</div>`,
               market: () =>
                 html`<div class="route route--market">${MarketPage()}</div>`,
+              benchmark: () =>
+                html`<div class="route route--benchmark">${BenchmarkPage()}</div>`,
             },
           )
         }
