@@ -136,7 +136,7 @@ export function reactive(bloc: StateContainer): any {
           path.reduce((o, k) => (o == null ? o : o[k]), s),
         )
       : undefined;
-    return new Proxy(binding ?? (Object.create(null) as object), {
+    const proxy = new Proxy(binding ?? (Object.create(null) as object), {
       get(_t, prop) {
         if (
           prop === '_$litDirective$' ||
@@ -149,6 +149,12 @@ export function reactive(bloc: StateContainer): any {
         return build([...path, String(prop)]);
       },
     });
+    // The proxy — not the wrapped binding — is what callers pass to
+    // `model`/`when`/`each`/`getBindingMeta`. The WeakMap is keyed by object
+    // identity and can't see through the proxy, so mirror the terminal
+    // binding's meta onto the proxy itself.
+    if (binding) bindingMeta.set(proxy, getBindingMeta(binding));
+    return proxy;
   };
   return build([]);
 }
