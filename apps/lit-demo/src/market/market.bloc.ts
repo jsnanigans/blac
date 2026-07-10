@@ -94,7 +94,10 @@ export class MarketBloc extends Cubit<MarketState> {
       ratePerSec: 240,
       applied: 0,
     });
-    this.onSystemEvent('dispose', () => this.stop());
+    // On dispose only cancel the frame loop — never patch(): the container is
+    // already torn down, so emitting state from here throws "Cannot emit state
+    // from disposed container".
+    this.onSystemEvent('dispose', () => this.cancelLoop());
   }
 
   start = () => {
@@ -103,11 +106,15 @@ export class MarketBloc extends Cubit<MarketState> {
     this.rafId = requestAnimationFrame(this.tick);
   };
 
-  stop = () => {
+  private cancelLoop = (): void => {
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;
     }
+  };
+
+  stop = () => {
+    this.cancelLoop();
     this.patch({ running: false });
   };
 
