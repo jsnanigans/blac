@@ -1,6 +1,6 @@
 export interface Scheduler {
   request(flush: () => void): void;
-  cancel?(): void;
+  cancel?(flush: () => void): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -65,9 +65,11 @@ export class MicrotaskScheduler implements Scheduler {
     }
   }
 
-  cancel(): void {
-    this.#scheduled = false;
-    this.#pending = new Set();
+  cancel(flush: () => void): void {
+    this.#pending.delete(flush);
+    if (this.#pending.size === 0) {
+      this.#scheduled = false;
+    }
   }
 
   #drain(): void {
@@ -132,10 +134,10 @@ export class RAFScheduler implements Scheduler {
     }
   }
 
-  cancel(): void {
-    if (this.#handle != null) {
+  cancel(flush: () => void): void {
+    this.#pending.delete(flush);
+    if (this.#handle != null && this.#pending.size === 0) {
       this.#unschedule();
-      this.#pending = new Set();
     }
   }
 

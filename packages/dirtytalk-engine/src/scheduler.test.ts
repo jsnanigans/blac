@@ -210,7 +210,7 @@ describe('MicrotaskScheduler', () => {
     const s = new MicrotaskScheduler();
     const fn = vi.fn();
     s.request(fn);
-    s.cancel();
+    s.cancel(fn);
     await Promise.resolve();
     expect(fn).not.toHaveBeenCalled();
   });
@@ -220,11 +220,23 @@ describe('MicrotaskScheduler', () => {
     const fn1 = vi.fn();
     const fn2 = vi.fn();
     s.request(fn1);
-    s.cancel();
+    s.cancel(fn1);
     s.request(fn2);
     await Promise.resolve();
     expect(fn1).not.toHaveBeenCalled();
     expect(fn2).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancel(flushA) only prevents flushA; flushB still runs on the next drain', async () => {
+    const s = new MicrotaskScheduler();
+    const flushA = vi.fn();
+    const flushB = vi.fn();
+    s.request(flushA);
+    s.request(flushB);
+    s.cancel(flushA);
+    await Promise.resolve();
+    expect(flushA).not.toHaveBeenCalled();
+    expect(flushB).toHaveBeenCalledTimes(1);
   });
 
   it('per-fn isolation: first of two throws, second still runs; throw surfaces after loop', () => {
@@ -301,9 +313,21 @@ describe('RAFScheduler (Node setTimeout fallback)', () => {
     const s = new RAFScheduler();
     const fn = vi.fn();
     s.request(fn);
-    s.cancel();
+    s.cancel(fn);
     vi.advanceTimersByTime(20);
     expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('cancel(flushA) only prevents flushA; flushB still runs on the next tick', () => {
+    const s = new RAFScheduler();
+    const flushA = vi.fn();
+    const flushB = vi.fn();
+    s.request(flushA);
+    s.request(flushB);
+    s.cancel(flushA);
+    vi.advanceTimersByTime(20);
+    expect(flushA).not.toHaveBeenCalled();
+    expect(flushB).toHaveBeenCalledTimes(1);
   });
 
   it('re-entrant request inside flush schedules a new tick', () => {

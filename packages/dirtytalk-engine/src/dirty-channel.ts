@@ -164,7 +164,7 @@ export class DirtyChannel<Region> {
     this.#disposed = true;
 
     if (this.#scheduled) {
-      this.#scheduler.cancel?.();
+      this.#scheduler.cancel?.(this.#boundFlush);
       this.#scheduled = false;
     }
 
