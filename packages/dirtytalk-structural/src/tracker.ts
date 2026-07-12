@@ -205,6 +205,21 @@ export class ProxyCache {
     }
     byPrefix.set(prefix, entry);
   }
+
+  /**
+   * @internal — used by `trackRender` after a call completes. Discards every
+   * cached `(target, prefix)` entry for `target` whose prefix is not in
+   * `keepPrefixes` (this call's touched prefixes for that target), so an
+   * object read at a shifting prefix (e.g. a reordered list item) doesn't
+   * accumulate one stale entry per prefix it has ever been read at.
+   */
+  _prune(target: object, keepPrefixes: ReadonlySet<string>): void {
+    const byPrefix = this.byTarget.get(target);
+    if (byPrefix === undefined) return;
+    for (const prefix of byPrefix.keys()) {
+      if (!keepPrefixes.has(prefix)) byPrefix.delete(prefix);
+    }
+  }
 }
 
 /**
@@ -303,7 +318,13 @@ export const trackRender = <S>(
   // ===-identical.
   const proxyByTarget = new WeakMap<object, Map<string, unknown>>();
 
+  // Targets touched this call, so a supplied `cache` can be pruned down to
+  // only the prefixes actually read this render (see `ProxyCache._prune`).
+  // Only allocated when a cache is in play — zero-cost otherwise.
+  const touchedTargets = cache !== undefined ? new Set<object>() : undefined;
+
   const wrap = (target: object, prefix: string): unknown => {
+    touchedTargets?.add(target);
     let byPrefix = proxyByTarget.get(target);
     if (byPrefix === undefined) {
       byPrefix = new Map<string, unknown>();
@@ -562,6 +583,21 @@ export const trackRender = <S>(
     value: wrap(state as object, '') as S,
     paths: session.paths,
     disarm: () => {
+      // Property reads keep routing through this call's `wrap` (even for
+      // reused entries — see `entry.wrap` repointing above) until `armed`
+      // flips false below, so `touchedTargets` is only fully settled here,
+      // once this render's synchronous read pass is over. Prune each touched
+      // target's cache entry down to just the prefixes this render actually
+      // touched, dropping stale prefixes from prior renders (e.g. an item
+      // that has since shifted index).
+      if (touchedTargets !== undefined) {
+        for (const target of touchedTargets) {
+          const keepPrefixes = proxyByTarget.get(target);
+          if (keepPrefixes !== undefined) {
+            cache!._prune(target, new Set(keepPrefixes.keys()));
+          }
+        }
+      }
       session.armed = false;
       traceHook?.({
         instance: session.instance,

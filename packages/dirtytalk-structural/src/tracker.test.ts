@@ -585,4 +585,61 @@ describe('trackRender — ProxyCache', () => {
       __setPersistTrackingProxies(null);
     }
   });
+
+  it('24. (PC8) disarm prunes stale prefixes for an item that shifts index across renders', () => {
+    __setPersistTrackingProxies(true);
+    try {
+      const interner = new PathInterner();
+      const cache = new ProxyCache();
+      const shared = { name: 'shared' };
+      // `@internal` field, reached for assertion only — not part of the public API.
+      const byTarget = (
+        cache as unknown as {
+          byTarget: WeakMap<object, Map<string, unknown>>;
+        }
+      ).byTarget;
+
+      const renderAtIndex = (index: number): void => {
+        const items = [0, 1, 2, 3].map((i) =>
+          i === index ? shared : { name: `other${i}` },
+        );
+        const { value, disarm } = trackRender({ list: items }, interner, cache);
+        void value.list[index].name;
+        disarm();
+      };
+
+      renderAtIndex(0);
+      renderAtIndex(1);
+      renderAtIndex(2);
+
+      // Only the most recent render's prefix survives for the shared object —
+      // the cache does not accumulate one entry per index it has ever been at.
+      const byPrefix = byTarget.get(shared);
+      expect(byPrefix?.size).toBe(1);
+      expect([...(byPrefix?.keys() ?? [])]).toEqual(['list.2']);
+    } finally {
+      __setPersistTrackingProxies(null);
+    }
+  });
+
+  it('25. (PC9) a repeat read at the same (target, prefix) across renders still reuses the cached proxy after pruning', () => {
+    __setPersistTrackingProxies(true);
+    try {
+      const interner = new PathInterner();
+      const cache = new ProxyCache();
+      const state = { user: { name: 'a' } };
+
+      const first = trackRender(state, interner, cache);
+      const firstUserProxy = first.value.user;
+      first.disarm();
+
+      const second = trackRender(state, interner, cache);
+      const secondUserProxy = second.value.user;
+      second.disarm();
+
+      expect(secondUserProxy).toBe(firstUserProxy);
+    } finally {
+      __setPersistTrackingProxies(null);
+    }
+  });
 });
