@@ -1,4 +1,5 @@
 import { ALL_PATHS } from '@dirtytalk/structural';
+import { ON_DISPOSE } from '../core/symbols';
 import { getRegistry } from '../registry';
 import { resolveInstanceKey } from '../registry/acquire';
 import type {
@@ -265,7 +266,16 @@ function watchImpl(
     if (disposed) return;
     instances[index] = resolveBloc(targets[index], refIds[index]);
     subscribeAt(index);
+    subscribeDisposeAt(index);
     runCallback();
+  };
+
+  const subscribeDisposeAt = (index: number) => {
+    disposedUnsubs[index] = instances[index][ON_DISPOSE](() => {
+      channelUnsubs[index]?.();
+      channelUnsubs[index] = undefined;
+      queueMicrotask(() => resubscribeAt(index));
+    });
   };
 
   for (let i = 0; i < instances.length; i++) {
@@ -273,16 +283,7 @@ function watchImpl(
   }
 
   for (let i = 0; i < instances.length; i++) {
-    const index = i;
-    disposedUnsubs.push(
-      registry.on('disposed', (container) => {
-        if (disposed) return;
-        if (container !== instances[index]) return;
-        channelUnsubs[index]?.();
-        channelUnsubs[index] = undefined;
-        queueMicrotask(() => resubscribeAt(index));
-      }),
-    );
+    subscribeDisposeAt(i);
   }
 
   // Fire once immediately so the consumer sees the current state.

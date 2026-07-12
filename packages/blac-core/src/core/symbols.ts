@@ -11,6 +11,13 @@ export const APPLY_DEPS = Symbol('blac.applyDeps');
 export const REMOVE_DEPS_OWNER = Symbol('blac.removeDepsOwner');
 
 /**
+ * @internal Subscribe to this specific instance's own disposal, bypassing
+ * the global registry `'disposed'` event. Called by `watch()` — not public
+ * API.
+ */
+export const ON_DISPOSE = Symbol('blac.onDispose');
+
+/**
  * @internal Symbol-keyed configuration entry point on `StateContainer`.
  * Writes the instance's identity fields (`_name`/`_debug`/`_instanceId`),
  * resolves per-class equality, emits the registry `created` event, and runs

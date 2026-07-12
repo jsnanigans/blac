@@ -206,4 +206,26 @@ describe('watch edge cases', () => {
     expect(values[values.length - 1]).toBe(0);
     expect(hasInstance(CounterCubit)).toBe(true);
   });
+
+  it('disposing an unrelated instance does not disturb a watch on a different instance', async () => {
+    const counter = acquire(CounterCubit);
+    counter.emit({ count: 7 });
+    await flush();
+
+    const values: number[] = [];
+    watch(CounterCubit, (bloc) => {
+      values.push(bloc.state.count);
+    });
+    expect(values).toEqual([7]);
+    const refCountBefore = getRefCount(CounterCubit);
+
+    // Dispose an unrelated bloc — the watched CounterCubit must not
+    // re-subscribe or notify.
+    acquire(NameCubit);
+    release(NameCubit, { forceDispose: true });
+    await flush();
+
+    expect(values).toEqual([7]);
+    expect(getRefCount(CounterCubit)).toBe(refCountBefore);
+  });
 });

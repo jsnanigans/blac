@@ -11,7 +11,12 @@ import type {
   ExtractState,
   StateContainerConstructor,
 } from '../types/utilities';
-import { APPLY_DEPS, INIT_CONFIG, REMOVE_DEPS_OWNER } from './symbols';
+import {
+  APPLY_DEPS,
+  INIT_CONFIG,
+  ON_DISPOSE,
+  REMOVE_DEPS_OWNER,
+} from './symbols';
 import { type EqualityFn, getBlacConfig } from '../config';
 import { getClassEquality } from '../utils/static-props';
 import { type BlacMeta, createMeta, META_BRAND } from './meta';
@@ -193,6 +198,15 @@ export abstract class StateContainer<
     if (this._disposed) return;
     if (!this._depsByOwner?.delete(ownerId)) return;
     this.reconcileDeps();
+  }
+
+  /**
+   * @internal Subscribe to this instance's own disposal. Delegates to the
+   * per-instance `'dispose'` system event — used by `watch()` in place of
+   * filtering the global registry `'disposed'` event.
+   */
+  [ON_DISPOSE](handler: () => void): () => void {
+    return this.onSystemEvent('dispose', handler);
   }
 
   private reconcileDeps(): void {

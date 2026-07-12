@@ -19,10 +19,15 @@ export type {
 } from './core/StateContainer';
 export { Cubit } from './core/Cubit';
 /**
- * @internal symbols — read by `@blac/react` (APPLY_DEPS / REMOVE_DEPS_OWNER)
- * and in-package tests (INIT_CONFIG).
+ * @internal symbols — read by `@blac/react` (APPLY_DEPS / REMOVE_DEPS_OWNER),
+ * in-package tests (INIT_CONFIG), and `watch()` (ON_DISPOSE).
  */
-export { APPLY_DEPS, REMOVE_DEPS_OWNER, INIT_CONFIG } from './core/symbols';
+export {
+  APPLY_DEPS,
+  REMOVE_DEPS_OWNER,
+  INIT_CONFIG,
+  ON_DISPOSE,
+} from './core/symbols';
 
 // `$blac` meta namespace (identity / lifecycle / hydration).
 export type { BlacMeta, BlacHydration } from './core/meta';
