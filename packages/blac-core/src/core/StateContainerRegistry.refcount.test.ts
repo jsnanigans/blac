@@ -116,6 +116,7 @@ describe('StateContainerRegistry ref counting', () => {
   it('instance disposed directly — next acquire() returns fresh instance', () => {
     const first = acquire(RefCountBloc);
     first.dispose();
+    expect(hasInstance(RefCountBloc)).toBe(false);
     const second = acquire(RefCountBloc);
     expect(second).not.toBe(first);
     expect(second.$blac.disposed).toBe(false);

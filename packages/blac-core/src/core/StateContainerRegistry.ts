@@ -30,6 +30,8 @@ export interface InstanceEntry<T = any> {
   args?: unknown;
   /** Memoized structuralKey(args) for the dev arg-mismatch warning. */
   argsKey?: string;
+  /** `depend()`-owners currently holding this instance (see `acquire`'s `dependent` option). */
+  dependents?: Set<StateContainer<any, any, any>>;
 }
 
 /**
@@ -114,6 +116,72 @@ export class StateContainerRegistry {
   > | null = null;
 
   private _autoRefIdCounter = 0;
+
+  constructor() {
+    // Self-prune on direct dispose (bypassing release()) and sweep any
+    // depend()-owner edges this instance held, so orphaned dependencies
+    // (created via `ensure`, which never adds a public ref) don't leak.
+    this.on('disposed', (container) => this._handleDisposed(container));
+  }
+
+  /**
+   * Registry-internal reaction to any instance's `disposed` lifecycle event.
+   * If the disposing container is itself tracked in this registry (i.e. it
+   * was `acquire()`/`ensure()`'d, not a bare `new`), prune its Map entry and
+   * release its dependent edges on whatever it `depend()`'d on.
+   */
+  private _handleDisposed(container: StateContainer<any, any, any>): void {
+    const Type = container.constructor as StateContainerConstructor;
+    const found = this._pruneEntry(Type, container);
+    if (!found) return;
+    for (const [DepType, depKey] of container.$blac.dependencies) {
+      this._releaseDependent(DepType, depKey, container);
+    }
+  }
+
+  /**
+   * Remove the Map entry for `container`, if this registry is tracking it.
+   * @returns true if an entry was found and removed
+   */
+  private _pruneEntry(
+    Type: StateContainerConstructor,
+    container: StateContainer<any, any, any>,
+  ): boolean {
+    const instances = this.instancesByConstructor.get(Type);
+    if (!instances) return false;
+    for (const [key, entry] of instances) {
+      if (entry.instance === container) {
+        instances.delete(key);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Drop `dependent`'s edge on the `Type`/`key` entry (a `depend()`-resolved
+   * instance). When that leaves the entry with no dependents AND no public
+   * refs AND it isn't keepAlive, dispose it — this recurses into the same
+   * `disposed` listener, so dep-of-dep chains unwind naturally.
+   */
+  private _releaseDependent(
+    Type: StateContainerConstructor,
+    key: string,
+    dependent: StateContainer<any, any, any>,
+  ): void {
+    const instances = this.instancesByConstructor.get(Type);
+    const entry = instances?.get(key);
+    if (!entry) return;
+    entry.dependents?.delete(dependent);
+    if (
+      (!entry.dependents || entry.dependents.size === 0) &&
+      entry.refs.size === 0 &&
+      !isKeepAliveClass(Type) &&
+      !entry.instance.$blac.disposed
+    ) {
+      entry.instance.dispose();
+    }
+  }
 
   /**
    * Register a type for lifecycle event tracking
@@ -277,6 +345,8 @@ export class StateContainerRegistry {
    * @param options.canCreate - Whether to create new instance if not found (default: true)
    * @param options.countRef - Whether to add a reference (default: true)
    * @param options.refId - Named reference ID for debugging; auto-generated if omitted
+   * @param options.dependent - The `depend()`-owner resolving this instance, if any;
+   *   recorded so its dependent edge can be released on the owner's disposal.
    * @returns The state container instance
    */
   acquire<T extends StateContainerConstructor = StateContainerConstructor>(
@@ -287,6 +357,7 @@ export class StateContainerRegistry {
       countRef?: boolean;
       refId?: string;
       args?: unknown;
+      dependent?: StateContainer<any, any, any>;
     } = {},
   ): InstanceType<T> {
     const { canCreate = true, countRef = true } = options;
@@ -334,6 +405,10 @@ export class StateContainerRegistry {
         this.emit('refAcquired', entry.instance, refId);
       }
 
+      if (options.dependent) {
+        (entry.dependents ??= new Set()).add(options.dependent);
+      }
+
       return entry.instance;
     }
 
@@ -356,7 +431,11 @@ export class StateContainerRegistry {
       initialRefId = options.refId ?? `_auto_${this._autoRefIdCounter++}`;
       initialRefs.set(initialRefId, 1);
     }
-    instances.set(resolvedKey, { instance, refs: initialRefs, args });
+    const newEntry: InstanceEntry = { instance, refs: initialRefs, args };
+    if (options.dependent) {
+      (newEntry.dependents ??= new Set()).add(options.dependent);
+    }
+    instances.set(resolvedKey, newEntry);
 
     // Register type for lifecycle coordination
     this.registerType(Type);
@@ -500,30 +579,14 @@ export class StateContainerRegistry {
     // Check static keepAlive property
     const keepAlive = isKeepAliveClass(Type);
 
-    // Auto-dispose when refs are empty (unless keepAlive)
+    // Auto-dispose when refs are empty (unless keepAlive). Orphaned
+    // depend()-created dependencies are swept via the `disposed` listener
+    // (see `_handleDisposed`/`_releaseDependent`), not here.
     if (entry.refs.size === 0 && !keepAlive) {
-      // Collect dependencies before disposing so we can clean up orphans
-      const deps = entry.instance.$blac.dependencies;
-
       if (!entry.instance.$blac.disposed) {
         entry.instance.dispose();
       }
       instances.delete(instanceKey);
-
-      // Clean up ensure-created dependencies that now have no refs
-      for (const [DepType, depKey] of deps) {
-        const depInstances = this.ensureInstancesMap(DepType);
-        const depEntry = depInstances.get(depKey);
-        if (
-          depEntry &&
-          depEntry.refs.size === 0 &&
-          !isKeepAliveClass(DepType) &&
-          !depEntry.instance.$blac.disposed
-        ) {
-          depEntry.instance.dispose();
-          depInstances.delete(depKey);
-        }
-      }
     }
   }
 
@@ -538,7 +601,9 @@ export class StateContainerRegistry {
     const instances = this.ensureInstancesMap(Type);
     const result: InstanceReadonlyState<T>[] = [];
     for (const entry of instances.values()) {
-      result.push(entry.instance);
+      if (!entry.instance.$blac.disposed) {
+        result.push(entry.instance);
+      }
     }
     return result;
   }

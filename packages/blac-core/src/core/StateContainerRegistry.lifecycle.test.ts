@@ -502,5 +502,16 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(instance);
     });
+
+    it('should exclude a directly-disposed instance from getAll()', () => {
+      const kept = acquire(TestCubit, { args: { id: 'kept' } });
+      const disposed = acquire(TestCubit, { args: { id: 'disposed' } });
+
+      disposed.dispose();
+
+      const all = globalRegistry.getAll(TestCubit);
+      expect(all).toContain(kept);
+      expect(all).not.toContain(disposed);
+    });
   });
 });
