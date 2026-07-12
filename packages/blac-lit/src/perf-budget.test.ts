@@ -3,7 +3,7 @@ import { html } from 'lit-html';
 import { Cubit } from '@blac/core';
 import { flush } from '@blac/core/testing';
 import { component, mount, each, select } from './index';
-import { __recomputeProbe } from './internal/binding-session';
+import { __recomputeProbe, __registerProbe } from './internal/binding-session';
 
 // Regression gate for the recompute fan-out fix (see
 // plans/blac-lit-recompute-fanout.md). A single-row / small op on a large
@@ -127,28 +127,38 @@ describe('recompute budget: single-row ops stay O(changed), not O(N)', () => {
     bloc.run(N);
     await flush();
 
-    const measure = async (fn: () => void): Promise<number> => {
+    const measure = async (
+      fn: () => void,
+    ): Promise<{ recompute: number; register: number }> => {
       __recomputeProbe.reset();
+      __registerProbe.reset();
       fn();
       await flush();
-      return __recomputeProbe.count();
+      return {
+        recompute: __recomputeProbe.count(),
+        register: __registerProbe.count(),
+      };
     };
 
     // 10 of 100 rows change their label; order ref unchanged.
     const update = await measure(() => bloc.updateEveryTenth());
-    expect(update).toBeLessThanOrEqual(20); // ~10, must be << N
+    expect(update.recompute).toBeLessThanOrEqual(20); // ~10, must be << N
+    expect(update.register).toBeLessThanOrEqual(update.recompute); // shape unchanged → ~0 re-registers
 
     // Two rows reorder; no byId entry changes.
     const swap = await measure(() => bloc.swapRows(1, 98));
-    expect(swap).toBeLessThanOrEqual(5); // O(1), must be << N
+    expect(swap.recompute).toBeLessThanOrEqual(5); // O(1), must be << N
+    expect(swap.register).toBeLessThanOrEqual(swap.recompute);
 
     // One row's selection flips.
     const sel = await measure(() => bloc.select(50));
-    expect(sel).toBeLessThanOrEqual(5); // O(1)
+    expect(sel.recompute).toBeLessThanOrEqual(5); // O(1)
+    expect(sel.register).toBeLessThanOrEqual(sel.recompute);
 
     // One row removed.
     const rem = await measure(() => bloc.remove(50));
-    expect(rem).toBeLessThanOrEqual(5); // O(1)
+    expect(rem.recompute).toBeLessThanOrEqual(5); // O(1)
+    expect(rem.register).toBeLessThanOrEqual(rem.recompute);
 
     handle.unmount();
     container.remove();

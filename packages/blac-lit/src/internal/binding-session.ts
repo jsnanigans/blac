@@ -8,6 +8,7 @@ import {
   DEP_BRAND,
   emptyPathSet,
   expandWithAncestors,
+  pathSetEqual,
   ProxyCache,
   trackRender,
   trackedBloc,
@@ -24,6 +25,16 @@ export const __recomputeProbe = {
   count: (): number => recomputeCount,
   reset: (): void => {
     recomputeCount = 0;
+  },
+};
+
+let registerCount = 0;
+
+/** @internal test-only: real registerConsumerPaths calls (primary + deps). */
+export const __registerProbe = {
+  count: (): number => registerCount,
+  reset: (): void => {
+    registerCount = 0;
   },
 };
 
@@ -223,12 +234,17 @@ export class BindingSession<T> {
     }
 
     primary.snapshot = snapshot;
-    primary.paths = tracked.paths;
-    primary.interest = expandWithAncestors(tracked.paths, trackable.interner);
-
-    // An existing subscription reads `interest` lazily, so dynamic selectors
-    // only need their source-side leaf registration refreshed here.
-    if (primary.unsubscribe) this.registerPaths(primary);
+    // Reuse the cached interest + skip re-registration when the tracked leaf
+    // SET is structurally unchanged (the common case: only values moved). The
+    // per-tick memo above handles unchanged snapshots; this handles unchanged
+    // SHAPE on a genuine value change.
+    if (!pathSetEqual(tracked.paths, primary.paths)) {
+      primary.paths = tracked.paths;
+      primary.interest = expandWithAncestors(tracked.paths, trackable.interner);
+      // An existing subscription reads `interest` lazily, so dynamic selectors
+      // only need their source-side leaf registration refreshed here.
+      if (primary.unsubscribe) this.registerPaths(primary);
+    }
 
     this.reconcileDeps(pending);
 
@@ -329,18 +345,23 @@ export class BindingSession<T> {
     // Add/refresh deps reached this compute.
     for (const [container, p] of pending) {
       const t = asTrackable(container);
-      const interest = expandWithAncestors(p.paths, t.interner);
       const rec = this.deps.get(container);
       if (rec) {
-        rec.paths = p.paths;
-        rec.interest = interest;
         // This compute just read this dep's live state — stamp it so the
         // memo key stays complete for the next `computeCurrent`.
         rec.snapshot = asTrackable(container).state;
-        if (rec.unsubscribe) t.registerConsumerPaths(this.consumerId, p.paths);
+        if (!pathSetEqual(p.paths, rec.paths)) {
+          rec.paths = p.paths;
+          rec.interest = expandWithAncestors(p.paths, t.interner);
+          if (rec.unsubscribe) {
+            registerCount += 1;
+            t.registerConsumerPaths(this.consumerId, p.paths);
+          }
+        }
         continue;
       }
 
+      const interest = expandWithAncestors(p.paths, t.interner);
       const fresh: ContainerRecord = {
         container,
         kind: 'dep',
@@ -465,6 +486,7 @@ export class BindingSession<T> {
   }
 
   private registerPaths(rec: ContainerRecord): void {
+    registerCount += 1;
     asTrackable(rec.container).registerConsumerPaths(
       this.consumerId,
       rec.paths,

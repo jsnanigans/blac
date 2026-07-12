@@ -98,6 +98,23 @@ export function unionPaths(a: PathSet, b: PathSet): PathSet {
 }
 
 /**
+ * Structural equality for two PathSets. The `ALL_PATHS` sentinel compares by
+ * reference only (it is a shared singleton); leaf sets compare by size + members.
+ * `trackRender` returns a FRESH Set per compute, so a `true` result from the
+ * `a === b` fast path can only mean both are the same sentinel/empty-set ref —
+ * never an aliased-and-mutated tracked set.
+ */
+export function pathSetEqual(a: PathSet, b: PathSet): boolean {
+  if (a === b) return true;
+  if (a === ALL_PATHS || b === ALL_PATHS) return false;
+  const sa = a as Set<number>;
+  const sb = b as Set<number>;
+  if (sa.size !== sb.size) return false;
+  for (const id of sa) if (!sb.has(id)) return false;
+  return true;
+}
+
+/**
  * A tracked view of a bloc so prototype getters record their real state deps.
  * Reading `.state` returns the tracking proxy; getters invoked with this proxy
  * as receiver therefore read through it.
