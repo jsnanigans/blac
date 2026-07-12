@@ -37,6 +37,11 @@ export class PathInterner {
   private readonly _ancestorTarget: (PathId | undefined)[] = [];
   // Parallel cache: memoized existing ancestor ids per id (see `ancestorIds`).
   private readonly _ancestorIds: (readonly PathId[])[] = [];
+  // Parallel cache: `_paths.length` at the time `_ancestorIds[id]` was
+  // computed, so a stale entry (interner grew since) can be detected and
+  // recomputed lazily per id instead of clearing the whole cache on `intern`.
+  private readonly _ancestorIdsVersion: number[] = [];
+  private _warnedSize = false;
 
   intern(path: string): PathId {
     const existing = this._map.get(path);
@@ -44,9 +49,19 @@ export class PathInterner {
     this._paths.push(path);
     const id = this._paths.length - 1;
     this._map.set(path, id);
-    // A genuinely new path can newly satisfy some cached ancestorIds prefix
-    // lookup, so drop the memo; it lazily recomputes against the larger map.
-    this._ancestorIds.length = 0;
+    if (
+      process.env.NODE_ENV !== 'production' &&
+      this._paths.length === 5000 &&
+      !this._warnedSize
+    ) {
+      this._warnedSize = true;
+      console.warn(
+        'PathInterner: 5000+ entries interned. Per-class interners are ' +
+          'append-only and shared across all instances of a class — this ' +
+          'usually means a state shape has unbounded dynamic keys (see ' +
+          '`PathInterner.size` doc).',
+      );
+    }
     return id;
   }
 
@@ -99,7 +114,12 @@ export class PathInterner {
    */
   ancestorIds(id: PathId): readonly PathId[] {
     const cached = this._ancestorIds[id];
-    if (cached !== undefined) return cached;
+    if (
+      cached !== undefined &&
+      this._ancestorIdsVersion[id] === this._paths.length
+    ) {
+      return cached;
+    }
     const segments = this.lookupSegments(id);
     const result: PathId[] = [];
     for (let k = segments.length - 1; k >= 1; k--) {
@@ -107,6 +127,7 @@ export class PathInterner {
       if (prefixId !== undefined) result.push(prefixId);
     }
     this._ancestorIds[id] = result;
+    this._ancestorIdsVersion[id] = this._paths.length;
     return result;
   }
 

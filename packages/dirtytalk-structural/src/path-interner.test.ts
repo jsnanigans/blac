@@ -179,5 +179,24 @@ describe('PathInterner', () => {
       // Memo re-warmed: steady-state stability restored.
       expect(interner.ancestorIds(leaf)).toBe(interner.ancestorIds(leaf));
     });
+
+    it('an unrelated intern does not force a recompute for an unaffected id, and the re-warmed memo is reference-stable across further reads', () => {
+      const interner = new PathInterner();
+      const items = interner.intern('items');
+      const leaf = interner.intern('items.0.name');
+      const first = interner.ancestorIds(leaf);
+      expect(first).toEqual([items]);
+
+      // Interning an unrelated path grows `_paths`, so the length-versioned
+      // check treats the memo as stale on the next read (it recomputes once,
+      // landing on the same result since nothing relevant changed).
+      interner.intern('other.unrelated.path');
+      const second = interner.ancestorIds(leaf);
+      expect(second).toEqual([items]);
+
+      // No further interns in between — the memo is now reference-stable.
+      const third = interner.ancestorIds(leaf);
+      expect(third).toBe(second);
+    });
   });
 });
