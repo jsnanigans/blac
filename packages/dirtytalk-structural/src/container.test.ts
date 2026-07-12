@@ -843,6 +843,27 @@ describe('StructuralContainer — incremental skeleton refcounting (P5)', () => 
   });
 });
 
+describe('StructuralContainer — getConsumerPaths snapshot', () => {
+  it('mutating the returned map does not affect a subsequent emit dirty computation', () => {
+    const c = make();
+    c.registerConsumerPaths('A', setOf(c, 'count'));
+    const cb = vi.fn();
+    c.subscribe(() => setOf(c, 'count'), cb);
+
+    // Cast away ReadonlyMap to simulate a caller mutating the snapshot.
+    const snapshot = c.getConsumerPaths() as Map<string, PathSet>;
+    snapshot.delete('A');
+    snapshot.set('B', setOf(c, 'label'));
+
+    c.emit({ count: 1, label: 'a' });
+
+    expect(c.state).toEqual({ count: 1, label: 'a' });
+    // Still wakes for 'A''s registered interest in `count` — the mutation
+    // above hit a detached copy, not the container's live registry.
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('StructuralContainer — dispose', () => {
   it('forwards to the underlying channel, cancelling a pending flush', () => {
     const scheduler = new MicrotaskScheduler();

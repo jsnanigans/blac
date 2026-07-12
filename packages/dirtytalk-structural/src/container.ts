@@ -154,7 +154,7 @@ export abstract class StructuralContainer<S> {
    * any change. Select-mode consumers don't register here at all.
    */
   getConsumerPaths(): ReadonlyMap<ConsumerId, PathSet> {
-    return this._consumerPaths;
+    return new Map(this._consumerPaths);
   }
 
   // ---------------------------------------------------------------------------
