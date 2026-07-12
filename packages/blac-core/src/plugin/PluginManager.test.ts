@@ -129,6 +129,31 @@ describe('PluginManager', () => {
 
       expect(manager.hasPlugin('test-plugin')).toBe(true);
     });
+
+    it('backfills onCreated and the state bridge for existing instances', async () => {
+      const counter = acquire(CounterCubit, { args: { id: 'main' } });
+
+      const onCreated = vi.fn();
+      const onStateChange = vi.fn();
+      const plugin: BlacPlugin = {
+        name: 'late-plugin',
+        version: '1.0.0',
+        onCreated,
+        onStateChange,
+      };
+
+      manager.install(plugin);
+
+      expect(onCreated).toHaveBeenCalledOnce();
+      expect(onCreated).toHaveBeenCalledWith(
+        expect.objectContaining({ container: counter }),
+      );
+
+      counter.increment();
+      await new Promise<void>((r) => queueMicrotask(r));
+
+      expect(onStateChange).toHaveBeenCalledOnce();
+    });
   });
 
   describe('uninstall', () => {

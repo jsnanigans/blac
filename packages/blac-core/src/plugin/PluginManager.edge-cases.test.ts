@@ -148,13 +148,14 @@ describe('PluginManager edge cases', () => {
     registryB.clearAll();
   });
 
-  it('plugin installed after instance creation does NOT receive retroactive onCreated', () => {
-    acquire(SimpleBloc, { args: { id: 'pre-existing' } });
+  it('plugin installed after instance creation receives backfilled onCreated', () => {
+    const preExisting = acquire(SimpleBloc, { args: { id: 'pre-existing' } });
 
     const onCreated = vi.fn();
     manager.install({ name: 'late', version: '1.0.0', onCreated });
 
-    expect(onCreated).not.toHaveBeenCalled();
+    expect(onCreated).toHaveBeenCalledTimes(1);
+    expect(onCreated.mock.calls[0][0].container).toBe(preExisting);
   });
 
   it('clear() with no plugins is a no-op', () => {

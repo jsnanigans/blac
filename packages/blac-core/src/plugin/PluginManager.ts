@@ -121,6 +121,8 @@ export class PluginManager {
       installContext,
     });
 
+    this.backfillPlugin(this.plugins.get(plugin.name)!);
+
     if (plugin.onInstall) {
       try {
         plugin.onInstall(installContext);
@@ -283,6 +285,35 @@ export class PluginManager {
     if (!bridge) return;
     bridge.unsub();
     this.containerBridges.delete(container);
+  }
+
+  /**
+   * Backfill a newly-installed plugin with the app's existing instances.
+   *
+   * Iterates every registered `Type` and its live instances (`getAll`
+   * already skips disposed), attaching the state bridge (idempotent — see
+   * `attachStateBridge`) and, if the plugin implements `onCreated`, invoking
+   * it directly for each instance. Scoped to this single plugin only — the
+   * broadcast `notifyPlugins` would re-notify *every* plugin of *every*
+   * instance, which is wrong here.
+   */
+  private backfillPlugin(installed: InstalledPlugin): void {
+    const { plugin } = installed;
+    for (const Type of this.registry.getTypes()) {
+      for (const instance of this.registry.getAll(Type)) {
+        this.attachStateBridge(instance);
+
+        if (!plugin.onCreated) continue;
+        try {
+          plugin.onCreated(this.buildContext(instance));
+        } catch (error) {
+          console.error(
+            `[BlaC] Error in plugin "${plugin.name}" onCreated (backfill):`,
+            error,
+          );
+        }
+      }
+    }
   }
 
   /**
