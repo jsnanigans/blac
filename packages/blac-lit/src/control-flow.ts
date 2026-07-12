@@ -38,6 +38,8 @@ class EachDirective extends AsyncDirective {
   private renderItem!: RenderItem;
   private keyFn?: KeyFn;
   private prevKeys: Set<unknown> | null = null;
+  private lastKeysArr: readonly unknown[] | null = null;
+  private lastKeys: Set<unknown> | null = null;
   private readonly session = new BindingSession<readonly unknown[]>((arr) =>
     this.apply(arr),
   );
@@ -87,8 +89,14 @@ class EachDirective extends AsyncDirective {
 
   private computeKeys(arr: readonly unknown[]): Set<unknown> | null {
     if (!this.keyFn || !arr) return null;
+    // The session's per-tick memo hands back a byref-stable array when nothing
+    // changed; skip rebuilding the key Set in that case. Sets are never mutated
+    // after construction, so aliasing prevKeys/lastKeys is safe.
+    if (arr === this.lastKeysArr) return this.lastKeys;
     const keys = new Set<unknown>();
     for (let i = 0; i < arr.length; i++) keys.add(this.keyFn(arr[i], i));
+    this.lastKeysArr = arr;
+    this.lastKeys = keys;
     return keys;
   }
 

@@ -28,6 +28,8 @@ export interface InstanceEntry<T = any> {
   refs: Map<string, number>;
   /** The args used when this entry was first created; used for dev-warn on arg mismatch. */
   args?: unknown;
+  /** Memoized structuralKey(args) for the dev arg-mismatch warning. */
+  argsKey?: string;
 }
 
 /**
@@ -314,7 +316,7 @@ export class StateContainerRegistry {
         entry.args !== undefined
       ) {
         const incomingKey = structuralKey(args);
-        const storedKey = structuralKey(entry.args);
+        const storedKey = (entry.argsKey ??= structuralKey(entry.args));
         if (incomingKey !== storedKey) {
           console.warn(
             `${BLAC_ERROR_PREFIX} ${Type.name} instance key "${resolvedKey}" was acquired with different args. ` +

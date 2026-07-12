@@ -43,10 +43,10 @@ export const PathSetSpace: Space<PathSet> = {
     if (interest === ALL_PATHS) return !PathSetSpace.isEmpty(dirty);
     if (dirty === ALL_PATHS) return !PathSetSpace.isEmpty(interest);
     // Both are Sets. Iterate the smaller, lookup in the larger.
-    const [small, large] =
-      (interest as Set<PathId>).size <= (dirty as Set<PathId>).size
-        ? [interest as Set<PathId>, dirty as Set<PathId>]
-        : [dirty as Set<PathId>, interest as Set<PathId>];
+    const si = interest as Set<PathId>;
+    const sd = dirty as Set<PathId>;
+    const small = si.size <= sd.size ? si : sd;
+    const large = small === si ? sd : si;
     for (const id of small) if (large.has(id)) return true;
     return false;
   },

@@ -206,9 +206,11 @@ export class BindingSession<T> {
 
     // Scratch for this compute: dep handles reached via `onDepHandle` record
     // themselves here so `reconcileDeps` can diff against the live dep set.
-    const pending = new Map<StateContainer, PendingDep>();
-    this.pendingDeps = pending;
-    this.pendingTracked = [];
+    // `pendingDeps` is allocated lazily in `onDepHandle.track()`, so a
+    // zero-dep recompute (the common `$.count`-style binding) allocates no
+    // Map; `pendingTracked` is reused across computes instead of reallocated.
+    this.pendingDeps = undefined;
+    this.pendingTracked.length = 0;
     this.trackingActive = true;
 
     let value: T;
@@ -221,16 +223,16 @@ export class BindingSession<T> {
       // A failed tracked read must not leave previous paths subscribed or in
       // the source skeleton on any container (primary or dep) touched this
       // compute. A later Lit update can establish a fresh session.
+      this.pendingDeps = undefined;
       this.detachAfterFailure();
       throw error;
     } finally {
       // Lit completes this read synchronously. Unlike React JSX, no later
       // commit phase needs these proxies armed.
       this.trackingActive = false;
-      this.pendingDeps = undefined;
       tracked.disarm();
       for (const t of this.pendingTracked) t.disarm();
-      this.pendingTracked = [];
+      this.pendingTracked.length = 0;
     }
 
     primary.snapshot = snapshot;
@@ -246,6 +248,8 @@ export class BindingSession<T> {
       if (primary.unsubscribe) this.registerPaths(primary);
     }
 
+    const pending = this.pendingDeps;
+    this.pendingDeps = undefined;
     this.reconcileDeps(pending);
 
     this.lastReader = reader;
@@ -300,7 +304,10 @@ export class BindingSession<T> {
         );
         this.pendingTracked.push(tracked);
 
-        const pending = this.pendingDeps!;
+        const pending = (this.pendingDeps ??= new Map<
+          StateContainer,
+          PendingDep
+        >());
         const existing = pending.get(dep);
         if (existing) {
           // Re-entry this compute (`.track()` twice, or a mutual cycle):
@@ -333,14 +340,18 @@ export class BindingSession<T> {
   };
 
   /** Diff this compute's reached deps against the live dep set. */
-  private reconcileDeps(pending: Map<StateContainer, PendingDep>): void {
+  private reconcileDeps(
+    pending: Map<StateContainer, PendingDep> | undefined,
+  ): void {
     // Drop deps no longer reached this compute.
     for (const [container, rec] of this.deps) {
-      if (!pending.has(container)) {
+      if (!pending || !pending.has(container)) {
         this.detachContainer(rec);
         this.deps.delete(container);
       }
     }
+
+    if (!pending) return;
 
     // Add/refresh deps reached this compute.
     for (const [container, p] of pending) {
