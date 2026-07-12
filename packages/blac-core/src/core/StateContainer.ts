@@ -315,7 +315,15 @@ export abstract class StateContainer<
     const resolve = (args?: ExtractArgs<T>): InstanceType<T> => {
       const effectiveArgs = args ?? defaultArgs;
       const key = this._registry.resolveKey(Type, undefined, effectiveArgs);
-      return this._registry.ensure(Type, key, effectiveArgs);
+      // Same no-ref semantics as `ensure()`, but records `this` as a
+      // dependent edge on the resolved entry so the registry can sweep it
+      // on `this`'s disposal (see StateContainerRegistry._releaseDependent).
+      return this._registry.acquire(Type, key, {
+        canCreate: true,
+        countRef: false,
+        args: effectiveArgs,
+        dependent: this,
+      }) as InstanceType<T>;
     };
 
     const handle = {

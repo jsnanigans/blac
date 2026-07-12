@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
 import { Cubit } from './Cubit';
-import { acquire, hasInstance, getRefCount } from '../registry';
+import { acquire, hasInstance, getRefCount, release, clear } from '../registry';
 
 // --- Test blocs ---
 
@@ -434,6 +434,98 @@ describe('StateContainer.depend()', () => {
       expect(checkout.getNotifications.untracked().state.messages).toEqual([
         'Order placed: 2 item(s)',
       ]);
+    });
+  });
+
+  describe('dependency cleanup on owner disposal', () => {
+    class AcquiredOwnerBloc extends Cubit<{ v: number }, { id?: string }> {
+      static key = (a?: { id?: string }) => a?.id ?? 'default';
+      getAuth = this.depend(AuthBloc);
+      constructor() {
+        super({ v: 0 });
+      }
+    }
+
+    class KeepAliveOwnerBloc extends Cubit<{ v: number }, { id?: string }> {
+      static key = (a?: { id?: string }) => a?.id ?? 'default';
+      getCart = this.depend(CartBloc);
+      constructor() {
+        super({ v: 0 });
+      }
+    }
+
+    it('disposing an acquire()-owned owner frees its non-keepAlive dependency', () => {
+      const owner = acquire(AcquiredOwnerBloc);
+      owner.getAuth.untracked();
+      expect(hasInstance(AuthBloc)).toBe(true);
+
+      owner.dispose();
+
+      expect(hasInstance(AuthBloc)).toBe(false);
+    });
+
+    it('diamond dependency: dep survives until both owners are disposed', () => {
+      const ownerA = acquire(AcquiredOwnerBloc, { args: { id: 'a' } });
+      const ownerB = acquire(AcquiredOwnerBloc, { args: { id: 'b' } });
+      ownerA.getAuth.untracked();
+      ownerB.getAuth.untracked();
+      expect(hasInstance(AuthBloc)).toBe(true);
+
+      ownerA.dispose();
+      expect(hasInstance(AuthBloc)).toBe(true);
+
+      ownerB.dispose();
+      expect(hasInstance(AuthBloc)).toBe(false);
+    });
+
+    it('release(Owner, { forceDispose: true }) frees an orphaned dependency', () => {
+      const owner = acquire(AcquiredOwnerBloc, { args: { id: 'force' } });
+      owner.getAuth.untracked();
+      expect(hasInstance(AuthBloc)).toBe(true);
+
+      release(AcquiredOwnerBloc, { args: { id: 'force' }, forceDispose: true });
+
+      expect(hasInstance(AuthBloc)).toBe(false);
+    });
+
+    it('clear(OwnerType) frees an orphaned dependency without clearing the dep type', () => {
+      const owner = acquire(AcquiredOwnerBloc, { args: { id: 'clear' } });
+      owner.getAuth.untracked();
+      expect(hasInstance(AuthBloc)).toBe(true);
+
+      clear(AcquiredOwnerBloc);
+
+      expect(hasInstance(AuthBloc)).toBe(false);
+    });
+
+    it('keepAlive dependency survives its sole owner disposing directly', () => {
+      const owner = acquire(KeepAliveOwnerBloc, { args: { id: 'direct' } });
+      owner.getCart.untracked();
+
+      owner.dispose();
+
+      expect(hasInstance(CartBloc)).toBe(true);
+    });
+
+    it('keepAlive dependency survives release(Owner, { forceDispose: true })', () => {
+      const owner = acquire(KeepAliveOwnerBloc, { args: { id: 'force' } });
+      owner.getCart.untracked();
+
+      release(KeepAliveOwnerBloc, {
+        args: { id: 'force' },
+        forceDispose: true,
+      });
+
+      expect(hasInstance(CartBloc)).toBe(true);
+    });
+
+    it('keepAlive dependency survives clear(OwnerType)', () => {
+      const owner = acquire(KeepAliveOwnerBloc, { args: { id: 'clear' } });
+      owner.getCart.untracked();
+
+      clear(KeepAliveOwnerBloc);
+
+      expect(hasInstance(CartBloc)).toBe(true);
     });
   });
 });
