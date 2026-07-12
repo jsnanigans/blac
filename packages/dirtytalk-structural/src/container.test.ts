@@ -158,6 +158,43 @@ describe('StructuralContainer — patch', () => {
   });
 });
 
+describe('StructuralContainer — deepMerge __proto__ guard', () => {
+  it('a JSON.parse\'d top-level "__proto__" patch key does not pollute the merged result\'s prototype', () => {
+    const c = make({ count: 0, label: 'a' });
+    const before = c.state;
+
+    c.patch(JSON.parse('{"__proto__":{"polluted":true}}'));
+
+    expect(Object.getPrototypeOf(c.state)).toBe(Object.getPrototypeOf(before));
+    expect((c.state as Record<string, unknown>)['__proto__']).toEqual({
+      polluted: true,
+    });
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+  });
+
+  it('a nested "__proto__" patch key one level down does not pollute the nested object\'s prototype', () => {
+    interface UserState {
+      user: { email: string; name: string };
+    }
+    class UserBox extends StructuralContainer<UserState> {}
+    const c = new UserBox(
+      { user: { email: 'a@a', name: 'n' } },
+      { scheduler: new SyncScheduler() },
+    );
+    const beforeUser = c.state.user;
+
+    c.patch({ user: JSON.parse('{"__proto__":{"polluted":true}}') });
+
+    expect(Object.getPrototypeOf(c.state.user)).toBe(
+      Object.getPrototypeOf(beforeUser),
+    );
+    expect((c.state.user as Record<string, unknown>)['__proto__']).toEqual({
+      polluted: true,
+    });
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+  });
+});
+
 describe('StructuralContainer — DeepPartial patch type-checking', () => {
   interface Nested {
     user: { name: string; email: string };

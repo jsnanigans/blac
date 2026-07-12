@@ -426,6 +426,30 @@ const isPlainPatchObject = (v: unknown): v is Record<string, unknown> => {
   return proto === Object.prototype || proto === null;
 };
 
+// Bracket-assigning the literal key "__proto__" invokes the inherited
+// Object.prototype setter and rewrites `out`'s prototype instead of storing
+// an own key — e.g. from a JSON.parse'd patch. Route that one key through
+// defineProperty so it lands as a plain own property.
+// NOTE: carry this guard into deepMerge's planned lazy-clone rewrite
+// (plans/patch-emit-redundant-diff-clone.md) — its single-loop version must
+// not reintroduce the bracket-assignment path for this key.
+const setMergedKey = (
+  out: Record<string, unknown>,
+  key: string,
+  value: unknown,
+): void => {
+  if (key === '__proto__') {
+    Object.defineProperty(out, key, {
+      value,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
+  } else {
+    out[key] = value;
+  }
+};
+
 const deepMerge = <S>(target: S, patch: Partial<S>): S => {
   if (!isPlainPatchObject(target) || !isPlainPatchObject(patch)) {
     // Either side isn't a plain object — patch replaces wholesale.
@@ -444,10 +468,10 @@ const deepMerge = <S>(target: S, patch: Partial<S>): S => {
     const prevVal = (target as Record<string, unknown>)[key];
     if (isPlainPatchObject(nextVal) && isPlainPatchObject(prevVal)) {
       const merged = deepMerge(prevVal, nextVal as Partial<typeof prevVal>);
-      out[key] = merged;
+      setMergedKey(out, key, merged);
       if (!Object.is(merged, prevVal)) changed = true;
     } else {
-      out[key] = nextVal;
+      setMergedKey(out, key, nextVal);
       if (!Object.is(nextVal, prevVal)) changed = true;
     }
   }
