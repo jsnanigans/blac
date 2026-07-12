@@ -91,6 +91,44 @@ describe('DirtyChannel — flush behaviour', () => {
     expect(cb).toHaveBeenCalledWith(0b001);
   });
 
+  it('4c. sole subscriber unsubscribing itself mid-callback ends cleanly', () => {
+    const { sched, ch } = make();
+    const cb = vi.fn();
+    const ref = { unsub: () => {} };
+    ref.unsub = ch.subscribe(
+      () => 0b001,
+      () => {
+        cb();
+        ref.unsub();
+      },
+    );
+    ch.mark(0b001);
+    expect(() => sched.pump()).not.toThrow();
+    expect(cb).toHaveBeenCalledTimes(1);
+
+    ch.mark(0b001);
+    sched.pump();
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  it('4d. sole subscriber subscribing a second entry mid-flush defers it to the next flush', () => {
+    const { sched, ch } = make();
+    const lateCallback = vi.fn();
+    ch.subscribe(
+      () => 0b001,
+      () => {
+        ch.subscribe(() => 0b001, lateCallback);
+      },
+    );
+    ch.mark(0b001);
+    sched.pump(); // flush #1 — lateCallback should NOT run
+    expect(lateCallback).not.toHaveBeenCalled();
+
+    ch.mark(0b001);
+    sched.pump();
+    expect(lateCallback).toHaveBeenCalledTimes(1);
+  });
+
   it('5. subscriber whose interest does not intersect is NOT called', () => {
     const { sched, ch } = make();
     const cb = vi.fn();

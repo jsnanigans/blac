@@ -99,41 +99,75 @@ export class DirtyChannel<Region> {
     // Step 3 — enter flushing mode.
     this.#flushing = true;
 
-    // Step 4 — snapshot the subscriber list. New subscribers added during
-    // callbacks will not be in this list and will NOT run this cycle.
-    const live = Array.from(this.#subscribers.values());
-
     let errors: unknown[] | undefined;
 
-    // Step 5 — iterate the snapshot.
-    for (const entry of live) {
-      // Check the alive flag on the entry, not the map — the map may have been
-      // mutated by an earlier callback (subscribe or unsubscribe).
-      if (!entry.alive) continue;
-
-      // Evaluate the interest thunk lazily, once per flush per subscriber.
-      let interest: Region;
-      try {
-        interest = entry.interest();
-      } catch (err) {
-        // Treat a throwing thunk as "no interest this flush" and record it.
-        if (this.#onError) {
-          this.#onError(err);
-        } else {
-          (errors ??= []).push(err);
+    // Step 4/5 — for 0 or 1 subscribers, skip the array snapshot entirely and
+    // run the per-entry logic directly on the sole captured entry.
+    if (this.#subscribers.size <= 1) {
+      const entry = this.#subscribers.values().next().value;
+      if (entry?.alive) {
+        // Evaluate the interest thunk lazily, once per flush per subscriber.
+        let interest: Region | undefined;
+        let interestOk = true;
+        try {
+          interest = entry.interest();
+        } catch (err) {
+          // Treat a throwing thunk as "no interest this flush" and record it.
+          if (this.#onError) {
+            this.#onError(err);
+          } else {
+            (errors ??= []).push(err);
+          }
+          interestOk = false;
         }
-        continue;
+
+        if (interestOk && this.#space.intersects(interest as Region, dirty)) {
+          try {
+            entry.cb(dirty);
+          } catch (err) {
+            if (this.#onError) {
+              this.#onError(err);
+            } else {
+              (errors ??= []).push(err);
+            }
+          }
+        }
       }
+    } else {
+      // Snapshot the subscriber list. New subscribers added during
+      // callbacks will not be in this list and will NOT run this cycle.
+      const live = Array.from(this.#subscribers.values());
 
-      if (!this.#space.intersects(interest, dirty)) continue;
+      // Iterate the snapshot.
+      for (const entry of live) {
+        // Check the alive flag on the entry, not the map — the map may have been
+        // mutated by an earlier callback (subscribe or unsubscribe).
+        if (!entry.alive) continue;
 
-      try {
-        entry.cb(dirty);
-      } catch (err) {
-        if (this.#onError) {
-          this.#onError(err);
-        } else {
-          (errors ??= []).push(err);
+        // Evaluate the interest thunk lazily, once per flush per subscriber.
+        let interest: Region;
+        try {
+          interest = entry.interest();
+        } catch (err) {
+          // Treat a throwing thunk as "no interest this flush" and record it.
+          if (this.#onError) {
+            this.#onError(err);
+          } else {
+            (errors ??= []).push(err);
+          }
+          continue;
+        }
+
+        if (!this.#space.intersects(interest, dirty)) continue;
+
+        try {
+          entry.cb(dirty);
+        } catch (err) {
+          if (this.#onError) {
+            this.#onError(err);
+          } else {
+            (errors ??= []).push(err);
+          }
         }
       }
     }
