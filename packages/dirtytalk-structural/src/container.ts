@@ -56,7 +56,10 @@ export interface StructuralContainerOptions {
   /**
    * Error handler forwarded to the underlying `DirtyChannel`. Invoked when a
    * subscriber callback throws during flush, instead of letting the error
-   * propagate. Unset preserves the channel's default (throw) behavior.
+   * propagate. Unset preserves the channel's default (throw) behavior:
+   * subscriber and interest-thunk errors are re-thrown synchronously inside
+   * the scheduler's flush callback (a microtask or rAF tick), where they
+   * surface as uncaught errors and abort the remainder of that flush tick.
    */
   onError?: (err: unknown) => void;
 }
