@@ -4,7 +4,6 @@ export default defineConfig({
   pack: {
     entry: {
       index: 'src/index.ts',
-      primitives: 'src/primitives.ts',
     },
     format: ['esm', 'cjs'],
     clean: false,

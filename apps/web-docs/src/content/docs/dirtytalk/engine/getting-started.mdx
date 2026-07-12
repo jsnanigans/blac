@@ -33,7 +33,7 @@ yarn add @dirtytalk/engine
 </TabItem>
 </Tabs>
 
-The package is ESM-first (`"type": "module"`), side-effect free, and has zero runtime dependencies. It ships a main entry point and one subpath, `@dirtytalk/engine/primitives`, for the standalone `Signal` and `Observable` types.
+The package is ESM-first (`"type": "module"`), side-effect free, and has zero runtime dependencies. It ships a single entry point, `@dirtytalk/engine`.
 
 ## The one idea
 
@@ -172,37 +172,6 @@ console.log(seen); // unchanged — nothing pending, pump is a no-op
 ```
 
 There is also a fourth built-in, `RAFScheduler`, which flushes once per animation frame (falling back to `setTimeout(fn, 16)` when `requestAnimationFrame` is unavailable). It is the right choice for frame-aligned repaints. All four are compared in the [scheduler table](/dirtytalk/engine/concepts#the-four-schedulers).
-
-## The Signal primitive
-
-Sometimes you have a single observable value that does not need the full channel ceremony — no regions, no interest, no coalescing window. For that, the engine exposes `Signal<T>`, a synchronous notification primitive, on the `/primitives` subpath.
-
-```ts
-import { Signal } from '@dirtytalk/engine/primitives';
-
-const count = new Signal(0);
-
-const unsub = count.subscribe((v) => console.log('count:', v));
-
-count.value = 1; // => "count: 1"
-count.value = 1; // skipped — Object.is equality short-circuits the notify
-count.peek(); // 1 — read without subscribing
-unsub();
-```
-
-`Signal` notifies synchronously the moment you set `value`, guarded by an equality check that defaults to `Object.is`. You can pass a custom comparator as the second constructor argument:
-
-```ts
-import { Signal } from '@dirtytalk/engine/primitives';
-
-const user = new Signal({ id: 1, name: 'a' }, (a, b) => a.id === b.id);
-user.subscribe((u) => console.log('user:', u));
-
-user.value = { id: 1, name: 'b' }; // no notify — same id
-user.value = { id: 2, name: 'b' }; // => "user: { id: 2, name: 'b' }"
-```
-
-`Signal` is intentionally not a `DirtyChannel`: it has no scheduler and no coalescing, and a re-entrant write inside a subscriber recurses synchronously rather than deferring. Pick `Signal` for "one value changed, tell everyone now"; pick `DirtyChannel` for "many things changed, tell the right people once". The difference is covered in [Concepts](/dirtytalk/engine/concepts#the-signal-observable-layer).
 
 ## When to use the engine directly
 

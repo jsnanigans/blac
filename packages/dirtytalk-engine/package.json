@@ -12,13 +12,6 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "typesVersions": {
-    "*": {
-      "primitives": [
-        "./dist/primitives.d.ts"
-      ]
-    }
-  },
   "exports": {
     ".": {
       "import": {
@@ -28,16 +21,6 @@
       "require": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
-      }
-    },
-    "./primitives": {
-      "import": {
-        "types": "./dist/primitives.d.ts",
-        "default": "./dist/primitives.js"
-      },
-      "require": {
-        "types": "./dist/primitives.d.cts",
-        "default": "./dist/primitives.cjs"
       }
     }
   },
@@ -53,7 +36,6 @@
   "keywords": [
     "reactive",
     "dirty-tracking",
-    "signal",
     "scheduler",
     "engine"
   ],

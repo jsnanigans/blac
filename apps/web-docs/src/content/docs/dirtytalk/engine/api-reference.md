@@ -1,115 +1,29 @@
 ---
 title: API Reference
-description: The exhaustive public surface of @dirtytalk/engine, organized by export — Observable, Signal, Space, the four schedulers, and DirtyChannel.
+description: The exhaustive public surface of @dirtytalk/engine, organized by export — Space, the four schedulers, and DirtyChannel.
 ---
 
 The exhaustive surface of `@dirtytalk/engine`, organized by export. Every signature here is quoted from the source. For the conceptual model behind these types see [Concepts](/dirtytalk/engine/concepts); for a guided introduction see [Getting Started](/dirtytalk/engine/getting-started).
 
 ## Entry points
 
-The package has two entry points:
+The package has a single entry point:
 
-| Import path                    | Exports                                                                                                                                |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `@dirtytalk/engine`            | `Observable`, `Signal`, `Space`, `Scheduler`, `SyncScheduler`, `ManualScheduler`, `MicrotaskScheduler`, `RAFScheduler`, `DirtyChannel` |
-| `@dirtytalk/engine/primitives` | `Observable`, `Signal`                                                                                                                 |
+| Import path         | Exports                                                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `@dirtytalk/engine` | `Space`, `Scheduler`, `SyncScheduler`, `ManualScheduler`, `MicrotaskScheduler`, `RAFScheduler`, `DirtyChannel` |
 
-`Observable`, `Space`, and `Scheduler` are **type-only** exports (interfaces). The rest are runtime classes.
+`Space` and `Scheduler` are **type-only** exports (interfaces). The rest are runtime classes.
 
 ```ts
-// Everything:
 import {
-  Signal,
   SyncScheduler,
   ManualScheduler,
   MicrotaskScheduler,
   RAFScheduler,
   DirtyChannel,
 } from '@dirtytalk/engine';
-import type { Observable, Space, Scheduler } from '@dirtytalk/engine';
-
-// Just the primitive:
-import { Signal } from '@dirtytalk/engine/primitives';
-import type { Observable } from '@dirtytalk/engine/primitives';
-```
-
----
-
-## `Observable<T>`
-
-A read-and-subscribe interface. `Signal<T>` is the only built-in implementation; the interface exists so consumers can accept any observable value.
-
-```ts
-interface Observable<T> {
-  peek(): T;
-  subscribe(cb: (value: T) => void): () => void;
-}
-```
-
-| Member      | Signature                              | Description                                                                                |
-| ----------- | -------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `peek`      | `(): T`                                | Read the current value without subscribing.                                                |
-| `subscribe` | `(cb: (value: T) => void): () => void` | Register a callback invoked with the new value on change. Returns an unsubscribe function. |
-
----
-
-## `Signal<T>`
-
-`class Signal<T> implements Observable<T>` — a synchronous notification primitive for a single observable value. No scheduler, no coalescing.
-
-### Constructor
-
-```ts
-constructor(initial: T, equals?: (a: T, b: T) => boolean)
-```
-
-| Parameter | Type                      | Required | Description                                                                      |
-| --------- | ------------------------- | -------- | -------------------------------------------------------------------------------- |
-| `initial` | `T`                       | yes      | Starting value.                                                                  |
-| `equals`  | `(a: T, b: T) => boolean` | no       | Equality predicate used to short-circuit notifications. Defaults to `Object.is`. |
-
-Because the default is `Object.is`: `NaN` is considered equal to `NaN` (so writing `NaN` over `NaN` does not notify), and `+0`/`-0` are considered distinct (so writing one over the other _does_ notify).
-
-### Members
-
-```ts
-get value(): T
-set value(next: T)
-peek(): T
-subscribe(cb: (value: T) => void): () => void
-```
-
-| Member        | Signature                                       | Returns                  | Description                                                                                                                 |
-| ------------- | ----------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `value` (get) | `get value(): T`                                | `T`                      | The current value.                                                                                                          |
-| `value` (set) | `set value(next: T)`                            | `void`                   | Assign with an equality guard (see below).                                                                                  |
-| `peek`        | `peek(): T`                                     | `T`                      | Read without subscribing. Identical result to the `value` getter; provided for `Observable` conformance and intent clarity. |
-| `subscribe`   | `subscribe(cb: (value: T) => void): () => void` | unsubscribe `() => void` | Add `cb` to the subscriber set. Returns an idempotent unsubscribe closure.                                                  |
-
-**`set value` behavior.** If `equals(current, next)` is true, the setter returns immediately — no store, no notify. Otherwise it stores `next`, snapshots the current subscribers (`Array.from`), and invokes each with `next`. Subscribers are stored in a `Set`, so they run in registration (insertion) order. Errors thrown by callbacks are collected, not aborted on; after all subscribers run, a single error is re-thrown as-is, and multiple errors are thrown as `new AggregateError(errors, 'Signal: multiple subscriber errors')`.
-
-**`subscribe` behavior.** Adds `cb` to the internal set and returns a closure that removes it. The closure is idempotent (guarded by a local flag) — calling it more than once is safe. Because subscribers are snapshotted before a notify, unsubscribing during a notify still lets the already-snapshotted callback run on the _current_ set, but not on the next.
-
-:::tip[Re-entrant writes recurse]
-Setting `value` from inside a subscriber triggers a fresh, fully synchronous notify cycle — unlike `DirtyChannel`, whose re-entrant marks defer to the next flush.
-:::
-
-```ts
-import { Signal } from '@dirtytalk/engine/primitives';
-
-const count = new Signal(0);
-const unsub = count.subscribe((v) => console.log('count:', v));
-
-count.value = 1; // => "count: 1"
-count.value = 1; // no notify — Object.is(1, 1) is true
-count.peek(); // 1
-unsub();
-
-// custom equality:
-const user = new Signal({ id: 1 }, (a, b) => a.id === b.id);
-user.subscribe((u) => console.log(u));
-user.value = { id: 1 }; // no notify — same id
-user.value = { id: 2 }; // notifies
+import type { Space, Scheduler } from '@dirtytalk/engine';
 ```
 
 ---
@@ -252,7 +166,7 @@ class MicrotaskScheduler implements Scheduler {
 ```
 
 | Member    | Signature                   | Description                                                                                                                                                                       |
-| --------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| --------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `request` | `(flush: () => void): void` | Stores `flush` as the latest. If not already pending, schedules a drain via `queueMicrotask`. All requests within a tick coalesce into one microtask; the last stored flush wins. |
 | `cancel`  | `(): void`                  | Clears pending state and the stored flush, preventing the scheduled drain from running anything. After `cancel`, a fresh `request` works normally.                                |
 

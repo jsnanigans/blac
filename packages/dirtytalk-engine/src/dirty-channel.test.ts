@@ -3,7 +3,7 @@ import { DirtyChannel } from './dirty-channel';
 import type { Space } from './space';
 
 // ---------------------------------------------------------------------------
-// Hermetic test doubles — do NOT import from './scheduler' or './primitives'
+// Hermetic test doubles — do NOT import from './scheduler'
 // ---------------------------------------------------------------------------
 
 const NumberBitsetSpace: Space<number> = {

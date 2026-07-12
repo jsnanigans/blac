@@ -22,8 +22,6 @@ This package is that algebra plus the scheduling glue.
 
 ## What's in the box
 
-- `Signal<T>` / `Observable<T>` — synchronous notification primitives for one-off observable
-  values that don't need the full dirty-channel ceremony.
 - `Space<Region>` interface — the algebra a consuming library must implement to describe its
   notion of "what changed" (e.g., rect unions, path sets).
 - `Scheduler` interface + four built-in implementations (`SyncScheduler`, `ManualScheduler`,
@@ -35,12 +33,6 @@ This package is that algebra plus the scheduling glue.
 
 ```bash
 pnpm add @dirtytalk/engine
-```
-
-If you only want `Signal` and `Observable`, import from the `./primitives` subpath:
-
-```ts
-import { Signal } from '@dirtytalk/engine/primitives';
 ```
 
 ## Quick example
@@ -80,27 +72,6 @@ channel.mark(new Set(['theme']));
 
 unsub();
 ```
-
-## Primitives — `Signal<T>`
-
-```ts
-import { Signal } from '@dirtytalk/engine';
-
-const count = new Signal(0);
-
-const unsub = count.subscribe((v) => console.log('count:', v));
-
-count.value = 1; // => "count: 1"
-count.value = 1; // skipped — Object.is equality short-circuits notify
-
-unsub();
-
-count.peek(); // read without subscribing
-```
-
-`Signal` accepts an optional second argument `equals?: (a: T, b: T) => boolean` to override
-the default `Object.is` check. Notification is synchronous at this layer; coalescing is
-`DirtyChannel`'s job.
 
 ## The `Space<Region>` interface
 

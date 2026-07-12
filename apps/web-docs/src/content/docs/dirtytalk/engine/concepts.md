@@ -121,10 +121,6 @@ Many marks in one window → one flush, carrying the single unioned `dirty` regi
 
 If a subscriber callback calls `mark` during a flush, that region accumulates into the _next_ flush's payload — it never re-enters the current dispatch synchronously. The follow-up is scheduled at step 7 once the current flush is fully done. This bounds the work per tick and makes infinite synchronous loops impossible within a single flush.
 
-:::caution[Signal does the opposite]
-A re-entrant _write_ inside a `Signal` subscriber recurses synchronously — a fresh, fully synchronous notify cycle. `DirtyChannel` defers; `Signal` recurses. Do not assume one behaves like the other.
-:::
-
 ### Error isolation and AggregateError
 
 A throwing interest thunk is treated as "no interest this flush": the error is recorded and the subscriber is skipped. A throwing callback is likewise recorded, and iteration continues to the remaining subscribers. Errors surface only **after** the whole flush completes and the channel's state is clean (including any follow-up scheduling):
@@ -143,32 +139,6 @@ Because the subscriber list is snapshotted at step 4, a `subscribe` during a cal
 
 The interest passed to `subscribe` is a function, re-evaluated lazily once per flush per subscriber — never snapshotted at subscribe time, and skipped entirely on empty-dirty flushes. This lets a subscriber move, resize, or reconfigure between flushes and always be matched against its _current_ interest. The flip side: do not put load-bearing side effects in an interest thunk (it may not run on a given flush), and keep it pure-ish — a throw is swallowed-as-error and skips that subscriber for that flush.
 
-## The Signal / Observable layer
-
-Alongside the channel, the engine exposes a much simpler primitive for single observable values that do not need region machinery.
-
-```ts
-interface Observable<T> {
-  peek(): T;
-  subscribe(cb: (value: T) => void): () => void;
-}
-```
-
-`Signal<T>` is the only built-in implementation. It holds one value, notifies subscribers synchronously when that value changes, and short-circuits the notify when the new value is equal to the old (by `Object.is`, or a custom comparator you pass). There is no scheduler and no coalescing — set the value, subscribers run now.
-
-How it differs from `DirtyChannel`:
-
-|                    | `Signal<T>`                                                               | `DirtyChannel<Region>`                                                              |
-| ------------------ | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Carries            | one value `T`                                                             | a region of "what changed"                                                          |
-| Notification       | synchronous on set                                                        | deferred to a scheduler window                                                      |
-| Coalescing         | none                                                                      | many marks → one flush                                                              |
-| Selective delivery | none (every subscriber notified)                                          | interest ∩ dirty per subscriber                                                     |
-| Re-entrancy        | recurses synchronously                                                    | defers to next flush                                                                |
-| Error surfacing    | single re-thrown / `AggregateError('Signal: multiple subscriber errors')` | single re-thrown / `AggregateError('DirtyChannel: subscriber errors during flush')` |
-
-Reach for `Signal` when you have "one value, tell everyone now". Reach for `DirtyChannel` when you have "many things, tell the right people once, when the moment is right".
-
 ## What it is not
 
 The engine is deliberately small. It is not a reactivity framework, and it leaves several things to the layers above it:
@@ -179,7 +149,7 @@ The engine is deliberately small. It is not a reactivity framework, and it leave
 - **No selector or memoization helpers.** That is a consumer concern (React's `useMemo`, blac's per-consumer tracker).
 - **No diffing utilities.** Turning a mutation into a `Region` is the consuming library's job. The engine only `union`s and `intersects`.
 - **No glitch-free dependency graph.** There is no dependency graph at this layer at all.
-- **Not coupled to any framework.** React, the DOM, and the GPU are never referenced. There is no React entry point — the only entries are `.` and `./primitives`.
+- **Not coupled to any framework.** React, the DOM, and the GPU are never referenced. There is no React entry point — the only entry is `.`.
 
 ## See also
 
