@@ -433,9 +433,6 @@ const isPlainPatchObject = (v: unknown): v is Record<string, unknown> => {
 // Object.prototype setter and rewrites `out`'s prototype instead of storing
 // an own key — e.g. from a JSON.parse'd patch. Route that one key through
 // defineProperty so it lands as a plain own property.
-// NOTE: carry this guard into deepMerge's planned lazy-clone rewrite
-// (plans/patch-emit-redundant-diff-clone.md) — its single-loop version must
-// not reintroduce the bracket-assignment path for this key.
 const setMergedKey = (
   out: Record<string, unknown>,
   key: string,
@@ -458,25 +455,30 @@ const deepMerge = <S>(target: S, patch: Partial<S>): S => {
     // Either side isn't a plain object — patch replaces wholesale.
     return patch as S;
   }
-  const out: Record<string, unknown> = {
-    ...(target as Record<string, unknown>),
-  };
   // Track whether any key actually moved. When nothing changed we return the
   // original `target` reference so callers can detect no-ops with `Object.is`
   // (and skip marking/waking entirely) — and a touched-but-equal subtree keeps
-  // its reference, which `changedPathsFromPatch` already relies on.
-  let changed = false;
+  // its reference, which `changedPathsFromPatch` already relies on. `out` is
+  // only materialized on the first changed key — unchanged keys are already
+  // correct once `out` is spread from `target`, so no per-key assignment is
+  // needed for them.
+  let out: Record<string, unknown> | undefined;
   for (const key of Object.keys(patch)) {
     const nextVal = (patch as Record<string, unknown>)[key];
     const prevVal = (target as Record<string, unknown>)[key];
+    let mergedVal: unknown;
+    let keyChanged: boolean;
     if (isPlainPatchObject(nextVal) && isPlainPatchObject(prevVal)) {
-      const merged = deepMerge(prevVal, nextVal as Partial<typeof prevVal>);
-      setMergedKey(out, key, merged);
-      if (!Object.is(merged, prevVal)) changed = true;
+      mergedVal = deepMerge(prevVal, nextVal as Partial<typeof prevVal>);
+      keyChanged = !Object.is(mergedVal, prevVal);
     } else {
-      setMergedKey(out, key, nextVal);
-      if (!Object.is(nextVal, prevVal)) changed = true;
+      mergedVal = nextVal;
+      keyChanged = !Object.is(nextVal, prevVal);
+    }
+    if (keyChanged) {
+      if (out === undefined) out = { ...(target as Record<string, unknown>) };
+      setMergedKey(out, key, mergedVal);
     }
   }
-  return changed ? (out as S) : target;
+  return (out as S) ?? target;
 };

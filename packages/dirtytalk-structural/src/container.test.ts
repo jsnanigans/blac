@@ -195,6 +195,88 @@ describe('StructuralContainer — deepMerge __proto__ guard', () => {
   });
 });
 
+describe('StructuralContainer — deepMerge lazy-clone (reference identity)', () => {
+  interface Wide {
+    f0: number;
+    f1: number;
+    f2: number;
+    f3: number;
+    f4: number;
+    f5: number;
+    f6: number;
+    f7: number;
+    f8: number;
+    f9: number;
+    f10: number;
+    f11: number;
+    f12: number;
+    f13: number;
+    f14: number;
+    f15: number;
+    f16: number;
+    f17: number;
+    f18: number;
+    f19: number;
+    nested: { a: number; b: number };
+  }
+  class WideBox extends StructuralContainer<Wide> {}
+  const makeWide = () => {
+    const initial: Wide = {
+      f0: 0,
+      f1: 1,
+      f2: 2,
+      f3: 3,
+      f4: 4,
+      f5: 5,
+      f6: 6,
+      f7: 7,
+      f8: 8,
+      f9: 9,
+      f10: 10,
+      f11: 11,
+      f12: 12,
+      f13: 13,
+      f14: 14,
+      f15: 15,
+      f16: 16,
+      f17: 17,
+      f18: 18,
+      f19: 19,
+      nested: { a: 1, b: 2 },
+    };
+    return new WideBox(initial, { scheduler: new SyncScheduler() });
+  };
+
+  it('a wide-object no-op patch returns the same state reference', () => {
+    const c = makeWide();
+    const before = c.state;
+    c.patch({ f10: 10 }); // already-equal value
+    expect(c.state).toBe(before);
+  });
+
+  it('a 1-of-N field change only changes that key, keeps other keys reference-identical, and allocates a new top-level object', () => {
+    const c = makeWide();
+    const before = c.state;
+    const beforeNested = c.state.nested;
+    c.patch({ f10: 999 });
+
+    expect(c.state).not.toBe(before);
+    expect(c.state.f10).toBe(999);
+    expect(c.state.f9).toBe(before.f9);
+    expect(c.state.f11).toBe(before.f11);
+    expect(c.state.nested).toBe(beforeNested); // untouched nested value keeps identity
+  });
+
+  it('a nested no-op patch (deep-equal values) keeps reference identity at every level', () => {
+    const c = makeWide();
+    const before = c.state;
+    const beforeNested = c.state.nested;
+    c.patch({ nested: { a: 1, b: 2 } }); // same values, different object
+    expect(c.state).toBe(before);
+    expect(c.state.nested).toBe(beforeNested);
+  });
+});
+
 describe('StructuralContainer — DeepPartial patch type-checking', () => {
   interface Nested {
     user: { name: string; email: string };

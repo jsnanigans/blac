@@ -1,7 +1,11 @@
 import { bench, describe } from 'vite-plus/test';
 import { SyncScheduler } from '@dirtytalk/engine';
 import { StructuralContainer } from './container';
-import { trackRender, ProxyCache, __setPersistTrackingProxies } from './tracker';
+import {
+  trackRender,
+  ProxyCache,
+  __setPersistTrackingProxies,
+} from './tracker';
 import { PathInterner } from './path-interner';
 
 /**
@@ -69,7 +73,7 @@ function emitScenario(K: number): () => void {
 }
 
 describe('P4a emit', () => {
-  for (const K of [10, 100, 1000]) {
+  for (const K of [1, 10, 100, 1000]) {
     bench(`P4a emit — ${K} deep-path consumers`, emitScenario(K), {
       time: 500,
     });
@@ -122,7 +126,7 @@ function patchScenario(size: number): () => void {
 }
 
 describe('P4b patch', () => {
-  for (const size of [10, 100, 500]) {
+  for (const size of [1, 10, 100, 500]) {
     bench(
       `P4b patch array-refine — ${size}-path skeleton`,
       patchScenario(size),
@@ -194,7 +198,11 @@ function swapRowsScenario(n: number, persist: boolean): () => void {
   // `key={item.id}` does in apps/perf/src/libraries/blac/FrameworkBenchmark.tsx.
   const renderList = (state: typeof original): void => {
     __setPersistTrackingProxies(persist);
-    const tracked = trackRender(state, interner, persist ? proxyCache : undefined);
+    const tracked = trackRender(
+      state,
+      interner,
+      persist ? proxyCache : undefined,
+    );
     for (const item of tracked.value.data) void item.id;
     tracked.disarm();
   };
