@@ -1,5 +1,20 @@
 # @blac/react
 
+## 2.0.20
+
+### Patch Changes
+
+- Sync
+- Updated dependencies [14702ce]
+- Updated dependencies [2059ba9]
+- Updated dependencies [9012194]
+- Updated dependencies
+- Updated dependencies [d4cf1fa]
+- Updated dependencies [9012194]
+- Updated dependencies [0f40f5a]
+  - @blac/core@2.0.20
+  - @dirtytalk/structural@0.0.8
+
 ## 2.0.19
 
 ### Patch Changes

@@ -1,5 +1,38 @@
 # @blac/core
 
+## 2.0.20
+
+### Patch Changes
+
+- 14702ce: Fix `PluginManager.install()` to backfill existing instances. Installing a
+  plugin after instances of a registered type already exist now attaches the
+  state-change bridge to those instances and fires the plugin's `onCreated`
+  hook for each of them, instead of silently missing everything created before
+  install. Also removes the unused, unexported `generateId`/`globalCounters`/
+  `createIdGenerator`/`__resetIdCounters` dead code from `utils/idGenerator.ts`
+  (internal only, no public API change).
+- 2059ba9: Fix two registry lifecycle leaks. Disposing an instance directly (bypassing
+  `release()`) now self-prunes it from the registry's instance map and from
+  `getAll()`, instead of leaving a stale entry behind. `depend()`-resolved
+  dependencies are now tracked as dependent edges on the owner and released
+  when the owner is disposed (direct `dispose()`, `release(..., { forceDispose:
+true })`, or `clear()`), so a non-keepAlive dependency created via `depend()`
+  no longer leaks after every owner referencing it has gone away; keepAlive
+  dependencies are unaffected and diamond-shared dependencies are only disposed
+  once their last owner is gone.
+- 9012194: `watch()` now subscribes to each watched instance's own dispose hook (new
+  `@internal` `ON_DISPOSE` symbol delegating to the existing per-instance
+  `onSystemEvent('dispose')` channel) instead of filtering the registry's
+  global `disposed` broadcast. Behavior is identical — the handler fires
+  only for that exact instance's disposal — but unrelated container
+  disposals no longer cost a check per active watcher.
+- Sync
+- Updated dependencies
+- Updated dependencies [d4cf1fa]
+- Updated dependencies [9012194]
+- Updated dependencies [0f40f5a]
+  - @dirtytalk/structural@0.0.8
+
 ## 2.0.19
 
 ### Patch Changes

@@ -1,5 +1,39 @@
 # @dirtytalk/structural
 
+## 0.0.8
+
+### Patch Changes
+
+- Sync
+- d4cf1fa: Fix `deepMerge` prototype pollution via a `"__proto__"` own key in a patch
+  (e.g. one produced by `JSON.parse`). The merge loop now routes that one key
+  through `Object.defineProperty` instead of bracket assignment, so it lands as
+  a plain own property on the merged result instead of rewriting the result's
+  prototype.
+- 9012194: Two internal hot-path rewrites, no public shape change:
+  - `PathInterner.ancestorIds` memo is now length-versioned instead of fully
+    cleared on every `intern()` — a cached entry recomputes only when it is
+    re-queried after the interner has grown, moving the cost from O(all
+    cached entries) per intern to O(1) amortized per read. A dev-only
+    warning fires once when an interner crosses 5000 paths (unbounded
+    dynamic keys). Staleness guarantees are identical.
+  - `deepMerge` now clones lazily: the merged object is created only on the
+    first actually-changed key, and a fully no-op merge returns the target
+    by reference, preserving reference identity for unchanged state.
+
+- 0f40f5a: Fix two internal `dirtytalk-structural` issues: `ProxyCache` no longer
+  accumulates one cache entry per prefix an object has ever been read at (e.g.
+  an item that shifts index across renders) — `disarm()` now prunes each
+  touched target down to just the prefixes read during that render. Also,
+  `StructuralContainer.getConsumerPaths()` now returns a detached snapshot
+  `Map` instead of the live per-consumer registry, so callers can no longer
+  mutate live path-tracking state through the inspection API.
+- Updated dependencies
+- Updated dependencies [9012194]
+- Updated dependencies [9012194]
+- Updated dependencies [f592ebd]
+  - @dirtytalk/engine@0.2.0
+
 ## 0.0.7
 
 ### Patch Changes

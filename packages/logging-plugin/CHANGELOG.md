@@ -1,5 +1,16 @@
 # @blac/logging-plugin
 
+## 2.0.20
+
+### Patch Changes
+
+- Sync
+- Updated dependencies [14702ce]
+- Updated dependencies [2059ba9]
+- Updated dependencies [9012194]
+- Updated dependencies
+  - @blac/core@2.0.20
+
 ## 2.0.19
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @blac/devtools-ui
 
+## 2.0.21
+
+### Patch Changes
+
+- Sync
+- Updated dependencies [14702ce]
+- Updated dependencies [2059ba9]
+- Updated dependencies [9012194]
+- Updated dependencies
+  - @blac/core@2.0.20
+  - @blac/react@2.0.20
+
 ## 2.0.20
 
 ### Patch Changes
