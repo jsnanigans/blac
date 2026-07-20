@@ -47,6 +47,12 @@ describe('Integration: core flow without React', () => {
     const filterId = store.interner.intern('filter');
     const todosId = store.interner.intern('todos');
 
+    // Register consumers so patch runs the precise per-path diff. Without a
+    // registered consumer, patch() short-circuits to ALL_PATHS (zero-consumer
+    // skip) and every subscriber wakes regardless of interest.
+    store.registerConsumerPaths('filter-consumer', new Set([filterId]));
+    store.registerConsumerPaths('todos-consumer', new Set([todosId]));
+
     const unsubFilter = store.subscribe(
       () => new Set([filterId]),
       (dirty) => filterDirty.push(dirty),
@@ -77,6 +83,12 @@ describe('Integration: core flow without React', () => {
 
     const filterId = store.interner.intern('filter');
     const todosId = store.interner.intern('todos');
+
+    // Register consumers so patch runs the precise per-path diff. Without a
+    // registered consumer, patch() short-circuits to ALL_PATHS (zero-consumer
+    // skip) and every subscriber wakes regardless of interest.
+    store.registerConsumerPaths('filter-consumer', new Set([filterId]));
+    store.registerConsumerPaths('todos-consumer', new Set([todosId]));
 
     const unsubFilter = store.subscribe(
       () => new Set([filterId]),

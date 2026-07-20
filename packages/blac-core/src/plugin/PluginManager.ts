@@ -301,11 +301,14 @@ export class PluginManager {
     const { plugin } = installed;
     for (const Type of this.registry.getTypes()) {
       for (const instance of this.registry.getAll(Type)) {
-        this.attachStateBridge(instance);
+        // getAll returns the readonly public view; internal bridging needs the
+        // real container (same friction the `as any` in queryInstances handles).
+        const container = instance as StateContainer<any, any, any>;
+        this.attachStateBridge(container);
 
         if (!plugin.onCreated) continue;
         try {
-          plugin.onCreated(this.buildContext(instance));
+          plugin.onCreated(this.buildContext(container));
         } catch (error) {
           console.error(
             `[BlaC] Error in plugin "${plugin.name}" onCreated (backfill):`,

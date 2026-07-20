@@ -18,7 +18,7 @@
 import { writeFileSync } from 'node:fs';
 import { render, act } from '@testing-library/react';
 import React, { memo, useEffect, useLayoutEffect } from 'react';
-import { Cubit } from '@blac/core';
+import { Cubit, type InstanceReadonlyState } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { describe, it, expect, beforeEach, afterEach } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
@@ -139,7 +139,7 @@ describe('useBloc — proxy-prop tracing experiment', () => {
   });
 
   it('logs proxy access + lifecycle interleaving for a proxy passed to a child', async () => {
-    let bloc: DemoBloc | null = null;
+    let bloc: InstanceReadonlyState<typeof DemoBloc> | null = null;
     function Harness(): React.ReactElement {
       // second consumer only to grab the bloc handle for the update
       const [, b] = useBloc(DemoBloc);
