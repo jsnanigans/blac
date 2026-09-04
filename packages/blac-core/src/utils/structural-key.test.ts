@@ -43,4 +43,10 @@ describe('structuralKey', () => {
       /args must be serializable/,
     );
   });
+
+  it('includes the offending key path in the error', () => {
+    expect(() => structuralKey({ nested: { onClick: () => {} } })).toThrow(
+      /key "onClick"/,
+    );
+  });
 });
