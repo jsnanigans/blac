@@ -60,8 +60,8 @@
     "@blac/react": "workspace:*",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.7",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "typescript": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:"

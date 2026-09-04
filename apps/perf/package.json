@@ -26,8 +26,8 @@
     "@blac/react": "workspace:*",
     "@dirtytalk/structural": "workspace:*",
     "@reduxjs/toolkit": "^2.12.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "react-redux": "^9.3.0",
     "vite": "catalog:",
     "zustand": "^5.0.15"
