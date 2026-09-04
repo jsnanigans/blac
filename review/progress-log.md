@@ -83,16 +83,31 @@ Low-risk, mostly mechanical, gets both packages back under budget.
 - [ ] `patch` equality work done once — [02 §8](./02-performance.md#8-patch-does-the-equality-work-twice)
 - [ ] Move `getPluginManager` out of the registry module so plugins tree-shake — [03 §2](./03-bundle-and-packaging.md#2-the-plugin-system-cannot-be-tree-shaken-away)
 - [ ] Dev/prod export conditions; strip dev-only branches — [03 §4](./03-bundle-and-packaging.md#4-dev--prod-conditions), [02 §9](./02-performance.md#9-dev-only-branches-on-the-hot-path)
-- [ ] `install()` must not log unconditionally — [03 §5](./03-bundle-and-packaging.md#5-install-logs-unconditionally)
+- [x] `install()` must not log unconditionally — [03 §5](./03-bundle-and-packaging.md#5-install-logs-unconditionally)
+      All three `console.log` sites in `PluginManager` gated on
+      `NODE_ENV !== 'production'`, matching the predicate core already uses.
 - [x] Fix `@dirtytalk/structural` workspace range in `dependencies` — [03 §6](./03-bundle-and-packaging.md#6-dependencies-on-dirtytalkstructural-is-a-workspace-range) — _publish blocker_
       Moved `@dirtytalk/structural` and `@dirtytalk/spatial` `0.0.x` → `0.1.0`
       so `^` admits patches; `engine` was already `0.2.0`. Chose this over a
       changeset `fixed` group, which would have renumbered all three to `2.0.x`
       and welded their release cadence to `@blac/*`. Changeset added.
       `chore(release): move dirtytalk packages to 0.1.0`
-- [ ] Correct `sideEffects`; de-duplicate subpath exports — [03 §8](./03-bundle-and-packaging.md#8-sideeffects-false-is-not-quite-true), [03 §3](./03-bundle-and-packaging.md#3-subpath-exports-duplicate-the-barrel)
-- [ ] Harden the build script — [03 §7](./03-bundle-and-packaging.md#7-build-script-fragility)
-- [ ] CI gates: size-limit, typecheck, test — [07 §4](./07-tests-and-tooling.md#4-ci-gates)
+- [-] Correct `sideEffects` — [03 §8](./03-bundle-and-packaging.md#8-sideeffects-false-is-not-quite-true) — no change; the finding
+  concludes "keep the flag", it is advisory about future module scope.
+- [ ] De-duplicate subpath exports — [03 §3](./03-bundle-and-packaging.md#3-subpath-exports-duplicate-the-barrel) — _moved to Phase 4_, it is a
+      public API surface decision (lean barrel vs. drop subpaths).
+- [x] Harden the build script — [03 §7](./03-bundle-and-packaging.md#7-build-script-fragility)
+      Five packages hard-coded `cp` per entry point; reused core's existing
+      `for f in dist/*.d.ts` glob. Was already dropping declarations:
+      react copied 2 of 7, devtools-ui 1 of 6.
+- [~] CI gates: size-limit, typecheck, test — [07 §4](./07-tests-and-tooling.md#4-ci-gates)
+  Added root `size` script. NOT wired into `release:check` yet — both
+  packages are over budget, so the gate would fail the release today.
+  Wire it once the 02 perf items land.
+
+**Baseline re-measured after the dependency upgrade** (review numbers still hold):
+`@blac/core` 8.45 kB / 7.8 kB (+645 B, was +548 B) ·
+`@blac/react` 5.41 kB / 3.5 kB (+1.91 kB, unchanged).
 
 **Exit:** both packages under budget, CI enforces it.
 
