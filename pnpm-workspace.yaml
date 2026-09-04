@@ -5,25 +5,25 @@ packages:
 
 catalog:
   '@testing-library/dom': ^10.4.1
-  '@testing-library/jest-dom': ^6.9.1
+  '@testing-library/jest-dom': ^7.0.1
   '@testing-library/user-event': ^14.6.7
   '@types/bun': ^1.4.0
-  '@types/node': ^25.9.1
+  '@types/node': ^26.4.1
   '@types/react': ^19.2.18
   happy-dom: ^20.14.0
-  jsdom: ^29.1.1
+  jsdom: ^30.0.1
   publint: ^0.3.24
   react: ^19.2.8
   react-dom: ^19.2.8
   typescript: ^6.0.3
-  vite: npm:@voidzero-dev/vite-plus-core@latest
+  vite: npm:@voidzero-dev/vite-plus-core@0.1.24
   vite-plugin-dts: ^4.5.4
-  vite-plus: ^0.3.0
-  vitest: npm:@voidzero-dev/vite-plus-test@latest
+  vite-plus: ^0.1.24
+  vitest: npm:@voidzero-dev/vite-plus-test@0.1.24
 
 overrides:
-  vite: 'catalog:'
-  vitest: 'catalog:'
+  vite: npm:@voidzero-dev/vite-plus-core@0.1.24
+  vitest: npm:@voidzero-dev/vite-plus-test@0.1.24
 
 peerDependencyRules:
   allowAny:

@@ -119,10 +119,10 @@
     }
   },
   "devDependencies": {
-    "@babel/core": "^7.28.0",
+    "@babel/core": "^8.0.1",
     "@blac/core": "workspace:*",
     "@rolldown/plugin-babel": "^0.2.3",
-    "@size-limit/preset-small-lib": "^11.1.6",
+    "@size-limit/preset-small-lib": "^13.0.3",
     "@testing-library/dom": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "^16.3.3",
@@ -137,7 +137,7 @@
     "publint": "catalog:",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "size-limit": "^11.1.6",
+    "size-limit": "^13.0.3",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",

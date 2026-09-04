@@ -142,7 +142,7 @@
     "@dirtytalk/structural": "workspace:^"
   },
   "devDependencies": {
-    "@size-limit/preset-small-lib": "^11.1.6",
+    "@size-limit/preset-small-lib": "^13.0.3",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
@@ -150,7 +150,7 @@
     "fast-check": "^4.9.0",
     "jsdom": "catalog:",
     "publint": "catalog:",
-    "size-limit": "^11.1.6",
+    "size-limit": "^13.0.3",
     "typescript": "catalog:",
     "valibot": "^1.4.2",
     "vite-plus": "catalog:",
