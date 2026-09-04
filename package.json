@@ -11,6 +11,7 @@
     "lint:fix": "vp run -F './packages/*' lint:fix",
     "verify": "vp run -F './packages/*' verify",
     "typecheck": "vp run -F './packages/*' typecheck",
+    "size": "vp run -F \"./packages/blac-core\" -F \"./packages/blac-react\" size",
     "format": "vp run -F './packages/*' -F './apps/*' format",
     "format:check": "vp run -F './packages/*' -F './apps/*' format:check",
     "docs:dev": "pnpm --filter @blac/web-docs dev",
