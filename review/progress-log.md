@@ -36,24 +36,43 @@ Deferred out of Phase 0 (not blockers, tracked for later):
 
 ---
 
-## Phase 1 — Correctness (days) ← **current**
+## Phase 1 — Correctness (days) — ✅ complete
 
 Data-loss and lifetime bugs. Each is independently shippable and patch-releasable.
 
-- [ ] Emit `created` after `init()` so hydration is not cancelled by seeding — [01 §1](./01-correctness.md#1-persisted-state-is-discarded-for-blocs-that-seed-state-in-init) — _highest impact: silent data loss_
-- [ ] `release()` must honour `dependents` — [01 §2](./01-correctness.md#2-release-disposes-a-dependency-that-a-live-owner-still-uses)
-- [ ] Track dependent edges per resolved key, not per type — [01 §3](./01-correctness.md#3-dependent-edges-for-per-call-args-are-never-released)
-- [ ] `emit`/`patch` after dispose → dev-warn no-op — [01 §5](./01-correctness.md#5-emit-after-dispose-throws)
-- [ ] `StateContainer.dispose()` must call `super.dispose()` — [01 §8](./01-correctness.md#8-statecontainerdispose-never-calls-superdispose)
-- [ ] Coalesce registry `on()` payloads like plugin payloads — [01 §9](./01-correctness.md#9-registry-on-payloads-are-not-coalesced-plugin-payloads-are)
-- [ ] Guard `undefined` interest in `PathSetSpace.intersects`/`isEmpty` (found in Phase 0; see above)
-- [ ] Regression tests for each of the above — [07 §3](./07-tests-and-tooling.md#3-missing-coverage)
+- [x] Emit `created` after `init()` so hydration is not cancelled by seeding — [01 §1](./01-correctness.md#1-persisted-state-is-discarded-for-blocs-that-seed-state-in-init) — _`StateContainer[INIT_CONFIG]` reordered. Added a dev warning in `_applyHydratedState` so the discard is no longer silent. Pinned by `StateContainer.hydration-init.test.ts`, verified to fail on the old ordering._
+- [x] `release()` must honour `dependents` — [01 §2](./01-correctness.md#2-release-disposes-a-dependency-that-a-live-owner-still-uses) — _extracted `_isUnowned(Type, entry)`; `release()` and `_releaseDependent` now share one predicate._
+- [x] Track dependent edges per resolved key, not per type — [01 §3](./01-correctness.md#3-dependent-edges-for-per-call-args-are-never-released) — _took the registry-side variant: `_dependentEdges` `WeakMap<owner, Map<Type, Set<key>>>` recorded in `acquire`, swept in `_handleDisposed`. Keeps key-tracking out of `StateContainer` and leaves the public `$blac.dependencies` type (devtools) unchanged._
+- [x] `emit`/`patch` after dispose → dev-warn no-op — [01 §5](./01-correctness.md#5-emit-after-dispose-throws) — _`_warnDisposedMutation` helper. Kept `void` returns rather than the review's `boolean` — no caller checks it (YAGNI); revisit if a real need appears._
+- [x] `StateContainer.dispose()` must call `super.dispose()` — [01 §8](./01-correctness.md#8-statecontainerdispose-never-calls-superdispose) — _chained at the end of `dispose()`, so the `DirtyChannel` is torn down and a scheduled flush cancelled._
+- [-] Coalesce registry `on()` payloads like plugin payloads — [01 §9](./01-correctness.md#9-registry-on-payloads-are-not-coalesced-plugin-payloads-are) — **dropped; took the finding's documented alternative instead.** Coalescing broke three shipped tests (Redux DevTools, time-travel, perf monitoring) that need every intermediate transition — `0→1→2` collapsing to `0→2` makes time-travel impossible. `PluginManager.setupLifecycleHooks` shows the split is deliberate: the plugin lane is flush-driven and carries a `PathSet`; `on('stateChanged')` is a per-emit transition log. Documented the distinction on both instead.
+- [x] Guard `undefined` interest in `PathSetSpace.intersects`/`isEmpty` (found in Phase 0) — _fixed one level up in `DirtyChannel.#flush`: a nullish interest thunk is skipped, matching the existing throwing-thunk path. Left `PathSetSpace` typed strictly. Root cause is `createCubitStub` doing `new BlocClass()` without `[INIT_CONFIG]` unless `args` are passed — **the helper is still wrong, see below**._
+- [x] Regression tests for each of the above — [07 §3](./07-tests-and-tooling.md#3-missing-coverage) — _`StateContainerRegistry.ownership.test.ts` (3) + `StateContainer.hydration-init.test.ts` (1). Rewrote 5 existing tests that asserted the old throw-on-dispose contract to pin the no-op contract instead. `fast-check` invariants from 07 §3 not done — deferred to Phase 2._
 
-**Exit:** patch release. No behaviour change for correct code; bugs gone.
+**Exit:** ✅ met. 89 files / 1141 tests pass, 0 uncaught exceptions (was 3),
+typecheck and lint clean. Ready for a patch release.
+
+**Behaviour changes to note in the changeset:**
+
+- `emit()`/`patch()` after dispose no longer throw. Anything relying on the
+  throw (an `expect(...).toThrow()` in user code) now sees a no-op.
+- `created` now fires _after_ `init()`. Plugins observing `created` see
+  post-init state; `attachStateBridge`'s first `prev` is the post-init state.
+
+**Carried into Phase 2:**
+
+- `createCubitStub` (`packages/blac-core/src/testing.ts:124`) calls
+  `new BlocClass()` and only runs `[INIT_CONFIG]` when `args` are supplied, so a
+  stub built without args has an uninitialised container and its first `patch`
+  produces an undefined region. The `DirtyChannel` guard stops the crash, but the
+  helper should initialise unconditionally.
+- `fast-check` registry invariants ([07 §3](./07-tests-and-tooling.md#3-missing-coverage)).
 
 ---
 
-## Phase 2 — Cheap perf + packaging (days)
+---
+
+## Phase 2 — Cheap perf + packaging (days) ← **current**
 
 Low-risk, mostly mechanical, gets both packages back under budget.
 
