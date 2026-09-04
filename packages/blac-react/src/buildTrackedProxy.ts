@@ -1,5 +1,11 @@
 import { DEP_BRAND } from '@blac/core';
 
+function isPrivateFieldError(error: unknown): boolean {
+  return (
+    error instanceof TypeError && /private (member|field)/i.test(error.message)
+  );
+}
+
 /**
  * Build a per-consumer proxy pair for a bloc instance.
  *
@@ -80,8 +86,23 @@ export function buildTrackedProxy<T extends object>(
   const proxy = new Proxy(instance as object, {
     get(target, key, receiver) {
       const desc = getterDescs.get(key);
-      if (desc?.get) return desc.get.call(thisProxy);
-      return Reflect.get(target, key, receiver);
+      try {
+        if (desc?.get) return desc.get.call(thisProxy);
+        return Reflect.get(target, key, receiver);
+      } catch (error) {
+        if (
+          process.env.NODE_ENV !== 'production' &&
+          isPrivateFieldError(error)
+        ) {
+          throw new TypeError(
+            `[blac] Cannot access ES #private fields/methods through the ` +
+              `tracking proxy (property "${String(key)}"). Use a \`_\`-prefixed ` +
+              `convention or TypeScript \`private\` instead of \`#private\`.`,
+            { cause: error },
+          );
+        }
+        throw error;
+      }
     },
   }) as T;
 
