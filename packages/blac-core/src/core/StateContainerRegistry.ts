@@ -91,6 +91,12 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
  *   console.log('State changed:', prev, '->', next);
  * });
  * ```
+ *
+ * `stateChanged` fires once per emit (microtask-deferred but uncoalesced), so
+ * listeners see every intermediate transition. Plugins' `onStateChange` fires
+ * once per channel flush with coalesced `prev`/`next` and a `PathSet`. Pick
+ * the transition log for devtools/time-travel, the plugin hook for
+ * change-driven work.
  */
 export class StateContainerRegistry {
   private readonly instancesByConstructor = new WeakMap<
@@ -99,6 +105,16 @@ export class StateContainerRegistry {
   >();
 
   private readonly types = new Set<StateContainerConstructor>();
+
+  /**
+   * `depend()`-owner -> the (Type, key) entries it has resolved. Keyed per
+   * resolved key because one handle resolves a different key per `args`.
+   * Weak so a bare `new`'d owner that is never disposed cannot pin the map.
+   */
+  private readonly _dependentEdges = new WeakMap<
+    StateContainer<any, any, any>,
+    Map<StateContainerConstructor, Set<string>>
+  >();
 
   private readonly registeredTypeNames = new Set<string>();
 
@@ -134,9 +150,48 @@ export class StateContainerRegistry {
     const Type = container.constructor as StateContainerConstructor;
     const found = this._pruneEntry(Type, container);
     if (!found) return;
-    for (const [DepType, depKey] of container.$blac.dependencies) {
-      this._releaseDependent(DepType, depKey, container);
+    const edges = this._dependentEdges.get(container);
+    if (!edges) return;
+    this._dependentEdges.delete(container);
+    for (const [DepType, keys] of edges) {
+      for (const depKey of keys) {
+        this._releaseDependent(DepType, depKey, container);
+      }
     }
+  }
+
+  /**
+   * An entry may be disposed only when nothing owns it: no public refs, no
+   * `depend()` dependents, and not keepAlive. Every dispose decision goes
+   * through here so `release()` and `_releaseDependent` cannot disagree.
+   */
+  private _isUnowned(
+    Type: StateContainerConstructor,
+    entry: InstanceEntry,
+  ): boolean {
+    return (
+      entry.refs.size === 0 &&
+      (entry.dependents === undefined || entry.dependents.size === 0) &&
+      !isKeepAliveClass(Type)
+    );
+  }
+
+  /**
+   * Record that `dependent` resolved `Type` at `key`, so the edge can be
+   * released on the owner's disposal. Keyed per resolved key, not per type:
+   * one `depend()` handle resolves a distinct key for every `args` it is
+   * called with, and all of them must be swept.
+   */
+  private _recordDependentEdge(
+    dependent: StateContainer<any, any, any>,
+    Type: StateContainerConstructor,
+    key: string,
+  ): void {
+    let byType = this._dependentEdges.get(dependent);
+    if (!byType) this._dependentEdges.set(dependent, (byType = new Map()));
+    let keys = byType.get(Type);
+    if (!keys) byType.set(Type, (keys = new Set()));
+    keys.add(key);
   }
 
   /**
@@ -173,12 +228,7 @@ export class StateContainerRegistry {
     const entry = instances?.get(key);
     if (!entry) return;
     entry.dependents?.delete(dependent);
-    if (
-      (!entry.dependents || entry.dependents.size === 0) &&
-      entry.refs.size === 0 &&
-      !isKeepAliveClass(Type) &&
-      !entry.instance.$blac.disposed
-    ) {
+    if (this._isUnowned(Type, entry) && !entry.instance.$blac.disposed) {
       entry.instance.dispose();
     }
   }
@@ -407,6 +457,7 @@ export class StateContainerRegistry {
 
       if (options.dependent) {
         (entry.dependents ??= new Set()).add(options.dependent);
+        this._recordDependentEdge(options.dependent, Type, resolvedKey);
       }
 
       return entry.instance;
@@ -434,6 +485,7 @@ export class StateContainerRegistry {
     const newEntry: InstanceEntry = { instance, refs: initialRefs, args };
     if (options.dependent) {
       (newEntry.dependents ??= new Set()).add(options.dependent);
+      this._recordDependentEdge(options.dependent, Type, resolvedKey);
     }
     instances.set(resolvedKey, newEntry);
 
@@ -576,13 +628,9 @@ export class StateContainerRegistry {
       this.emit('refReleased', entry.instance, releasedRefId);
     }
 
-    // Check static keepAlive property
-    const keepAlive = isKeepAliveClass(Type);
-
-    // Auto-dispose when refs are empty (unless keepAlive). Orphaned
-    // depend()-created dependencies are swept via the `disposed` listener
-    // (see `_handleDisposed`/`_releaseDependent`), not here.
-    if (entry.refs.size === 0 && !keepAlive) {
+    // Auto-dispose only when nothing owns the entry. A `depend()`-owner that
+    // is still alive keeps its dependency, even once the last public ref goes.
+    if (this._isUnowned(Type, entry)) {
       if (!entry.instance.$blac.disposed) {
         entry.instance.dispose();
       }
@@ -860,6 +908,15 @@ export class StateContainerRegistry {
     this._pendingStateChanges.push([container, previousState, newState]);
   }
 
+  /**
+   * Deliver one event per emit, in order — deliberately NOT coalesced.
+   *
+   * This is a transition log: devtools, time-travel debugging and perf
+   * monitoring need every intermediate `prev`/`next`, which coalescing would
+   * destroy. The plugin `onStateChange` bridge is the coalesced, `PathSet`-
+   * carrying lane (see `PluginManager.setupLifecycleHooks`); the two differ on
+   * purpose, so a listener picks the lane that matches what it needs.
+   */
   private flushStateChanged(): void {
     const pending = this._pendingStateChanges;
     this._pendingStateChanges = null;
