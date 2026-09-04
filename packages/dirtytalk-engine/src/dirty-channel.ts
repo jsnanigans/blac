@@ -158,6 +158,10 @@ export class DirtyChannel<Region> {
           continue;
         }
 
+        // A thunk that returns nothing has no interest this flush; passing it
+        // to the space would fault inside intersects, far from the caller.
+        if (interest == null) continue;
+
         if (!this.#space.intersects(interest, dirty)) continue;
 
         try {
