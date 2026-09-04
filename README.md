@@ -51,8 +51,6 @@ Only `state.count` is tracked — the component won't re-render if other propert
 | ----------------------------------------------------- | --------------------------------------------------------------- |
 | [`@blac/core`](packages/blac-core)                    | State containers, registry, plugins, watch & tracking utilities |
 | [`@blac/react`](packages/blac-react)                  | React hook (`useBloc`) with proxy-based auto-tracking           |
-| [`@blac/preact`](packages/blac-preact)                | Preact hook with the same API as `@blac/react`                  |
-| [`@blac/adapter`](packages/blac-adapter)              | Framework-agnostic adapter layer for building integrations      |
 | [`@blac/devtools-connect`](packages/devtools-connect) | DevTools connection plugin (browser inspector)                  |
 | [`@blac/devtools-ui`](packages/devtools-ui)           | Embeddable DevTools UI — overlay or Picture-in-Picture          |
 | [`@blac/logging-plugin`](packages/logging-plugin)     | Console logging with memory monitoring                          |

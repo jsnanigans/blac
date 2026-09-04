@@ -57,13 +57,13 @@ function UserAvatar() {
 
 ### What DOES register a dependency
 
-| Read pattern                                                     | Records             | Notes                                       |
-| ---------------------------------------------------------------- | ------------------- | ------------------------------------------- |
-| `state.name`                                                     | `name`              | Direct property access.                     |
-| `state.user.profile.name`                                        | `user.profile.name` | Nested reads record the **leaf** path only. |
-| `state.items[0]`                                                 | `items.0`           | Indexed access on an array.                 |
-| `state.items.length`                                             | `items.length`      | `.length` is an own property read.          |
-| Reading the whole object: `const u = state.user` (no deeper key) | `user`              | Wakes on **any** change to `user`.          |
+| Read pattern                                                     | Records             | Notes                                                                                 |
+| ---------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------- |
+| `state.name`                                                     | `name`              | Direct property access.                                                               |
+| `state.user.profile.name`                                        | `user.profile.name` | Nested reads record the **leaf** path only.                                           |
+| `state.items[0]`                                                 | `items.0`           | Indexed access on an array.                                                           |
+| `state.items.length`                                             | `items.length`      | `.length` is an own property read.                                                    |
+| Reading the whole object: `const u = state.user` (no deeper key) | `user`              | Wakes on **any** change to `user`.                                                    |
 | Getter read in render: `bloc.total`                              | getter source paths | The returned bloc is proxied; `this.state` inside the getter uses the tracking proxy. |
 
 :::tip[Sibling-leaf isolation]
@@ -106,6 +106,30 @@ This is correct. `state.showEmail` is **always** read, so it's always tracked. W
 :::caution[Where conditional reads break]
 The hazard is reading a property behind a condition that is **never re-evaluated by a tracked change**. If the deciding value comes from a prop or another hook (not from this bloc's tracked state), flipping it may not re-run the read against the latest state. When the branch and the value both come from the same bloc's state, you're safe. When the deciding value is external, prefer `select` to make the dependency explicit.
 :::
+
+## Passing state values as props
+
+A value read from `state` is a tracking proxy, not a plain object. Passing one
+down as a prop to a child that does not call `useBloc` itself works, but the
+child's reads are attributed to the **parent** that created the proxy — the
+parent is what re-renders when that path changes, and the parent's tracked set
+grows to cover whatever the child read.
+
+```tsx
+function Parent() {
+  const [state] = useBloc(ListBloc);
+  // Row's reads of `item` land in Parent's tracked set.
+  return <Row item={state.data[0]} />;
+}
+```
+
+For a memoized child this defeats the memo: the child re-renders because the
+parent did. Reads are also only recorded during render — after commit the proxy
+tree is frozen and later reads (in effects, callbacks, or timeouts) pass through
+untracked, so they never establish a dependency.
+
+Have the child call `useBloc` itself, or pass plain values (`item.label`) rather
+than the proxy, when you want the child to own its own dependencies.
 
 ## The `select` escape hatch
 
