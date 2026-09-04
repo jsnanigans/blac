@@ -37,10 +37,13 @@ import {
 } from './path-set';
 import type { ConsumerId, PathId } from './types';
 
+const sharedScheduler = /* @__PURE__ */ new MicrotaskScheduler();
+
 export interface StructuralContainerOptions {
   /**
    * Scheduler for the underlying DirtyChannel.
-   * Default: a fresh MicrotaskScheduler per instance.
+   * Default: a shared MicrotaskScheduler. It coalesces by flush-function
+   * identity, so one instance drains every container in a single microtask.
    * Tests and SSR should pass SyncScheduler.
    */
   scheduler?: Scheduler;
@@ -112,7 +115,7 @@ export abstract class StructuralContainer<S> {
 
   constructor(initial: S, options: StructuralContainerOptions = {}) {
     this._state = initial;
-    const scheduler = options.scheduler ?? new MicrotaskScheduler();
+    const scheduler = options.scheduler ?? sharedScheduler;
     this._channel = new DirtyChannel<PathSet>(PathSetSpace, scheduler, {
       onError: options.onError,
     });
