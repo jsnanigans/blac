@@ -76,12 +76,47 @@ typecheck and lint clean. Ready for a patch release.
 
 Low-risk, mostly mechanical, gets both packages back under budget.
 
-- [ ] Lazy `stateChanged` bridge; store key on the registry entry — [02 §1](./02-performance.md#1-every-instance-subscribes-an-all_paths-bridge-at-construction), [02 §4](./02-performance.md#4-dispose-is-on-per-instance)
+- [x] Lazy `stateChanged` bridge; store key on the registry entry — [02 §1](./02-performance.md#1-every-instance-subscribes-an-all_paths-bridge-at-construction), [02 §4](./02-performance.md#4-dispose-is-on-per-instance)
+      §1: bridge subscribes on the first `stateChanged` handler and detaches
+      with the last; `_pendingChange` only tracked while attached.
+      §4: `InstanceEntry.key` + `_entryByInstance` WeakMap make `_pruneEntry`
+      O(1); `_entryById` index removes the full scan in `getRefIds`.
+      No test added — the effect (channel `<=1` fast path, scan avoidance) is
+      not observable through the public API; existing 466 core tests cover the
+      behaviour that had to stay unchanged.
 - [ ] Collapse the three per-emit notification pipelines — [02 §2](./02-performance.md#2-three-notification-pipelines-per-emit)
-- [ ] Trim per-instance allocation — [02 §3](./02-performance.md#3-per-instance-allocation)
-- [ ] `structuralKey` off the hot path — [02 §5](./02-performance.md#5-structuralkey-on-the-hot-path)
-- [ ] `patch` equality work done once — [02 §8](./02-performance.md#8-patch-does-the-equality-work-twice)
-- [ ] Move `getPluginManager` out of the registry module so plugins tree-shake — [03 §2](./03-bundle-and-packaging.md#2-the-plugin-system-cannot-be-tree-shaken-away)
+      _Blocked pending a decision._ §2 says to delete `notifyStateChanged` /
+      `flushStateChanged` and route registry + plugin events through one
+      subscription. That is the same two-lane split Phase 1 established is
+      deliberate (§9 coalescing broke devtools/time-travel). Premise is also
+      partly stale: `hasStateChangedListeners` already gates lane 2, so the
+      pipelines do not all run unconditionally. Needs design, not a patch.
+- [~] Trim per-instance allocation — [02 §3](./02-performance.md#3-per-instance-allocation)
+  Shared `MicrotaskScheduler` as the default (was one per container); an
+  explicit `options.scheduler` still wins. Verified by probe that the
+  `cancel()` / stale-microtask interleavings are safe to share.
+  NOT done: the `_instanceId` field initialiser is NOT dead as §3 claims —
+  `createCubitStub` deliberately skips `[INIT_CONFIG]` when no args are
+  given (pinned by `testing.args-deps.test.ts`), so it is a real fallback.
+  Phase 1's "fix createCubitStub" note was wrong; dropped.
+  Remaining: lazy collections (`??=`), `Meta` class with prototype getters.
+- [~] `structuralKey` off the hot path — [02 §5](./02-performance.md#5-structuralkey-on-the-hot-path)
+  Memoized object args by identity in a `WeakMap`. Extends the assumption
+  `entry.argsKey ??=` already made (args immutable after acquire).
+  Bullets 2-3 (precompute in `depend`, hand-rolled serialiser) not done —
+  the cache removes the repeat cost those targeted.
+- [x] `patch` equality work done once — [02 §8](./02-performance.md#8-patch-does-the-equality-work-twice)
+      Dropped the pre-scan; `super.patch` already returns `prev` by reference
+      on a no-op (`container.ts:229`) and returns before marking. Only the dev
+      emit-rate counter was affected, so the rate check moved after the
+      identity test. Test pins that a no-op `patch` does not count.
+- [~] Move `getPluginManager` out of the registry module so plugins tree-shake — [03 §2](./03-bundle-and-packaging.md#2-the-plugin-system-cannot-be-tree-shaken-away)
+  Singleton moved to `src/plugins.ts`; registry no longer references the
+  plugin system (one-way dependency now). **Did not shrink the bundle**
+  (8.46 → 8.51 kB): the barrel still re-exports `getPluginManager`, so
+  anything importing `@blac/core` keeps pulling `PluginManager` in.
+  Kept for the decoupling. Actually tree-shaking needs the export dropped
+  from the barrel (`/plugins`-only) — a breaking change, needs a decision.
 - [ ] Dev/prod export conditions; strip dev-only branches — [03 §4](./03-bundle-and-packaging.md#4-dev--prod-conditions), [02 §9](./02-performance.md#9-dev-only-branches-on-the-hot-path)
 - [x] `install()` must not log unconditionally — [03 §5](./03-bundle-and-packaging.md#5-install-logs-unconditionally)
       All three `console.log` sites in `PluginManager` gated on
@@ -100,10 +135,22 @@ Low-risk, mostly mechanical, gets both packages back under budget.
       Five packages hard-coded `cp` per entry point; reused core's existing
       `for f in dist/*.d.ts` glob. Was already dropping declarations:
       react copied 2 of 7, devtools-ui 1 of 6.
+- [x] `api-extractor` with committed reports — [07 §4](./07-tests-and-tooling.md#4-ci-gates), [06 §3](./06-dx-and-docs.md#3-make-docs-a-ci-concern)
+      8 configs covering every entry point (core 6, react 2); reports in
+      `packages/*/etc/*.api.md`, reproducible. `pnpm api:check` at root.
+      Not in `release:check` — it surfaces pre-existing API-hygiene warnings
+      (missing release tags, malformed TSDoc, a broken `{@link trackRender}`
+      in `useBloc.ts`) that need a source-or-config decision first.
+      The report confirms `getPluginManager` is in the barrel — the 03 §2
+      tree-shaking blocker — and that no `tracked` export exists.
 - [~] CI gates: size-limit, typecheck, test — [07 §4](./07-tests-and-tooling.md#4-ci-gates)
   Added root `size` script. NOT wired into `release:check` yet — both
   packages are over budget, so the gate would fail the release today.
   Wire it once the 02 perf items land.
+
+Also done: unified the `@dirtytalk/structural` test alias — `blac-core` was the
+only config resolving to built `dist` while react, plugin-persist and apps/perf
+all used source, so core could silently test a stale build ([07 §5](./07-tests-and-tooling.md#5-config-hygiene)).
 
 **Baseline re-measured after the dependency upgrade** (review numbers still hold):
 `@blac/core` 8.45 kB / 7.8 kB (+645 B, was +548 B) ·
@@ -117,8 +164,18 @@ Low-risk, mostly mechanical, gets both packages back under budget.
 
 Independent of all code phases — can be done by someone else concurrently.
 
-- [ ] Fix README/API drift across root, core, react, `watch-entry.ts`, `apps/web-docs` — [06 §2](./06-dx-and-docs.md#2-documentation-drift)
-- [ ] Improve error messages for the top DX traps — [06 §4](./06-dx-and-docs.md#4-error-messages), [06 §1](./06-dx-and-docs.md#1-dx-traps-ranked-by-how-quickly-a-new-user-hits-them)
+- [x] Fix README/API drift across root, core, react, `watch-entry.ts`, `apps/web-docs` — [06 §2](./06-dx-and-docs.md#2-documentation-drift)
+      Corrected `depend()`/`subscribe()`/`onStateChange` signatures, removed a
+      documented `tracked()` export and `/tracking` subpath that never existed,
+      fixed the root README's `useSyncExternalStore` + Preact claims, refreshed
+      all 9 version rows, and dropped the "post-dispose emit throws" claim from
+      three guide pages (falsified by our own Phase 1 change).
+- [x] Improve error messages for the top DX traps — [06 §4](./06-dx-and-docs.md#4-error-messages), [06 §1](./06-dx-and-docs.md#1-dx-traps-ranked-by-how-quickly-a-new-user-hits-them)
+      `structuralKey` names the offending key; `_warnDisposedMutation` explains
+      the async-after-unmount cause; `buildTrackedProxy` rethrows the raw
+      `#private` TypeError with a BlaC message (dev only). Added
+      `@types/node` + `types: ["node"]` to blac-react — the new
+      `process.env` guard broke `pnpm -w build` while `tsc --noEmit` passed.
 - [ ] Make docs a CI concern (typecheck examples) — [06 §3](./06-dx-and-docs.md#3-make-docs-a-ci-concern)
 - [ ] Onboarding surface / getting-started path — [06 §5](./06-dx-and-docs.md#5-onboarding-surface)
 

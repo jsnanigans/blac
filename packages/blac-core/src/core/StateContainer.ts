@@ -617,8 +617,10 @@ export abstract class StateContainer<
   private _warnDisposedMutation(op: 'emit' | 'patch'): void {
     if (process.env.NODE_ENV !== 'production') {
       console.warn(
-        `[blac] ${this._name}: ${op}() after dispose ignored. Guard async ` +
-          `work with \`if (this.$blac.disposed) return\` after each await.`,
+        `[blac] ${this._name}: ${op}() after dispose ignored. This usually ` +
+          `means an async method resolved after the last consumer unmounted. ` +
+          `Guard with \`if (this.$blac.disposed) return\` after each \`await\`, ` +
+          `or abort the work from \`onSystemEvent('dispose', ...)\`.`,
       );
     }
   }
