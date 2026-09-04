@@ -375,6 +375,9 @@ importers:
       '@types/babel__core':
         specifier: ^7.20.5
         version: 7.20.5
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.4.1
       '@types/react':
         specifier: ^19.2.15
         version: 19.2.15
@@ -7799,7 +7802,7 @@ snapshots:
 
   '@types/sax@1.2.7':
     dependencies:
-      '@types/node': 24.13.3
+      '@types/node': 25.9.5
 
   '@types/unist@2.0.11': {}
 
@@ -7811,7 +7814,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 26.4.1
+      '@types/node': 25.9.5
 
   '@typescript-eslint/parser@8.60.1(eslint@10.4.1(jiti@2.6.1))(typescript@6.0.3)':
     dependencies:
@@ -8424,7 +8427,7 @@ snapshots:
 
   bun-types@1.4.0:
     dependencies:
-      '@types/node': 26.4.1
+      '@types/node': 25.9.5
 
   bytes-iec@3.1.1: {}
 

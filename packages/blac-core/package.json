@@ -134,6 +134,7 @@
     "coverage": "vp test run --coverage",
     "verify": "node ../../scripts/run-workspace-bin.mjs publint",
     "typecheck": "tsc --noEmit",
+    "api:check": "for f in api-extractor.*.json; do api-extractor run -c \"$f\" || exit 1; done",
     "size": "size-limit",
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
     "deploy": "pnpm publish --access public"
