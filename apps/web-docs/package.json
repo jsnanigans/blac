@@ -12,14 +12,14 @@
     "typecheck": "astro check"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.9",
+    "@astrojs/check": "^0.9.10",
     "@astrojs/react": "^5.0.7",
     "@blac/core": "workspace:*",
     "@blac/react": "workspace:*",
-    "@fontsource-variable/fraunces": "^5.2.9",
-    "@fontsource-variable/hanken-grotesk": "^5.2.8",
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/hanken-grotesk": "^5.3.0",
     "@types/react": "catalog:",
-    "@types/react-dom": "^19.2.3",
+    "@types/react-dom": "^19.2.7",
     "astro": "^6.4.4",
     "expressive-code": "^0.41.7",
     "expressive-code-twoslash": "^0.6.1",
@@ -27,12 +27,12 @@
     "react-dom": "catalog:",
     "remark-gfm": "^4.0.0",
     "typescript": "catalog:",
-    "wrangler": "^4.95.0"
+    "wrangler": "^4.129.0"
   },
   "dependencies": {
     "@astrojs/starlight": "0.38.3",
     "@codesandbox/sandpack-react": "^2.20.0",
-    "sharp": "^0.34.0",
-    "starlight-sidebar-topics": "^0.7.1"
+    "sharp": "^0.34.5",
+    "starlight-sidebar-topics": "^0.7.2"
   }
 }

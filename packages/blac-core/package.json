@@ -143,18 +143,18 @@
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "^11.1.6",
-    "size-limit": "^11.1.6",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
-    "arktype": "^2.2.0",
-    "fast-check": "^4.8.0",
+    "arktype": "^2.2.3",
+    "fast-check": "^4.9.0",
     "jsdom": "catalog:",
     "publint": "catalog:",
+    "size-limit": "^11.1.6",
     "typescript": "catalog:",
-    "valibot": "^1.4.1",
+    "valibot": "^1.4.2",
     "vite-plus": "catalog:",
     "vitest": "catalog:",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   }
 }

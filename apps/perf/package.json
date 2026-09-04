@@ -30,12 +30,12 @@
     "react-dom": "^19.2.6",
     "react-redux": "^9.3.0",
     "vite": "catalog:",
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@types/react": "^19.2.15",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.2",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }
