@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vite-plus/test';
 import { blacTestSetup, flush } from '@blac/core/testing';
 import { Cubit } from './Cubit';
+import { configureBlac } from '../config';
 import { ALL_PATHS } from '@dirtytalk/structural';
 
 class CountCubit extends Cubit<{ count: number; label: string }> {
@@ -25,6 +26,19 @@ describe('Cubit edge cases', () => {
     cubit.dispose();
     cubit.patch({ count: 1 });
     expect(cubit.state).toBe(before);
+  });
+
+  it('patch() with unchanged values does not count toward the emit rate', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    configureBlac({ maxEmitsPerSecond: 5 });
+    const cubit = new CountCubit();
+    const before = cubit.state;
+
+    for (let i = 0; i < 50; i++) cubit.patch({ count: 0 });
+
+    expect(cubit.state).toBe(before);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('emit() with same reference does NOT notify listeners', () => {

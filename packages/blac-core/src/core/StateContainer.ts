@@ -363,15 +363,6 @@ export abstract class StateContainer<
 
   constructor(initialState: S, options?: StructuralContainerOptions) {
     super(initialState, options);
-
-    // Bridge channel flushes -> 'stateChanged' system event.
-    // Interest is ALL_PATHS so we wake on every flush. Coalesced via
-    // `_pendingChange`: if no emit happened (e.g. a no-op patch), the bridge
-    // sees null and skips.
-    this._bridgeUnsub = this.channel.subscribe(
-      () => ALL_PATHS,
-      () => this._drainPending(),
-    );
   }
 
   /**
@@ -502,48 +493,29 @@ export abstract class StateContainer<
       this._warnDisposedMutation('patch');
       return;
     }
-    const partialKeys = Object.keys(partial as object);
-    if (partialKeys.length === 0) return;
-
     const prev = this.state;
 
-    // Pre-spread skip: if every top-level key in `partial` is already
-    // `Object.is`-equal to the current state's value at that key, the
-    // merge is a structural no-op — skip entirely (per-key Object.is
-    // short-circuit). This is
-    // shallow on purpose; deep no-op detection lives in `super.patch`'s
-    // path-diff path which still wakes consumers if anything truly moved.
-    let allEqual = true;
-    for (const key of partialKeys) {
-      if (
-        !Object.is(
-          (prev as Record<string, unknown>)[key],
-          (partial as Record<string, unknown>)[key],
-        )
-      ) {
-        allEqual = false;
-        break;
-      }
-    }
-    if (allEqual) return;
+    super.patch(partial);
+
+    // `super.patch` returns `prev` by reference when the merge changed
+    // nothing, so identity is the no-op test — no pre-scan needed.
+    const next = this.state;
+    if (Object.is(prev, next)) return;
 
     if (process.env.NODE_ENV !== 'production') {
       this._checkEmitRate();
     }
 
-    super.patch(partial);
-
-    const next = this.state;
-    if (Object.is(prev, next)) return;
-
     if (this._hydrationStatus === 'hydrating') {
       this._changedWhileHydrating = true;
     }
 
-    if (this._pendingChange) {
-      this._pendingChange.next = next;
-    } else {
-      this._pendingChange = { prev, next };
+    if (this._bridgeUnsub !== null) {
+      if (this._pendingChange) {
+        this._pendingChange.next = next;
+      } else {
+        this._pendingChange = { prev, next };
+      }
     }
 
     if (this._registry.hasStateChangedListeners) {
@@ -570,10 +542,13 @@ export abstract class StateContainer<
     }
 
     // Coalesce: keep the first prev seen this tick, take the latest next.
-    if (this._pendingChange) {
-      this._pendingChange.next = next;
-    } else {
-      this._pendingChange = { prev, next };
+    // Only tracked when the bridge is attached; nothing reads it otherwise.
+    if (this._bridgeUnsub !== null) {
+      if (this._pendingChange) {
+        this._pendingChange.next = next;
+      } else {
+        this._pendingChange = { prev, next };
+      }
     }
 
     super.emit(next);
@@ -772,8 +747,22 @@ export abstract class StateContainer<
     }
     handlers.add(handler as SystemEventHandler<S, any>);
 
+    // The channel bridge only exists to feed 'stateChanged'. Subscribe on the
+    // first such handler so instances nobody observes stay off the channel.
+    if (event === 'stateChanged' && this._bridgeUnsub === null) {
+      this._bridgeUnsub = this.channel.subscribe(
+        () => ALL_PATHS,
+        () => this._drainPending(),
+      );
+    }
+
     return () => {
       handlers?.delete(handler as SystemEventHandler<S, any>);
+      if (event === 'stateChanged' && handlers?.size === 0) {
+        this._bridgeUnsub?.();
+        this._bridgeUnsub = null;
+        this._pendingChange = null;
+      }
     };
   };
 
