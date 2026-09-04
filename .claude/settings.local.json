@@ -74,5 +74,6 @@
       "Bash(node_modules/.bin/vite-plus test *)",
       "Bash(node_modules/.bin/vp pack *)"
     ]
-  }
+  },
+  "disabledMcpjsonServers": ["atlassian", "playwright"]
 }

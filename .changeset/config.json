@@ -7,12 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "@blac/devtools-extension",
-    "@blac/web-docs",
-    "examples",
-    "perf",
-    "@blac/lit",
-    "lit-demo"
-  ]
+  "ignore": ["@blac/devtools-extension", "@blac/web-docs", "examples", "perf"]
 }
