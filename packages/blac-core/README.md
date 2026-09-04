@@ -124,7 +124,7 @@ class CanvasRendererCubit extends Cubit<
 
 ### StateContainer
 
-Abstract base class. Use this when you want `emit`/`update` to be protected (not callable from outside).
+Abstract base class for managing state outside the bloc/cubit pattern.
 
 ```ts
 import { StateContainer } from '@blac/core';
@@ -144,9 +144,9 @@ class AuthContainer extends StateContainer<{ token: string | null }> {
 }
 ```
 
-**Public API:** `state`, `subscribe(listener)`, `dispose()`, `$blac` (`$blac.name`, `$blac.id`, `$blac.debug`, `$blac.createdAt`, `$blac.disposed`, `$blac.dependencies`, `$blac.hydration`)
+**Public API:** `state`, `subscribe(interest, cb)`, `dispose()`, `$blac` (`$blac.name`, `$blac.id`, `$blac.debug`, `$blac.createdAt`, `$blac.disposed`, `$blac.dependencies`, `$blac.hydration`)
 
-**Protected API:** `emit(state)`, `update(fn)`, `init(args)` (optional), `onDepsChanged(next, prev)` (optional), `onSystemEvent(event, handler)`, `depend(BlocClass, instanceKey?)`
+**Protected API:** `emit(state)`, `update(fn)`, `init(args)` (optional), `onDepsChanged(next, prev)` (optional), `onSystemEvent(event, handler)`, `depend(Type, defaultArgs?)` (returns a `DepHandle`, not an instance)
 
 ## Registry
 
@@ -196,23 +196,13 @@ const stop = watch(CounterCubit, (counter) => {
 });
 
 // Watch a specific named instance
-const stop2 = watch(instance(CounterCubit, 'counter-1'), (c) => {
+const stop2 = watch(instance(CounterCubit, { id: 'counter-1' }), (c) => {
   console.log(c.state.count);
 });
 ```
 
-## Tracked
-
-Run a function and capture which blocs/state it accessed.
-
-```ts
-import { tracked } from '@blac/core';
-
-const { result, dependencies } = tracked(() => {
-  const user = ensure(UserCubit);
-  return user.state.name;
-});
-```
+State tracking (which blocs/state a function accesses) is automatic — see
+[Tracked](https://blac-docs.pages.dev/core/tracked) for details.
 
 ## Plugins
 
@@ -222,8 +212,8 @@ import { getPluginManager, type BlacPlugin } from '@blac/core';
 const myPlugin: BlacPlugin = {
   name: 'my-plugin',
   version: '1.0.0',
-  onStateChanged(instance, previousState, currentState) {
-    console.log(instance.constructor.name, previousState, '→', currentState);
+  onStateChange(ctx, prev, next, paths) {
+    console.log(ctx.container?.$blac.name, prev, '→', next);
   },
 };
 
@@ -232,15 +222,14 @@ getPluginManager().install(myPlugin, { environment: 'development' });
 
 ## Subpath Exports
 
-| Export                | Contents                                               |
-| --------------------- | ------------------------------------------------------ |
-| `@blac/core`          | All core classes, registry, decorators, watch, tracked |
-| `@blac/core/watch`    | `watch`, `instance`, `tracked`                         |
-| `@blac/core/tracking` | Dependency tracking internals for framework adapters   |
-| `@blac/core/plugins`  | Plugin system types and utilities                      |
-| `@blac/core/debug`    | Registry introspection helpers                         |
-| `@blac/core/testing`  | Test utilities                                         |
-| `@blac/core/types`    | Type-only exports                                      |
+| Export               | Contents                                      |
+| -------------------- | --------------------------------------------- |
+| `@blac/core`         | All core classes, registry, decorators, watch |
+| `@blac/core/watch`   | `watch`, `instance`                           |
+| `@blac/core/plugins` | Plugin system types and utilities             |
+| `@blac/core/debug`   | Registry introspection helpers                |
+| `@blac/core/testing` | Test utilities                                |
+| `@blac/core/types`   | Type-only exports                             |
 
 ## License
 

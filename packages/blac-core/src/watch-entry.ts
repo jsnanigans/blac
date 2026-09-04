@@ -14,7 +14,7 @@
  * });
  *
  * // Watch a specific instance
- * const unwatch = watch(instance(UserBloc, 'user-123'), (userBloc) => {
+ * const unwatch = watch(instance(UserBloc, { userId: 'user-123' }), (userBloc) => {
  *   console.log(userBloc.state.name);
  * });
  * ```

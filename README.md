@@ -1,6 +1,6 @@
 # BlaC
 
-Type-safe, class-based state management for React and Preact with automatic re-render optimization.
+Type-safe, class-based state management for React with automatic re-render optimization.
 
 **[Documentation](https://blac-docs.pages.dev)** · **[npm](https://www.npmjs.com/package/@blac/core)** · **[GitHub](https://github.com/jsnanigans/blac)**
 
@@ -17,8 +17,8 @@ Type-safe, class-based state management for React and Preact with automatic re-r
 - **Zero providers** — No context wrappers. Import a class, call `useBloc`, done
 - **Lifecycle management** — Registry handles instance creation, sharing, ref counting, and disposal
 - **Plugin system** — DevTools, logging, and IndexedDB persistence out of the box
-- **Concurrent-safe** — Built on `useSyncExternalStore` for React 18+
-- **Framework adapters** — First-class React and Preact support, extensible adapter layer for others
+- **React bindings** — `useBloc` subscribes via `useReducer` and tracks reads through a proxy, re-rendering only for the paths a component actually reads
+- **Framework-agnostic core** — `@blac/core` has no React dependency; state can be read and observed through `watch()` outside of React
 
 ## Quick Start
 

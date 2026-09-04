@@ -122,9 +122,10 @@ function ChatRoom({ channelId }: { channelId: string }) {
 ```
 
 :::danger[Orphaned connections]
-If the socket outlives the Cubit it will fire `onmessage` on a disposed container
-and throw. The `onSystemEvent('dispose', …)` cleanup above prevents this. Do not
-skip it.
+If the socket outlives the Cubit it will fire `onmessage` on a disposed container.
+The `emit` call inside is a no-op (with a dev-only console warning), not a throw,
+but the update is silently dropped. The `onSystemEvent('dispose', …)` cleanup
+above prevents this. Do not skip it.
 :::
 
 :::tip[Per-channel instances]

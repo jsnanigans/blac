@@ -351,7 +351,7 @@ Two guards now run together: `AbortController` stops the request (and makes `fet
 
 ### Aborting on disposal
 
-A request in flight when the bloc is disposed will try to `emit` on a dead container, which throws. Wire `onSystemEvent('dispose', …)` to abort the controller so the request unwinds cleanly:
+A request in flight when the bloc is disposed will try to `emit` on a dead container. That no longer throws — it's a no-op (with a dev-only console warning) — but the update is silently dropped, which wastes the in-flight work. Wire `onSystemEvent('dispose', …)` to abort the controller so the request unwinds cleanly:
 
 ```ts twoslash
 import { Cubit } from '@blac/core';

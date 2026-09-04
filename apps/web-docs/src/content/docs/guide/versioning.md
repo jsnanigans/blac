@@ -40,17 +40,17 @@ bump may be breaking for `0.x` packages).
 
 | Package              | npm name                 | Version  | Stability    |
 | -------------------- | ------------------------ | -------- | ------------ |
-| Core                 | `@blac/core`             | `2.0.18` | Beta         |
-| React bindings       | `@blac/react`            | `2.0.18` | Beta         |
-| DevTools connect     | `@blac/devtools-connect` | `2.0.21` | Beta         |
-| DevTools UI          | `@blac/devtools-ui`      | `2.0.20` | Beta         |
-| Logging plugin       | `@blac/logging-plugin`   | `2.0.19` | Beta         |
-| Persistence plugin   | `@blac/plugin-persist`   | `0.0.14` | Experimental |
-| DirtyTalk engine     | `@dirtytalk/engine`      | `0.0.4`  | Experimental |
-| DirtyTalk structural | `@dirtytalk/structural`  | `0.0.6`  | Experimental |
-| DirtyTalk spatial    | `@dirtytalk/spatial`     | `0.0.4`  | Experimental |
+| Core                 | `@blac/core`             | `2.0.20` | Beta         |
+| React bindings       | `@blac/react`            | `2.0.20` | Beta         |
+| DevTools connect     | `@blac/devtools-connect` | `2.0.22` | Beta         |
+| DevTools UI          | `@blac/devtools-ui`      | `2.0.21` | Beta         |
+| Logging plugin       | `@blac/logging-plugin`   | `2.0.20` | Beta         |
+| Persistence plugin   | `@blac/plugin-persist`   | `0.0.15` | Experimental |
+| DirtyTalk engine     | `@dirtytalk/engine`      | `0.2.0`  | Experimental |
+| DirtyTalk structural | `@dirtytalk/structural`  | `0.1.0`  | Experimental |
+| DirtyTalk spatial    | `@dirtytalk/spatial`     | `0.1.0`  | Experimental |
 
-### Why DirtyTalk ships at `0.0.x` alongside core `2.0.x`
+### Why DirtyTalk ships at `0.x` alongside core `2.0.x`
 
 `@blac/core` and `@blac/react` are feature-complete and battle-tested in
 practice, but remain in **beta** while their v2 public API is finalized — see the
@@ -59,23 +59,28 @@ substrate extracted from that work — they power the proxy and path-interning
 inside core — but their own _public_ APIs are still being refined as additional
 use-cases (spatial dirty tracking, standalone reactive trees) are explored.
 
-Publishing them at `0.0.x` is an honest signal: the implementations are
+Publishing them at `0.x` is an honest signal: the implementations are
 production-proven inside core, but the DirtyTalk package boundaries, export
 shapes, and hook points are subject to change without a semver major. If you
 build directly on `@dirtytalk/*`, pin the exact version and watch the changelog.
 If you use only `@blac/core` and `@blac/react`, the DirtyTalk internals are
 opaque to you.
 
+They moved from `0.0.x` to `0.1.0` for a mechanical reason: under semver a
+`^0.0.8` range resolves to exactly `0.0.8`, so dependents pinned a single patch
+and needed their own release to ship any DirtyTalk fix. From `0.1.0`, `^` admits
+patches as intended.
+
 ## Stability badge legend
 
 Pages throughout these docs use these stability tiers:
 
-| Badge            | Meaning                                                                                                                         |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Badge            | Meaning                                                                                                                                                                           |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Beta**         | Feature-complete and usable in production, but the v2 public API is still being finalized. Breaking changes may ship in patch releases until v2 leaves beta — pin exact versions. |
-| **Stable**       | Public API follows semver strictly. No breaking changes without a major bump. Safe to use in production.                        |
-| **Experimental** | The feature or package is usable but the API shape is still evolving. May see breaking changes in minor or even patch releases. |
-| **Internal**     | Tagged `@internal` in source. Not part of the public API contract. May change or disappear in any release.                      |
+| **Stable**       | Public API follows semver strictly. No breaking changes without a major bump. Safe to use in production.                                                                          |
+| **Experimental** | The feature or package is usable but the API shape is still evolving. May see breaking changes in minor or even patch releases.                                                   |
+| **Internal**     | Tagged `@internal` in source. Not part of the public API contract. May change or disappear in any release.                                                                        |
 
 Stability badges apply to packages as a whole (see the table above) and to
 individual APIs within a package — for example, `APPLY_DEPS` and `REMOVE_DEPS_OWNER`

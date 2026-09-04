@@ -51,12 +51,12 @@ BlaC follows one rule:
 > **A component becomes reactive only to the paths it reads during its own render.**
 
 `useBloc` returns a proxy that records which paths you read; the component
-re-renders only when one of *those* paths changes. Reads outside render — effects,
+re-renders only when one of _those_ paths changes. Reads outside render — effects,
 event handlers, `setTimeout`, `await` — record nothing.
 
 ### Props are snapshots — `untracked()`
 
-A tracking proxy stays bound to the component that *created* it. If a parent passes
+A tracking proxy stays bound to the component that _created_ it. If a parent passes
 a proxied value to a child and the child reads from it, that read is attributed to
 the **parent** — so the parent over-subscribes and re-renders for paths only the
 child uses.
@@ -82,14 +82,13 @@ function List() {
 
 The trade-off is intentional and React-like: a component that receives an
 `untracked()` value is **not** reactive to it — a change triggers nothing, memo or
-not. If no component reads a path during its *own* render, a change to that path
+not. If no component reads a path during its _own_ render, a change to that path
 re-renders nothing. To react to data, a component must be a consumer itself (call
 its own `useBloc`). Nobody up the tree re-renders for a path unless they read it
 themselves.
 
 > Making this automatic — per-component read scoping so `untracked()` isn't needed
-> by hand — is a planned compiler/Babel plugin. See
-> [`plans/blac-ambient-tracking/design.md`](../../plans/blac-ambient-tracking/design.md).
+> by hand — is a planned compiler/Babel plugin.
 
 ## useBloc
 

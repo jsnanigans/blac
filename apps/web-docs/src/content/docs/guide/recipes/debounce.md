@@ -105,8 +105,9 @@ function SearchBox() {
 
 :::caution[Cancel on dispose]
 If the debounce timer fires after the Cubit is disposed, it will attempt to
-`emit` on a dead container and throw. Always clear the timer in the `dispose`
-system event, as shown above.
+`emit` on a dead container. This is a no-op (with a dev-only console warning),
+not a throw, but the update is silently dropped. Always clear the timer in the
+`dispose` system event, as shown above, to avoid the wasted work.
 :::
 
 :::tip[Combine with the request-id guard]
