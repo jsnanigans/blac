@@ -3,10 +3,6 @@ import type {
   StateContainer,
   StateContainerConfig,
 } from './StateContainer';
-import {
-  createPluginManager,
-  type PluginManager,
-} from '../plugin/PluginManager';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 import { getBlacConfig } from '../config';
 import { isKeepAliveClass, getClassKey } from '../utils/static-props';
@@ -24,6 +20,8 @@ import { INIT_CONFIG } from './symbols';
 export interface InstanceEntry<T = any> {
   /** The state container instance */
   instance: T;
+  /** The key this entry is stored under in its constructor's instances Map. */
+  key: string;
   /** Map of active reference IDs to their acquire count (supports paired acquire/release) */
   refs: Map<string, number>;
   /** The args used when this entry was first created; used for dev-warn on arg mismatch. */
@@ -116,6 +114,15 @@ export class StateContainerRegistry {
     Map<StateContainerConstructor, Set<string>>
   >();
 
+  /** Reverse lookup from instance to its entry, so `_pruneEntry` is O(1). */
+  private readonly _entryByInstance = new WeakMap<
+    StateContainer<any, any, any>,
+    InstanceEntry
+  >();
+
+  /** Reverse lookup from `$blac.id` to its entry, for `PluginContext.getRefIds`. */
+  private readonly _entryById = new Map<string, InstanceEntry>();
+
   private readonly registeredTypeNames = new Set<string>();
 
   private readonly listeners = new Map<
@@ -202,15 +209,11 @@ export class StateContainerRegistry {
     Type: StateContainerConstructor,
     container: StateContainer<any, any, any>,
   ): boolean {
-    const instances = this.instancesByConstructor.get(Type);
-    if (!instances) return false;
-    for (const [key, entry] of instances) {
-      if (entry.instance === container) {
-        instances.delete(key);
-        return true;
-      }
-    }
-    return false;
+    const entry = this._entryByInstance.get(container);
+    if (!entry) return false;
+    this.instancesByConstructor.get(Type)?.delete(entry.key);
+    this._entryById.delete(container.$blac.id);
+    return true;
   }
 
   /**
@@ -305,7 +308,10 @@ export class StateContainerRegistry {
     ) {
       existingEntry.instance.dispose();
     }
-    instances.set(instanceKey, { instance, refs });
+    const entry: InstanceEntry = { instance, key: instanceKey, refs };
+    instances.set(instanceKey, entry);
+    this._entryByInstance.set(instance, entry);
+    this._entryById.set(instance.$blac.id, entry);
   }
 
   /**
@@ -482,12 +488,19 @@ export class StateContainerRegistry {
       initialRefId = options.refId ?? `_auto_${this._autoRefIdCounter++}`;
       initialRefs.set(initialRefId, 1);
     }
-    const newEntry: InstanceEntry = { instance, refs: initialRefs, args };
+    const newEntry: InstanceEntry = {
+      instance,
+      key: resolvedKey,
+      refs: initialRefs,
+      args,
+    };
     if (options.dependent) {
       (newEntry.dependents ??= new Set()).add(options.dependent);
       this._recordDependentEdge(options.dependent, Type, resolvedKey);
     }
     instances.set(resolvedKey, newEntry);
+    this._entryByInstance.set(instance, newEntry);
+    this._entryById.set(instance.$blac.id, newEntry);
 
     // Register type for lifecycle coordination
     this.registerType(Type);
@@ -734,6 +747,17 @@ export class StateContainerRegistry {
   }
 
   /**
+   * Get all active reference IDs for an instance by its `$blac.id`, without
+   * needing the owning Type. Used by `PluginContext.getRefIds`.
+   * @param instanceId - The instance's `$blac.id`
+   * @returns Array of ref ID strings (empty if instance doesn't exist)
+   */
+  getRefIdsById(instanceId: string): string[] {
+    const entry = this._entryById.get(instanceId);
+    return entry ? Array.from(entry.refs.keys()) : [];
+  }
+
+  /**
    * Check if an instance exists.
    *
    * @internal Internal key tier; public callers use the args-based `hasInstance`.
@@ -932,18 +956,3 @@ export class StateContainerRegistry {
  * Global default registry instance
  */
 export const globalRegistry = new StateContainerRegistry();
-
-/**
- * Global plugin manager (initialized lazily)
- */
-let _globalPluginManager: PluginManager | null = null;
-
-/**
- * Get the global plugin manager
- */
-export function getPluginManager(): PluginManager {
-  if (!_globalPluginManager) {
-    _globalPluginManager = createPluginManager(globalRegistry);
-  }
-  return _globalPluginManager;
-}

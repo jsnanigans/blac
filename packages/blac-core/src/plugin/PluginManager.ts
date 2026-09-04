@@ -481,15 +481,7 @@ export class PluginManager {
       },
 
       getRefIds: (instanceId: string): string[] => {
-        for (const Type of registry.getTypes()) {
-          const map = registry.getInstancesMap(Type);
-          for (const [, entry] of map) {
-            if (entry.instance.$blac.id === instanceId) {
-              return Array.from(entry.refs.keys());
-            }
-          }
-        }
-        return [];
+        return registry.getRefIdsById(instanceId);
       },
     };
   }

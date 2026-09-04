@@ -21,6 +21,9 @@
  * @packageDocumentation
  */
 
+import { createPluginManager, PluginManager } from './plugin/PluginManager';
+import { globalRegistry } from './core/StateContainerRegistry';
+
 export { PluginManager } from './plugin/PluginManager';
 export type {
   BlacPlugin,
@@ -29,4 +32,18 @@ export type {
   PluginConfig,
   InstanceMetadata,
 } from './plugin/BlacPlugin';
-export { getPluginManager } from './core/StateContainerRegistry';
+
+/**
+ * Global plugin manager (initialized lazily)
+ */
+let _globalPluginManager: PluginManager | null = null;
+
+/**
+ * Get the global plugin manager
+ */
+export function getPluginManager(): PluginManager {
+  if (!_globalPluginManager) {
+    _globalPluginManager = createPluginManager(globalRegistry);
+  }
+  return _globalPluginManager;
+}

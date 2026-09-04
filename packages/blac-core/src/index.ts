@@ -77,7 +77,7 @@ export { blac, type BlacOptions } from './decorators';
 export { isKeepAliveClass, isExcludedFromDevTools } from './utils/static-props';
 
 // Plugin System
-export { getPluginManager } from './core/StateContainerRegistry';
+export { getPluginManager, PluginManager } from './plugins';
 export type {
   BlacPlugin,
   BlacPluginWithInit,
@@ -85,7 +85,6 @@ export type {
   PluginConfig,
   InstanceMetadata,
 } from './plugin/BlacPlugin';
-export { PluginManager } from './plugin/PluginManager';
 
 // Watch
 export { watch, instance, type WatchFn, type BlocRef } from './watch';
