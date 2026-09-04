@@ -447,12 +447,12 @@ describe('StateContainer', () => {
     describe('dispose()', () => {
       it('should prevent further emissions', () => {
         const container = new TestContainer(0);
+        const before = container.state;
 
         container.dispose();
+        container.testEmit({ value: 1 });
 
-        expect(() => container.testEmit({ value: 1 })).toThrow(
-          'Cannot emit state from disposed container',
-        );
+        expect(container.state).toBe(before);
       });
 
       it('should be idempotent (safe to call multiple times)', () => {
@@ -495,13 +495,14 @@ describe('StateContainer', () => {
         expect(listener).toHaveBeenCalledWith({ value: 42 });
       });
 
-      it('should throw when disposed', () => {
+      it('should ignore emits when disposed', () => {
         const container = new TestContainer(0);
+        const before = container.state;
         container.dispose();
 
-        expect(() => container.testEmit({ value: 1 })).toThrow(
-          'Cannot emit state from disposed container',
-        );
+        container.testEmit({ value: 1 });
+
+        expect(container.state).toBe(before);
       });
 
       it('should call stateChanged system event hook', async () => {

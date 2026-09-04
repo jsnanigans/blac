@@ -19,10 +19,12 @@ describe('Cubit edge cases', () => {
     expect(cubit.state.label).toBe('');
   });
 
-  it('patch() on disposed cubit throws', () => {
+  it('patch() on disposed cubit is a no-op', () => {
     const cubit = new CountCubit();
+    const before = cubit.state;
     cubit.dispose();
-    expect(() => cubit.patch({ count: 1 })).toThrow();
+    cubit.patch({ count: 1 });
+    expect(cubit.state).toBe(before);
   });
 
   it('emit() with same reference does NOT notify listeners', () => {

@@ -399,11 +399,14 @@ export abstract class StateContainer<
       this.constructor as StateContainerConstructor,
     );
     this._equalityFn = perClass ?? getBlacConfig().equality;
-    this._registry.emit('created', this);
+    // `created` fires AFTER init() so plugins observe a fully initialised
+    // instance. Emitting it first let a plugin start hydration, which init()'s
+    // seeding emits then cancelled — silently discarding persisted state.
     if (!this._initCalled) {
       this._initCalled = true;
       this.init(this._config.args as Args);
     }
+    this._registry.emit('created', this);
 
     // Clobber guard: a subclass class-field `$blac = ...` initializes after
     // `super()` and would overwrite the base's own meta property. Dev-only.
@@ -456,6 +459,9 @@ export abstract class StateContainer<
 
     this._registry.emit('disposed', this);
 
+    // Tear down the channel itself (cancels any scheduled flush).
+    super.dispose();
+
     if (this._debug) {
       console.log(`[${this._name}] Disposed successfully`);
     }
@@ -493,9 +499,8 @@ export abstract class StateContainer<
    */
   override patch(partial: DeepPartial<S>): void {
     if (this._disposed) {
-      throw new Error(
-        `Cannot emit state from disposed container ${this._name}`,
-      );
+      this._warnDisposedMutation('patch');
+      return;
     }
     const partialKeys = Object.keys(partial as object);
     if (partialKeys.length === 0) return;
@@ -548,9 +553,8 @@ export abstract class StateContainer<
 
   private applyState(next: S, source: 'default' | 'hydration'): void {
     if (this._disposed) {
-      throw new Error(
-        `Cannot emit state from disposed container ${this._name}`,
-      );
+      this._warnDisposedMutation('emit');
+      return;
     }
 
     const prev = this.state;
@@ -635,12 +639,30 @@ export abstract class StateContainer<
     this.setHydrationStatus('hydrating');
   }
 
+  private _warnDisposedMutation(op: 'emit' | 'patch'): void {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(
+        `[blac] ${this._name}: ${op}() after dispose ignored. Guard async ` +
+          `work with \`if (this.$blac.disposed) return\` after each await.`,
+      );
+    }
+  }
+
   private _applyHydratedState(next: S): boolean {
     if (this._disposed) {
       return false;
     }
 
     if (this._hydrationStatus !== 'hydrating' || this._changedWhileHydrating) {
+      if (
+        process.env.NODE_ENV !== 'production' &&
+        this._changedWhileHydrating
+      ) {
+        console.warn(
+          `[blac] ${this._name}: persisted state discarded because the ` +
+            `container emitted while hydrating.`,
+        );
+      }
       return false;
     }
 

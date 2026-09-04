@@ -32,10 +32,12 @@ describe('StateContainer disposal', () => {
     expect(container.disposeCount).toBe(1);
   });
 
-  it('emit() throws on disposed container', () => {
+  it('emit() on disposed container is a no-op', () => {
     const container = new DisposableContainer();
+    const before = container.state;
     container.dispose();
-    expect(() => container.doEmit({ v: 1 })).toThrow();
+    container.doEmit({ v: 1 });
+    expect(container.state).toBe(before);
   });
 
   it('dispose() fires dispose system event exactly once', () => {

@@ -631,10 +631,12 @@ describe('Cubit', () => {
 
     it('should handle state after disposal', () => {
       const cubit = fixture.user();
+      const before = cubit.state;
 
       cubit.dispose();
+      cubit.updateName('Test');
 
-      expect(() => cubit.updateName('Test')).toThrow();
+      expect(cubit.state).toBe(before);
     });
 
     it('should work with null values in object state', () => {
