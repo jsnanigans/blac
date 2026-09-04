@@ -103,9 +103,11 @@ export class PluginManager {
     };
 
     if (!this.shouldEnablePlugin(effectiveConfig)) {
-      console.log(
-        `[BlaC] Plugin "${plugin.name}" skipped (environment mismatch)`,
-      );
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(
+          `[BlaC] Plugin "${plugin.name}" skipped (environment mismatch)`,
+        );
+      }
       return;
     }
 
@@ -136,7 +138,11 @@ export class PluginManager {
       }
     }
 
-    console.log(`[BlaC] Plugin "${plugin.name}" v${plugin.version} installed`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(
+        `[BlaC] Plugin "${plugin.name}" v${plugin.version} installed`,
+      );
+    }
   }
 
   /**
@@ -162,7 +168,9 @@ export class PluginManager {
     }
 
     this.plugins.delete(pluginName);
-    console.log(`[BlaC] Plugin "${pluginName}" uninstalled`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[BlaC] Plugin "${pluginName}" uninstalled`);
+    }
   }
 
   /**
