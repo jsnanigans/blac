@@ -17,7 +17,6 @@ export default defineConfig({
         'packages/blac-react/src/testing',
       ),
       '@blac/react': path.resolve(__dirname, 'packages/blac-react/src'),
-      '@blac/preact': path.resolve(__dirname, 'packages/blac-preact/src'),
       '@blac/devtools-connect': path.resolve(
         __dirname,
         'packages/devtools-connect/src',
@@ -29,13 +28,9 @@ export default defineConfig({
     environment: 'jsdom',
     environmentMatchGlobs: [
       ['packages/blac-react/**', 'happy-dom'],
-      ['packages/blac-preact/**', 'happy-dom'],
       ['apps/examples/**', 'happy-dom'],
     ],
-    setupFiles: [
-      './packages/blac-react/vitest-setup.ts',
-      './packages/blac-preact/vitest-setup.ts',
-    ],
+    setupFiles: ['./packages/blac-react/vitest-setup.ts'],
     hookTimeout: 30000,
     exclude: [
       '**/node_modules/**',

@@ -6,7 +6,6 @@ export default defineConfig({
     alias: {
       '@blac/core/testing': path.resolve(__dirname, '../blac-core/src/testing'),
       '@blac/core': path.resolve(__dirname, '../blac-core/src'),
-      '@blac/adapter': path.resolve(__dirname, '../blac-adapter/src'),
       '@blac/react/testing': path.resolve(__dirname, './src/testing'),
       '@blac/react': path.resolve(__dirname, './src'),
       // Resolve structural to source so tests see live tracker features

@@ -9,10 +9,6 @@ export default defineConfig({
         '../../packages/blac-core/src/testing',
       ),
       '@blac/core': path.resolve(__dirname, '../../packages/blac-core/src'),
-      '@blac/adapter': path.resolve(
-        __dirname,
-        '../../packages/blac-adapter/src',
-      ),
       '@blac/react/testing': path.resolve(
         __dirname,
         '../../packages/blac-react/src/testing',
