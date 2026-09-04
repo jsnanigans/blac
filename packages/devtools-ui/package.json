@@ -43,7 +43,7 @@
   "sideEffects": false,
   "scripts": {
     "dev": "vp pack --watch",
-    "build": "vp pack && tsc -p tsconfig.build.json && cp dist/index.d.ts dist/index.d.cts",
+    "build": "vp pack && tsc -p tsconfig.build.json && for f in dist/*.d.ts; do cp \"$f\" \"${f%.d.ts}.d.cts\"; done",
     "clean": "rm -rf dist",
     "test": "vp test run --passWithNoTests",
     "verify": "node ../../scripts/run-workspace-bin.mjs publint",
