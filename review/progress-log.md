@@ -8,19 +8,35 @@ Status key: `[ ]` todo · `[~]` in progress · `[x]` done · `[-]` dropped
 
 ---
 
-## Phase 0 — Unblock the repo (hours)
+## Phase 0 — Unblock the repo (hours) — ✅ complete
 
 Nothing else is trustworthy until the suite is green and the workspace is clean.
 
-- [ ] Delete or fix `useBloc.proxy-prop-tracing.test.tsx` (also writes to an absolute path) — [07 §1](./07-tests-and-tooling.md#1-failing-test), [01 §10](./01-correctness.md#10-failing-test-writes-to-an-absolute-path)
-- [ ] Land or revert the pending workspace/dependency changes — [07 §6](./07-tests-and-tooling.md#6-pending-workspace-changes)
-- [ ] Config hygiene: stale aliases, setup files, dead vitest config — [07 §5](./07-tests-and-tooling.md#5-config-hygiene), [03 §9](./03-bundle-and-packaging.md#9-stale-aliases-and-setup-files)
+- [x] Delete or fix `useBloc.proxy-prop-tracing.test.tsx` (also writes to an absolute path) — [07 §1](./07-tests-and-tooling.md#1-failing-test), [01 §10](./01-correctness.md#10-failing-test-writes-to-an-absolute-path) — _deleted; it pinned a known limitation as expected behaviour. Observation moved to `react/dependency-tracking.mdx` ("Passing state values as props"). `__setTrackTrace` kept — still used by `apps/perf`._
+- [x] Land or revert the pending workspace/dependency changes — [07 §6](./07-tests-and-tooling.md#6-pending-workspace-changes) — _done: `2543cd06` patch/minor, `1fd31021` tooling majors, `6e3c4626` react 19.2.8 + lockfile; tree clean_
+- [x] Config hygiene: stale aliases, setup files, dead vitest config — [07 §5](./07-tests-and-tooling.md#5-config-hygiene), [03 §9](./03-bundle-and-packaging.md#9-stale-aliases-and-setup-files) — _removed `@blac/preact`/`@blac/adapter` aliases + `blac-preact` setup file and env glob from root `vite.config.ts`, `blac-react/{vite,vitest.config.performance,vitest.config.compiler}.ts`, `{blac-react,devtools-ui,apps-examples}/tsconfig.json`, `apps/examples/vitest.config.ts`; dropped nonexistent `tests` from core `tsconfig` include; dropped both dead packages from the root README table. Root `vp test run` now works (previously failed on the missing setup file)._
 
-**Exit:** both packages green, `tsc --noEmit` clean, no uncommitted drift.
+**Exit:** ✅ met. Root `vp test run`: 87 files / 1137 tests pass. `typecheck`
+clean across all 9 packages.
+
+Deferred out of Phase 0 (not blockers, tracked for later):
+
+- Remaining [07 §5](./07-tests-and-tooling.md#5-config-hygiene) items are behaviour
+  changes, not dead config, so they were left alone: core on `jsdom` vs `node`,
+  `maxWorkers`/`maxConcurrency: 2`, react aliasing `@dirtytalk/structural` to
+  source while core does not, `useDefineForClassFields`/`experimentalDecorators`.
+  Fold into Phase 2 (perf) — see also [07 §2](./07-tests-and-tooling.md#2-suite-shape).
+- **Pre-existing bug, unrelated to this phase:** `apps/examples`
+  `src/__tests__/testing-utils/{integration,cubit-stub}.test.ts` raise 3 uncaught
+  exceptions (tests still pass). `entry.interest()` returns `undefined` for a test
+  stub; `PathSetSpace.intersects` forwards it to `isEmpty`, which dereferences
+  `.size` — `packages/dirtytalk-structural/src/path-set.ts:37` via
+  `dirtytalk-engine/src/dirty-channel.ts:161`. Guard the thunk result or fix the
+  stub. **Add to Phase 1.**
 
 ---
 
-## Phase 1 — Correctness (days) ← **start here after Phase 0**
+## Phase 1 — Correctness (days) ← **current**
 
 Data-loss and lifetime bugs. Each is independently shippable and patch-releasable.
 
@@ -30,6 +46,7 @@ Data-loss and lifetime bugs. Each is independently shippable and patch-releasabl
 - [ ] `emit`/`patch` after dispose → dev-warn no-op — [01 §5](./01-correctness.md#5-emit-after-dispose-throws)
 - [ ] `StateContainer.dispose()` must call `super.dispose()` — [01 §8](./01-correctness.md#8-statecontainerdispose-never-calls-superdispose)
 - [ ] Coalesce registry `on()` payloads like plugin payloads — [01 §9](./01-correctness.md#9-registry-on-payloads-are-not-coalesced-plugin-payloads-are)
+- [ ] Guard `undefined` interest in `PathSetSpace.intersects`/`isEmpty` (found in Phase 0; see above)
 - [ ] Regression tests for each of the above — [07 §3](./07-tests-and-tooling.md#3-missing-coverage)
 
 **Exit:** patch release. No behaviour change for correct code; bugs gone.
