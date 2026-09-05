@@ -5,6 +5,7 @@ import {
   type StructuralContainerOptions,
 } from '@dirtytalk/structural';
 import { generateSimpleId } from '../utils/idGenerator';
+import { IS_DEV } from '../constants';
 import { getRegistry } from '../registry/config';
 import type {
   ExtractArgs,
@@ -168,7 +169,7 @@ export abstract class StateContainer<
       return;
     }
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (IS_DEV) {
       for (const key of Object.keys(slice) as (keyof Deps)[]) {
         for (const [otherOwner, otherSlice] of owners) {
           if (otherOwner === ownerId) continue;
@@ -401,7 +402,7 @@ export abstract class StateContainer<
 
     // Clobber guard: a subclass class-field `$blac = ...` initializes after
     // `super()` and would overwrite the base's own meta property. Dev-only.
-    if (process.env.NODE_ENV !== 'production') {
+    if (IS_DEV) {
       if (!(this.$blac as unknown as Record<symbol, unknown>)?.[META_BRAND]) {
         console.warn(
           `[blac] ${this.constructor.name} appears to declare its own \`$blac\` ` +
@@ -502,7 +503,7 @@ export abstract class StateContainer<
     const next = this.state;
     if (Object.is(prev, next)) return;
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (IS_DEV) {
       this._checkEmitRate();
     }
 
@@ -533,7 +534,7 @@ export abstract class StateContainer<
     if (prev === next) return;
     if (this._equalityFn(prev, next)) return;
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (IS_DEV) {
       this._checkEmitRate();
     }
 
@@ -615,7 +616,7 @@ export abstract class StateContainer<
   }
 
   private _warnDisposedMutation(op: 'emit' | 'patch'): void {
-    if (process.env.NODE_ENV !== 'production') {
+    if (IS_DEV) {
       console.warn(
         `[blac] ${this._name}: ${op}() after dispose ignored. This usually ` +
           `means an async method resolved after the last consumer unmounted. ` +
@@ -631,10 +632,7 @@ export abstract class StateContainer<
     }
 
     if (this._hydrationStatus !== 'hydrating' || this._changedWhileHydrating) {
-      if (
-        process.env.NODE_ENV !== 'production' &&
-        this._changedWhileHydrating
-      ) {
+      if (IS_DEV && this._changedWhileHydrating) {
         console.warn(
           `[blac] ${this._name}: persisted state discarded because the ` +
             `container emitted while hydrating.`,

@@ -1,5 +1,6 @@
 import { ALL_PATHS, type PathSet } from '@dirtytalk/structural';
 import type { StateContainer } from '../core/StateContainer';
+import { IS_DEV } from '../constants';
 import type { StateContainerRegistry } from '../core/StateContainerRegistry';
 import type {
   BlacPlugin,
@@ -103,7 +104,7 @@ export class PluginManager {
     };
 
     if (!this.shouldEnablePlugin(effectiveConfig)) {
-      if (process.env.NODE_ENV !== 'production') {
+      if (IS_DEV) {
         console.log(
           `[BlaC] Plugin "${plugin.name}" skipped (environment mismatch)`,
         );
@@ -138,7 +139,7 @@ export class PluginManager {
       }
     }
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (IS_DEV) {
       console.log(
         `[BlaC] Plugin "${plugin.name}" v${plugin.version} installed`,
       );
@@ -168,7 +169,7 @@ export class PluginManager {
     }
 
     this.plugins.delete(pluginName);
-    if (process.env.NODE_ENV !== 'production') {
+    if (IS_DEV) {
       console.log(`[BlaC] Plugin "${pluginName}" uninstalled`);
     }
   }

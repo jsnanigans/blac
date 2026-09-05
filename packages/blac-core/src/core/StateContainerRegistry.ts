@@ -3,7 +3,7 @@ import type {
   StateContainer,
   StateContainerConfig,
 } from './StateContainer';
-import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
+import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX, IS_DEV } from '../constants';
 import { getBlacConfig } from '../config';
 import { isKeepAliveClass, getClassKey } from '../utils/static-props';
 import { structuralKey, DEFAULT_STRUCTURAL_KEY } from '../utils/structural-key';
@@ -439,11 +439,7 @@ export class StateContainerRegistry {
 
     if (entry) {
       // Dev-warn when the same key is reused with structurally different args.
-      if (
-        process.env.NODE_ENV !== 'production' &&
-        args !== undefined &&
-        entry.args !== undefined
-      ) {
+      if (IS_DEV && args !== undefined && entry.args !== undefined) {
         const incomingKey = structuralKey(args);
         const storedKey = (entry.argsKey ??= structuralKey(entry.args));
         if (incomingKey !== storedKey) {
