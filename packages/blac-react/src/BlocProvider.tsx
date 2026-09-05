@@ -5,6 +5,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
+import { resolveInstanceKey } from '@blac/core';
 import type { ExtractArgs, StateContainerConstructor } from '@blac/core';
 
 /**
@@ -69,14 +70,19 @@ export function BlocProvider<T extends StateContainerConstructor>({
 }: BlocProviderProps<T>): ReactElement {
   const parentMap = useContext(ProvidedArgsContext);
 
+  // Keyed on the resolved instance key, not `args` identity, so an inline
+  // `args={{ ... }}` literal does not rebuild the map on every render and
+  // re-render every consumer below.
+  const argsKey = resolveInstanceKey(bloc, args);
+
   // Merge our entry into a new Map so sibling/parent providers for other blocs
-  // are preserved. Memoised on (parentMap, bloc, args) identity.
+  // are preserved.
   const mergedMap = useMemo(() => {
     const next = new Map(parentMap);
     next.set(bloc, args);
     return next;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parentMap, bloc, args]);
+  }, [parentMap, bloc, argsKey]);
 
   return (
     <ProvidedArgsContext.Provider value={mergedMap}>

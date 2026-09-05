@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vite-plus/test';
+import { memo } from 'react';
 import { render, act, screen } from '@testing-library/react';
 import { Cubit, hasInstance } from '@blac/core';
 import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
-import { BlocProvider } from '../BlocProvider';
+import { BlocProvider, useProvidedArgs } from '../BlocProvider';
 
 class CounterCubit extends Cubit<{ n: number }, { _id: string }> {
   static key(args: { _id: string } | undefined) {
@@ -250,5 +251,28 @@ describe('E1 — BlocProvider args-based scoping', () => {
     // FlagCubit should have resolved to the default key (no args, no provider).
     expect(hasInstance(FlagCubit)).toBe(true);
     expect(flag).not.toBeNull();
+  });
+
+  it('keeps provided args referentially stable across a fresh literal', () => {
+    const seen: unknown[] = [];
+    // memo() so this re-renders only when the context value actually changes.
+    const Probe = memo(function Probe() {
+      seen.push(useProvidedArgs(CounterCubit));
+      return null;
+    });
+    function App({ tick }: { tick: number }) {
+      // New object identity each render, same structural value.
+      return (
+        <BlocProvider bloc={CounterCubit} args={{ _id: 'stable' }}>
+          <Probe />
+          <span>{tick}</span>
+        </BlocProvider>
+      );
+    }
+
+    const { rerender } = render(<App tick={0} />);
+    rerender(<App tick={1} />);
+
+    expect(seen.length).toBe(1);
   });
 });
