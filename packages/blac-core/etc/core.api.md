@@ -87,6 +87,7 @@ export interface BlacOptions {
   excludeFromDevTools?: true;
   keepAlive?: true;
   key?: (args: any) => string;
+  name?: string;
 }
 
 // @public
@@ -285,6 +286,11 @@ export function getAll<T extends StateContainerConstructor>(
 export function getBlacConfig(): BlacConfig;
 
 // @public
+export function getBlacName<T extends StateContainerConstructor>(
+  Type: T,
+): string;
+
+// @public
 export function getPluginManager(): PluginManager;
 
 // @public (undocumented)
@@ -386,10 +392,11 @@ export interface InstanceMetadata {
 }
 
 // @public (undocumented)
-export type InstanceReadonlyState<T extends StateContainerConstructor = any> =
-  Omit<InstanceType<T>, 'state'> & {
-    state: ExtractState<T>;
-  };
+export type InstanceReadonlyState<
+  T extends StateContainerConstructor = StateContainerConstructor,
+> = Omit<InstanceType<T>, 'state'> & {
+  state: ExtractState<T>;
+};
 
 // @public (undocumented)
 export type InstanceState<T extends StateContainerConstructor = any> = Omit<
@@ -620,9 +627,8 @@ export interface StateContainerConfig {
 }
 
 // @public
-export type StateContainerConstructor<S extends object = any> = new (
-  ...args: any[]
-) => StateContainer<S, any, any>;
+export type StateContainerConstructor<S extends object = any> =
+  new () => StateContainer<S, any, any>;
 
 // @public (undocumented)
 export type StateContainerInstance<S extends object = any> = Omit<

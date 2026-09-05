@@ -22,6 +22,12 @@ export interface BlacOptions {
    * Non-identity fields can be excluded so they don't fork new instances.
    */
   key?: (args: any) => string;
+  /**
+   * Explicit, minification-safe identity for this bloc class. Falls back to
+   * `constructor.name` when unset, which collides across classes once a
+   * minifier shortens class names.
+   */
+  name?: string;
 }
 
 /**
@@ -62,6 +68,9 @@ export function blac(options: BlacOptions) {
     }
     if ('key' in options && typeof options.key === 'function') {
       (target as any)[BLAC_STATIC_PROPS.KEY] = options.key;
+    }
+    if ('name' in options && typeof options.name === 'string') {
+      (target as any)[BLAC_STATIC_PROPS.BLAC_NAME] = options.name;
     }
     return target;
   };

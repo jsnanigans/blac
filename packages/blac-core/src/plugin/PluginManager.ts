@@ -1,6 +1,8 @@
 import { ALL_PATHS, type PathSet } from '@dirtytalk/structural';
 import type { StateContainer } from '../core/StateContainer';
 import { IS_DEV } from '../constants';
+import { getBlacName } from '../utils/static-props';
+import type { StateContainerConstructor } from '../types/utilities';
 import type { StateContainerRegistry } from '../core/StateContainerRegistry';
 import type {
   BlacPlugin,
@@ -420,7 +422,9 @@ export class PluginManager {
       ): InstanceMetadata => {
         return {
           id: instance.$blac.id,
-          className: instance.constructor.name,
+          className: getBlacName(
+            instance.constructor as StateContainerConstructor,
+          ),
           isDisposed: instance.$blac.disposed,
           name: instance.$blac.name,
           createdAt: instance.$blac.createdAt,

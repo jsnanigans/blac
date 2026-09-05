@@ -20,7 +20,7 @@ import {
   WITH_TRACKED_STATE,
 } from './symbols';
 import { type EqualityFn, getBlacConfig } from '../config';
-import { getClassEquality } from '../utils/static-props';
+import { getClassEquality, getBlacName } from '../utils/static-props';
 import { type BlacMeta, createMeta, META_BRAND } from './meta';
 
 /**
@@ -281,9 +281,14 @@ export abstract class StateContainer<
   private _equalityFn: EqualityFn = getBlacConfig().equality;
 
   // Identity fields. The `$blac` meta getters close over these.
-  private _name: string = this.constructor.name;
+  private _name: string = getBlacName(
+    this.constructor as StateContainerConstructor,
+  );
   private _debug: boolean = false;
-  private _instanceId: string = generateSimpleId(this.constructor.name, 'main');
+  private _instanceId: string = generateSimpleId(
+    getBlacName(this.constructor as StateContainerConstructor),
+    'main',
+  );
   private _createdAt: number = Date.now();
 
   /**
@@ -428,10 +433,12 @@ export abstract class StateContainer<
    */
   [INIT_CONFIG](config: StateContainerConfig): void {
     this._config = { ...config };
-    this._name = this._config.name || this.constructor.name;
+    this._name =
+      this._config.name ||
+      getBlacName(this.constructor as StateContainerConstructor);
     this._debug = this._config.debug ?? false;
     this._instanceId = generateSimpleId(
-      this.constructor.name,
+      getBlacName(this.constructor as StateContainerConstructor),
       this._config.instanceId,
     );
     const perClass = getClassEquality(

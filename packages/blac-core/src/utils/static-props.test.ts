@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { getClassKey, isKeepAliveClass } from './static-props';
+import { getBlacName, getClassKey, isKeepAliveClass } from './static-props';
 
 class Base {
   static key = () => 'base-key';
@@ -15,5 +15,22 @@ describe('static-props inheritance', () => {
 
   it('isKeepAliveClass inherits from a base class', () => {
     expect(isKeepAliveClass(Sub as any)).toBe(true);
+  });
+});
+
+describe('getBlacName', () => {
+  it('prefers an explicit blacName over constructor.name', () => {
+    class Named {
+      static blacName = 'ExplicitName';
+    }
+    expect(getBlacName(Named as any)).toBe('ExplicitName');
+  });
+
+  it('does not inherit a base class blacName', () => {
+    class NamedBase {
+      static blacName = 'BaseName';
+    }
+    class NamedSub extends NamedBase {}
+    expect(getBlacName(NamedSub as any)).toBe('NamedSub');
   });
 });

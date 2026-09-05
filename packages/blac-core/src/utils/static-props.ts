@@ -81,6 +81,22 @@ export function getClassEquality<T extends StateContainerConstructor>(
 }
 
 /**
+ * Get a class's minification-safe identity name.
+ * Own only: a subclass never inherits a base class's explicit `blacName`,
+ * since that would collapse two distinct blocs onto one identity.
+ * Falls back to `Type.name` (the runtime `constructor.name`) when unset.
+ * @param Type - The class constructor to check
+ * @returns the explicit `static blacName` or `Type.name`
+ */
+export function getBlacName<T extends StateContainerConstructor>(
+  Type: T,
+): string {
+  return (
+    getOwnStaticProp<string>(Type, BLAC_STATIC_PROPS.BLAC_NAME) ?? Type.name
+  );
+}
+
+/**
  * Get the per-class key function set via `@blac({ key })` or `static key = …`, if any.
  * Used by the registry to derive a stable instance key from `args`.
  * Own only: a subclass never inherits a base class's `key`, since a

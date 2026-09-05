@@ -43,6 +43,12 @@ export const BLAC_STATIC_PROPS = {
    * non-identity fields (e.g., `readonly` flags) while still keying by id.
    */
   KEY: 'key',
+
+  /**
+   * Explicit, minification-safe identity for a bloc class: `static blacName = '...'`.
+   * When unset, identity falls back to `constructor.name`.
+   */
+  BLAC_NAME: 'blacName',
 } as const;
 
 /**

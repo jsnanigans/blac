@@ -5,7 +5,11 @@ import type {
 } from './StateContainer';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX, IS_DEV } from '../constants';
 import { getBlacConfig } from '../config';
-import { isKeepAliveClass, getClassKey } from '../utils/static-props';
+import {
+  isKeepAliveClass,
+  getClassKey,
+  getBlacName,
+} from '../utils/static-props';
 import { structuralKey, DEFAULT_STRUCTURAL_KEY } from '../utils/structural-key';
 import {
   InstanceReadonlyState,
@@ -253,7 +257,7 @@ export class StateContainerRegistry {
    * @throws Error if type is already registered
    */
   register<T extends StateContainerConstructor>(constructor: T): void {
-    const className = constructor.name;
+    const className = getBlacName(constructor);
 
     if (this.registeredTypeNames.has(className)) {
       throw new Error(
