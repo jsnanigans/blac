@@ -84,13 +84,37 @@ Low-risk, mostly mechanical, gets both packages back under budget.
       No test added — the effect (channel `<=1` fast path, scan avoidance) is
       not observable through the public API; existing 466 core tests cover the
       behaviour that had to stay unchanged.
-- [ ] Collapse the three per-emit notification pipelines — [02 §2](./02-performance.md#2-three-notification-pipelines-per-emit)
+- [~] Collapse the three per-emit notification pipelines — [02 §2](./02-performance.md#2-three-notification-pipelines-per-emit)
+
+      **The main proposal is unsafe and should not be done as written.** 02 §2
+      says to make the channel the single pipeline and delete
+      `notifyStateChanged` / `_pendingStateChanges` / `flushStateChanged`. The
+      two lanes are not redundant — they differ deliberately, and the code
+      already says so at `StateContainerRegistry.ts:933`.
+
+      Verified empirically: with three `emit`s in a tick, the registry
+      `stateChanged` lane delivered all three transitions `[1, 2, 3]` while the
+      channel lane delivered **one** coalesced notification. The registry lane
+      is an uncoalesced transition log (devtools, time-travel and perf
+      monitoring need every intermediate `prev`/`next`); the plugin lane is
+      coalesced and carries a `PathSet`. Folding one into the other destroys
+      whichever semantic the survivor lacks.
+
+      **Done:** the safe half — one `PluginContext` per container cached in a
+      `WeakMap` (`PluginManager`), instead of rebuilding a 14-method object per
+      dispatch. It closes over `registry` and `container` only, both stable for
+      the container's lifetime; the `WeakMap` handles eviction. Install-time
+      (`container === undefined`) is not cached.
+
+      **Still open:** the genuinely duplicated work is the two ALL_PATHS
+      interest evaluations per flush, not the two lanes. Revisit with 04 §6.
       _Blocked pending a decision._ §2 says to delete `notifyStateChanged` /
       `flushStateChanged` and route registry + plugin events through one
       subscription. That is the same two-lane split Phase 1 established is
       deliberate (§9 coalescing broke devtools/time-travel). Premise is also
       partly stale: `hasStateChangedListeners` already gates lane 2, so the
       pipelines do not all run unconditionally. Needs design, not a patch.
+
 - [~] Trim per-instance allocation — [02 §3](./02-performance.md#3-per-instance-allocation)
   Shared `MicrotaskScheduler` as the default (was one per container); an
   explicit `options.scheduler` still wins. Verified by probe that the
@@ -451,6 +475,8 @@ against `blac-core/dist`, not source, so core must be rebuilt before its
 
 **Suggested commits:**
 
+- `test(blac-core): fuzz registry ownership invariants`
+- `perf(blac-core): cache plugin context per container`
 - `fix(plugin-persist): migrate keys off constructor.name`
 - `feat(blac-core): add minification-safe bloc identity`
 - `refactor(blac-core): require zero-arg bloc constructors`
@@ -472,6 +498,20 @@ against `blac-core/dist`, not source, so core must be rebuilt before its
 > (a data-loss bug filed as a typing nit), and `ensure`/`borrow`/`borrowSafe`
 > are not dead surface; they have real consumers in `apps/examples` and
 > `apps/perf`.
+
+**R2 prerequisite — ownership fuzz harness (done).**
+`StateContainerRegistry.ownership.fuzz.test.ts`: 200 seeds × 40 ops, seeded
+xorshift (deterministic, no `Math.random`), over a keyed class, a plain class, a
+`keepAlive` class and an `Owner` holding `depend()` edges on all three. Ops
+cover paired/unscoped `acquire`/`release`, `forceDispose`, dep resolution and
+direct `dispose()`. A shadow model is compared against the registry after every
+op; failures print the seed and full op log. Runs in ~570ms.
+
+Mutation-verified (all three re-run independently, not taken on report):
+dropping `dependents` from `_isUnowned` → 64 seeds fail; dropping
+`isKeepAliveClass` → 125 fail; `release()` deleting instead of decrementing the
+refcount → 125 fail. **No bug found in current ownership code** — the harness
+is a baseline that pins today's behaviour for the R2 refactor.
 
 ## Phase 5 — The `@blac/react` rewrite (one coordinated change)
 

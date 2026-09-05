@@ -105,6 +105,15 @@ surface of that split, so 05 §3's "dead surface" cleanup is the same edit.
   `ensure` in an examples component and in `blac-core/src/testing.ts`. Removing
   them is a migration, not a deletion.
 - `getInstancesMap` genuinely is near-dead (3 refs, all internal).
+- **02 §2's headline fix is unsafe** (found while building the R2 harness).
+  "Make the channel the single pipeline" assumes the registry `stateChanged`
+  lane and the plugin lane are redundant. They are not: measured with three
+  `emit`s in one tick, the registry lane delivered all three transitions and
+  the channel lane delivered one coalesced notification. The registry lane is
+  an uncoalesced transition log for devtools/time-travel; the plugin lane is
+  coalesced and carries a `PathSet`. R2 must keep both and instead remove the
+  duplicated ALL_PATHS interest evaluations. The `PluginContext` `WeakMap`
+  cache — the safe half — is already landed.
 
 ### Work
 
@@ -235,5 +244,9 @@ data-loss bug in it (the persist key), and it is the foundation the rest reads.
 
 R2 changes dispose semantics and R3 changes when side effects run. Both are
 the kind of change where example-based tests pass and production breaks.
-Before R2 I would want fuzz coverage over acquire/release/dispose
-interleavings — that is a prerequisite task, not part of R2 itself.
+
+**The R2 prerequisite is done**: `StateContainerRegistry.ownership.fuzz.test.ts`
+fuzzes acquire/release/dispose interleavings against a shadow model (200 seeds,
+~570ms) and is mutation-verified to catch the three regressions the refactor is
+most likely to introduce. It found no bug in current code, so it now serves as
+the behavioural baseline to diff the refactor against. R2 can start.
