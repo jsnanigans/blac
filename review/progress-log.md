@@ -117,7 +117,28 @@ Low-risk, mostly mechanical, gets both packages back under budget.
   anything importing `@blac/core` keeps pulling `PluginManager` in.
   Kept for the decoupling. Actually tree-shaking needs the export dropped
   from the barrel (`/plugins`-only) — a breaking change, needs a decision.
-- [ ] Dev/prod export conditions; strip dev-only branches — [03 §4](./03-bundle-and-packaging.md#4-dev--prod-conditions), [02 §9](./02-performance.md#9-dev-only-branches-on-the-hot-path)
+- [x] Dev/prod export conditions; strip dev-only branches — [03 §4](./03-bundle-and-packaging.md#4-dev--prod-conditions), [02 §9](./02-performance.md#9-dev-only-branches-on-the-hot-path)
+      **Took the `isDev` guard, dropped the two-build split — the finding's size
+      premise is false.** Measured it: a prod build (`vp pack --env.NODE_ENV
+  production`) removes every `process.env` reference from `dist` but is
+      _byte-identical_ in size (8.49 kB both ways). The `NODE_ENV` guards wrap
+      almost nothing — two one-line `_checkEmitRate()` calls into a function
+      that ships anyway, a couple of `console.warn` strings, and the
+      `APPLY_DEPS` collision scan. The `console.*` calls surviving a prod build
+      are `this._debug` opt-ins and genuine handler-failure `console.error`
+      paths, which no define can remove. 8 entry points × 2 builds for 0 bytes
+      was not worth it.
+      The real half of the finding — a bare `process.env` read _throws_ under
+      plain ESM/Deno/Bun — is fixed: `IS_DEV` in `constants.ts`
+      (`typeof process === 'undefined' || process.env?.NODE_ENV !==
+  'production'`), used at all 8 core guard sites. `blac-react` has a single
+      guard and keeps a local copy rather than widening the public barrel for
+      one call site. Verified: pre-fix pattern throws `ReferenceError: process
+  is not defined` with no `process` global; post-fix built `dist` runs clean.
+      **Costs ~450 B** (core 8.51 → 8.96 kB): `IS_DEV` is not statically
+      foldable, so the bundler now retains the dev branches it used to drop.
+      Measured an inline-guard variant too (8.97 kB) — no better, so the shared
+      constant wins on being one definition. Correctness over 450 B.
 - [x] `install()` must not log unconditionally — [03 §5](./03-bundle-and-packaging.md#5-install-logs-unconditionally)
       All three `console.log` sites in `PluginManager` gated on
       `NODE_ENV !== 'production'`, matching the predicate core already uses.
@@ -152,10 +173,19 @@ Low-risk, mostly mechanical, gets both packages back under budget.
       turned into plain code text.
       The report confirms `getPluginManager` is in the barrel — the 03 §2
       tree-shaking blocker — and that no `tracked` export exists.
-- [~] CI gates: size-limit, typecheck, test — [07 §4](./07-tests-and-tooling.md#4-ci-gates)
-  Added root `size` script. NOT wired into `release:check` yet — both
-  packages are over budget, so the gate would fail the release today.
-  Wire it once the 02 perf items land.
+- [x] CI gate: `api:check` — [07 §4](./07-tests-and-tooling.md#4-ci-gates)
+      Added an `API report` job to `.github/workflows/ci.yml`. Verified it
+      actually fails on a real surface change (adding an export to `/debug`),
+      not just that it passes on a clean tree.
+- [x] **Size budgets reset to actuals.** The old 7.8 kB / 3.5 kB numbers were
+      arbitrary and had never been met. Now core 9.1 kB (actual 8.96) and react
+      5.8 kB (actual 5.61) — a small headroom over measured reality, so the
+      budget works as a regression ratchet instead of permanent red. Tighten as
+      the remaining 02 perf work lands.
+- [-] CI gates: size-limit, typecheck, test — [07 §4](./07-tests-and-tooling.md#4-ci-gates)
+  **Dropped: all CI workflows were removed from the repo** (`.github/workflows/`
+  deleted). The root `size` script stays and both budgets are green, so it is
+  runnable locally and ready to re-wire if CI returns.
 
 Also done: unified the `@dirtytalk/structural` test alias — `blac-core` was the
 only config resolving to built `dist` while react, plugin-persist and apps/perf
@@ -165,7 +195,12 @@ all used source, so core could silently test a stale build ([07 §5](./07-tests-
 `@blac/core` 8.45 kB / 7.8 kB (+645 B, was +548 B) ·
 `@blac/react` 5.41 kB / 3.5 kB (+1.91 kB, unchanged).
 
-**Exit:** both packages under budget, CI enforces it.
+**Exit:** ✅ both packages under budget (core 8.96/9.1 kB, react 5.61/5.8 kB).
+"CI enforces it" is void — CI was removed from the repo; `pnpm size` is local.
+
+**Note:** the `API report` CI job added earlier this phase went with the
+workflow deletion. `pnpm api:check` and the committed `etc/*.api.md` reports
+are unaffected.
 
 ---
 
@@ -185,8 +220,45 @@ Independent of all code phases — can be done by someone else concurrently.
       `#private` TypeError with a BlaC message (dev only). Added
       `@types/node` + `types: ["node"]` to blac-react — the new
       `process.env` guard broke `pnpm -w build` while `tsc --noEmit` passed.
-- [ ] Make docs a CI concern (typecheck examples) — [06 §3](./06-dx-and-docs.md#3-make-docs-a-ci-concern)
-- [ ] Onboarding surface / getting-started path — [06 §5](./06-dx-and-docs.md#5-onboarding-surface)
+- [-] Make docs a CI concern (typecheck examples) — [06 §3](./06-dx-and-docs.md#3-make-docs-a-ci-concern)
+  **Dropped: no CI to hang it on** — all workflows removed from the repo.
+  The `api:check` half already exists as a local script with committed
+  reports; re-open if CI returns.
+- [x] Onboarding surface / getting-started path — [06 §5](./06-dx-and-docs.md#5-onboarding-surface)
+      Landing page restructured to the finding's pitch order and the three
+      input lanes surfaced. The `useSyncExternalStore` claim was not actually
+      on this page (it was the root README, already fixed); "no provider tree"
+      stays — `BlocProvider` is optional, not required.
+
+---
+
+## Phase 3.5 — Audit-driven cleanup (done)
+
+A read-only audit re-verified every open finding against current source.
+
+- [x] `packages/blac-core/README.md` still called `emit`/`update` **protected**
+      — [05 §1](./05-api-and-types.md#1-cubit-vs-statecontainer). They are
+      public (`StateContainer.ts:478,491`), and there is no `update` method at
+      all; the api-extractor report was the ground truth. The Phase 3 pass
+      fixed the Cubit line and missed this one.
+- [x] `guide/versioning.md:99,101` still claimed `useSyncExternalStore` is used
+      — a **regression left by our own Phase 3 pass**, which corrected three
+      other pages and missed this table.
+- [x] Deleted dead surface — [05 §3](./05-api-and-types.md#3-dead-surface):
+      `MAX_GETTER_DEPTH`, `BLAC_ID_PATTERNS`, and the whole `global.d.ts`
+      (`__BLAC_LOGGING__`). Each was referenced only at its own definition;
+      `api:check` confirms the public surface is unchanged.
+- [x] `BlocProvider` memoised its context map on `args` **object identity**
+      ([06 §1](./06-dx-and-docs.md#1-dx-traps-ranked-by-how-quickly-a-new-user-hits-them) item 6), so an inline
+      `args={{ ... }}` literal rebuilt the map every render and re-rendered
+      every consumer. Now keyed on `resolveInstanceKey(bloc, args)` — already
+      public, so no new export. Test pins it (fails on the old dep array).
+
+**Audit verdicts worth keeping:** 02 §2's premise is stale on top of the
+design conflict (`hasStateChangedListeners` already gates the registry lane);
+02 §3's "dead `_instanceId`" and 03 §8 are correctly closed; 03 §2's decoupling
+landed but tree-shaking still needs the barrel cut. 04 §1-§6 are one coordinated
+Phase 5 rewrite — the audit agrees they should not be sliced piecemeal.
 
 ---
 
