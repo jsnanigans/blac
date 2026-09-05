@@ -27,3 +27,13 @@ export const ON_DISPOSE = Symbol('blac.onDispose');
  * helpers are the sole callers, mirroring the `APPLY_DEPS` precedent.
  */
 export const INIT_CONFIG = Symbol('blac.initConfig');
+
+/**
+ * @internal Run `fn` with `state` temporarily reporting a render's tracking
+ * proxy, so getters record the paths they read. Called by `@blac/react`'s
+ * `buildTrackedProxy` — not public API.
+ *
+ * Replaces the old `this`-Proxy receiver: getters now run with `this` bound to
+ * the real instance, so ES `#private` works in user blocs.
+ */
+export const WITH_TRACKED_STATE = Symbol('blac.withTrackedState');

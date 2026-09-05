@@ -569,6 +569,12 @@ export abstract class StateContainer<
   // @internal
   [REMOVE_DEPS_OWNER](ownerId: string): void;
   // @internal
+  [WITH_TRACKED_STATE]<R>(
+    tracked: S,
+    fn: () => R,
+    onDepHandle?: (handle: object) => unknown,
+  ): R;
+  // @internal
   readonly __args: Args;
   constructor(initialState: S, options?: StructuralContainerOptions);
   // @internal
@@ -598,6 +604,8 @@ export abstract class StateContainer<
     handler: SystemEventHandler<S, E>,
   ) => () => void;
   patch(partial: DeepPartial<S>): void;
+  // (undocumented)
+  get state(): S;
 }
 
 // @public (undocumented)
@@ -808,6 +816,11 @@ export interface WatchFn extends WatchSingleFn {
     callback: (blocs: ExtractInstances<T>) => void | StopSymbol,
   ): () => void;
 }
+
+// Warning: (ae-internal-missing-underscore) The name "WITH_TRACKED_STATE" should be prefixed with an underscore because the declaration is marked as @internal
+//
+// @internal
+export const WITH_TRACKED_STATE: unique symbol;
 
 // (No @packageDocumentation comment for this package)
 ```

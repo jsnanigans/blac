@@ -17,6 +17,7 @@ import {
   INIT_CONFIG,
   ON_DISPOSE,
   REMOVE_DEPS_OWNER,
+  WITH_TRACKED_STATE,
 } from './symbols';
 import { type EqualityFn, getBlacConfig } from '../config';
 import { getClassEquality } from '../utils/static-props';
@@ -279,8 +280,7 @@ export abstract class StateContainer<
   private _registry = getRegistry();
   private _equalityFn: EqualityFn = getBlacConfig().equality;
 
-  // Identity fields. TS-private (compile-time only) — proxy-safe, unlike ES
-  // `#private`. The `$blac` meta getters close over these.
+  // Identity fields. The `$blac` meta getters close over these.
   private _name: string = this.constructor.name;
   private _debug: boolean = false;
   private _instanceId: string = generateSimpleId(this.constructor.name, 'main');
@@ -294,6 +294,43 @@ export abstract class StateContainer<
    * proxy-safe. See `createMeta`.
    */
   readonly $blac: BlacMeta<S> = createMeta<S>(this);
+
+  /**
+   * Both set only for the duration of a `[WITH_TRACKED_STATE]` call. TS-private
+   * so they stay out of the public surface.
+   */
+  private _stateOverride: S | undefined;
+  private _depHandleHook: ((handle: object) => unknown) | undefined;
+
+  override get state(): S {
+    return this._stateOverride ?? super.state;
+  }
+
+  /**
+   * @internal Run `fn` with `state` reporting `tracked`, and with dep handles
+   * read off `this` routed through `onDepHandle`. Restored in `finally`, and
+   * nestable — getters reading other getters stay in tracked context.
+   *
+   * The dep hook lives here rather than in the adapter's proxy because getters
+   * now run with `this` = the real instance (so ES `#private` works), which
+   * means a `this.someDep` read never passes through the proxy's trap.
+   */
+  [WITH_TRACKED_STATE]<R>(
+    tracked: S,
+    fn: () => R,
+    onDepHandle?: (handle: object) => unknown,
+  ): R {
+    const prevState = this._stateOverride;
+    const prevHook = this._depHandleHook;
+    this._stateOverride = tracked;
+    this._depHandleHook = onDepHandle;
+    try {
+      return fn();
+    } finally {
+      this._stateOverride = prevState;
+      this._depHandleHook = prevHook;
+    }
+  }
 
   get args(): Args | undefined {
     return this._config.args as Args | undefined;
@@ -345,6 +382,16 @@ export abstract class StateContainer<
       track: (
         options?: DepAccessOptions<T>,
       ): [ExtractState<T>, InstanceType<T>] => {
+        // While a consumer is rendering, `.track()` must go through its
+        // session-bound wrapper so the read subscribes that consumer. The
+        // wrapper is only reachable via the hook, since `this.<dep>` is read
+        // straight off the real instance.
+        const wrapped = this._depHandleHook?.(handle) as
+          | DepHandle<T>
+          | undefined;
+        if (wrapped !== undefined && wrapped !== handle) {
+          return wrapped.track(options);
+        }
         const instance = resolve(options?.args);
         return [instance.state as ExtractState<T>, instance];
       },

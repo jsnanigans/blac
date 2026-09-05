@@ -27,6 +27,7 @@ export {
   REMOVE_DEPS_OWNER,
   INIT_CONFIG,
   ON_DISPOSE,
+  WITH_TRACKED_STATE,
 } from './core/symbols';
 
 // `$blac` meta namespace (identity / lifecycle / hydration).
