@@ -140,35 +140,30 @@ class FileUploadCubit extends Cubit<
 ### Wiring deps from a component
 
 :::caution[`deps` is not a `useBloc` option]
-There is no `deps:` key on `useBloc`. A component contributes its slice by calling the bloc's deps methods from a **mount effect** (post-commit, as the rules require). Import the methods from `@blac/core`:
+There is no `deps:` key on `useBloc`. A component contributes its slice by calling `useBlocDeps(bloc, slice)`, exported alongside `useBloc`:
 :::
 
 ```tsx
-import { useEffect, useId, useRef } from 'react';
-import { APPLY_DEPS, REMOVE_DEPS_OWNER } from '@blac/core';
-import { useBloc } from '@blac/react';
+import { useRef } from 'react';
+import { useBloc, useBlocDeps } from '@blac/react';
 
 function UploadButton({ endpoint }: { endpoint: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const ownerId = useId(); // identifies THIS consumer's slice
   // same endpoint → same instance, regardless of which ref is passed
   const [state, cubit] = useBloc(FileUploadCubit, { args: { endpoint } });
 
-  useEffect(() => {
-    cubit[APPLY_DEPS](ownerId, { inputRef }); // contribute this consumer's slice
-    return () => cubit[REMOVE_DEPS_OWNER](ownerId); // withdraw it on unmount
-  }, [cubit, inputRef, ownerId]);
+  useBlocDeps(cubit, { inputRef }); // contribute this consumer's slice
 
   return <button onClick={() => cubit.openPicker()}>Choose file</button>;
 }
 ```
 
-`ownerId` (a `useId()` value, stable per mount) tags the slice so the engine knows which consumer wrote it and can withdraw exactly that slice on unmount.
+Each calling component is one owner: `useBlocDeps` tags its slice internally (with a stable per-mount id) so the engine knows which consumer wrote it, shallow-merges it into the bloc's merged `deps` view, and withdraws exactly that slice automatically on unmount. No dependency array is needed — the hook applies the slice on every commit and the core shallow-compares, so an unchanged slice is a no-op; still pass identity-stable values (`useMemo` / `useCallback`), since a new function identity counts as a change.
 
 <details>
 <summary>Why an effect, not a render-time call</summary>
 
-Deps must be applied _after_ commit so a freshly mounted `ref.current` is populated and so mid-render mutation never happens. The effect runs post-commit; its cleanup runs before the consumer's `useBloc` releases its ref, so the slice is withdrawn while the bloc is still alive. `APPLY_DEPS`/`REMOVE_DEPS_OWNER` are marked `@internal` today (a friendlier wrapper may land later), but this is the supported path.
+Deps must be applied _after_ commit so a freshly mounted `ref.current` is populated and so mid-render mutation never happens. `useBlocDeps` applies in an effect, post-commit; its cleanup runs before the consumer's `useBloc` releases its ref, so the slice is withdrawn while the bloc is still alive.
 
 </details>
 
@@ -182,10 +177,10 @@ Different components can contribute different slices of deps to the same instanc
 
 ```tsx
 // Component A owns inputRef
-cubit[APPLY_DEPS](ownerIdA, { inputRef });
+useBlocDeps(cubit, { inputRef });
 
 // Component B owns onSubmit
-cubit[APPLY_DEPS](ownerIdB, { onSubmit });
+useBlocDeps(cubit, { onSubmit });
 
 // bloc.deps === { inputRef, onSubmit } — assembled from both consumers
 ```
@@ -240,7 +235,7 @@ Prefer these patterns, best first:
 - **Non-serializable value in `args`** — a ref, callback, DOM node, or class instance makes the structural hash unstable, so you get a _new instance every render_. Put it in deps instead. (The structural-key hasher throws in dev if it sees a function in `args`.)
 - **Capturing an inline callback in deps** — `{ onComplete: () => doThing() }` freezes the first render's closure. Stabilize with `useCallback`, or invert the callback (option 1 above).
 - **Two consumers writing the same deps key** — last write wins and the value flickers. Give each shared value exactly one owning component.
-- **Reaching for `deps:`, `instanceId:`, or `autoInstance:` as `useBloc` options** — none exist. Wire deps from an effect; key per-mount instances with a synthetic `args` value + `static key` (e.g. `args: { _id: useId() }`).
+- **Reaching for `deps:`, `instanceId:`, or `autoInstance:` as `useBloc` options** — none exist. Wire deps with `useBlocDeps`; key per-mount instances with a synthetic `args` value + `static key` (e.g. `args: { _id: useId() }`).
   :::
 
 ---

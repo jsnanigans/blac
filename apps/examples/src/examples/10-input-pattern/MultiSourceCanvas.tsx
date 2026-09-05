@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { APPLY_DEPS, REMOVE_DEPS_OWNER } from '@blac/core';
-import { useBloc } from '@blac/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useBloc, useBlocDeps } from '@blac/react';
 import { CanvasCubit } from './CanvasCubit';
 
 /**
@@ -15,7 +14,6 @@ const MULTI_INSTANCE_ID = 'multi-source-canvas';
 function CanvasProvider() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [, bump] = useState(0);
-  const ownerId = useId();
 
   // Contributes only the canvas handle; does not read state.
   const [, bloc] = useBloc(CanvasCubit, {
@@ -23,13 +21,7 @@ function CanvasProvider() {
   });
 
   const canvas = canvasRef.current;
-  useEffect(() => {
-    bloc[APPLY_DEPS](ownerId, { canvas });
-    return () => {
-      bloc[REMOVE_DEPS_OWNER](ownerId);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvas, ownerId]);
+  useBlocDeps(bloc, { canvas });
 
   useEffect(() => {
     bump((n) => n + 1); // one extra commit so the ref populates into deps
@@ -52,7 +44,6 @@ function CanvasProvider() {
 
 function TickLogger() {
   const [lastTick, setLastTick] = useState<number | null>(null);
-  const ownerId = useId();
 
   // Stable callback; throttles to keep re-renders cheap.
   const onTick = useCallback((frame: number) => {
@@ -63,13 +54,7 @@ function TickLogger() {
     args: { _id: MULTI_INSTANCE_ID },
   });
 
-  useEffect(() => {
-    bloc[APPLY_DEPS](ownerId, { onTick });
-    return () => {
-      bloc[REMOVE_DEPS_OWNER](ownerId);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onTick, ownerId]);
+  useBlocDeps(bloc, { onTick });
 
   return (
     <span className="text-small text-muted">

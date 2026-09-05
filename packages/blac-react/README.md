@@ -156,21 +156,16 @@ Use `deps` to inject refs, stable callbacks, and long-lived controller handles. 
 - **Read lazily** — accessed via `this.deps.x` when needed, may be undefined
 - **Live** — can change over time
 
-`deps` is **not** a `useBloc` option. A component contributes its slice from a **mount effect**, using `APPLY_DEPS` / `REMOVE_DEPS_OWNER` from `@blac/core` (marked `@internal` today; a friendlier wrapper may land later):
+`deps` is **not** a `useBloc` option. A component contributes its slice by calling `useBlocDeps`:
 
 ```tsx
-import { useEffect, useId, useRef } from 'react';
-import { APPLY_DEPS, REMOVE_DEPS_OWNER } from '@blac/core';
-import { useBloc } from '@blac/react';
+import { useRef } from 'react';
+import { useBloc, useBlocDeps } from '@blac/react';
 
 const inputRef = useRef<HTMLInputElement>(null);
-const ownerId = useId();
 const [state, cubit] = useBloc(FileUploadCubit, { args: { endpoint } });
 
-useEffect(() => {
-  cubit[APPLY_DEPS](ownerId, { inputRef });
-  return () => cubit[REMOVE_DEPS_OWNER](ownerId);
-}, [cubit, inputRef, ownerId]);
+useBlocDeps(cubit, { inputRef });
 ```
 
 The bloc reads them lazily and guards for absence:
@@ -196,13 +191,15 @@ class FileUploadCubit extends Cubit<
 
 ```tsx
 // Component A owns inputRef
-cubitA[APPLY_DEPS](ownerIdA, { inputRef });
+useBlocDeps(cubit, { inputRef });
 
 // Component B owns onSubmit
-cubitB[APPLY_DEPS](ownerIdB, { onSubmit });
+useBlocDeps(cubit, { onSubmit });
 
 // cubit.deps === { inputRef, onSubmit } (merged from both consumers)
 ```
+
+Each calling component is its own owner; unmounting one withdraws only its own keys — dropped keys reconcile to `undefined` rather than being deleted from the object. No dependency array is needed: `useBlocDeps` applies on every commit and the core shallow-compares, so an unchanged slice is a no-op. Still pass identity-stable values (`useMemo` / `useCallback`), since a new function identity counts as a change.
 
 **Avoid raw callbacks** — the callback staleness gotcha. Prefer:
 
@@ -263,7 +260,7 @@ const [state] = useBloc(CounterCubit, {
 | `onMount`   | `(bloc) => void`             | Called when component mounts                                                     |
 | `onUnmount` | `(bloc) => void`             | Called when component unmounts                                                   |
 
-> Auto-tracking is always on when `select` is omitted — it is **not** a configurable option. `deps`, `autoInstance`, and `instanceId` are not `useBloc` options: wire deps from a mount effect (`APPLY_DEPS` / `REMOVE_DEPS_OWNER`); for per-mount private instances, embed a stable unique ID in `args` (e.g. `{ args: { _id: useId() } }`).
+> Auto-tracking is always on when `select` is omitted — it is **not** a configurable option. `deps`, `autoInstance`, and `instanceId` are not `useBloc` options: wire deps with `useBlocDeps(bloc, slice)`; for per-mount private instances, embed a stable unique ID in `args` (e.g. `{ args: { _id: useId() } }`).
 
 ### Identity and Keying
 
@@ -311,7 +308,7 @@ useBloc(EditorCubit, { args: { _id: 'editor-1' } });
 ### Breaking Changes (v2)
 
 - **`dependencies` option renamed to `select`** — avoids confusion with the `deps` (non-serializable handles) lane.
-- **`autoTrack`, `autoInstance`, `instanceId`, and `deps` are no longer `useBloc` options** — auto-tracking is always on (opt out per-consumer with `select`); per-mount private instances embed a unique ID in `args`; deps are wired from a mount effect via `APPLY_DEPS` / `REMOVE_DEPS_OWNER`.
+- **`autoTrack`, `autoInstance`, `instanceId`, and `deps` are no longer `useBloc` options** — auto-tracking is always on (opt out per-consumer with `select`); per-mount private instances embed a unique ID in `args`; deps are wired with `useBlocDeps(bloc, slice)`.
 - **Zero-arg constructor + `init(args)` lifecycle** — all blocs now use `new Type()` with no constructor args. Blocs that declare `Args` receive them via `init(args)` called by the framework before the first state snapshot.
 - **`args` is required when declared, forbidden when void** — enforced by the type system; no runtime guard needed.
 

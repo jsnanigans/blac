@@ -91,18 +91,14 @@ This is the single most common source of confusion, so commit the rule to memory
 | A non-serializable handle (a `useRef`, a stable `useCallback`, an external API object)    | **`deps`**                                  | Deps never key identity and are merged per-consumer; the bloc reads them lazily.           |
 | An opaque key that isn't real bloc data (a per-mount id, an externally-managed token)     | **a synthetic `args` field + `static key`** | Add the value to `args` (e.g. `_id`) and key on it; nothing else forks the instance.       |
 
-The mechanics of all three live in [Passing Inputs to Blocs](/guide/inputs); this is just the judgment. Note that `deps` is **not** a `useBloc` option — a consumer contributes its slice from a mount effect via the `APPLY_DEPS` / `REMOVE_DEPS_OWNER` handles from `@blac/core` (the examples below import them); see [Wiring deps from a component](/guide/inputs#wiring-deps-from-a-component).
+The mechanics of all three live in [Passing Inputs to Blocs](/guide/inputs); this is just the judgment. Note that `deps` is **not** a `useBloc` option — a consumer contributes its slice with `useBlocDeps` from `@blac/react` (the examples below import it); see [Wiring deps from a component](/guide/inputs#wiring-deps-from-a-component).
 
 ```tsx
 // Good — userId is serializable identity (args); inputRef is a handle (deps).
-// deps is NOT a useBloc option: wire it from a mount effect (post-commit).
+// deps is NOT a useBloc option: wire it with useBlocDeps.
 const inputRef = useRef<HTMLInputElement>(null);
-const ownerId = useId();
 const [state, cubit] = useBloc(UserCardCubit, { args: { userId } });
-useEffect(() => {
-  cubit[APPLY_DEPS](ownerId, { inputRef });
-  return () => cubit[REMOVE_DEPS_OWNER](ownerId);
-}, [cubit, inputRef, ownerId]);
+useBlocDeps(cubit, { inputRef });
 ```
 
 ```tsx
@@ -391,9 +387,7 @@ An inline arrow captured into `deps` freezes the first render's closure.
 
 ```tsx
 // Bad — new identity each render contributed as a dep; bloc keeps the stale one
-useEffect(() => {
-  cubit[APPLY_DEPS](ownerId, { onDone: () => save(id) });
-}, [cubit, ownerId, id]);
+useBlocDeps(cubit, { onDone: () => save(id) });
 
 // Fix — invert: expose result state, call your own callback in an effect
 const [{ doneId }] = useBloc(UploadCubit, { args });
@@ -410,12 +404,9 @@ Refs, callbacks, class instances, and `Date`/`Map`/`Set` in `args` produce an un
 // Bad — ref in args re-keys the instance on every render
 useBloc(UploadCubit, { args: { endpoint, inputRef } });
 
-// Fix — handles go in the deps lane, wired from an effect (not a useBloc option)
+// Fix — handles go in the deps lane, wired with useBlocDeps (not a useBloc option)
 const [, cubit] = useBloc(UploadCubit, { args: { endpoint } });
-useEffect(() => {
-  cubit[APPLY_DEPS](ownerId, { inputRef });
-  return () => cubit[REMOVE_DEPS_OWNER](ownerId);
-}, [cubit, inputRef, ownerId]);
+useBlocDeps(cubit, { inputRef });
 ```
 
 ### Opting out of tracking when you don't need to
