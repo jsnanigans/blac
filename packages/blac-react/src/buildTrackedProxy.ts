@@ -1,5 +1,9 @@
 import { DEP_BRAND } from '@blac/core';
 
+// `process` is absent in plain ESM/Deno, where a bare read throws.
+const IS_DEV =
+  typeof process === 'undefined' || process.env?.NODE_ENV !== 'production';
+
 function isPrivateFieldError(error: unknown): boolean {
   return (
     error instanceof TypeError && /private (member|field)/i.test(error.message)
@@ -90,10 +94,7 @@ export function buildTrackedProxy<T extends object>(
         if (desc?.get) return desc.get.call(thisProxy);
         return Reflect.get(target, key, receiver);
       } catch (error) {
-        if (
-          process.env.NODE_ENV !== 'production' &&
-          isPrivateFieldError(error)
-        ) {
+        if (IS_DEV && isPrivateFieldError(error)) {
           throw new TypeError(
             `[blac] Cannot access ES #private fields/methods through the ` +
               `tracking proxy (property "${String(key)}"). Use a \`_\`-prefixed ` +
