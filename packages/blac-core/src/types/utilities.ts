@@ -14,9 +14,8 @@ export type ExtractStateMutable<T> =
  * Constructor type for StateContainer classes
  * @typeParam S - State type managed by the container
  */
-export type StateContainerConstructor<S extends object = any> = new (
-  ...args: any[]
-) => StateContainer<S, any, any>;
+export type StateContainerConstructor<S extends object = any> =
+  new () => StateContainer<S, any, any>;
 
 /**
  * Extract the args type (serializable construction/identity data) from a
@@ -44,8 +43,9 @@ export type ExtractDeps<T> = T extends new () => StateContainer<
   ? D
   : Record<string, never>;
 
-export type InstanceReadonlyState<T extends StateContainerConstructor = any> =
-  Omit<InstanceType<T>, 'state'> & { state: ExtractState<T> };
+export type InstanceReadonlyState<
+  T extends StateContainerConstructor = StateContainerConstructor,
+> = Omit<InstanceType<T>, 'state'> & { state: ExtractState<T> };
 
 export type InstanceState<T extends StateContainerConstructor = any> = Omit<
   InstanceType<T>,
