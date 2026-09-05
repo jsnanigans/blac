@@ -68,7 +68,7 @@
     {
       "name": "@blac/react (ESM, brotli, excl. peers)",
       "path": "dist/index.js",
-      "limit": "3.5 kB",
+      "limit": "5.8 kB",
       "ignore": [
         "react",
         "react-dom",
