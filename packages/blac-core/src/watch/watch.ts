@@ -63,6 +63,26 @@ function isBlocRef(
 
 type BlocInput = StateContainerConstructor | BlocRef<StateContainerConstructor>;
 
+/**
+ * Options for `watch`.
+ */
+export interface WatchOptions {
+  /**
+   * When `false`, `watch` observes passively instead of owning the instance:
+   * it does not create a missing instance, and it does not take a real
+   * ownership ref on an existing one (so it never keeps an otherwise-
+   * unreferenced instance alive).
+   *
+   * If the instance does not exist yet when `watch` is called, the callback
+   * simply never fires for it — `watch` does not poll or wait for a later
+   * creation. Call `watch` again once the instance is known to exist (e.g.
+   * after some other owner has acquired it).
+   *
+   * Defaults to `true`.
+   */
+  create?: boolean;
+}
+
 type ExtractInstance<T> =
   T extends BlocRef<infer C>
     ? InstanceType<C>
@@ -81,6 +101,7 @@ export interface WatchSingleFn {
   <T extends StateContainerConstructor>(
     bloc: T | BlocRef<T>,
     callback: (bloc: InstanceType<T>) => void | StopSymbol,
+    options?: WatchOptions,
   ): () => void;
 
   STOP: StopSymbol;
@@ -93,6 +114,7 @@ export interface WatchMultipleFn {
   <T extends readonly BlocInput[]>(
     blocs: T,
     callback: (blocs: ExtractInstances<T>) => void | StopSymbol,
+    options?: WatchOptions,
   ): () => void;
 
   STOP: StopSymbol;
@@ -105,6 +127,7 @@ export interface WatchFn extends WatchSingleFn {
   <T extends readonly BlocInput[]>(
     blocs: T,
     callback: (blocs: ExtractInstances<T>) => void | StopSymbol,
+    options?: WatchOptions,
   ): () => void;
 }
 
@@ -154,6 +177,25 @@ function resolveBloc(
   });
 }
 
+/**
+ * Passive lookup for `{ create: false }`: never creates the instance and
+ * never takes a ref. Returns `undefined` when no instance currently exists.
+ */
+function resolveBlocPassive(
+  target: WatchTarget,
+): StateContainerInstance | undefined {
+  const registry = getRegistry();
+  try {
+    return registry.acquire(target.blocClass, target.key, {
+      canCreate: false,
+      countRef: false,
+      args: target.args,
+    });
+  } catch {
+    return undefined;
+  }
+}
+
 function isArray(input: unknown): input is readonly BlocInput[] {
   return Array.isArray(input);
 }
@@ -168,6 +210,10 @@ function isArray(input: unknown): input is readonly BlocInput[] {
  *
  * Note: subscriptions are microtask-deferred (per the DirtyChannel default
  * scheduler), so callbacks land asynchronously after `emit()`.
+ *
+ * By default `watch` creates the instance if it does not exist and holds a
+ * real ownership ref until `unwatch`, matching `acquire`. Pass
+ * `{ create: false }` to observe passively instead — see `WatchOptions`.
  *
  * @example Single bloc
  * ```ts
@@ -208,52 +254,65 @@ function isArray(input: unknown): input is readonly BlocInput[] {
 function watchImpl<T extends StateContainerConstructor>(
   bloc: T | BlocRef<T>,
   callback: (bloc: InstanceType<T>) => void | StopSymbol,
+  options?: WatchOptions,
 ): () => void;
 
 function watchImpl<T extends readonly BlocInput[]>(
   blocs: T,
   callback: (blocs: ExtractInstances<T>) => void | StopSymbol,
+  options?: WatchOptions,
 ): () => void;
 
 function watchImpl(
   blocsOrBloc: BlocInput | readonly BlocInput[],
   callback: (blocsOrBloc: any) => void | StopSymbol,
+  options?: WatchOptions,
 ): () => void {
   const isSingle = !isArray(blocsOrBloc);
   const inputs = isSingle ? [blocsOrBloc] : blocsOrBloc;
   const registry = getRegistry();
+  const create = options?.create ?? true;
 
   const targets = inputs.map(toWatchTarget);
   const refIds = targets.map(() => `_watch_${watchRefSeq++}`);
 
   let disposed = false;
-  const instances: StateContainerInstance[] = targets.map((target, i) =>
-    resolveBloc(target, refIds[i]),
+  const instances: Array<StateContainerInstance | undefined> = targets.map(
+    (target, i) =>
+      create ? resolveBloc(target, refIds[i]) : resolveBlocPassive(target),
   );
   const channelUnsubs: Array<(() => void) | undefined> = [];
-  const disposedUnsubs: Array<() => void> = [];
+  const disposedUnsubs: Array<(() => void) | undefined> = [];
 
   const cleanup = () => {
     if (disposed) return;
     disposed = true;
     for (const unsub of channelUnsubs) unsub?.();
-    for (const unsub of disposedUnsubs) unsub();
+    for (const unsub of disposedUnsubs) unsub?.();
     channelUnsubs.length = 0;
     disposedUnsubs.length = 0;
-    for (let i = 0; i < targets.length; i++) {
-      registry.release(targets[i].blocClass, targets[i].key, false, refIds[i]);
+    if (create) {
+      for (let i = 0; i < targets.length; i++) {
+        registry.release(
+          targets[i].blocClass,
+          targets[i].key,
+          false,
+          refIds[i],
+        );
+      }
     }
   };
 
   const runCallback = () => {
     if (disposed) return;
+    if (instances.some((i) => i === undefined)) return;
     const arg = isSingle ? instances[0] : instances;
     const result = callback(arg);
     if (result === STOP) cleanup();
   };
 
   const subscribeAt = (index: number) => {
-    channelUnsubs[index] = instances[index].channel.subscribe(
+    channelUnsubs[index] = instances[index]?.channel.subscribe(
       () => ALL_PATHS,
       runCallback,
     );
@@ -264,14 +323,16 @@ function watchImpl(
   // registry that triggered the dispose, e.g. `clearAll()`), then notify.
   const resubscribeAt = (index: number) => {
     if (disposed) return;
-    instances[index] = resolveBloc(targets[index], refIds[index]);
+    instances[index] = create
+      ? resolveBloc(targets[index], refIds[index])
+      : resolveBlocPassive(targets[index]);
     subscribeAt(index);
     subscribeDisposeAt(index);
     runCallback();
   };
 
   const subscribeDisposeAt = (index: number) => {
-    disposedUnsubs[index] = instances[index][ON_DISPOSE](() => {
+    disposedUnsubs[index] = instances[index]?.[ON_DISPOSE](() => {
       channelUnsubs[index]?.();
       channelUnsubs[index] = undefined;
       queueMicrotask(() => resubscribeAt(index));

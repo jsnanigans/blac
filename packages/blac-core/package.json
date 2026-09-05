@@ -118,7 +118,7 @@
     {
       "name": "@blac/core (ESM, brotli)",
       "path": "dist/index.js",
-      "limit": "9.1 kB"
+      "limit": "9.3 kB"
     }
   ],
   "scripts": {

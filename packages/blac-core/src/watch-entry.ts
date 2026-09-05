@@ -22,4 +22,10 @@
  * @packageDocumentation
  */
 
-export { watch, instance, type WatchFn, type BlocRef } from './watch';
+export {
+  watch,
+  instance,
+  type WatchFn,
+  type WatchOptions,
+  type BlocRef,
+} from './watch';

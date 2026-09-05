@@ -814,7 +814,13 @@ export interface WatchFn extends WatchSingleFn {
   <T extends readonly BlocInput[]>(
     blocs: T,
     callback: (blocs: ExtractInstances<T>) => void | StopSymbol,
+    options?: WatchOptions,
   ): () => void;
+}
+
+// @public
+export interface WatchOptions {
+  create?: boolean;
 }
 
 // Warning: (ae-internal-missing-underscore) The name "WITH_TRACKED_STATE" should be prefixed with an underscore because the declaration is marked as @internal

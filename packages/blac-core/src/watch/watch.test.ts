@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vite-plus/test';
 import { blacTestSetup, flush } from '@blac/core/testing';
 import { watch, instance } from './watch';
 import { Cubit } from '../core/Cubit';
-import { acquire } from '../registry';
+import { acquire, release, hasInstance, getRefCount } from '../registry';
 
 interface CounterState {
   count: number;
@@ -377,6 +377,29 @@ describe('watch', () => {
       });
 
       expect(values).toEqual([0]);
+    });
+
+    it('should not create an instance with { create: false }', () => {
+      const callback = vi.fn();
+
+      watch(CounterCubit, callback, { create: false });
+
+      expect(callback).not.toHaveBeenCalled();
+      expect(getRefCount(CounterCubit)).toBe(0);
+    });
+
+    it('should not keep an instance alive with { create: false }', () => {
+      const counter = acquire(CounterCubit);
+      const callback = vi.fn();
+
+      const dispose = watch(CounterCubit, callback, { create: false });
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      release(CounterCubit);
+      expect(hasInstance(CounterCubit)).toBe(false);
+
+      dispose();
+      counter.increment();
     });
 
     it('should be safe to call dispose multiple times', () => {

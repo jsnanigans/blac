@@ -88,7 +88,13 @@ export type {
 } from './plugin/BlacPlugin';
 
 // Watch
-export { watch, instance, type WatchFn, type BlocRef } from './watch';
+export {
+  watch,
+  instance,
+  type WatchFn,
+  type WatchOptions,
+  type BlocRef,
+} from './watch';
 
 // Types
 export type {
