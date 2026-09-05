@@ -2,26 +2,27 @@ import { BLAC_STATIC_PROPS } from '../constants';
 import type { EqualityFn } from '../config';
 
 /**
- * Configuration options for the `@blac` decorator.
- * Only one option can be specified at a time (union type).
+ * Configuration options for the `@blac` decorator. Any combination may be
+ * given at once.
  */
-export type BlacOptions =
+export interface BlacOptions {
   /** Mark bloc to never be auto-disposed when ref count reaches 0 */
-  | { keepAlive: true }
+  keepAlive?: true;
   /** Exclude bloc from DevTools tracking (prevents infinite loops) */
-  | { excludeFromDevTools: true }
+  excludeFromDevTools?: true;
   /**
    * Override the global equality check for this bloc.
    * Return `true` to skip the emit (states considered equal).
    */
-  | { equality: EqualityFn }
+  equality?: EqualityFn;
   /**
    * Override the default structural-hash identity key.
    * The function receives `args` and returns the instance key string.
    * Distinct return values → distinct instances; identical values → shared instance.
    * Non-identity fields can be excluded so they don't fork new instances.
    */
-  | { key: (args: any) => string };
+  key?: (args: any) => string;
+}
 
 /**
  * Decorator to configure StateContainer classes.
@@ -33,6 +34,9 @@ export type BlacOptions =
  *
  * @blac({ excludeFromDevTools: true })
  * class InternalBloc extends Cubit<InternalState> {}
+ *
+ * @blac({ keepAlive: true, key: (args) => args.userId })
+ * class UserBloc extends Cubit<UserState> {}
  * ```
  *
  * @example Function syntax (no decorator support needed)
