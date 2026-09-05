@@ -834,14 +834,10 @@ export class StateContainerRegistry {
     event: E,
     listener: LifecycleListener<E>,
   ): () => void {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set());
-    }
-    const instance = this.listeners.get(event);
+    let instance = this.listeners.get(event);
     if (!instance) {
-      throw new Error(
-        `${BLAC_ERROR_PREFIX} Failed to register listener for event '${event}'`,
-      );
+      instance = new Set();
+      this.listeners.set(event, instance);
     }
 
     instance.add(listener as (...args: any[]) => void);
