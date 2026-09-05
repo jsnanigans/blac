@@ -337,9 +337,46 @@ below that is still open is a _breaking_ change and needs a batching decision.
       these tests never actually asserted identity.**
       Sizes: core 9.03/9.1 kB, react **5.52 kB, down from 5.64** — one fewer
       proxy per acquisition.
-- [ ] Type tightening: zero-arg constructor constraint, deep-readonly state, dev-only mutation traps, remove `any` — [05 §2](./05-api-and-types.md#2-type-safety)
+- [~] Type tightening — [05 §2](./05-api-and-types.md#2-type-safety)
+
+      Done: `StateContainerConstructor` is now `new () =>` (05 §2.1), and
+      `InstanceReadonlyState`'s `any` default became
+      `StateContainerConstructor` (part of 05 §2.4). Measured before/after
+      `tsc --noEmit` across all 9 workspace packages: **0 new errors** — no
+      first-party code relied on required-constructor-arg blocs, so the
+      tightening was free. Verified the constraint genuinely rejects a
+      required-arg class (TS2322, "Target signature provides too few
+      arguments") rather than passing vacuously.
+
+      Still open: deep-readonly state + dev mutation traps (05 §2.2),
+      `InstanceReadonlyState` class-erasure (05 §2.3), remaining `any` in
+      `LifecycleListener` / `registry.emit` (05 §2.4). Scoped to R4.
+
 - [ ] Remove dead/redundant surface; resolve `Cubit` vs `StateContainer` — [05 §3](./05-api-and-types.md#3-dead-and-redundant-surface), [05 §1](./05-api-and-types.md#1-cubit-and-statecontainer-are-the-same-class)
-- [ ] Drop `constructor.name` as identity — [05 §2.5](./05-api-and-types.md#25-constructorname-as-identity)
+- [x] Drop `constructor.name` as identity — [05 §2.5](./05-api-and-types.md#25-constructorname-as-identity)
+
+      **R1, and the data-loss fix.** Added `static blacName` +
+      `@blac({ name })`, resolved by `getBlacName()` (own-only, falls back to
+      `Type.name`, so unminified behaviour is unchanged). Replaced all 7
+      identity reads across `StateContainer`, `StateContainerRegistry.register`
+      and `PluginManager`.
+
+      **Severity confirmed empirically, not assumed:** esbuild minified three
+      bloc classes in separate module scopes to the *same* identifier `n`.
+      Minifiers reuse short names per scope, so distinct blocs really do
+      collide on `constructor.name` — the persist storage key
+      (`${name}:${$blac.id}`) collapsed for all three. Both halves of that key
+      derive from `constructor.name`, since `$blac.id` is
+      `generateSimpleId(constructor.name, …)`.
+
+      **Persist migration (not in the review, and mandatory):**
+      `IndexedDbPersistPlugin` now derives its key from `getBlacName`, and
+      `hydrate()` falls back to the pre-`blacName` key so existing records
+      survive; the next save rewrites under the new key. The fallback is set
+      only when the key is the derived default — a registration with its own
+      `key` function is already stable and is left alone. `getBlacName` is
+      exported from `@blac/core` for plugin authors.
+
 - [x] Make static inheritance explicit — [05 §6](./05-api-and-types.md#6-static-inheritance-is-implicit)
 
       Added `getOwnStaticProp` (`Object.hasOwn`, no prototype walk).
@@ -405,8 +442,18 @@ normalised comparison showed every other difference is trailing-comma noise;
 after `cp temp/core.api.md etc/ && vp fmt`, the diff collapses to exactly the
 6 intended lines. Regenerating that way is the correct workflow.
 
+**R1 session:** core 473 tests (+2), persist 18 (+1), workspace green apart
+from the pre-existing `apps/examples` missing-`vitest` binary. Core size
+9.18/9.3 kB. API delta is 4 intended changes (`BlacOptions.name`,
+`getBlacName`, and the two type tightenings). Note `plugin-persist` typechecks
+against `blac-core/dist`, not source, so core must be rebuilt before its
+`tsc` run is meaningful.
+
 **Suggested commits:**
 
+- `fix(plugin-persist): migrate keys off constructor.name`
+- `feat(blac-core): add minification-safe bloc identity`
+- `refactor(blac-core): require zero-arg bloc constructors`
 - `feat(blac-core): add passive watch option`
 - `fix(blac-core): stop subclasses inheriting static key`
 - `feat(blac-react): add useBlocDeps for the deps lane`
@@ -416,6 +463,15 @@ after `cp temp/core.api.md etc/ && vp fmt`, the diff collapses to exactly the
 - `feat(blac)!: run getters on the real instance so ES #private works`
 
 ---
+
+> **Scope for everything still open: [scope-remaining.md](./scope-remaining.md).**
+> The 12 open items collapse into 4 shipping units (R1 identity → R2 ownership
+> → R3 React rewrite → R4 naming). Review order does not work: 05 §8 renames
+> `ensure`/`borrow`, which 04 §4 deletes. Two corrections recorded there —
+> `constructor.name` under minification collides **persisted storage keys**
+> (a data-loss bug filed as a typing nit), and `ensure`/`borrow`/`borrowSafe`
+> are not dead surface; they have real consumers in `apps/examples` and
+> `apps/perf`.
 
 ## Phase 5 — The `@blac/react` rewrite (one coordinated change)
 
