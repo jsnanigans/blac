@@ -40,10 +40,14 @@ describe('useBloc — lifecycle edge cases', () => {
     expect(onUnmount).toHaveBeenCalledTimes(1);
   });
 
+  // Callbacks receive the live registry instance; `useBloc` returns the
+  // tracking proxy wrapping it. Compare through an identity field, since a
+  // proxy is never `===` its target.
   it('onMount receives the correct bloc instance', () => {
     const onMount = vi.fn();
     const { result } = renderHook(() => useBloc(LifecycleBloc, { onMount }));
-    expect(onMount).toHaveBeenCalledWith(result.current[1]);
+    expect(onMount).toHaveBeenCalledTimes(1);
+    expect(onMount.mock.calls[0][0].$blac.id).toBe(result.current[1].$blac.id);
   });
 
   it('onUnmount receives the correct bloc instance', () => {
@@ -51,9 +55,10 @@ describe('useBloc — lifecycle edge cases', () => {
     const { result, unmount } = renderHook(() =>
       useBloc(LifecycleBloc, { onUnmount }),
     );
-    const bloc = result.current[1];
+    const blocId = result.current[1].$blac.id;
     unmount();
-    expect(onUnmount).toHaveBeenCalledWith(bloc);
+    expect(onUnmount).toHaveBeenCalledTimes(1);
+    expect(onUnmount.mock.calls[0][0].$blac.id).toBe(blocId);
   });
 
   it('onMount and onUnmount are not re-called on re-renders', () => {

@@ -288,11 +288,12 @@ describe('useBloc', () => {
 
       const [, bloc] = result.current;
 
-      expect(onMount).toHaveBeenCalledWith(bloc);
+      // The callbacks get the live instance, `useBloc` returns its proxy.
+      expect(onMount.mock.calls[0][0].$blac.id).toBe(bloc.$blac.id);
 
       unmount();
 
-      expect(onUnmount).toHaveBeenCalledWith(bloc);
+      expect(onUnmount.mock.calls[0][0].$blac.id).toBe(bloc.$blac.id);
     });
   });
 

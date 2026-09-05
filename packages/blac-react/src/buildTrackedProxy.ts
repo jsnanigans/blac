@@ -1,51 +1,45 @@
-import { DEP_BRAND } from '@blac/core';
+import { DEP_BRAND, WITH_TRACKED_STATE } from '@blac/core';
 
-// `process` is absent in plain ESM/Deno, where a bare read throws.
-const IS_DEV =
-  typeof process === 'undefined' || process.env?.NODE_ENV !== 'production';
+interface TrackedStateTarget {
+  [WITH_TRACKED_STATE]<R>(
+    tracked: unknown,
+    fn: () => R,
+    onDepHandle?: (handle: object) => unknown,
+  ): R;
+}
 
-function isPrivateFieldError(error: unknown): boolean {
+function supportsTrackedState(value: object): value is TrackedStateTarget {
   return (
-    error instanceof TypeError && /private (member|field)/i.test(error.message)
+    typeof (value as TrackedStateTarget)[WITH_TRACKED_STATE] === 'function'
   );
 }
 
 /**
- * Build a per-consumer proxy pair for a bloc instance.
+ * Build a per-consumer proxy for a bloc instance.
  *
- * Returns two proxies:
- * - `proxy` — the stable outer proxy returned to the consumer. Getter
- *   properties are invoked with `thisProxy` as `this` so that `this.state`
- *   reads inside getters are redirected to the current render's tracking
- *   proxy. Non-getter properties fall through to the live instance.
- * - `thisProxy` — the inner `this`-proxy used as the receiver for getter
- *   calls. Intercepts `state` to return `trackedStateRef.current` when a
- *   tracking context is active; otherwise falls through to the live value.
- *   When `onDepHandle` is supplied, a read off `this` whose value carries the
- *   `DEP_BRAND` symbol (i.e. a `depend()` handle) is routed through
- *   `onDepHandle`, which returns a per-consumer wrapper whose `.track()` opts
- *   the consumer into cross-bloc reactivity. Core stays decoupled — detection
- *   is purely by the `DEP_BRAND` symbol.
+ * Getters run with `this` bound to the **real instance**, not a proxy, so ES
+ * `#private` fields and methods work in user blocs. Path recording is done by
+ * `[WITH_TRACKED_STATE]`, which makes the instance's own `state` getter report
+ * the render's tracking proxy for the duration of the call; nested getter
+ * chains stay tracked because the override is still set.
  *
- * Both allocations happen exactly once per bloc acquisition (inside `useMemo`)
- * so the proxies are stable across renders.
+ * One allocation per bloc acquisition (inside `useMemo`), so the proxy is
+ * stable across renders.
  *
- * @param onDepHandle - Optional callback invoked when a getter reads a branded
- *   dep handle off `this`. Receives the original handle and returns the value
- *   to expose in its place (the session-bound wrapper). The callback is
- *   responsible for caching wrappers per handle to avoid re-allocation.
+ * @param onDepHandle - Optional callback invoked when a read returns a branded
+ *   dep handle. Receives the original handle and returns the value to expose in
+ *   its place (the session-bound wrapper). The callback is responsible for
+ *   caching wrappers per handle to avoid re-allocation.
  */
 export function buildTrackedProxy<T extends object>(
   instance: T,
   trackedStateRef: { current: unknown },
   onDepHandle?: (handle: object) => unknown,
-): { proxy: T; thisProxy: T } {
-  // Build a map of getter descriptors from the prototype chain (excluding
-  // Object.prototype). This is computed once per bloc acquisition so that
-  // the proxy's get trap is O(1) per property access. Both string- and
-  // symbol-keyed getters are collected. Arrow-function class properties
-  // (own, bound in the constructor) are not getters and pass through
-  // unmodified.
+): { proxy: T } {
+  // Getter descriptors from the prototype chain (excluding Object.prototype),
+  // collected once per acquisition so the get trap stays O(1) per access. Both
+  // string- and symbol-keyed getters are collected. Arrow-function class
+  // properties are own values, not getters, and pass through unmodified.
   const getterDescs = new Map<string | symbol, PropertyDescriptor>();
   let proto = Object.getPrototypeOf(instance);
   while (proto && proto !== Object.prototype) {
@@ -60,52 +54,54 @@ export function buildTrackedProxy<T extends object>(
     proto = Object.getPrototypeOf(proto);
   }
 
-  // `this`-proxy for getter invocations, allocated ONCE per acquisition (the
-  // trap closes over the stable `trackedStateRef`, so it never needs to be
-  // rebuilt per access). Redirects `this.state` to the current render's
-  // tracking proxy so getter reads during JSX record paths; outside render
-  // `trackedStateRef.current` is null and it falls through to live state.
-  // The receiver `r` (this proxy) is threaded through Reflect.get so chained
-  // getter calls (getters reading other getters) stay in tracked context.
-  const thisProxy = new Proxy(instance as object, {
-    get(t, k, r) {
-      if (k === 'state') return trackedStateRef.current ?? Reflect.get(t, k, r);
-      const value = Reflect.get(t, k, r);
-      // A branded dep handle read off `this` (e.g. `this.price`) is routed
-      // through onDepHandle so the consumer's session can wrap `.track()`.
-      if (
-        onDepHandle !== undefined &&
-        (typeof value === 'function' || typeof value === 'object') &&
-        value !== null &&
-        (value as Record<symbol, unknown>)[DEP_BRAND] !== undefined
-      ) {
-        return onDepHandle(value as object);
-      }
-      return value;
-    },
-  });
+  // Bound methods are cached so `bloc.method` keeps a stable identity across
+  // reads — an unstable one would defeat memoisation in consumers.
+  const boundMethods = new Map<string | symbol, unknown>();
 
-  // Stable proxy: one allocation per bloc acquisition. Non-getter access is
-  // a single Map lookup + Reflect.get — no prototype walk on the hot path.
+  const wrapDepHandle = (value: unknown): unknown => {
+    if (
+      onDepHandle !== undefined &&
+      (typeof value === 'function' || typeof value === 'object') &&
+      value !== null &&
+      (value as Record<symbol, unknown>)[DEP_BRAND] !== undefined
+    ) {
+      return onDepHandle(value as object);
+    }
+    return value;
+  };
+
   const proxy = new Proxy(instance as object, {
-    get(target, key, receiver) {
+    get(target, key) {
       const desc = getterDescs.get(key);
-      try {
-        if (desc?.get) return desc.get.call(thisProxy);
-        return Reflect.get(target, key, receiver);
-      } catch (error) {
-        if (IS_DEV && isPrivateFieldError(error)) {
-          throw new TypeError(
-            `[blac] Cannot access ES #private fields/methods through the ` +
-              `tracking proxy (property "${String(key)}"). Use a \`_\`-prefixed ` +
-              `convention or TypeScript \`private\` instead of \`#private\`.`,
-            { cause: error },
-          );
-        }
-        throw error;
+      // Not an unbound method — a descriptor getter, always `.call`ed below
+      // with an explicit receiver.
+      // oxlint-disable-next-line typescript/unbound-method
+      const getter = desc?.get;
+      if (getter) {
+        const tracked = trackedStateRef.current;
+        const read = () => getter.call(target);
+        return wrapDepHandle(
+          tracked == null || !supportsTrackedState(target)
+            ? read()
+            : target[WITH_TRACKED_STATE](tracked, read, onDepHandle),
+        );
       }
+
+      // Receiver is the real instance, so own fields keep their `#private`
+      // brand. Methods are bound to it too, otherwise `bloc.method()` would
+      // call with `this` = proxy and fail the same brand check.
+      const value = Reflect.get(target, key, target);
+      if (typeof value === 'function') {
+        let bound = boundMethods.get(key);
+        if (bound === undefined) {
+          bound = (value as (...a: unknown[]) => unknown).bind(target);
+          boundMethods.set(key, bound);
+        }
+        return wrapDepHandle(bound);
+      }
+      return wrapDepHandle(value);
     },
   }) as T;
 
-  return { proxy, thisProxy: thisProxy as T };
+  return { proxy };
 }
