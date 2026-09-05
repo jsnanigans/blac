@@ -7,6 +7,7 @@
  */
 
 export { useBloc } from './useBloc';
+export { useBlocDeps, type DepsTarget } from './useBlocDeps';
 export { untracked } from '@dirtytalk/structural';
 export { configureBlacReact } from './config';
 export type { BlacReactConfig } from './config';
