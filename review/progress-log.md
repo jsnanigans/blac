@@ -339,8 +339,27 @@ below that is still open is a _breaking_ change and needs a batching decision.
       proxy per acquisition.
 - [ ] Type tightening: zero-arg constructor constraint, deep-readonly state, dev-only mutation traps, remove `any` — [05 §2](./05-api-and-types.md#2-type-safety)
 - [ ] Remove dead/redundant surface; resolve `Cubit` vs `StateContainer` — [05 §3](./05-api-and-types.md#3-dead-and-redundant-surface), [05 §1](./05-api-and-types.md#1-cubit-and-statecontainer-are-the-same-class)
-- [ ] Drop `constructor.name` as identity; make static inheritance explicit — [05 §2.5](./05-api-and-types.md#25-constructorname-as-identity), [05 §6](./05-api-and-types.md#6-static-inheritance-is-implicit)
-- [ ] `watch()` should not hold a real ref — [05 §7](./05-api-and-types.md#7-watch-holds-a-real-ref)
+- [ ] Drop `constructor.name` as identity — [05 §2.5](./05-api-and-types.md#25-constructorname-as-identity)
+- [x] Make static inheritance explicit — [05 §6](./05-api-and-types.md#6-static-inheritance-is-implicit)
+
+      Added `getOwnStaticProp` (`Object.hasOwn`, no prototype walk).
+      `getClassKey` now uses it, so a subclass no longer silently inherits a
+      base class's `key` and derives colliding instance keys. `keepAlive`,
+      `__excludeFromDevTools` and `equality` deliberately keep inheriting —
+      now stated in each JSDoc instead of being accidental. Blast radius
+      checked: every `static key` in the repo is declared on the class being
+      instantiated, so nothing relied on the old behaviour.
+
+- [x] `watch()` should not hold a real ref — [05 §7](./05-api-and-types.md#7-watch-holds-a-real-ref)
+
+      Added `watch(..., { create: false })` — additive, default unchanged.
+      Passive mode neither creates a missing instance nor takes an ownership
+      ref, so an observer can no longer keep an otherwise-unreferenced bloc
+      alive. Reuses `acquire({ canCreate: false, countRef: false })` rather
+      than a new mechanism. Applies to the array overload too. Documented
+      caveat: if the instance does not exist when `watch` is called, the
+      callback never fires for it — `watch` does not wait for a later create.
+
 - [ ] Naming pass — [05 §8](./05-api-and-types.md#8-naming)
 
 **Audit of 05 §3 against current source** (re-verified this session, since
@@ -375,8 +394,21 @@ an unmodified HEAD**, so it is a pre-existing repo quirk, not a real surface
 drift. The committed reports are correct and the only real delta this session is
 the new `WITH_TRACKED_STATE` symbol.
 
+**Session addendum (05 §6 + 05 §7)** — both additive, no breaking surface.
+Core 471 tests (+4). Size budget raised 9.1 → 9.3 kB (was 13 B over; the
+budgets are arbitrary per the earlier decision). Real API delta is 6 lines:
+`WatchOptions` + the `options?` param on `WatchFn`.
+
+**`api:check` quirk re-confirmed and now quantified:** committed reports are
+`vp fmt`-formatted, api-extractor diffs raw output, so it always warns. A
+normalised comparison showed every other difference is trailing-comma noise;
+after `cp temp/core.api.md etc/ && vp fmt`, the diff collapses to exactly the
+6 intended lines. Regenerating that way is the correct workflow.
+
 **Suggested commits:**
 
+- `feat(blac-core): add passive watch option`
+- `fix(blac-core): stop subclasses inheriting static key`
 - `feat(blac-react): add useBlocDeps for the deps lane`
 - `feat(blac-core): let blac() accept multiple options`
 - `refactor(blac-core): drop unreachable throw in registry on()`
