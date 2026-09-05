@@ -84,6 +84,16 @@ export class PluginManager {
   >();
 
   /**
+   * One `PluginContext` per container. The context closes over `registry` and
+   * `container` only — both stable for the container's lifetime — so it is
+   * safe to reuse instead of rebuilding its method table on every dispatch.
+   */
+  private contextCache = new WeakMap<
+    StateContainer<any, any, any>,
+    PluginContext
+  >();
+
+  /**
    * Create a new PluginManager
    * @param registry - The StateContainerRegistry to monitor for lifecycle events
    */
@@ -403,14 +413,23 @@ export class PluginManager {
   }
 
   /**
-   * Build a `PluginContext` for a given focal container. The context is
-   * cheap to build — its methods close over `this.registry` directly —
-   * so we create one per dispatch rather than caching per container.
-   * This sidesteps the lifetime question of "when do we evict a cached
-   * context?" and keeps `paths`-vs-`container` lifetimes cleanly
-   * separated.
+   * Get the `PluginContext` for a focal container, building it once and
+   * reusing it thereafter. Eviction is handled by the `WeakMap`: the context
+   * dies with the container. `undefined` (install-time) is never cached.
    */
   private buildContext(
+    container: StateContainer<any, any, any> | undefined,
+  ): PluginContext {
+    if (container !== undefined) {
+      const cached = this.contextCache.get(container);
+      if (cached) return cached;
+    }
+    const context = this.createContext(container);
+    if (container !== undefined) this.contextCache.set(container, context);
+    return context;
+  }
+
+  private createContext(
     container: StateContainer<any, any, any> | undefined,
   ): PluginContext {
     const registry = this.registry;
