@@ -1,4 +1,4 @@
-import { ALL_PATHS } from '@blac/core';
+import { ALL_PATHS, getBlacName } from '@blac/core';
 import type { Cubit, PathSet, PluginContext, StateContainer } from '@blac/core';
 import {
   createNativeIndexedDbAdapter,
@@ -19,6 +19,12 @@ type InternalDefinition = PersistRegistration<any, any, any>;
 
 interface InstanceRuntime {
   key: string;
+  /**
+   * Pre-`blacName` key for this instance, set only when `key` is the derived
+   * default. `undefined` when the registration supplies its own key, which is
+   * already stable and needs no migration.
+   */
+  legacyKey?: string;
   className: string;
   instanceId: string;
   dirtyBeforeHydration: boolean;
@@ -120,8 +126,14 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     }
 
     const info = this.createDefinitionContext(instance, context);
+    const key = this.resolveKey(definition, info);
+    const legacyKey = this.legacyKey(instance);
     const runtime: InstanceRuntime = {
-      key: this.resolveKey(definition, info),
+      key,
+      legacyKey:
+        key === this.defaultKey(instance) && legacyKey !== key
+          ? legacyKey
+          : undefined,
       className: info.className,
       instanceId: info.instanceId,
       dirtyBeforeHydration: false,
@@ -237,7 +249,9 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     runtime: InstanceRuntime,
   ): Promise<void> {
     try {
-      const record = await this.adapter.get(runtime.key);
+      const record =
+        (await this.adapter.get(runtime.key)) ??
+        (runtime.legacyKey ? await this.adapter.get(runtime.legacyKey) : null);
 
       if (
         runtime.disposed ||
@@ -428,7 +442,7 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
   ): PersistDefinitionContext<any> {
     return {
       instance,
-      className: instance.constructor.name,
+      className: getBlacName(instance.constructor as any),
       instanceId: instance.$blac.id,
       currentState: currentState ?? context.getState(instance),
       key: key ?? this.defaultKey(instance),
@@ -447,6 +461,15 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
   }
 
   private defaultKey(instance: StateContainer<any>): string {
+    return `${getBlacName(instance.constructor as any)}:${instance.$blac.id}`;
+  }
+
+  /**
+   * The pre-`blacName` key shape, kept only so existing records survive the
+   * switch. Read as a fallback during hydration; the next save rewrites the
+   * record under {@link defaultKey}.
+   */
+  private legacyKey(instance: StateContainer<any>): string {
     return `${instance.constructor.name}:${instance.$blac.id}`;
   }
 

@@ -399,4 +399,37 @@ describe('IndexedDbPersistPluginImpl — storage key stability', () => {
     // The instanceId passed into the key function must equal $blac.id
     expect(capturedInstanceId).toBe(bloc.$blac.id);
   });
+  it('hydrates from the pre-blacName key and rewrites under the new one', async () => {
+    class RenamedBloc extends Cubit<{ count: number }> {
+      static blacName = 'StableName';
+      constructor() {
+        super({ count: 0 });
+      }
+    }
+
+    const bloc = new RenamedBloc();
+    const legacyKey = `${bloc.constructor.name}:${bloc.$blac.id}`;
+    const adapter = makeAdapter({
+      id: legacyKey,
+      payload: { count: 42 },
+      savedAt: Date.now(),
+    } as PersistedRecord);
+
+    const plugin = new IndexedDbPersistPluginImpl({ adapter });
+    plugin.persist(RenamedBloc);
+
+    const ctx = makeCtx(bloc);
+    const hydrated: unknown[] = [];
+    ctx.applyHydratedState = vi.fn((_inst, state) => {
+      hydrated.push(state);
+      return true;
+    });
+    plugin.onCreated(ctx);
+    await vi.waitFor(() =>
+      expect(plugin.getStatus(bloc)?.phase).toBe('hydrated'),
+    );
+    expect(hydrated).toEqual([{ count: 42 }]);
+
+    expect(plugin.getStatus(bloc)?.key).toBe(`StableName:${bloc.$blac.id}`);
+  });
 });
