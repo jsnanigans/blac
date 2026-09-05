@@ -2,10 +2,10 @@
  * Debug/Advanced Subpath Export
  *
  * Advanced registry introspection and debugging utilities.
- * Import from '@blac/core/debug'
+ * Import from `@blac/core/debug`
  *
  * These utilities are intended for debugging, testing, and advanced use cases.
- * Most applications don't need these - use the main '@blac/core' exports instead.
+ * Most applications don't need these - use the main `@blac/core` exports instead.
  *
  * @example
  * ```typescript

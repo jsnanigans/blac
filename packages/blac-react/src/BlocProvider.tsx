@@ -20,6 +20,7 @@ const ProvidedArgsContext = createContext<ProvidedArgsMap>(new Map());
 
 /**
  * Props for {@link BlocProvider}.
+ * @public
  */
 export interface BlocProviderProps<T extends StateContainerConstructor> {
   /**
@@ -59,6 +60,7 @@ export interface BlocProviderProps<T extends StateContainerConstructor> {
  *   <CartWidget />
  * </BlocProvider>
  * ```
+ * @public
  */
 export function BlocProvider<T extends StateContainerConstructor>({
   bloc,
@@ -88,6 +90,7 @@ export function BlocProvider<T extends StateContainerConstructor>({
  * bloc class, or `undefined` when called outside a matching provider.
  *
  * Used by `useBloc` to inherit provider args when no own `args` are given.
+ * @public
  */
 export function useProvidedArgs<T extends StateContainerConstructor>(
   BlocClass: T,

@@ -290,7 +290,7 @@ export abstract class StateContainer<
    * lifecycle (`disposed`/`dependencies`), and the `hydration` sub-surface.
    * Own, frozen, branded data property — `buildTrackedProxy` only intercepts
    * prototype getters, so this own property and its closure-based getters are
-   * proxy-safe. See {@link createMeta}.
+   * proxy-safe. See `createMeta`.
    */
   readonly $blac: BlacMeta<S> = createMeta<S>(this);
 

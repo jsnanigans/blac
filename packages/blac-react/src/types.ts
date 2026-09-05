@@ -19,7 +19,7 @@ type ArgsOption<T extends StateContainerConstructor> =
 /**
  * Configuration options for {@link useBloc}.
  *
- * @template TBloc - The state container constructor type
+ * @typeParam TBloc - The state container constructor type
  *
  * @remarks
  * Instance identity is derived entirely from `args`. For a per-mount private
@@ -28,6 +28,7 @@ type ArgsOption<T extends StateContainerConstructor> =
  * To re-render on a fixed set of values rather than on auto-tracked reads, pass
  * `select` — it returns a tuple/array that is compared per-index via
  * `Object.is`.
+ * @public
  */
 export type UseBlocOptions<TBloc extends StateContainerConstructor> =
   ArgsOption<TBloc> & {
@@ -62,7 +63,8 @@ export type UseBlocOptions<TBloc extends StateContainerConstructor> =
  * - [1] State container instance (bloc) for calling actions
  * - [2] Ref object for accessing component ref (advanced use cases)
  *
- * @template TBloc - The state container constructor type
+ * @typeParam TBloc - The state container constructor type
+ * @public
  */
 export type UseBlocReturn<
   TBloc extends StateContainerConstructor,

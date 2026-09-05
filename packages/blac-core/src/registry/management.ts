@@ -9,6 +9,9 @@ export function clearAll(): void {
   getRegistry().clearAll();
 }
 
+/**
+ * @public
+ */
 export function register<T extends StateContainerConstructor>(
   BlocClass: T,
 ): void {

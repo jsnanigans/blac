@@ -1,6 +1,6 @@
 /**
  * @internal Apply one owner's (consumer's) deps slice to an instance.
- * Called by framework adapters (e.g. @blac/react useBloc) — not public API.
+ * Called by framework adapters (e.g. `@blac/react` useBloc) — not public API.
  */
 export const APPLY_DEPS = Symbol('blac.applyDeps');
 

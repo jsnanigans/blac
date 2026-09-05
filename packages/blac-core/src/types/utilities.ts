@@ -2,7 +2,7 @@ import type { StateContainer } from '../core/StateContainer';
 
 /**
  * Extract the state type from a StateContainer
- * @template T - The StateContainer type
+ * @typeParam T - The StateContainer type
  */
 export type ExtractState<T> =
   T extends StateContainerConstructor<infer S> ? Readonly<S> : never;
@@ -12,7 +12,7 @@ export type ExtractStateMutable<T> =
 
 /**
  * Constructor type for StateContainer classes
- * @template S - State type managed by the container
+ * @typeParam S - State type managed by the container
  */
 export type StateContainerConstructor<S extends object = any> = new (
   ...args: any[]
@@ -21,7 +21,7 @@ export type StateContainerConstructor<S extends object = any> = new (
 /**
  * Extract the args type (serializable construction/identity data) from a
  * StateContainer subclass.
- * @template T - The StateContainer constructor type
+ * @typeParam T - The StateContainer constructor type
  */
 export type ExtractArgs<T> = T extends new () => StateContainer<
   any,
@@ -34,7 +34,7 @@ export type ExtractArgs<T> = T extends new () => StateContainer<
 /**
  * Extract the deps type (injected non-serializable handles) from a
  * StateContainer subclass.
- * @template T - The StateContainer constructor type
+ * @typeParam T - The StateContainer constructor type
  */
 export type ExtractDeps<T> = T extends new () => StateContainer<
   any,
@@ -59,7 +59,7 @@ export type StateContainerInstance<S extends object = any> = Omit<
 
 /**
  * Extract constructor argument types from a class
- * @template T - The class type
+ * @typeParam T - The class type
  */
 export type ExtractConstructorArgs<T> = T extends new (...args: infer P) => any
   ? P
@@ -67,7 +67,7 @@ export type ExtractConstructorArgs<T> = T extends new (...args: infer P) => any
 
 /**
  * Extract instance type from an abstract class constructor
- * @template T - The abstract class constructor type
+ * @typeParam T - The abstract class constructor type
  */
 export type BlocInstanceType<T extends abstract new (...args: any) => any> =
   T extends abstract new (...args: any) => infer R ? R : any;
@@ -75,7 +75,7 @@ export type BlocInstanceType<T extends abstract new (...args: any) => any> =
 /**
  * Constructor type for StateContainer classes.
  * Used for type-safe hook parameters.
- * @template TBloc - The StateContainer instance type
+ * @typeParam TBloc - The StateContainer instance type
  */
 export type BlocConstructor<
   S extends object = any,

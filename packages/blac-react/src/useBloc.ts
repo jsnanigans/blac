@@ -51,7 +51,7 @@ const depRefId = (consumerId: string): string => `useBloc@${consumerId}:dep`;
  * - **Auto-tracking** (default): the returned state value is a proxy that
  *   records read paths during render. The component re-renders when any
  *   recorded path changes. Backed by `@dirtytalk/structural`'s
- *   {@link trackRender} + the container's path-scoped `DirtyChannel`.
+ *   `trackRender` + the container's path-scoped `DirtyChannel`.
  * - **Manual select**: pass `options.select` to opt out of auto-tracking.
  *   The hook re-renders only when the returned array's elements change
  *   (per-index `Object.is`).
@@ -71,7 +71,7 @@ const depRefId = (consumerId: string): string => `useBloc@${consumerId}:dep`;
  * const [state, bloc] = useBloc(MyBloc, { args: { _id: id } });
  * ```
  *
- * @template T - The state container constructor type (inferred from BlocClass)
+ * @typeParam T - The state container constructor type (inferred from BlocClass)
  * @param BlocClass - The state container class to connect to
  * @param options - Configuration options
  * @returns Tuple of `[state, bloc, ref]`
@@ -92,6 +92,7 @@ const depRefId = (consumerId: string): string => `useBloc@${consumerId}:dep`;
  * ```ts
  * const [state, bloc] = useBloc(UserBloc, { args: { userId: 'alice' } });
  * ```
+ * @public
  */
 export function useBloc<
   T extends StateContainerConstructor = StateContainerConstructor,

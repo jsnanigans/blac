@@ -107,7 +107,7 @@ export interface CubitStubOptions<T extends StateContainerConstructor> {
   >;
   /**
    * Args to pass to init(). If the bloc's Args type is not void, supplying
-   * args here causes initConfig({ args }) to be called so init() runs.
+   * args here causes `initConfig({ args })` to be called so `init()` runs.
    */
   args?: ExtractArgs<T> extends void ? never : ExtractArgs<T>;
   /**

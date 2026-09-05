@@ -2,7 +2,7 @@ import { BLAC_STATIC_PROPS } from '../constants';
 import type { EqualityFn } from '../config';
 
 /**
- * Configuration options for the @blac decorator.
+ * Configuration options for the `@blac` decorator.
  * Only one option can be specified at a time (union type).
  */
 export type BlacOptions =

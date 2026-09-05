@@ -8,9 +8,9 @@ import type {
  * Release a reference to an instance. Instance identity is derived purely from
  * `args` (must match the `args` it was acquired with).
  *
- * @param opts.args - Construction/identity args; derives the instance key
- * @param opts.refId - The specific ref to drop; drops one arbitrary ref if omitted
- * @param opts.forceDispose - Force immediate disposal regardless of refs
+ * @param opts - `args` derives the instance key (must match acquire);
+ *   `refId` picks the ref to drop, otherwise one arbitrary ref goes;
+ *   `forceDispose` disposes immediately regardless of remaining refs.
  */
 export function release<T extends StateContainerConstructor>(
   BlocClass: T,

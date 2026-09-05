@@ -5,6 +5,9 @@ import type {
   InstanceReadonlyState,
 } from '../types/utilities';
 
+/**
+ * @public
+ */
 export function hasInstance<T extends StateContainerConstructor>(
   BlocClass: T,
   opts?: { args?: ExtractArgs<T> },
@@ -14,6 +17,9 @@ export function hasInstance<T extends StateContainerConstructor>(
   return registry.hasInstance(BlocClass, key);
 }
 
+/**
+ * @public
+ */
 export function getRefCount<T extends StateContainerConstructor>(
   BlocClass: T,
   opts?: { args?: ExtractArgs<T> },
@@ -23,6 +29,9 @@ export function getRefCount<T extends StateContainerConstructor>(
   return registry.getRefCount(BlocClass, key);
 }
 
+/**
+ * @public
+ */
 export function getRefIds<T extends StateContainerConstructor>(
   BlocClass: T,
   opts?: { args?: ExtractArgs<T> },
@@ -32,12 +41,18 @@ export function getRefIds<T extends StateContainerConstructor>(
   return registry.getRefIds(BlocClass, key);
 }
 
+/**
+ * @public
+ */
 export function getAll<T extends StateContainerConstructor>(
   BlocClass: T,
 ): InstanceReadonlyState<T>[] {
   return getRegistry().getAll(BlocClass);
 }
 
+/**
+ * @public
+ */
 export function forEach<T extends StateContainerConstructor>(
   BlocClass: T,
   callback: (instance: InstanceReadonlyState<T>) => void,

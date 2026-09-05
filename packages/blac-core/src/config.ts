@@ -1,5 +1,5 @@
 /**
- * Global configuration for @blac/core
+ * Global configuration for `@blac/core`
  */
 
 export type EqualityFn = <S>(prev: S, next: S) => boolean;
@@ -85,7 +85,7 @@ const defaultConfig: BlacConfig = {
 let globalConfig: BlacConfig = { ...defaultConfig };
 
 /**
- * Configure global defaults for @blac/core.
+ * Configure global defaults for `@blac/core`.
  *
  * @example
  * ```ts

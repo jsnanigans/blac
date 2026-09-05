@@ -9,6 +9,9 @@
  * Reserved for forwards-compatible knobs; currently empty.
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+/**
+ * @public
+ */
 export interface BlacReactConfig {}
 
 const defaultConfig: BlacReactConfig = {};
@@ -19,6 +22,7 @@ let globalConfig: BlacReactConfig = { ...defaultConfig };
  * Configure global defaults for `@blac/react` hooks.
  *
  * @param config - Partial configuration to merge with current globals
+ * @public
  */
 export function configureBlacReact(config: Partial<BlacReactConfig>): void {
   globalConfig = { ...globalConfig, ...config };

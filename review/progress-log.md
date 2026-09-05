@@ -138,9 +138,18 @@ Low-risk, mostly mechanical, gets both packages back under budget.
 - [x] `api-extractor` with committed reports — [07 §4](./07-tests-and-tooling.md#4-ci-gates), [06 §3](./06-dx-and-docs.md#3-make-docs-a-ci-concern)
       8 configs covering every entry point (core 6, react 2); reports in
       `packages/*/etc/*.api.md`, reproducible. `pnpm api:check` at root.
-      Not in `release:check` — it surfaces pre-existing API-hygiene warnings
-      (missing release tags, malformed TSDoc, a broken `{@link trackRender}`
-      in `useBloc.ts`) that need a source-or-config decision first.
+      **`api:check` is now clean (0 warnings)** and ready to gate CI.
+      53 `ae-missing-release-tag` warnings suppressed in config: everything
+      reachable from a published entry point is public by construction, and
+      `@internal` items are kept out of the barrels instead — tagging each
+      export adds noise, not information. (`defaultReleaseTag` is rejected by
+      the config schema, so per-rule suppression is the supported route.)
+      The other 17 were real TSDoc defects and are fixed at source: dotted
+      `@param opts.args` names (invalid TSDoc) rewritten as one `@param`
+      block, `@template` renamed to the standard `@typeParam`, unescaped `@`
+      and `>` in prose backticked, and two broken `{@link}` references
+      (`trackRender`, `createMeta` — neither is an export of its package)
+      turned into plain code text.
       The report confirms `getPluginManager` is in the barrel — the 03 §2
       tree-shaking blocker — and that no `tracked` export exists.
 - [~] CI gates: size-limit, typecheck, test — [07 §4](./07-tests-and-tooling.md#4-ci-gates)

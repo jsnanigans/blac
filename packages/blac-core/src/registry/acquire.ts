@@ -10,8 +10,8 @@ import type {
  * a structural hash of `args`, or the default sentinel when there are none).
  *
  * @param BlocClass - The StateContainer class constructor
- * @param opts.args - Construction/identity args; derives the instance key
- * @param opts.refId - Named reference ID for debugging; auto-generated if omitted
+ * @param opts - `args` derives the instance key; `refId` names the reference
+ *   for debugging and is auto-generated when omitted.
  */
 export function acquire<T extends StateContainerConstructor>(
   BlocClass: T,

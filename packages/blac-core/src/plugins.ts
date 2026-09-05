@@ -2,7 +2,7 @@
  * Plugins Subpath Export
  *
  * Plugin system utilities for extending BlaC functionality.
- * Import from '@blac/core/plugins'
+ * Import from `@blac/core/plugins`
  *
  * @example
  * ```typescript

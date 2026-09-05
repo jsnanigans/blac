@@ -2,7 +2,7 @@
  * Watch Subpath Export
  *
  * Reactive subscription utilities for watching bloc state changes.
- * Import from '@blac/core/watch'
+ * Import from `@blac/core/watch`
  *
  * @example
  * ```typescript

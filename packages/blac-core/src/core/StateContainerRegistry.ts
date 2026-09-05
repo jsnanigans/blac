@@ -15,7 +15,8 @@ import { INIT_CONFIG } from './symbols';
 
 /**
  * Entry in the instance registry, tracking the instance and its named references
- * @template T - Instance type
+ * @typeParam T - Instance type
+ * @internal
  */
 export interface InstanceEntry<T = any> {
   /** The state container instance */
@@ -34,6 +35,7 @@ export interface InstanceEntry<T = any> {
 
 /**
  * Lifecycle events emitted by the registry
+ * @public
  */
 export type LifecycleEvent =
   | 'created'
@@ -46,7 +48,8 @@ export type LifecycleEvent =
 
 /**
  * Listener function type for each lifecycle event
- * @template E - The lifecycle event type
+ * @typeParam E - The lifecycle event type
+ * @public
  */
 export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
   ? (container: StateContainer<any, any, any>) => void
@@ -105,7 +108,7 @@ export class StateContainerRegistry {
   private readonly types = new Set<StateContainerConstructor>();
 
   /**
-   * `depend()`-owner -> the (Type, key) entries it has resolved. Keyed per
+   * `depend()`-owner to the (Type, key) entries it has resolved. Keyed per
    * resolved key because one handle resolves a different key per `args`.
    * Weak so a bare `new`'d owner that is never disposed cannot pin the map.
    */
@@ -320,7 +323,7 @@ export class StateContainerRegistry {
    * an args-derived key is never dropped (instance leaks).
    *
    * Resolution order (explicit beats derived):
-   * explicit key > `static key(args)` > structural hash of args > default sentinel.
+   * explicit key \> `static key(args)` \> structural hash of args \> default sentinel.
    *
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Explicit key, or undefined to derive from args
@@ -397,12 +400,11 @@ export class StateContainerRegistry {
    *   wrapper; `useBloc` and `watch` address a pre-resolved key here.
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Pre-resolved instance key (defaults to 'default')
-   * @param options - Acquisition options
-   * @param options.canCreate - Whether to create new instance if not found (default: true)
-   * @param options.countRef - Whether to add a reference (default: true)
-   * @param options.refId - Named reference ID for debugging; auto-generated if omitted
-   * @param options.dependent - The `depend()`-owner resolving this instance, if any;
-   *   recorded so its dependent edge can be released on the owner's disposal.
+   * @param options - Acquisition options: `canCreate` (create when absent,
+   *   default true), `countRef` (add a reference, default true), `refId`
+   *   (named reference for debugging, auto-generated when omitted), and
+   *   `dependent` — the `depend()`-owner resolving this instance, recorded so
+   *   its dependent edge is released on the owner's disposal.
    * @returns The state container instance
    */
   acquire<T extends StateContainerConstructor = StateContainerConstructor>(
@@ -954,5 +956,6 @@ export class StateContainerRegistry {
 
 /**
  * Global default registry instance
+ * @public
  */
 export const globalRegistry = new StateContainerRegistry();

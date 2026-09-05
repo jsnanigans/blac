@@ -21,7 +21,8 @@
   "messages": {
     "extractorMessageReporting": {
       "ae-missing-release-tag": {
-        "logLevel": "warning"
+        "logLevel": "none",
+        "addToApiReportFile": false
       }
     }
   }
