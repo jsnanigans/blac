@@ -120,7 +120,7 @@ Low-risk, mostly mechanical, gets both packages back under budget.
 - [x] Dev/prod export conditions; strip dev-only branches — [03 §4](./03-bundle-and-packaging.md#4-dev--prod-conditions), [02 §9](./02-performance.md#9-dev-only-branches-on-the-hot-path)
       **Took the `isDev` guard, dropped the two-build split — the finding's size
       premise is false.** Measured it: a prod build (`vp pack --env.NODE_ENV
-  production`) removes every `process.env` reference from `dist` but is
+production`) removes every `process.env` reference from `dist` but is
       _byte-identical_ in size (8.49 kB both ways). The `NODE_ENV` guards wrap
       almost nothing — two one-line `_checkEmitRate()` calls into a function
       that ships anyway, a couple of `console.warn` strings, and the
@@ -131,10 +131,10 @@ Low-risk, mostly mechanical, gets both packages back under budget.
       The real half of the finding — a bare `process.env` read _throws_ under
       plain ESM/Deno/Bun — is fixed: `IS_DEV` in `constants.ts`
       (`typeof process === 'undefined' || process.env?.NODE_ENV !==
-  'production'`), used at all 8 core guard sites. `blac-react` has a single
+'production'`), used at all 8 core guard sites. `blac-react` has a single
       guard and keeps a local copy rather than widening the public barrel for
       one call site. Verified: pre-fix pattern throws `ReferenceError: process
-  is not defined` with no `process` global; post-fix built `dist` runs clean.
+is not defined` with no `process` global; post-fix built `dist` runs clean.
       **Costs ~450 B** (core 8.51 → 8.96 kB): `IS_DEV` is not statically
       foldable, so the bundler now retains the dev branches it used to drop.
       Measured an inline-guard variant too (8.97 kB) — no better, so the shared
@@ -262,18 +262,126 @@ Phase 5 rewrite — the audit agrees they should not be sliced piecemeal.
 
 ---
 
-## Phase 4 — API and type surface (1–2 weeks, minor release)
+## Phase 4 — API and type surface (1–2 weeks, minor release) ← **current**
 
-Breaking-ish; batch into one minor.
+Breaking-ish; batch into one minor. Additive items landed first — everything
+below that is still open is a _breaking_ change and needs a batching decision.
 
-- [ ] Replace the `this`-Proxy getter mechanism with a tracking override so ES `#private` works — [04 §3](./04-architecture.md#3-tracking-override-instead-of-a-this-proxy), [01 §4](./01-correctness.md#4-user-blocs-cannot-use-es-private-fields-or-methods) — _biggest single DX unlock_
-- [ ] Public deps API (`useBlocDeps` or a `deps` option) — [05 §4](./05-api-and-types.md#4-the-deps-lane-has-no-public-api)
+- [x] Public deps API — [05 §4](./05-api-and-types.md#4-the-deps-lane-has-no-public-api)
+      Shipped `useBlocDeps(bloc, slice)` from `@blac/react`
+      (`src/useBlocDeps.ts`). Purely additive: `APPLY_DEPS`/`REMOVE_DEPS_OWNER`
+      stay `@internal` and unchanged, they just stop appearing in user code.
+      **No dependency array**, unlike the review's sketch — `APPLY_DEPS`
+      already shallow-compares and no-ops on an unchanged slice
+      (`StateContainer.ts:168`), so applying on every commit is both cheaper
+      and less error-prone than asking callers to maintain a dep array (the
+      old pattern needed an `eslint-disable` for exhaustive-deps).
+      **Typed on a structural `DepsTarget<D>`, not `StateContainer`** — this is
+      forced: `useBloc` returns `InstanceReadonlyState<T>`, which is an `Omit`
+      and therefore drops the symbol-keyed methods, so a `StateContainer`-typed
+      parameter rejects the very value `useBloc` hands you. That is finding
+      [05 §2.3](./05-api-and-types.md#23-instancereadonlystatet-erases-the-class)
+      observed in the wild; when §2.3 is fixed, `DepsTarget` can likely go.
+      `DepsTarget` is exported (api-extractor `ae-forgotten-export`).
+      Migrated both example apps: `CanvasView.tsx` 10 lines + an
+      `eslint-disable` → 1 line; `MultiSourceCanvas.tsx` two owners likewise.
+      Docs rewritten off the internal symbols (react README, `guide/inputs.mdx`,
+      `guide/best-practices.md`).
+      Tests: 2, both mutation-checked. The first version of the unmount test
+      passed even with the withdrawal deleted (the bloc is disposed on unmount,
+      so `deps` read empty regardless) — rewritten to use two owners sharing one
+      instance, which fails correctly when `REMOVE_DEPS_OWNER` is removed.
+- [x] `blac()` decorator accepts multiple options — [05 §5](./05-api-and-types.md#5-blac-decorator-accepts-one-option-at-a-time)
+      `BlacOptions` union-of-single-key-objects → one interface with four
+      optional fields. Non-breaking: the runtime already applied all four keys
+      independently (`'keepAlive' in options` etc.), only the type forbade
+      combining them. `@blac({ keepAlive: true, key: fn })` now compiles.
+- [x] Dead surface: unreachable `throw` in `StateContainerRegistry.on()`
+      — [05 §3](./05-api-and-types.md#3-dead-and-redundant-surface).
+      The `.set()` immediately above guaranteed `.get()` was truthy; replaced
+      the get-then-throw with a `let`-and-assign. No behaviour change.
+- [x] Replace the `this`-Proxy getter mechanism with a tracking override so ES `#private` works — [04 §3](./04-architecture.md#3-tracking-override-instead-of-a-this-proxy), [01 §4](./01-correctness.md#4-user-blocs-cannot-use-es-private-fields-or-methods) — _biggest single DX unlock_
+      **Non-breaking** — no public surface change beyond one new `@internal`
+      symbol, so it did not need the breaking batch.
+      Core: `WITH_TRACKED_STATE` symbol + a `_stateOverride` slot on
+      `StateContainer`, with `state` overridden to prefer it. Restored in
+      `finally` and nestable, so getter→getter chains stay tracked.
+      **The `state` getter is overridden in `StateContainer` (blac layer), not
+      edited in `StructuralContainer`** — `@dirtytalk/structural` stays
+      untouched, honouring [04 §8](./04-architecture.md#8-what-not-to-change).
+      React: `buildTrackedProxy` drops `thisProxy` entirely — one proxy instead
+      of two per acquisition. Getters run via `desc.get.call(realInstance)`.
+      **Two things the review's design did not mention, both found by tests:** 1. _Methods need binding._ `Reflect.get(target, key, target)` returns an
+      unbound method, so `bloc.method()` still called with `this` = proxy and
+      failed the same brand check. Methods are now bound to the real
+      instance and **cached** — an unstable identity per read would defeat
+      memoisation in consumers. Pinned by a test. 2. _The `this`-Proxy was doing double duty._ It also intercepted reads of
+      branded dep handles (`this.someDep` inside a getter). With getters
+      reading off the real instance those reads no longer pass any trap, and
+      **16 cross-bloc tracking tests failed**. Fixed by threading the
+      `onDepHandle` hook through `WITH_TRACKED_STATE` and having the handle's
+      own `track()` consult it, so interception rides the same mechanism
+      instead of needing a proxy receiver. Mutation-tested: neutering the
+      hook fails 12 tests.
+      Deleted the no-`#private` constraint banner in `meta.ts` and the dev-only
+      "cannot access #private" rethrow in `buildTrackedProxy` (added in Phase 3
+      as the documented stopgap — the real fix supersedes it).
+      Rewrote `buildTrackedProxy.test.ts`, which pinned the _limitation_ as
+      expected behaviour, to assert `#private` now works.
+      **3 lifecycle tests changed:** `onMount`/`onUnmount` receive the live
+      registry instance while `useBloc` returns its proxy. They only passed
+      before because the two were structurally indistinguishable; bound methods
+      made them distinguishable. Left the runtime as-is (the callbacks
+      deliberately use the rebind-safe live instance) and switched the
+      assertions to compare `$blac.id`. **A proxy is never `===` its target, so
+      these tests never actually asserted identity.**
+      Sizes: core 9.03/9.1 kB, react **5.52 kB, down from 5.64** — one fewer
+      proxy per acquisition.
 - [ ] Type tightening: zero-arg constructor constraint, deep-readonly state, dev-only mutation traps, remove `any` — [05 §2](./05-api-and-types.md#2-type-safety)
 - [ ] Remove dead/redundant surface; resolve `Cubit` vs `StateContainer` — [05 §3](./05-api-and-types.md#3-dead-and-redundant-surface), [05 §1](./05-api-and-types.md#1-cubit-and-statecontainer-are-the-same-class)
-- [ ] `blac()` decorator to accept multiple options — [05 §5](./05-api-and-types.md#5-blac-decorator-accepts-one-option-at-a-time)
 - [ ] Drop `constructor.name` as identity; make static inheritance explicit — [05 §2.5](./05-api-and-types.md#25-constructorname-as-identity), [05 §6](./05-api-and-types.md#6-static-inheritance-is-implicit)
 - [ ] `watch()` should not hold a real ref — [05 §7](./05-api-and-types.md#7-watch-holds-a-real-ref)
 - [ ] Naming pass — [05 §8](./05-api-and-types.md#8-naming)
+
+**Audit of 05 §3 against current source** (re-verified this session, since
+Phase 3.5 had already closed part of it):
+
+| Item                                                   | Verdict                                                                                                                                                     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MAX_GETTER_DEPTH`, `BLAC_ID_PATTERNS`, `global.d.ts`  | already deleted (Phase 3.5)                                                                                                                                 |
+| unreachable `throw` in `on()`                          | **fixed this session**                                                                                                                                      |
+| `_instanceId` initialiser                              | correctly closed in Phase 2 — it is a real `createCubitStub` fallback, not dead                                                                             |
+| 3rd tuple element `ref` / no-op `useId()` in `useBloc` | still true; **zero** consumers destructure a 3rd element anywhere in the repo                                                                               |
+| `configureBlacReact` + empty `BlacReactConfig`         | still true; **zero** call sites outside its own module, but it is `@public` and appears in 2 doc pages + the api report — needs the breaking-batch decision |
+| `register()` keyed by class name                       | still true; 8 refs, tests pin the name-based throw                                                                                                          |
+| `DEFAULT_INSTANCE_KEY` vs `DEFAULT_STRUCTURAL_KEY`     | still true; both are the literal `'default'`                                                                                                                |
+| `getInstancesMap()` fresh empty `Map`                  | still true; only 2 refs                                                                                                                                     |
+| `registry/*.ts` 8 wrapper files                        | still true; pure internal reorg, but exported names have 9–329 call sites each and must be preserved                                                        |
+
+**Blocked on a decision — the rest of Phase 4 is breaking.** `configureBlacReact`
+removal, the `useBloc` tuple arity, `register()` re-keying, `Cubit` vs
+`StateContainer`, deep-readonly state and the naming pass all change published
+surface. They should land as one batched major/minor with a changeset and a
+migration note, not piecemeal.
+
+**Verification:** all packages green — core 467, react 187 (+5), full workspace
+suite passes. Sizes under the Phase 2 budgets: core 9.03/9.1 kB, react
+5.52/5.8 kB.
+
+**`api:check` caveat:** the committed `etc/*.api.md` reports are formatted with
+`vp fmt`, but api-extractor compares against its own raw output, so it always
+reports "you have changed the API signature" — **verified this also happens on
+an unmodified HEAD**, so it is a pre-existing repo quirk, not a real surface
+drift. The committed reports are correct and the only real delta this session is
+the new `WITH_TRACKED_STATE` symbol.
+
+**Suggested commits:**
+
+- `feat(blac-react): add useBlocDeps for the deps lane`
+- `feat(blac-core): let blac() accept multiple options`
+- `refactor(blac-core): drop unreachable throw in registry on()`
+- `docs(blac): teach useBlocDeps instead of internal deps symbols`
+- `feat(blac)!: run getters on the real instance so ES #private works`
 
 ---
 

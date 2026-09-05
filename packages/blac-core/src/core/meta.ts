@@ -1,17 +1,11 @@
 /**
  * `$blac` meta namespace for `StateContainer`.
  *
- * ──────────────────────────────────────────────────────────────────────────
- * CONSTRAINT — NO ES `#private` FIELDS, ANYWHERE IN THIS FILE.
- *
- * `@blac/react`'s `buildTrackedProxy` invokes prototype getters with a
- * `Proxy(instance)` as the `this`-receiver. Accessing an ES `#private` field
- * through a proxy receiver throws (`#x` brand checks fail on the proxy). The
- * whole point of this meta object is to be proxy-safe: every getter/method
- * here closes over the *real* container instance captured at `createMeta`
- * time, NEVER over a `this`-receiver. Do not "modernize" the `_`-prefixed
- * TS-private reads below into `#private` access.
- * ──────────────────────────────────────────────────────────────────────────
+ * Getters/methods here close over the *real* container instance captured at
+ * `createMeta` time rather than reading a `this`-receiver. `buildTrackedProxy`
+ * no longer uses a `this`-Proxy (getters run with `this` = the real instance),
+ * so ES `#private` is safe here now; the closure style is kept because it also
+ * keeps this own, frozen property independent of the proxy entirely.
  */
 
 import type { HydrationStatus } from './StateContainer';
