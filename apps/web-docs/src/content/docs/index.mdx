@@ -71,36 +71,38 @@ and read it back as something calm, typed, and predictable.
 
 <CardGrid>
   <Card title="Touch it, you're subscribed" icon="magnifier">
-    Read `state.user.name` and you're subscribed to exactly that — nothing
-    more. No selectors to write, no memoization homework, no
-    "why is this re-rendering" archaeology. BlaC tracks what each component
-    actually reads. [How tracking works](/react/dependency-tracking/)
+    Read `state.user.name` and you're subscribed to exactly that — nothing more.
+    No selectors to write, no memoization homework, no "why is this
+    re-rendering" archaeology. Every `useBloc` consumer gets its own dependency
+    tracker, so leaf components re-render on their own, without you writing a
+    selector. [How tracking works](/react/dependency-tracking/) · [See the
+    numbers](/react/performance/)
   </Card>
-  <Card title="Surgical re-renders" icon="rocket">
-    Every `useBloc` consumer gets its own dependency tracker. When one slice of
-    state changes, components that never read it stay asleep. Performance you
-    don't have to earn — it's just how the hook works.
-    [See the numbers](/react/performance/)
+  <Card title="Your logic lives in typed classes" icon="pencil">
+    Methods are your actions. `this.state` is your source of truth. `emit`,
+    `update`, and `patch` change it. Inputs are typed and split into three lanes
+    — `args` for construction data, `deps` for non-serializable handles, events
+    for values that change over the instance's life — so shared instances stay
+    safe. [The three input lanes](/guide/inputs/)
   </Card>
-  <Card title="Your logic lives in classes" icon="pencil">
-    Methods are your actions. `this.state` is your source of truth.
-    `emit`, `update`, and `patch` change it. It reads like the code you'd
-    write anyway — because it is. [Core concepts](/guide/concepts/)
+  <Card title="Cross-bloc getters, tracked automatically" icon="approve-check">
+    A getter on one bloc can read another bloc's state, and a component reading
+    that getter re-renders when either bloc changes — no `useBloc(Other)`, no
+    selectors, no manual wiring. [Bloc communication](/core/bloc-communication/)
   </Card>
-  <Card title="Type-safe to the edges" icon="approve-check">
-    Inference flows from your state shape through every consumer. No casts, no
-    `any`, no generics gymnastics. If it compiles, the wiring is right.
-    [TypeScript guide](/guide/typescript/)
+  <Card title="Lifecycle you don't manage" icon="rocket">
+    Instances are shared by default and ref-counted: the first consumer creates
+    one, the last one to unmount disposes it. No provider tree to set up, no
+    manual teardown. [Instance management](/core/instance-management/)
   </Card>
-  <Card title="Async without the acrobatics" icon="setting">
-    Kick off a fetch in a method, `emit` when it lands. Debounce, optimistic
-    updates, WebSockets — all plain methods on a plain class.
-    [Async guide](/guide/async/) · [Recipes](/guide/patterns/)
+  <Card title="Plugins for the extras" icon="setting">
+    DevTools, logging, and persistence attach to any bloc without touching its
+    logic. [Plugins overview](/plugins/overview/)
   </Card>
   <Card title="Escapes React when you do" icon="puzzle">
-    The core is framework-agnostic. `watch()` a bloc from anywhere — a router,
-    a game loop, a test. React is a binding, not a requirement.
-    [Outside React](/integrations/outside-react/)
+    The core is framework-agnostic. `watch()` a bloc from anywhere — a router, a
+    game loop, a test. React is a binding, not a requirement. [Outside
+    React](/integrations/outside-react/)
   </Card>
 </CardGrid>
 

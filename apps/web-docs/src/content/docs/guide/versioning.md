@@ -94,11 +94,11 @@ only and are not subject to semver guarantees.
 `@blac/react` declares `react` as a peer dependency and is tested against the
 following ranges:
 
-| React version      | Supported       | Notes                                                          |
-| ------------------ | --------------- | -------------------------------------------------------------- |
-| React 18           | Yes (`^18.0.0`) | Full support; `useSyncExternalStore` is used for subscription. |
-| React 19           | Yes (`^19.0.0`) | Full support including React Compiler compatibility.           |
-| React 17 and below | No              | `useSyncExternalStore` is required; no polyfill is bundled.    |
+| React version      | Supported       | Notes                                                |
+| ------------------ | --------------- | ---------------------------------------------------- |
+| React 18           | Yes (`^18.0.0`) | Full support.                                        |
+| React 19           | Yes (`^19.0.0`) | Full support including React Compiler compatibility. |
+| React 17 and below | No              | Requires the React 18+ hooks API.                    |
 
 The `@types/react` peer is optional — if you are on a JavaScript project you can
 omit it. Testing utilities in `@blac/react/testing` additionally accept

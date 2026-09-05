@@ -146,7 +146,9 @@ class AuthContainer extends StateContainer<{ token: string | null }> {
 
 **Public API:** `state`, `subscribe(interest, cb)`, `dispose()`, `$blac` (`$blac.name`, `$blac.id`, `$blac.debug`, `$blac.createdAt`, `$blac.disposed`, `$blac.dependencies`, `$blac.hydration`)
 
-**Protected API:** `emit(state)`, `update(fn)`, `init(args)` (optional), `onDepsChanged(next, prev)` (optional), `onSystemEvent(event, handler)`, `depend(Type, defaultArgs?)` (returns a `DepHandle`, not an instance)
+**Also public:** `emit(state)`, `patch(partial)` — state mutation is not restricted to the class itself.
+
+**Protected API:** `init(args)` (optional), `onDepsChanged(next, prev)` (optional), `onSystemEvent(event, handler)`, `depend(Type, defaultArgs?)` (returns a `DepHandle`, not an instance)
 
 ## Registry
 
