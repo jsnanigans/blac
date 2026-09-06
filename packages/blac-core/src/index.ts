@@ -111,6 +111,7 @@ export type {
   BlocInstanceType,
   BlocConstructor,
   InstanceReadonlyState,
+  WithState,
   InstanceState,
   StateContainerInstance,
 } from './types/utilities';

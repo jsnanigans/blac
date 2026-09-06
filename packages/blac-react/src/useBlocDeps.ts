@@ -1,16 +1,5 @@
 import { useEffect, useId, useRef } from 'react';
-import { APPLY_DEPS, REMOVE_DEPS_OWNER } from '@blac/core';
-
-/**
- * Structural shape of the deps lane. Matched instead of `StateContainer` so
- * the value `useBloc` returns — an `InstanceReadonlyState<T>`, which `Omit`s
- * the class and would otherwise drop these symbol-keyed methods — still fits.
- */
-export interface DepsTarget<D extends object> {
-  readonly deps: Readonly<D>;
-  [APPLY_DEPS](ownerId: string, slice: Partial<D>): void;
-  [REMOVE_DEPS_OWNER](ownerId: string): void;
-}
+import { APPLY_DEPS, REMOVE_DEPS_OWNER, type StateContainer } from '@blac/core';
 
 /**
  * Feed live values from the component into a bloc's `deps` lane.
@@ -30,7 +19,7 @@ export interface DepsTarget<D extends object> {
  * counts as a change.
  */
 export function useBlocDeps<D extends object>(
-  bloc: DepsTarget<D>,
+  bloc: StateContainer<any, any, D>,
   slice: Partial<D>,
 ): void {
   const ownerId = useId();

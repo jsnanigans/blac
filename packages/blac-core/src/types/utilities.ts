@@ -43,19 +43,27 @@ export type ExtractDeps<T> = T extends new () => StateContainer<
   ? D
   : Record<string, never>;
 
+/**
+ * Narrow a container instance's `state` without erasing the class. A plain
+ * intersection keeps private members, `this` types and symbol keys, so the
+ * result stays assignable to `StateContainer`; `state` is getter-only at the
+ * source, so no `readonly` modifier is needed here.
+ * @public
+ */
+export type WithState<I, S> = I & { state: S };
+
 export type InstanceReadonlyState<
   T extends StateContainerConstructor = StateContainerConstructor,
-> = Omit<InstanceType<T>, 'state'> & { state: ExtractState<T> };
+> = WithState<InstanceType<T>, ExtractState<T>>;
 
-export type InstanceState<T extends StateContainerConstructor = any> = Omit<
-  InstanceType<T>,
-  'state'
-> & { state: ExtractStateMutable<T> };
+export type InstanceState<
+  T extends StateContainerConstructor = StateContainerConstructor,
+> = WithState<InstanceType<T>, ExtractStateMutable<T>>;
 
-export type StateContainerInstance<S extends object = any> = Omit<
+export type StateContainerInstance<S extends object = any> = WithState<
   StateContainer<S, any, any>,
-  'state'
-> & { state: Readonly<S> };
+  Readonly<S>
+>;
 
 /**
  * Extract constructor argument types from a class
