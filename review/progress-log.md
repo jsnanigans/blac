@@ -513,6 +513,104 @@ dropping `dependents` from `_isUnowned` → 64 seeds fail; dropping
 refcount → 125 fail. **No bug found in current ownership code** — the harness
 is a baseline that pins today's behaviour for the R2 refactor.
 
+## R2 — Ownership and notification — audited, mostly already landed
+
+Audited each of R2's five work items in
+[scope-remaining.md](./scope-remaining.md) against source before building.
+**Three were already done or must not be done**, so R2 closes without a
+refactor; the two genuinely open items are both breaking and one of them now
+belongs to Phase 5.
+
+| R2 item                                                                    | Verdict                                                                                                                                                                                                                                                                                                                                  |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2 — delete `notifyStateChanged`/`_pendingStateChanges`/`flushStateChanged` | **Must not be done.** The scope doc's own correction is now written into the code as the `flushStateChanged` rationale (`StateContainerRegistry.ts:933–940`): the registry lane is a deliberately uncoalesced transition log; the plugin lane is coalesced and carries a `PathSet`. Collapsing them destroys intermediate `prev`/`next`. |
+| 3 — cache `PluginContext` per container in a `WeakMap`                     | **Done** (`761c0578`). `PluginManager.ts:91` `contextCache`, built/reused in `buildContext` (`:420`).                                                                                                                                                                                                                                    |
+| 4 — reorder `created` after `init()`                                       | **Done** with the Phase 0 hydration fix. `StateContainer.ts:448–455`, comment explains why.                                                                                                                                                                                                                                              |
+| 1 — collapse `refs` + `dependents` into one `owners` set                   | **Open, moved to Phase 5.** See below.                                                                                                                                                                                                                                                                                                   |
+| 5 — resolve `Cubit` vs `StateContainer`                                    | **Open, still blocked on the breaking-batch decision.**                                                                                                                                                                                                                                                                                  |
+
+Two more items filed as open in the review were also found already landed:
+01 §2 (`_isUnowned` as the single dispose predicate, `StateContainerRegistry.ts:182`,
+used at both sites) and 02 §1 (lazy ALL_PATHS bridge — `StateContainer.ts:806`
+subscribes on the first `stateChanged` handler, not at construction).
+
+**Why item 1 moves to Phase 5.** The scope doc notes the
+`Map<string, number>` refcount exists only to support paired acquire/release
+with the same id, and that a bare `Set` suffices _once uSES does the pairing_.
+That prerequisite is Phase 5's, not R2's — so the dependency arrow points into
+the React rewrite, not away from it. Doing the collapse first means diffing the
+ownership fuzz baseline twice. It is also public surface: `getRefCount` /
+`getRefIds` are exported from both `index.ts` and `debug.ts`, `devtools-connect`
+reads `getRefIds` at 5 sites (`DevToolsBrowserPlugin.ts:495, 554, 555, 656, 859`),
+and the refcount backs the `maxRefsPerInstance` circuit breaker, which a plain
+`Set` cannot express.
+
+**Verified corrections to the scope doc:**
+
+- **`forceDispose` is not a separate method.** It is a boolean parameter on
+  `release()` (`StateContainerRegistry.ts:598`). The scope doc lists it as its
+  own dispose entry point; there are two, not three.
+- **The registry `stateChanged` lane has zero non-test subscribers** —
+  repo-wide, including devtools. `PluginManager.ts:235` documents that
+  `onStateChange` deliberately does _not_ route through `registry.on('stateChanged')`.
+  The lane is retained for a devtools/time-travel consumer that does not exist
+  yet. Not a reason to delete it (that is public surface), but it means the
+  "two lanes" cost is currently paid for nobody.
+- **`ensure`/`borrow`/`borrowSafe` confirmed not dead**, as the scope doc said:
+  11 non-test call sites outside `blac-core` across 5 files — `useBloc.ts:814`
+  (`registry.ensure`, which Phase 5 rewrites), 6 × `borrowSafe` in
+  `messenger/services/WebSocketMock.ts`, 1 in `messenger/blocs/ChannelBloc.ts`,
+  2 × `borrow` in `apps/perf`, 1 × `ensure` in `06-db-persist/PersistenceStatus.tsx`.
+- **Item 5 needs a method that does not exist.** `StateContainer` overrides only
+  `emit` (`:533`) and `patch` (`:546`); `update` lives solely on
+  `StructuralContainer` (`container.ts:255`). `Cubit` is an empty-bodied class
+  whose own docstring says it adds nothing structurally. Making mutation
+  protected on `StateContainer` and public on `Cubit` requires adding a
+  `protected override update`.
+
+**Baseline at audit time:** core 36 files / 673 tests green.
+
+## R4 (pulled forward) — dev mutation traps on tracked state
+
+- [x] Dev-only `set` / `deleteProperty` / `defineProperty` traps — [05 §2.2](./05-api-and-types.md#22-state-is-only-shallowly-readonly-and-mutation-is-not-trapped)
+
+      Pulled ahead of R4 because the scope doc flags it as the one item there
+      with no dependency on R1–R3. The tracking proxy had only `get`,
+      `ownKeys` and `has` traps, so `state.user.name = 'x'` from a component
+      wrote straight through to the store — no re-render, no warning, silent
+      divergence between what the store held and what React had painted.
+
+      `tracker.ts:565–594` adds the three mutation traps to the same handler.
+      In dev they throw naming the offending key; in production each delegates
+      to the matching `Reflect.*` call, so prod behaviour is byte-for-byte
+      what it was. Guarded with `process.env.NODE_ENV !== 'production'`,
+      matching the existing in-package precedent at `path-interner.ts:54`
+      rather than introducing a new dev-detection helper.
+
+      **Only the runtime half of 05 §2.2 is done.** The type-level
+      `DeepReadonly<S>` change (`ExtractState`, the `state` getter, `select`'s
+      first arg) is deliberately still open — it is a breaking type change and
+      belongs with the R4 batch.
+
+      Checked the traps cannot fire on legitimate internal writes: the
+      container never wraps state in a tracking proxy (`container.ts` has no
+      tracker import), and the repo's `Object.freeze` / `Object.assign` /
+      `defineProperty` sites all target wrappers, dep handles, meta objects or
+      `patch`'s freshly-built merge target (`container.ts:445`) — never a
+      proxy. No existing code was found mutating through the proxy.
+
+      3 tests in `tracker.test.ts` (26–28): dev throw on nested set, dev throw
+      on delete, and prod pass-through with env save/restore. The first two
+      assert the underlying store is *unchanged*, not merely that a throw
+      happened; the third pins the non-breaking-in-prod guarantee.
+
+**Verification:** full workspace `vp test run` — 94 files / 1360 tests pass;
+root `pnpm typecheck` clean across all 9 packages. The 3 unhandled
+`path-set.ts:37` exceptions in `apps/examples` are the known pre-existing
+`createCubitStub` issue documented in Phase 0/1 above, unrelated to this change.
+
+**Suggested commit:** `feat(dirtytalk-structural): trap state mutation in dev`
+
 ## Phase 5 — The `@blac/react` rewrite (one coordinated change)
 
 Items below touch the same ~900 lines of `useBloc.ts`. **Ship together** —
@@ -521,7 +619,7 @@ doing them separately means rewriting the reconcile logic twice.
 - [ ] `useSyncExternalStore` with a per-consumer version snapshot; fixes tearing — [04 §1](./04-architecture.md#1-usesyncexternalstore-with-a-per-consumer-version-snapshot), [01 §7](./01-correctness.md#7-tearing-under-concurrent-rendering)
 - [ ] Activation lifecycle (`onActivate`/`onDeactivate`) + zero-ref sweep; pure render — [04 §2](./04-architecture.md#2-activation-lifecycle-and-a-pure-render), [01 §6](./01-correctness.md#6-instance-creation-and-init-side-effects-run-inside-render)
 - [ ] Consolidate ~17 refs / 3 effects into one consumer object — [02 §6](./02-performance.md#6-per-consumer-hook-cost)
-- [ ] Unified ownership count; `ensure()` gated behind a dependent — [04 §4](./04-architecture.md#4-one-ownership-model)
+- [ ] One ownership model: collapse `refs` + `dependents` into one `owners` set; `ensure()` gated behind a dependent — [04 §4](./04-architecture.md#4-one-ownership-model) — _moved here from R2: the bare `Set` is only safe once uSES guarantees subscribe/unsubscribe pairing. Public surface — see the R2 audit above for the `getRefIds`/circuit-breaker call sites._
 - [ ] Registry scoping through React context — [04 §5](./04-architecture.md#5-registry-scoping-through-context)
 - [ ] Emit ordering and plugin hooks — [04 §6](./04-architecture.md#6-emit-ordering-and-plugin-hooks)
 
