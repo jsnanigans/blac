@@ -12,9 +12,10 @@ import {
   type PathSet,
 } from './path-set';
 import type { PathId } from './types';
+import { TestContainer } from './test-support';
 
-// A minimal concrete subclass used across the suite.
-class Counter extends StructuralContainer<{ count: number; label: string }> {}
+type CounterState = { count: number; label: string };
+class Counter extends TestContainer<CounterState> {}
 
 const make = (
   initial: { count: number; label: string } = { count: 0, label: 'a' },
@@ -95,7 +96,7 @@ describe('StructuralContainer — patch', () => {
     interface UserState {
       user: { email: string; name: string };
     }
-    class UserBox extends StructuralContainer<UserState> {}
+    class UserBox extends TestContainer<UserState> {}
 
     const c = new UserBox(
       { user: { email: 'a@a', name: 'n' } },
@@ -176,7 +177,7 @@ describe('StructuralContainer — deepMerge __proto__ guard', () => {
     interface UserState {
       user: { email: string; name: string };
     }
-    class UserBox extends StructuralContainer<UserState> {}
+    class UserBox extends TestContainer<UserState> {}
     const c = new UserBox(
       { user: { email: 'a@a', name: 'n' } },
       { scheduler: new SyncScheduler() },
@@ -219,7 +220,7 @@ describe('StructuralContainer — deepMerge lazy-clone (reference identity)', ()
     f19: number;
     nested: { a: number; b: number };
   }
-  class WideBox extends StructuralContainer<Wide> {}
+  class WideBox extends TestContainer<Wide> {}
   const makeWide = () => {
     const initial: Wide = {
       f0: 0,
@@ -283,7 +284,7 @@ describe('StructuralContainer — DeepPartial patch type-checking', () => {
     items: number[];
     count: number;
   }
-  class NestedBox extends StructuralContainer<Nested> {}
+  class NestedBox extends TestContainer<Nested> {}
   const makeNested = () =>
     new NestedBox(
       { user: { name: 'n', email: 'e@e' }, items: [1, 2], count: 0 },
@@ -401,7 +402,7 @@ describe('StructuralContainer — root-sentinel wakes ALL_PATHS on off-skeleton 
   // the skeleton never includes it and `diffAlongSkeleton` returns empty when
   // only `serverData` changes.
   type WideState = { count: number; label: string; serverData: string };
-  class Wide extends StructuralContainer<WideState> {}
+  class Wide extends TestContainer<WideState> {}
   const makeWide = (initial: WideState): Wide =>
     new Wide(initial, { scheduler: new SyncScheduler() });
   const setOfWide = (c: Wide, ...paths: string[]): PathSet =>
@@ -619,8 +620,8 @@ describe('StructuralContainer — per-class interner', () => {
   });
 
   it('two instances of different subclasses get different interners', () => {
-    class AlphaBox extends StructuralContainer<{ x: number }> {}
-    class BetaBox extends StructuralContainer<{ x: number }> {}
+    class AlphaBox extends TestContainer<{ x: number }> {}
+    class BetaBox extends TestContainer<{ x: number }> {}
 
     const alpha = new AlphaBox({ x: 0 }, { scheduler: new SyncScheduler() });
     const beta = new BetaBox({ x: 0 }, { scheduler: new SyncScheduler() });
@@ -629,8 +630,8 @@ describe('StructuralContainer — per-class interner', () => {
   });
 
   it('path IDs from one subclass interner do not bleed into another', () => {
-    class GammaBox extends StructuralContainer<{ g: number }> {}
-    class DeltaBox extends StructuralContainer<{ d: number }> {}
+    class GammaBox extends TestContainer<{ g: number }> {}
+    class DeltaBox extends TestContainer<{ d: number }> {}
 
     const g = new GammaBox({ g: 0 }, { scheduler: new SyncScheduler() });
     const d = new DeltaBox({ d: 0 }, { scheduler: new SyncScheduler() });
@@ -651,7 +652,7 @@ describe('StructuralContainer — per-class interner', () => {
     // _interners is private — access via getInternerFor side-effect instead.
     // Two calls for the same ctor must return the same interner (lazy init
     // works correctly), while calls for distinct ctors differ.
-    class EpsilonBox extends StructuralContainer<{ e: number }> {}
+    class EpsilonBox extends TestContainer<{ e: number }> {}
     const e1 = new EpsilonBox({ e: 0 }, { scheduler: new SyncScheduler() });
     const e2 = new EpsilonBox({ e: 0 }, { scheduler: new SyncScheduler() });
 
@@ -663,7 +664,7 @@ describe('StructuralContainer — per-class interner', () => {
     expect(e2.interner).toBe(directA);
 
     // Verify the WeakMap contract: a brand-new constructor gets a fresh interner.
-    class ZetaBox extends StructuralContainer<{ z: number }> {}
+    class ZetaBox extends TestContainer<{ z: number }> {}
     expect(StructuralContainer.getInternerFor(ZetaBox)).not.toBe(directA);
 
     // Suppress TS unused-variable warning on the descriptor variable.
@@ -671,7 +672,7 @@ describe('StructuralContainer — per-class interner', () => {
   });
 
   it('all instances of a class share path IDs — intern once, resolve from any instance', () => {
-    class SharedBox extends StructuralContainer<{ v: number }> {}
+    class SharedBox extends TestContainer<{ v: number }> {}
 
     const first = new SharedBox({ v: 0 }, { scheduler: new SyncScheduler() });
     const id = first.interner.intern('shared.path');
@@ -689,7 +690,7 @@ describe('StructuralContainer — patch ancestor-mark refinement (P4b)', () => {
     items: { id: number; name: string }[];
     label: string;
   }
-  class ListBox extends StructuralContainer<ListState> {}
+  class ListBox extends TestContainer<ListState> {}
   const makeList = () =>
     new ListBox(
       {

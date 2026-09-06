@@ -27,7 +27,8 @@ proportional to N.
 ## What's in the box
 
 - `StructuralContainer<S>` — the base class. Holds state, owns a `DirtyChannel<PathSet>`, maintains
-  the observed skeleton across consumers, and exposes `emit`, `patch`, and `update`.
+  the observed skeleton across consumers, and provides the protected mutators `emit`, `patch`
+  and `update` for subclasses to build methods on.
 - `PathInterner` — per-class string-to-ID interning. Stable across all instances of the same
   container class.
 - `PathSet` — a compact set of `PathId` numbers with `ALL_PATHS` sentinel and `PathSetSpace` — the
@@ -125,21 +126,21 @@ required.
 
 ## API surface — public exports
 
-| Export                            | Role                                                            |
-| --------------------------------- | --------------------------------------------------------------- |
-| `StructuralContainer<S>`          | Base class: state, channel, skeleton, `emit`/`patch`/`update`   |
-| `PathInterner`                    | Interning: `intern(path): PathId`, `lookup(id): string`, `size` |
-| `PathSet`                         | Type alias for the compact path-set value                       |
-| `PathSetSpace`                    | `Space<PathSet>` implementation for the engine                  |
-| `ALL_PATHS`                       | Sentinel `PathSet` — `intersects` always returns true           |
-| `pathSetUnion`                    | Pure union of two `PathSet` values                              |
-| `pathSetEquals`                   | Equality check for two `PathSet` values                         |
-| `trackRender`                     | `(state, interner, proxyCache?) => { value: S, paths: PathSet }` |
-| `ProxyCache`                      | Opt-in cache: reuses proxies across `trackRender` calls          |
-| `raw`                             | `(v) => v` — unwrap a tracked proxy to its raw target           |
-| `diffAlongSkeleton`               | `(prev, next, skeleton, interner) => PathSet`                   |
-| `getAt`                           | `(obj, dottedPath) => unknown`                                  |
-| `useStructural` _(react subpath)_ | `(container, options?) => [state, container]`                   |
+| Export                            | Role                                                                    |
+| --------------------------------- | ----------------------------------------------------------------------- |
+| `StructuralContainer<S>`          | Base class: state, channel, skeleton, protected `emit`/`patch`/`update` |
+| `PathInterner`                    | Interning: `intern(path): PathId`, `lookup(id): string`, `size`         |
+| `PathSet`                         | Type alias for the compact path-set value                               |
+| `PathSetSpace`                    | `Space<PathSet>` implementation for the engine                          |
+| `ALL_PATHS`                       | Sentinel `PathSet` — `intersects` always returns true                   |
+| `pathSetUnion`                    | Pure union of two `PathSet` values                                      |
+| `pathSetEquals`                   | Equality check for two `PathSet` values                                 |
+| `trackRender`                     | `(state, interner, proxyCache?) => { value: S, paths: PathSet }`        |
+| `ProxyCache`                      | Opt-in cache: reuses proxies across `trackRender` calls                 |
+| `raw`                             | `(v) => v` — unwrap a tracked proxy to its raw target                   |
+| `diffAlongSkeleton`               | `(prev, next, skeleton, interner) => PathSet`                           |
+| `getAt`                           | `(obj, dottedPath) => unknown`                                          |
+| `useStructural` _(react subpath)_ | `(container, options?) => [state, container]`                           |
 
 ## Tracking hazards
 
@@ -186,7 +187,7 @@ Key properties:
 
 - **Keyed by `(target, prefix)`, not target alone.** The same object read at two different paths in
   one render (aliasing) still gets two independent proxies, exactly as the no-cache behavior
-  guarantees — only a genuine repeat read at the *same* path across calls is reused. This is also
+  guarantees — only a genuine repeat read at the _same_ path across calls is reused. This is also
   why reordering an item to a brand-new index it has never occupied before still allocates a fresh
   proxy for it: the `(target, prefix)` pair is new, so there's nothing to reuse. The win is
   proportional to how many items keep their index across a render, which is exactly the common case
@@ -212,7 +213,9 @@ Key properties:
   provides `SyncScheduler`, `ManualScheduler`, `MicrotaskScheduler`, and `RAFScheduler`; choose
   what fits your context. This package does not force one.
 - **No mutation primitive.** All updates go through `emit`, `patch`, or `update` — immutable
-  replacement only. In-place mutation of `state` bypasses change tracking silently.
+  replacement only. In-place mutation of `state` bypasses change tracking silently. Those three
+  are `protected`: a container mutates itself from its own methods, and callers go through the
+  methods a subclass chooses to expose.
 - **No virtual DOM.** The React adapter triggers re-renders via `useReducer`; the actual
   reconciliation is React's job.
 

@@ -15,12 +15,13 @@ import {
   PathInterner,
   PathSet,
   PathSetSpace,
-  StructuralContainer,
   trackRender,
 } from './index';
 // pathsFromPatch is @internal (de-barreled); import from source for this test.
 import { pathsFromPatch } from './diff';
 import { useStructural } from './react';
+// TestContainer republishes protected mutators; not part of the public barrel.
+import { TestContainer } from './test-support';
 
 // ---------------------------------------------------------------------------
 // Test 1 — Core flow without React
@@ -32,7 +33,7 @@ describe('Integration: core flow without React', () => {
     filter: 'all' | 'active';
   }
 
-  class TodoStore extends StructuralContainer<TodoState> {}
+  class TodoStore extends TestContainer<TodoState> {}
 
   it('patch({ filter }) fires only the filter-interested subscriber', () => {
     const initial: TodoState = {
@@ -195,7 +196,7 @@ describe('Integration: React flow with useStructural', () => {
     label: string;
   }
 
-  class CounterStore extends StructuralContainer<CounterState> {}
+  class CounterStore extends TestContainer<CounterState> {}
 
   it('re-renders only when observed path changes; render count = 3 (mount + 2 count patches)', () => {
     const c = new CounterStore(
@@ -254,7 +255,7 @@ describe('Integration: two consumers with source-diff isolation', () => {
     preferences: { theme: 'light' | 'dark' };
   }
 
-  class UserStore extends StructuralContainer<UserState> {}
+  class UserStore extends TestContainer<UserState> {}
 
   it('profile patch re-renders ProfileCard only; theme patch re-renders ThemeBadge only', () => {
     const initial: UserState = {
@@ -336,7 +337,7 @@ describe('Integration: sibling-leaf isolation under a shared parent', () => {
     user: { name: string; email: string; address: { city: string } };
   }
 
-  class UserStore extends StructuralContainer<UserState> {}
+  class UserStore extends TestContainer<UserState> {}
 
   it('changing one leaf does not wake siblings, even when the patch spreads the whole parent', () => {
     const initial: UserState = {

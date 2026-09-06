@@ -1,6 +1,6 @@
 import { bench, describe } from 'vite-plus/test';
 import { SyncScheduler } from '@dirtytalk/engine';
-import { StructuralContainer } from './container';
+import { StructuralContainer, type DeepPartial } from './container';
 import {
   trackRender,
   ProxyCache,
@@ -42,7 +42,11 @@ import { PathInterner } from './path-interner';
 function emitScenario(K: number): () => void {
   class Box extends StructuralContainer<
     Record<string, { a: { b: { c: number } } }>
-  > {}
+  > {
+    set(next: Record<string, { a: { b: { c: number } } }>): void {
+      this.emit(next);
+    }
+  }
 
   const initial: Record<string, { a: { b: { c: number } } }> = {};
   for (let i = 0; i < K; i++) {
@@ -68,7 +72,7 @@ function emitScenario(K: number): () => void {
   let flip = false;
   return () => {
     flip = !flip;
-    c.emit(flip ? B : A);
+    c.set(flip ? B : A);
   };
 }
 
@@ -91,7 +95,11 @@ interface PatchState {
 }
 
 function patchScenario(size: number): () => void {
-  class Box extends StructuralContainer<PatchState> {}
+  class Box extends StructuralContainer<PatchState> {
+    apply(partial: DeepPartial<PatchState>): void {
+      this.patch(partial);
+    }
+  }
 
   const M = 20;
   const items = Array.from({ length: M }, (_, i) => ({
@@ -121,7 +129,7 @@ function patchScenario(size: number): () => void {
   let flip = false;
   return () => {
     flip = !flip;
-    c.patch({ items: flip ? arrB : arrA });
+    c.apply({ items: flip ? arrB : arrA });
   };
 }
 

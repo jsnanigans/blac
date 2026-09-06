@@ -3,7 +3,7 @@ import React from 'react';
 import { act, render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vite-plus/test';
 import { SyncScheduler } from '@dirtytalk/engine';
-import { StructuralContainer } from './container';
+import { TestContainer } from './test-support';
 import { useStructural } from './react-hook';
 import { ALL_PATHS } from './path-set';
 
@@ -16,7 +16,7 @@ interface CounterState {
   label: string;
 }
 
-class Counter extends StructuralContainer<CounterState> {}
+class Counter extends TestContainer<CounterState> {}
 
 const makeContainer = (state: CounterState = { count: 0, label: 'a' }) =>
   new Counter(state, { scheduler: new SyncScheduler() });

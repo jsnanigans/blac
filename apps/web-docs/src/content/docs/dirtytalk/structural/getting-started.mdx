@@ -51,7 +51,7 @@ Let's build a container by subclassing `StructuralContainer<S>`, drive it with `
 
 ### 1. Subclass `StructuralContainer<S>`
 
-`StructuralContainer<S>` is abstract. You subclass it, type its state shape, and add your own methods that call the protected-by-convention mutators (`patch`, `emit`, `update`).
+`StructuralContainer<S>` is abstract. You subclass it, type its state shape, and add your own methods that call the protected mutators (`patch`, `emit`, `update`).
 
 ```ts
 import { StructuralContainer } from '@dirtytalk/structural';

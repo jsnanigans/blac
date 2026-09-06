@@ -167,7 +167,7 @@ export abstract class StructuralContainer<S> {
   // Mutations
   // ---------------------------------------------------------------------------
 
-  emit(next: S): void {
+  protected emit(next: S): void {
     if (Object.is(this._state, next)) return; // reference-equal short-circuit
     const prev = this._state;
     this._state = next;
@@ -218,7 +218,7 @@ export abstract class StructuralContainer<S> {
    * skeleton-child diffs so per-index consumers only wake when their specific
    * value changed.
    */
-  patch(partial: DeepPartial<S>): void {
+  protected patch(partial: DeepPartial<S>): void {
     let _empty = true;
     for (const _k in partial as object) {
       _empty = false;
@@ -252,7 +252,7 @@ export abstract class StructuralContainer<S> {
     this._channel.mark(this._refineAncestorMarks(rough, prev, next));
   }
 
-  update(fn: (state: S) => S): void {
+  protected update(fn: (state: S) => S): void {
     this.emit(fn(this._state));
   }
 
