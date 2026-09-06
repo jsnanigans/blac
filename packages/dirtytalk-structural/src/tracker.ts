@@ -283,7 +283,8 @@ export const trackRender = <S>(
   interner: PathInterner,
   proxyCache?: ProxyCache,
 ): TrackResult<S> => {
-  const cache = (persistOverride ?? PERSIST_TRACKING_PROXIES) ? proxyCache : undefined;
+  const cache =
+    (persistOverride ?? PERSIST_TRACKING_PROXIES) ? proxyCache : undefined;
 
   // Path ids that array iteration has asserted as *content* dependencies (the
   // array's own entry path). Unlike a plain object — where reading `user.name`
@@ -356,7 +357,8 @@ export const trackRender = <S>(
     // Lazily intern this proxy's own prefix at most once. Must stay lazy — do
     // not compute at wrap() entry, or interning timing/size would change.
     let _prefixId: PathId | undefined;
-    const prefixId = (): PathId => (_prefixId ??= entry.interner.intern(prefix));
+    const prefixId = (): PathId =>
+      (_prefixId ??= entry.interner.intern(prefix));
 
     // Pin this array's own entry path as a content dependency. Called when an
     // iteration entry point (Symbol.iterator) or any array method is accessed.
@@ -560,6 +562,38 @@ export const trackRender = <S>(
           });
         }
         return Reflect.has(t, key);
+      },
+
+      set(t, key, value) {
+        // State is read-only from outside a bloc. In dev, catch stray writes
+        // that would otherwise bypass rendering with no warning.
+        if (process.env.NODE_ENV !== 'production') {
+          throw new Error(
+            `Cannot set property "${String(key)}" on tracked state — state is ` +
+              'read-only outside a bloc. Call a bloc method to mutate state instead.',
+          );
+        }
+        return Reflect.set(t, key, value);
+      },
+
+      deleteProperty(t, key) {
+        if (process.env.NODE_ENV !== 'production') {
+          throw new Error(
+            `Cannot delete property "${String(key)}" on tracked state — state is ` +
+              'read-only outside a bloc. Call a bloc method to mutate state instead.',
+          );
+        }
+        return Reflect.deleteProperty(t, key);
+      },
+
+      defineProperty(t, key, descriptor) {
+        if (process.env.NODE_ENV !== 'production') {
+          throw new Error(
+            `Cannot define property "${String(key)}" on tracked state — state is ` +
+              'read-only outside a bloc. Call a bloc method to mutate state instead.',
+          );
+        }
+        return Reflect.defineProperty(t, key, descriptor);
       },
     };
 

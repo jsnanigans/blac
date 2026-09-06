@@ -505,7 +505,11 @@ describe('trackRender — ProxyCache', () => {
       const interner = new PathInterner();
       const cache = new ProxyCache();
       const shared = { name: 'z' };
-      const { value, paths } = trackRender({ a: shared, b: shared }, interner, cache);
+      const { value, paths } = trackRender(
+        { a: shared, b: shared },
+        interner,
+        cache,
+      );
       void value.a.name;
       void value.b.name;
       const strings = asPathStrings(paths, interner);
@@ -640,6 +644,40 @@ describe('trackRender — ProxyCache', () => {
       expect(secondUserProxy).toBe(firstUserProxy);
     } finally {
       __setPersistTrackingProxies(null);
+    }
+  });
+
+  it('26. throws in dev on a nested property write instead of silently writing through', () => {
+    const interner = new PathInterner();
+    const state = { user: { name: 'a' } };
+    const { value } = trackRender(state, interner);
+    expect(() => {
+      value.user.name = 'b';
+    }).toThrow(/read-only/);
+    expect(state.user.name).toBe('a');
+  });
+
+  it('27. throws in dev on delete instead of silently writing through', () => {
+    const interner = new PathInterner();
+    const state: { user?: { name: string } } = { user: { name: 'a' } };
+    const { value } = trackRender(state, interner);
+    expect(() => {
+      delete value.user;
+    }).toThrow(/read-only/);
+    expect(state.user).toBeDefined();
+  });
+
+  it('28. in production, writes pass through unchanged', () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      const interner = new PathInterner();
+      const state = { user: { name: 'a' } };
+      const { value } = trackRender(state, interner);
+      value.user.name = 'b';
+      expect(state.user.name).toBe('b');
+    } finally {
+      process.env.NODE_ENV = originalEnv;
     }
   });
 });
