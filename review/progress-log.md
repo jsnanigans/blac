@@ -72,7 +72,7 @@ typecheck and lint clean. Ready for a patch release.
 
 ---
 
-## Phase 2 — Cheap perf + packaging (days) ← **current**
+## Phase 2 — Cheap perf + packaging (days) — mostly complete
 
 Low-risk, mostly mechanical, gets both packages back under budget.
 
@@ -286,7 +286,7 @@ Phase 5 rewrite — the audit agrees they should not be sliced piecemeal.
 
 ---
 
-## Phase 4 — API and type surface (1–2 weeks, minor release) ← **current**
+## Phase 4 — API and type surface (1–2 weeks, minor release) — complete except the naming pass
 
 Breaking-ish; batch into one minor. Additive items landed first — everything
 below that is still open is a _breaking_ change and needs a batching decision.
@@ -372,11 +372,18 @@ below that is still open is a _breaking_ change and needs a batching decision.
       required-arg class (TS2322, "Target signature provides too few
       arguments") rather than passing vacuously.
 
-      Still open: deep-readonly state + dev mutation traps (05 §2.2),
-      `InstanceReadonlyState` class-erasure (05 §2.3), remaining `any` in
-      `LifecycleListener` / `registry.emit` (05 §2.4). Scoped to R4.
+      Since closed: dev mutation traps (05 §2.2 runtime half), class-erasure
+      (05 §2.3) and the `LifecycleListener` `any` (05 §2.4) — see the entries
+      below. `registry.emit`'s `any[]` was assessed and is a non-defect.
 
-- [~] Remove dead/redundant surface; resolve `Cubit` vs `StateContainer` — [05 §3](./05-api-and-types.md#3-dead-and-redundant-surface), [05 §1](./05-api-and-types.md#1-cubit-and-statecontainer-are-the-same-class) — **05 §1 done** (see below); 05 §3 dead surface still open
+      Still open: the **type** half of 05 §2.2 (`DeepReadonly<S>` for
+      `ExtractState`, the `state` getter and `select`'s first arg) — a breaking
+      type change, belongs with the R4 batch.
+
+- [~] Remove dead/redundant surface; resolve `Cubit` vs `StateContainer` — [05 §3](./05-api-and-types.md#3-dead-and-redundant-surface), [05 §1](./05-api-and-types.md#1-cubit-and-statecontainer-are-the-same-class) — **both done** (see the entries below); the only 05 §3 rows left are the
+  `useBloc` tuple's 3rd element and its no-op `useId()`, deliberately
+  deferred to Phase 5 — that file is rewritten wholesale there, so removing
+  them now would be churn against code about to be replaced
 
       **Scoped 2026-09-06: [scope-cubit.md](./scope-cubit.md).** The review's
       preferred fix cannot be built as written — TS2415 forbids narrowing
@@ -659,8 +666,8 @@ root `pnpm typecheck` clean across all 9 packages. The 3 unhandled
       republishes the mutators; 19 empty test subclasses now extend it. The
       helper is deliberately not in either barrel, so it does not ship.
       `blac-core`'s tsconfig *does* include tests, which is why its fallout
-      surfaced normally. **The structural typecheck gap is still open** — the
-      exclude means test type errors there will keep going unnoticed.
+      surfaced normally. ~~The structural typecheck gap is still open~~ —
+      **closed, see below.**
 
       One core test (`StateContainerRegistry.ownership.test.ts`) had a `Dep`
       extending `StateContainer` and mutated externally; switched to `Cubit`,
@@ -694,6 +701,170 @@ across all 9 packages, 0 failures. `pnpm typecheck` clean on all 9.
 Structural: 203 tests. Core: 673, matching baseline exactly.
 
 **Suggested commit:** `feat(blac)!: make state mutation protected outside Cubit`
+
+## Tooling — typecheck gap closed (all packages)
+
+- [x] Test files are now typechecked in every package — closes the gap flagged
+      in the 05 §1 entry above.
+
+      **The gap was 6 packages, not 1.** The Cubit session found it in
+      `dirtytalk-structural`; `dirtytalk-engine`, `dirtytalk-spatial`,
+      `devtools-connect`, `devtools-ui` and `logging-plugin` excluded
+      `**/*.test.ts` too. Only `blac-core` and `plugin-persist` were already
+      correct. Six one-line diffs: `exclude` drops the test glob.
+
+      **Emit is unaffected**, verified per package rather than assumed. The
+      three `dirtytalk-*` packages build with `vp pack`, which bundles from the
+      explicit `entry` map in `vite.config.ts` and never emits from tsconfig
+      `include` — confirmed by a real build (`dist` holds only the entry
+      chunks). The three others already have their own `tsconfig.build.json`
+      with its own test exclude for the declaration step. That is exactly
+      `blac-core`'s existing pattern (`exclude: []` in the main config, tests
+      excluded in the build config), so this generalises the pattern rather
+      than adding one.
+
+      **Zero hidden errors surfaced** — the 38 TS2445 errors this was scoped
+      against were already fixed by the protected-mutator work
+      (`dae887ad`/`2c9fd4f7`). Since "nothing found" and "not looking" are
+      indistinguishable from a clean run, verified by mutation: appending
+      `const __probe: number = 'not a number'` to
+      `dirtytalk-structural/src/diff.test.ts` now fails `tsc` with TS2322 at
+      that line, where it previously would have been invisible. Probe reverted.
+
+**Verification:** `pnpm typecheck` clean on all 9 packages; `pnpm test` 88
+files / 1290 tests, 0 failures — unchanged, as only configs moved.
+
+**Suggested commit:** `chore(tooling): typecheck test files in all packages`
+
+## 05 §3 — remaining dead/redundant surface — done
+
+- [x] Collapse the duplicate `'default'` constant; stop `getInstancesMap`
+      allocating — [05 §3](./05-api-and-types.md#3-dead-and-redundant-surface)
+
+      **Duplicate constant.** `BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY` and
+      `DEFAULT_STRUCTURAL_KEY` both held the literal `'default'`, and the
+      equality between them was a coincidence nothing enforced — the registry's
+      default parameter simply happened to match what `structuralKey(undefined)`
+      returns (`:351`). Kept `DEFAULT_STRUCTURAL_KEY` (the value key derivation
+      actually produces) and deleted `BLAC_DEFAULTS` entirely, since that was
+      its only member. Six default-parameter sites updated. Internal-only:
+      neither constant was in a barrel or any `etc/*.api.md`, so no alias was
+      needed.
+
+      **`getInstancesMap` allocation.** It returned `new Map()` for every
+      unregistered type, inside a loop in `getStats()`. Now returns a shared
+      module-level `EMPTY_INSTANCES_MAP`. All three callers (`getStats` plus
+      two tests) only read.
+
+      Sharing one Map behind a `@public` accessor is only safe while nobody
+      mutates it, and a comment does not enforce that — so the constant and the
+      return type are `ReadonlyMap<string, InstanceEntry>`. The compiler now
+      rejects a mutating caller instead of letting one silently poison every
+      unregistered type's view. Typechecks clean with no call-site changes,
+      confirming the read-only usage.
+
+      Not done: the api report's pre-existing `ae-incompatible-release-tags`
+      warning on this symbol (`@public` returning `@internal InstanceEntry`) is
+      untouched — it is orthogonal and belongs with the barrel work (03 §3).
+
+      Also noted: `api:check` reports a diff on **unmodified** `main` — a TS
+      version mismatch in the tooling (api-extractor bundles 5.9.3, project is
+      on 6.0.3), not caused by any change here. Worth a separate look before
+      the report is trusted as a gate again.
+
+**Verification:** `@blac/core` 673/673 tests pass; `pnpm typecheck` clean.
+
+**Suggested commit:** `refactor(blac-core): collapse default key, share empty map`
+
+## 05 §2.3 / §2.4 — instance aliases keep the class — done
+
+- [x] Replace the `Omit` pattern in the three instance aliases; drop
+      `DepsTarget` — [05 §2.3](./05-api-and-types.md#23-instancereadonlystatet-erases-the-class),
+      [05 §2.4](./05-api-and-types.md#24-any-in-the-public-surface)
+
+      **The review's diagnosis was wrong, and its suggested fix does not
+      work.** Both corrected by `tsc` probe rather than argument:
+
+      1. _Cause._ The review says `Omit` erases symbol keys, `this` types and
+         overloads. It does not — probe-verified, those survive. What `Omit`
+         (and any mapped type) actually discards is **`private` / `#private`
+         members**, which is what makes the result stop being assignable to the
+         nominal `StateContainer`. Probe: `TS2739: Type 'Omitted<…>' is missing
+         the following properties: secret, #hard`. That, not symbol loss, is
+         what forced `useBlocDeps` to hand-roll `DepsTarget`.
+      2. _Fix._ The review sketches `I & { readonly state: DeepReadonly<S> }`.
+         An intersection **merges** rather than overrides, so `readonly` is
+         dropped and `state` becomes `S & Readonly<S>`. The `readonly` turned
+         out to be unnecessary anyway: `state` is getter-only at both sources
+         (`StateContainer:310`, `container.ts:135`), so assignment is already a
+         compile error and the modifier was redundant.
+
+      Landed as one shared `WithState<I, S> = I & { state: S }` backing all
+      three aliases. Exported `@public` — not a choice: api-extractor rejects a
+      public type referencing an `@internal` one.
+
+      **`DepsTarget` removed**; `useBlocDeps` now takes
+      `StateContainer<any, any, D>` directly. Public surface change on
+      `@blac/react`, so the changeset is **major** there, minor on core
+      (`.changeset/instance-type-preserves-class.md`). Callers passing a real
+      bloc — including whatever `useBloc` returns — are unaffected.
+
+      05 §2.4: `LifecycleListener`'s `stateChanged` payloads are
+      `Readonly<Record<string, unknown>>`, matching the `depsChanged` branch in
+      the same type; `InstanceState`'s `any` default is now
+      `StateContainerConstructor`.
+
+      Deliberately untouched: `emit(event, ...args: any[])` — typed public
+      overloads sit above it, the `any[]` is only the implementation signature,
+      so the review's note on it is stale. `S extends object = any` on
+      `StateContainer`/`Cubit` does not fall out trivially (`ExtractState`,
+      `ExtractDeps` and `StateContainerConstructor` all thread `any` through) —
+      its own batch.
+
+      **The type test needed fixing after it was written.** It failed at module
+      evaluation (`ReferenceError: takesContainer is not defined`) because the
+      assignability checks sat at module scope in a file the runner executes;
+      moved inside the `it()` body and `StateContainer` switched to a type-only
+      import. Mutation-checked: restoring `Omit` in `WithState` fails it with
+      `TS2740: Type 'Instance' is missing … _depsByOwner, _deps, and 50 more`,
+      i.e. exactly the regression it exists to catch.
+
+**Verification:** `pnpm test` 89 files, 0 failures; `pnpm typecheck` clean on
+all 9; all 8 api-extractor reports pass `api:check`.
+
+**Suggested commit:** `refactor(blac)!: keep the class type in instance aliases`
+
+## Open: pre-existing lint error in `blac-react/src/config.ts`
+
+`pnpm lint` fails on `main`, independently of any review work:
+
+```
+src/config.ts:15:34: error typescript(no-empty-object-type):
+  Do not use an empty interface declaration.
+```
+
+`export interface BlacReactConfig {}` carries an
+`// eslint-disable-next-line @typescript-eslint/no-empty-object-type` comment,
+but the repo lints with **oxlint** (`vp lint`), which does not honour ESLint
+disable comments — so the suppression is inert and the error is live. The file
+is byte-identical to HEAD; nothing this session touched it.
+
+This is the same symbol 05 §3 lists as dead surface (`configureBlacReact` +
+its empty config). Still `@public`: exported from the barrel, in
+`etc/react.api.md`, and documented in `blac-react/README.md:318` plus two
+web-docs pages that state the config is "intentionally empty today". Removing
+it is therefore a breaking change and belongs in the **same batch as the
+`DepsTarget` removal**, not a drive-by fix — which is why it was left alone.
+
+Two coherent outcomes when that batch is assembled:
+
+1. Delete `configureBlacReact` + `BlacReactConfig` (05 §3's recommendation),
+   updating the three doc references; or
+2. Keep the surface and fix the lint properly — an `oxlint-disable-next-line`
+   comment, or giving the interface a real member once there is a knob (the
+   array-coarsening threshold is the review's suggested first one).
+
+Until then `pnpm lint` is red at the root.
 
 ## Phase 5 — The `@blac/react` rewrite (one coordinated change)
 
