@@ -376,7 +376,19 @@ below that is still open is a _breaking_ change and needs a batching decision.
       `InstanceReadonlyState` class-erasure (05 §2.3), remaining `any` in
       `LifecycleListener` / `registry.emit` (05 §2.4). Scoped to R4.
 
-- [ ] Remove dead/redundant surface; resolve `Cubit` vs `StateContainer` — [05 §3](./05-api-and-types.md#3-dead-and-redundant-surface), [05 §1](./05-api-and-types.md#1-cubit-and-statecontainer-are-the-same-class)
+- [~] Remove dead/redundant surface; resolve `Cubit` vs `StateContainer` — [05 §3](./05-api-and-types.md#3-dead-and-redundant-surface), [05 §1](./05-api-and-types.md#1-cubit-and-statecontainer-are-the-same-class) — **05 §1 done** (see below); 05 §3 dead surface still open
+
+      **Scoped 2026-09-06: [scope-cubit.md](./scope-cubit.md).** The review's
+      preferred fix cannot be built as written — TS2415 forbids narrowing
+      visibility in a subclass, so `StateContainer` cannot make `emit`
+      protected while `StructuralContainer`'s is public. The change must start
+      in `@dirtytalk/structural`, which is the one decision needing sign-off.
+      Measured blast radius is far smaller than expected: **0 non-test classes
+      extend `StateContainer`** (all 70 extend `Cubit`), and of ~39 external
+      mutation sites only **2** actually break, both in one benchmark file.
+      `testing.ts` is already `instanceof Cubit`-guarded, so it narrows for
+      free. Both READMEs already document the target state.
+
 - [x] Drop `constructor.name` as identity — [05 §2.5](./05-api-and-types.md#25-constructorname-as-identity)
 
       **R1, and the data-loss fix.** Added `static blacName` +
@@ -610,6 +622,78 @@ root `pnpm typecheck` clean across all 9 packages. The 3 unhandled
 `createCubitStub` issue documented in Phase 0/1 above, unrelated to this change.
 
 **Suggested commit:** `feat(dirtytalk-structural): trap state mutation in dev`
+
+## 05 §1 — `Cubit` vs `StateContainer` — done
+
+- [x] Resolve `Cubit` vs `StateContainer` — [05 §1](./05-api-and-types.md#1-cubit-and-statecontainer-are-the-same-class) — scoped in [scope-cubit.md](./scope-cubit.md)
+
+      Took the review's option 1 (make the docs true), extended one layer
+      down. `emit`/`patch`/`update` are now `protected` on
+      `StructuralContainer` and `StateContainer`, and public on `Cubit`.
+      `Cubit` stops being an empty class that means nothing.
+
+      **The review's fix could not be built as written.** TS2415 forbids
+      narrowing visibility in a subclass, so `StateContainer` cannot declare
+      `protected override emit` while `StructuralContainer.emit` is public —
+      verified with a `tsc` probe before starting. The change therefore had to
+      begin in `@dirtytalk/structural`; there is no version of this that lives
+      in `blac-core` alone. Widening in the other direction is legal, which is
+      what lets `Cubit` republish the three as public.
+
+      Also corrected: `update` was never on `StateContainer` (it is inherited
+      from `StructuralContainer`), so no `protected override update` was
+      needed there — only `Cubit` redeclares it.
+
+      **Blast radius was as scoped: 0 non-test classes extend
+      `StateContainer`** (all 70 extend `Cubit`), so no real bloc changed. Of
+      ~39 external mutation sites only 2 broke, both in `hotpath.bench.ts`.
+      `testing.ts` needed nothing — its `instanceof Cubit` guards (`:133`,
+      `:173`) already narrow to the public-mutation type, which is now
+      load-bearing for types and not just at runtime.
+
+      **A gap the scope did not predict:** `dirtytalk-structural`'s tsconfig
+      excludes `**/*.test.ts`, so 38 TS2445 errors in 3 test files were
+      invisible to `pnpm typecheck` and `vitest` passes regardless. Found by
+      typechecking with a temporary config that includes tests. Fixed with one
+      shared `TestContainer<S>` helper (`src/test-support.ts`) that
+      republishes the mutators; 19 empty test subclasses now extend it. The
+      helper is deliberately not in either barrel, so it does not ship.
+      `blac-core`'s tsconfig *does* include tests, which is why its fallout
+      surfaced normally. **The structural typecheck gap is still open** — the
+      exclude means test type errors there will keep going unnoticed.
+
+      One core test (`StateContainerRegistry.ownership.test.ts`) had a `Dep`
+      extending `StateContainer` and mutated externally; switched to `Cubit`,
+      which is what the class was always doing semantically.
+
+      **`blac-core` typechecks against structural's `dist`, not source** — the
+      same trap the R1 session hit with `plugin-persist`. The TS2415 error
+      persisted until `pnpm --filter @dirtytalk/structural build` was run.
+
+      **Docs corrected** (several were actively wrong, not merely vague):
+      `blac-core/README.md:148` said "state mutation is not restricted to the
+      class itself" — the exact claim this inverts; `core/cubit.md:13,22`
+      showed the empty-body signature and "adds nothing structurally" on a
+      page that promises signatures are quoted from source; `glossary.md:16,17,100`
+      said the two classes are structurally identical. `structural/README.md`
+      and `structural/getting-started.mdx` ("protected-by-convention" → enforced)
+      updated too. `blac-core/README.md:23` already described the target state
+      and needed no change.
+
+      **API report:** regenerated via the documented `cp temp/core.api.md etc/ && vp fmt`
+      workflow. Real delta is exactly the intended change — mutation moves onto
+      `Cubit` as public, becomes `protected` on `StateContainer`, nothing else.
+      The `api:check` "you have changed the API signature" warning is the
+      known pre-existing formatting quirk (fires on unmodified HEAD).
+
+      Changeset: `.changeset/protected-mutation.md`, minor on both packages,
+      with the migration note.
+
+**Verification:** full workspace `pnpm test` — 88 files / 1290 tests pass
+across all 9 packages, 0 failures. `pnpm typecheck` clean on all 9.
+Structural: 203 tests. Core: 673, matching baseline exactly.
+
+**Suggested commit:** `feat(blac)!: make state mutation protected outside Cubit`
 
 ## Phase 5 — The `@blac/react` rewrite (one coordinated change)
 
