@@ -401,17 +401,12 @@ export interface InstanceMetadata {
 // @public (undocumented)
 export type InstanceReadonlyState<
   T extends StateContainerConstructor = StateContainerConstructor,
-> = Omit<InstanceType<T>, 'state'> & {
-  state: ExtractState<T>;
-};
+> = WithState<InstanceType<T>, ExtractState<T>>;
 
 // @public (undocumented)
-export type InstanceState<T extends StateContainerConstructor = any> = Omit<
-  InstanceType<T>,
-  'state'
-> & {
-  state: ExtractStateMutable<T>;
-};
+export type InstanceState<
+  T extends StateContainerConstructor = StateContainerConstructor,
+> = WithState<InstanceType<T>, ExtractStateMutable<T>>;
 
 // @public
 export function isExcludedFromDevTools<T extends StateContainerConstructor>(
@@ -439,8 +434,8 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
   : E extends 'stateChanged'
     ? (
         container: StateContainer<any, any, any>,
-        previousState: any,
-        currentState: any,
+        previousState: Readonly<Record<string, unknown>>,
+        currentState: Readonly<Record<string, unknown>>,
       ) => void
     : E extends 'disposed'
       ? (container: StateContainer<any, any, any>) => void
@@ -638,12 +633,10 @@ export type StateContainerConstructor<S extends object = any> =
   new () => StateContainer<S, any, any>;
 
 // @public (undocumented)
-export type StateContainerInstance<S extends object = any> = Omit<
+export type StateContainerInstance<S extends object = any> = WithState<
   StateContainer<S, any, any>,
-  'state'
-> & {
-  state: Readonly<S>;
-};
+  Readonly<S>
+>;
 
 // @public
 export class StateContainerRegistry {
@@ -733,7 +726,7 @@ export class StateContainerRegistry {
   // Warning: (ae-incompatible-release-tags) The symbol "getInstancesMap" is marked as @public, but its signature references "InstanceEntry" which is marked as @internal
   getInstancesMap<T extends StateContainerConstructor>(
     Type: T,
-  ): Map<string, InstanceEntry>;
+  ): ReadonlyMap<string, InstanceEntry>;
   // @internal
   getRefCount<T extends StateContainerConstructor>(
     Type: T,
@@ -840,6 +833,11 @@ export interface WatchOptions {
 //
 // @internal
 export const WITH_TRACKED_STATE: unique symbol;
+
+// @public
+export type WithState<I, S> = I & {
+  state: S;
+};
 
 // (No @packageDocumentation comment for this package)
 ```

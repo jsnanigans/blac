@@ -3,7 +3,7 @@ import type {
   StateContainer,
   StateContainerConfig,
 } from './StateContainer';
-import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX, IS_DEV } from '../constants';
+import { BLAC_ERROR_PREFIX, IS_DEV } from '../constants';
 import { getBlacConfig } from '../config';
 import {
   isKeepAliveClass,
@@ -37,6 +37,9 @@ export interface InstanceEntry<T = any> {
   dependents?: Set<StateContainer<any, any, any>>;
 }
 
+/** Shared, read-only Map returned by `getInstancesMap` for unregistered types. */
+const EMPTY_INSTANCES_MAP: ReadonlyMap<string, InstanceEntry> = new Map();
+
 /**
  * Lifecycle events emitted by the registry
  * @public
@@ -60,8 +63,8 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
   : E extends 'stateChanged'
     ? (
         container: StateContainer<any, any, any>,
-        previousState: any,
-        currentState: any,
+        previousState: Readonly<Record<string, unknown>>,
+        currentState: Readonly<Record<string, unknown>>,
       ) => void
     : E extends 'disposed'
       ? (container: StateContainer<any, any, any>) => void
@@ -285,8 +288,8 @@ export class StateContainerRegistry {
    */
   getInstancesMap<T extends StateContainerConstructor>(
     Type: T,
-  ): Map<string, InstanceEntry> {
-    return this.instancesByConstructor.get(Type) || new Map();
+  ): ReadonlyMap<string, InstanceEntry> {
+    return this.instancesByConstructor.get(Type) || EMPTY_INSTANCES_MAP;
   }
 
   /**
@@ -526,7 +529,7 @@ export class StateContainerRegistry {
    */
   borrow<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
-    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+    instanceKey: string = DEFAULT_STRUCTURAL_KEY,
   ): InstanceType<T> {
     return this.acquire(Type, instanceKey, {
       canCreate: false,
@@ -545,7 +548,7 @@ export class StateContainerRegistry {
    */
   borrowSafe<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
-    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+    instanceKey: string = DEFAULT_STRUCTURAL_KEY,
   ):
     | { error: Error; instance: null }
     | { error: null; instance: InstanceType<T> } {
@@ -597,7 +600,7 @@ export class StateContainerRegistry {
    */
   release<T extends StateContainerConstructor>(
     Type: T,
-    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+    instanceKey: string = DEFAULT_STRUCTURAL_KEY,
     forceDispose = false,
     refId?: string,
   ): void {
@@ -723,7 +726,7 @@ export class StateContainerRegistry {
    */
   getRefCount<T extends StateContainerConstructor>(
     Type: T,
-    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+    instanceKey: string = DEFAULT_STRUCTURAL_KEY,
   ): number {
     const instances = this.ensureInstancesMap(Type);
     const entry = instances.get(instanceKey);
@@ -740,7 +743,7 @@ export class StateContainerRegistry {
    */
   getRefIds<T extends StateContainerConstructor>(
     Type: T,
-    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+    instanceKey: string = DEFAULT_STRUCTURAL_KEY,
   ): string[] {
     const instances = this.instancesByConstructor.get(Type);
     if (!instances) return [];
@@ -769,7 +772,7 @@ export class StateContainerRegistry {
    */
   hasInstance<T extends StateContainerConstructor>(
     Type: T,
-    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+    instanceKey: string = DEFAULT_STRUCTURAL_KEY,
   ): boolean {
     const instances = this.ensureInstancesMap(Type);
     return instances.has(instanceKey);

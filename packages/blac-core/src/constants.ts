@@ -5,16 +5,6 @@
  */
 
 /**
- * Default configuration constants for BlaC
- */
-export const BLAC_DEFAULTS = {
-  /**
-   * Default instance key for shared instances
-   */
-  DEFAULT_INSTANCE_KEY: 'default',
-} as const;
-
-/**
  * Static property names for StateContainer classes
  * Used for feature flags and configuration on bloc classes
  */
