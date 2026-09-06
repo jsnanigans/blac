@@ -10,7 +10,11 @@ class Cubit<
   S extends object = any,
   Args = void,
   Deps extends object = Record<string, never>,
-> extends StateContainer<S, Args, Deps> {}
+> extends StateContainer<S, Args, Deps> {
+  emit(next: S): void;
+  patch(partial: DeepPartial<S>): void;
+  update(fn: (state: S) => S): void;
+}
 ```
 
 | Type parameter | Default                 | Description                                                                                                                    |
@@ -19,7 +23,7 @@ class Cubit<
 | `Args`         | `void`                  | Serializable construction data delivered to `init(args)`. See [Args](#args-typed-construction-data).                           |
 | `Deps`         | `Record<string, never>` | Non-serializable handles injected per consumer and read via `this.deps`. See [Deps](#deps-non-serializable-handles).           |
 
-`Cubit` adds nothing structurally over `StateContainer` — it exists as a real class so `instance instanceof Cubit` works and so you have one obvious thing to extend.
+`Cubit` re-declares `emit`, `patch` and `update` as **public**; on `StateContainer` the three are `protected`. That is the difference between them: a `StateContainer` owns its own transitions and callers go through the methods it exposes, while a `Cubit` can also be driven from outside. Extend `Cubit` unless you specifically want mutation sealed inside the class.
 
 ## Why a class? (and why "Cubit", not "Bloc")
 

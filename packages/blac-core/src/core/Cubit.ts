@@ -1,20 +1,33 @@
 import { StateContainer } from './StateContainer';
+import type { DeepPartial } from '@dirtytalk/structural';
 
 /**
- * `Cubit<S>` is a `StateContainer<S>` with `emit` / `patch` exposed as
- * public mutation surface. Today it adds nothing structurally beyond
- * `StateContainer` — both are inherited from the underlying
- * `StructuralContainer<S>`. Kept as a real class (not a type alias) because
- * downstream code does `instance instanceof Cubit` checks.
+ * `Cubit<S>` is a `StateContainer<S>` that exposes mutation publicly.
  *
- * The class body is intentionally empty: a no-op `emit` override would
- * still go through `applyState`, and `patch` is inherited from
- * `StructuralContainer` (path-diffed, microtask-flushed). A caller that
- * wants "skip if no real change" patch semantics can wrap `patch`
- * themselves or call `emit` after a manual equality check.
+ * That is the whole difference, and it is a real one: on `StateContainer`
+ * `emit` / `patch` / `update` are `protected`, so a container mutates itself
+ * from its own methods and callers go through the API it chooses to publish.
+ * `Cubit` re-declares the three as `public` for the cases where a caller
+ * legitimately drives state from outside — test helpers, devtools
+ * time-travel, benchmarks.
+ *
+ * Reach for `StateContainer` when business logic should live in the class,
+ * and `Cubit` when the caller owns the transitions.
  */
 export abstract class Cubit<
   S extends object = any,
   Args = void,
   Deps extends object = Record<string, never>,
-> extends StateContainer<S, Args, Deps> {}
+> extends StateContainer<S, Args, Deps> {
+  override emit(next: S): void {
+    super.emit(next);
+  }
+
+  override patch(partial: DeepPartial<S>): void {
+    super.patch(partial);
+  }
+
+  override update(fn: (state: S) => S): void {
+    super.update(fn);
+  }
+}

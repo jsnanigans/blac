@@ -203,7 +203,14 @@ export abstract class Cubit<
   S extends object = any,
   Args = void,
   Deps extends object = Record<string, never>,
-> extends StateContainer<S, Args, Deps> {}
+> extends StateContainer<S, Args, Deps> {
+  // (undocumented)
+  emit(next: S): void;
+  // (undocumented)
+  patch(partial: DeepPartial<S>): void;
+  // (undocumented)
+  update(fn: (state: S) => S): void;
+}
 
 // Warning: (ae-internal-missing-underscore) The name "DEP_BRAND" should be prefixed with an underscore because the declaration is marked as @internal
 //
@@ -599,7 +606,7 @@ export abstract class StateContainer<
   // (undocumented)
   dispose(): void;
   // (undocumented)
-  emit(next: S): void;
+  protected emit(next: S): void;
   protected init(_args: Args): void;
   // (undocumented)
   protected onDepsChanged(_next: Readonly<Deps>, _prev: Readonly<Deps>): void;
@@ -610,7 +617,7 @@ export abstract class StateContainer<
     event: E,
     handler: SystemEventHandler<S, E>,
   ) => () => void;
-  patch(partial: DeepPartial<S>): void;
+  protected patch(partial: DeepPartial<S>): void;
   // (undocumented)
   get state(): S;
 }

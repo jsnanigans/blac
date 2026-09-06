@@ -530,7 +530,7 @@ export abstract class StateContainer<
   // skip) is delegated to `super.emit`.
   // ---------------------------------------------------------------------------
 
-  override emit(next: S): void {
+  protected override emit(next: S): void {
     this.applyState(next, 'default');
   }
 
@@ -543,7 +543,7 @@ export abstract class StateContainer<
    * `super.patch` so path-marking semantics (the whole point of patch) are
    * preserved.
    */
-  override patch(partial: DeepPartial<S>): void {
+  protected override patch(partial: DeepPartial<S>): void {
     if (this._disposed) {
       this._warnDisposedMutation('patch');
       return;

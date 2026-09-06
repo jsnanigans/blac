@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vite-plus/test';
 import { StateContainer } from './StateContainer';
+import { Cubit } from './Cubit';
 import { globalRegistry } from './StateContainerRegistry';
 
-class Dep extends StateContainer<{ n: number }, { id?: string }> {
+// A Cubit, not a StateContainer: these tests drive state from outside.
+class Dep extends Cubit<{ n: number }, { id?: string }> {
   constructor() {
     super({ n: 0 });
   }

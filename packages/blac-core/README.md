@@ -124,7 +124,7 @@ class CanvasRendererCubit extends Cubit<
 
 ### StateContainer
 
-Abstract base class for managing state outside the bloc/cubit pattern.
+Abstract base class for managing state outside the bloc/cubit pattern. Mutation is protected: the class owns its transitions and callers go through the methods it exposes.
 
 ```ts
 import { StateContainer } from '@blac/core';
@@ -146,7 +146,7 @@ class AuthContainer extends StateContainer<{ token: string | null }> {
 
 **Public API:** `state`, `subscribe(interest, cb)`, `dispose()`, `$blac` (`$blac.name`, `$blac.id`, `$blac.debug`, `$blac.createdAt`, `$blac.disposed`, `$blac.dependencies`, `$blac.hydration`)
 
-**Also public:** `emit(state)`, `patch(partial)` — state mutation is not restricted to the class itself.
+**Protected:** `emit(state)`, `patch(partial)`, `update(fn)` — state mutation is restricted to the class itself, as in the example above. Use `Cubit` when a caller needs to drive state from outside.
 
 **Protected API:** `init(args)` (optional), `onDepsChanged(next, prev)` (optional), `onSystemEvent(event, handler)`, `depend(Type, defaultArgs?)` (returns a `DepHandle`, not an instance)
 
