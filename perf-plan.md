@@ -396,6 +396,76 @@ The browser report has not been re-run; the ratios there need `apps/perf` in Chr
   value-level; `select:` is the tool for derived booleans. Same for Zustand without a
   selector.
 
+## Phase 5 — Second profile pass (landed 2026-09-07, after the Phase 4 browser re-run)
+
+The browser re-run confirmed Phase 4 (React sub-rows now beat Zustand on `run`/`add`,
+`instance create/dispose` 695 → 455µs, `same-tick burst` 190 → 105µs) and left three
+targets: the flat `patch`/`emit` fixed cost (~40 vs ~20µs per 1000), `acquire/release`
+(2.3ms per 1000 cycles), and the React `swapRows` render column (1.8ms vs 0.8ms for
+Zustand, on both row variants — i.e. the parent's list read, not the rows).
+
+Profiling again found the causes elsewhere than expected:
+
+- **`acquire/release` spent 48% constructing `AbortError` DOMExceptions**: every
+  deactivation/dispose called `AbortController.abort()` with no reason, which builds a
+  fresh exception (stack trace included).
+- **Mapping 1000 rows through the tracked proxy cost ~600ns per element**, 79× the raw
+  `map`. `Array.prototype.map` fires the `has` trap _and_ the `get` trap per index, each
+  of which built `\`${prefix}.${key}\``and hashed it into the interner; the`ProxyCache`was keyed by that string too and pruned every touched target on`disarm`.
+- **Bare construction still allocated five collections** (`_consumerPaths`,
+  `_pathRefCounts`, `_skeletonSet`, the channel's subscriber map, and a registry `WeakMap`
+  entry) that a container nobody tracks never uses.
+- The Node harness resolved `@dirtytalk/engine` to its stale `dist`; the browser bench did
+  not. `blac-core` and `blac-react` vite configs now alias the engine to source as well.
+
+### What changed
+
+- **engine** — `DirtyChannel.#subscribers` is allocated by the first `subscribe`; a flush
+  with no subscriber map returns before entering flushing mode.
+- **structural** — `patch` drops its empty-patch pre-scan (`deepMerge` already returns the
+  target for an empty patch) and `deepMerge` recurses only when both sides are objects, so
+  primitive leaves never call `isPlainPatchObject`; `PathInterner.internChild(parentId,
+key)` resolves a child id through a per-parent cache (no string concat or re-hash) and
+  both tracker traps use it; `ProxyCache` is keyed by `(target, prefix id)` and only entry
+  maps that hold more than one prefix are pruned on `disarm` (a single-entry map cannot be
+  stale); consumer bookkeeping lives in one `ConsumerIndex` allocated by the first
+  `registerConsumerPaths`.
+- **core** — `_abortActivation` aborts with one shared `AbortError` reason (same `name`,
+  no per-call exception); the registry's `_entryByInstance` WeakMap is gone — `_entryById`
+  plus an identity check already answers `_pruneEntry`, and a bare instance's `$blac.id`
+  is a cheap `<name>:main` concat; `INIT_CONFIG` resolves the class name once.
+
+### Measured (Node 24, same harness, Phase 4 landed → now; per 1000 ops)
+
+| op                                  | before  | after   | change |
+| ----------------------------------- | ------- | ------- | ------ |
+| acquire/release cycle               | 8.15ms  | 1.76ms  | −78%   |
+| map 1000 rows through tracked proxy | 0.594ms | 0.228ms | −62%   |
+| emit + getter                       | 25.6µs  | 23.6µs  | −8%    |
+| redundant patch                     | 27.0µs  | 24.6µs  | −9%    |
+| patch 1 field, no consumer          | 45.0µs  | 44.1µs  | flat   |
+| construct + dispose                 | 0.92ms  | 0.95ms  | noise  |
+
+The jsdom React harness (mount/add/select/swap/unmount of 1000 subscribed rows) moved
+within its ±10% run-to-run noise in both directions; the list-read saving is ~0.4ms on an
+~8ms swap, so only the browser `swapRows` render column can resolve it.
+
+### Not done, on purpose
+
+- **`$blac` as a class** (prototype getters, one `#private` back-reference) measured
+  `construct + dispose` 0.95 → 0.19ms per 1000 with all 682 core tests green, but it makes
+  the members non-enumerable — the exact contract 2.4 decided to keep. Reverted; the
+  numbers are here for when that contract is revisited.
+- The `Object.getOwnPropertyDescriptor` guard before wrapping a child value is 12% of the
+  list-read path, but it is what keeps a non-configurable, non-writable own property
+  (frozen state) from throwing the Proxy `[[Get]]` invariant. Kept.
+- `new AbortController()` is ~8% of an acquire/release cycle; skipping it when
+  `onActivate` is not overridden and no plugin listens for `activated` needs the registry
+  to tell `SET_ACTIVE` whether a signal is observed. Deferred.
+- The remaining `patch` fixed cost (~44 vs ~18ns for a bare `Object.assign` store) is the
+  two `Object.getPrototypeOf` plain-object checks, the three-level `patch` override chain
+  and the mark/schedule call; nothing left there is a single hot spot.
+
 ## Expected outcome
 
 - Phase 0: two bogus "critical" rows (179.7x, 55.7x) removed; React and read-op numbers
