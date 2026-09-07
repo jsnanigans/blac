@@ -87,6 +87,10 @@ type SystemEventHandler<S, E extends SystemEvent> = (
   payload: SystemEventPayloads<S>[E],
 ) => void;
 
+// Shared initial values for per-instance records that are replaced, never
+// mutated, so no container pays for an empty object it may never fill.
+const EMPTY_RECORD: Readonly<Record<string, never>> = Object.freeze({});
+
 /**
  * Shallow per-key `Object.is` comparison of two plain records. Keys are
  * considered: a key present in one but not the other (regardless of value)
@@ -147,7 +151,7 @@ export abstract class StateContainer<
   // ---------------------------------------------------------------------------
 
   private _depsByOwner: Map<string, Partial<Deps>> | null = null;
-  private _deps: Partial<Deps> = {};
+  private _deps: Partial<Deps> = EMPTY_RECORD as Partial<Deps>;
 
   get deps(): Readonly<Deps> {
     return this._deps as Readonly<Deps>;
@@ -281,7 +285,7 @@ export abstract class StateContainer<
   private _resolveHydrationPromise?: () => void;
   private _rejectHydrationPromise?: (error: Error) => void;
   private _hydrationPromiseSettled = false;
-  private _config: StateContainerConfig = {};
+  private _config: StateContainerConfig = EMPTY_RECORD;
   private _initCalled = false;
   private _activation: AbortController | null = null;
 
@@ -291,10 +295,11 @@ export abstract class StateContainer<
   private _emitRateWarned = false;
 
   // System-event handlers (stateChanged | dispose | hydrationChanged).
-  private readonly _systemEventHandlers = new Map<
+  // Allocated on the first `onSystemEvent` call.
+  private _systemEventHandlers: Map<
     SystemEvent,
     Set<SystemEventHandler<S, any>>
-  >();
+  > | null = null;
 
   // Cross-bloc dependencies recorded by depend(). Map<DepCtor, instanceKey>.
   private _dependencies: Map<StateContainerConstructor, string> | null = null;
@@ -347,8 +352,9 @@ export abstract class StateContainer<
   }
 
   /**
-   * @internal Run `fn` with `state` reporting `tracked`, and with dep handles
-   * read off `this` routed through `onDepHandle`. Restored in `finally`, and
+   * @internal Run `fn` (with `this` = this instance, so a prototype getter can
+   * be passed directly) while `state` reports `tracked` and dep handles read
+   * off `this` route through `onDepHandle`. Restored in `finally`, and
    * nestable — getters reading other getters stay in tracked context.
    *
    * The dep hook lives here rather than in the adapter's proxy because getters
@@ -365,7 +371,7 @@ export abstract class StateContainer<
     this._stateOverride = tracked;
     this._depHandleHook = onDepHandle;
     try {
-      return fn();
+      return fn.call(this);
     } finally {
       this._stateOverride = prevState;
       this._depHandleHook = prevHook;
@@ -560,7 +566,7 @@ export abstract class StateContainer<
     // callback per lifecycle rather than two.
     this._abortActivation();
 
-    this._systemEventHandlers.clear();
+    this._systemEventHandlers = null;
     this._pendingChange = null;
 
     this._registry.emit('disposed', this);
@@ -608,16 +614,18 @@ export abstract class StateContainer<
       this._warnDisposedMutation('patch');
       return;
     }
-    const prev = this.state;
+    // Raw state, not `this.state`: inside a tracked getter that getter reports
+    // the render proxy, which must never be mistaken for a state transition.
+    const prev = super.state;
 
     super.patch(partial);
 
     // `super.patch` returns `prev` by reference when the merge changed
     // nothing, so identity is the no-op test — no pre-scan needed.
-    const next = this.state;
+    const next = super.state;
     if (Object.is(prev, next)) return;
 
-    if (IS_DEV) {
+    if (IS_DEV && !this._emitRateWarned) {
       this._checkEmitRate();
     }
 
@@ -644,11 +652,11 @@ export abstract class StateContainer<
       return;
     }
 
-    const prev = this.state;
+    const prev = super.state;
     if (prev === next) return;
     if (this._equalityFn(prev, next)) return;
 
-    if (IS_DEV) {
+    if (IS_DEV && !this._emitRateWarned) {
       this._checkEmitRate();
     }
 
@@ -685,7 +693,7 @@ export abstract class StateContainer<
 
     // Iterate against a fixed-size snapshot so a handler that subscribes a
     // new handler mid-drain does not get the late one called in this flush.
-    const handlers = this._systemEventHandlers.get('stateChanged');
+    const handlers = this._systemEventHandlers?.get('stateChanged');
     if (handlers && handlers.size > 0) {
       const payload = { state: pending.next, previousState: pending.prev };
       let count = 0;
@@ -854,10 +862,11 @@ export abstract class StateContainer<
     event: E,
     handler: SystemEventHandler<S, E>,
   ): (() => void) => {
-    let handlers = this._systemEventHandlers.get(event);
+    const all = (this._systemEventHandlers ??= new Map());
+    let handlers = all.get(event);
     if (!handlers) {
       handlers = new Set();
-      this._systemEventHandlers.set(event, handlers);
+      all.set(event, handlers);
     }
     handlers.add(handler as SystemEventHandler<S, any>);
 
@@ -884,7 +893,7 @@ export abstract class StateContainer<
     event: E,
     payload: SystemEventPayloads<S>[E],
   ): void {
-    const handlers = this._systemEventHandlers.get(event);
+    const handlers = this._systemEventHandlers?.get(event);
     if (!handlers) return;
 
     for (const handler of handlers) {
@@ -908,7 +917,7 @@ export abstract class StateContainer<
    */
   private _checkEmitRate(): void {
     const limit = getBlacConfig().maxEmitsPerSecond;
-    if (!(limit > 0) || !Number.isFinite(limit) || this._emitRateWarned) return;
+    if (!(limit > 0) || !Number.isFinite(limit)) return;
 
     const now = Date.now();
     if (now - this._emitWindowStart >= 1000) {

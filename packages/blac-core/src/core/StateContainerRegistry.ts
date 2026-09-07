@@ -466,11 +466,6 @@ export class StateContainerRegistry {
 
     const resolvedKey = this.resolveKey(Type, instanceKey, args);
 
-    const config: StateContainerConfig = {
-      instanceId: resolvedKey,
-      args,
-    };
-
     const instances = this.ensureInstancesMap(Type);
     let entry = instances.get(resolvedKey);
 
@@ -523,6 +518,7 @@ export class StateContainerRegistry {
     this.assertInstanceLimit(Type, instances.size);
 
     // Create new shared instance
+    const config: StateContainerConfig = { instanceId: resolvedKey, args };
     const instance = new Type() as InstanceType<T>;
     instance[INIT_CONFIG](config);
     const initialRefs = new Map<string, number>();

@@ -103,7 +103,53 @@ interface MetaInternals<S extends object> {
 export function createMeta<S extends object>(container: object): BlacMeta<S> {
   const c = container as unknown as MetaInternals<S>;
 
-  const hydration: BlacHydration<S> = Object.freeze({
+  // Built on first access: nine closures most containers never use. The
+  // getter keeps `hydration` an own enumerable member with a stable identity.
+  let hydration: BlacHydration<S> | undefined;
+
+  const meta: BlacMeta<S> = {
+    get name() {
+      return c._name;
+    },
+    get id() {
+      // Generated on first read — the container leaves it undefined so an
+      // instance nobody registers or inspects never pays for one.
+      return (c._instanceId ??= generateSimpleId(
+        getBlacName(c.constructor),
+        'main',
+      ));
+    },
+    get debug() {
+      return c._debug;
+    },
+    get createdAt() {
+      return c._createdAt;
+    },
+    get disposed() {
+      return c._disposed;
+    },
+    get dependencies() {
+      return c._dependencies ?? EMPTY_DEPS;
+    },
+    get hydration() {
+      return (hydration ??= createHydration(c));
+    },
+  };
+
+  Object.defineProperty(meta, META_BRAND, {
+    value: true,
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
+
+  return Object.freeze(meta);
+}
+
+function createHydration<S extends object>(
+  c: MetaInternals<S>,
+): BlacHydration<S> {
+  return Object.freeze({
     get status() {
       return c._hydrationStatus;
     },
@@ -132,40 +178,4 @@ export function createMeta<S extends object>(container: object): BlacMeta<S> {
       return c._waitForHydration();
     },
   });
-
-  const meta: BlacMeta<S> = {
-    get name() {
-      return c._name;
-    },
-    get id() {
-      // Generated on first read — the container leaves it undefined so an
-      // instance nobody registers or inspects never pays for one.
-      return (c._instanceId ??= generateSimpleId(
-        getBlacName(c.constructor),
-        'main',
-      ));
-    },
-    get debug() {
-      return c._debug;
-    },
-    get createdAt() {
-      return c._createdAt;
-    },
-    get disposed() {
-      return c._disposed;
-    },
-    get dependencies() {
-      return c._dependencies ?? EMPTY_DEPS;
-    },
-    hydration,
-  };
-
-  Object.defineProperty(meta, META_BRAND, {
-    value: true,
-    enumerable: false,
-    writable: false,
-    configurable: false,
-  });
-
-  return Object.freeze(meta);
 }

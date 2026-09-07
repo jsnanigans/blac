@@ -58,21 +58,18 @@ export const shallowEqualState: EqualityFn = (prev, next) => {
   if (typeof prev !== 'object' || prev === null) return false;
   if (typeof next !== 'object' || next === null) return false;
 
-  const prevKeys = Object.keys(prev as object);
-  if (prevKeys.length !== Object.keys(next as object).length) return false;
-
-  for (let i = 0; i < prevKeys.length; i++) {
-    const key = prevKeys[i];
-    if (
-      !Object.is(
-        (prev as Record<string, unknown>)[key],
-        (next as Record<string, unknown>)[key],
-      )
-    ) {
-      return false;
-    }
+  // `for...in` visits enumerable keys without allocating key arrays; state
+  // objects are plain, so own and enumerable coincide.
+  const p = prev as Record<string, unknown>;
+  const n = next as Record<string, unknown>;
+  let prevCount = 0;
+  for (const key in p) {
+    prevCount++;
+    if (!Object.is(p[key], n[key])) return false;
   }
-  return true;
+  let nextCount = 0;
+  for (const _ in n) nextCount++;
+  return prevCount === nextCount;
 };
 
 const defaultConfig: BlacConfig = {
