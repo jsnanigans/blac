@@ -11,9 +11,10 @@ import { ReactNode } from 'react';
 import type { RefObject } from 'react';
 import { StateContainer } from '@blac/core';
 import { StateContainerConstructor } from '@blac/core';
+import type { StateContainerRegistry } from '@blac/core';
 import { untracked } from '@dirtytalk/structural';
 
-// @public (undocumented)
+// @public
 export interface BlacReactConfig {}
 
 // @public
@@ -31,6 +32,17 @@ export interface BlocProviderProps<T extends StateContainerConstructor> {
 
 // @public
 export function configureBlacReact(config: Partial<BlacReactConfig>): void;
+
+// @public
+export function RegistryProvider(input: RegistryProviderProps): ReactElement;
+
+// @public
+export interface RegistryProviderProps {
+  // (undocumented)
+  children: ReactNode;
+  // (undocumented)
+  registry: StateContainerRegistry;
+}
 
 export { untracked };
 
