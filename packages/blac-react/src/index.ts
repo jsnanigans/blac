@@ -9,8 +9,6 @@
 export { useBloc } from './useBloc';
 export { useBlocDeps } from './useBlocDeps';
 export { untracked } from '@dirtytalk/structural';
-export { configureBlacReact } from './config';
-export type { BlacReactConfig } from './config';
 export type { UseBlocOptions, UseBlocReturn } from './types';
 export {
   BlocProvider,

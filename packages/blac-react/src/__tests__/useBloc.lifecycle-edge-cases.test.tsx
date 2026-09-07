@@ -96,21 +96,6 @@ describe('useBloc — lifecycle edge cases', () => {
     expect(bloc.$blac.disposed).toBe(false);
   });
 
-  it('componentRef is a stable RefObject across re-renders', () => {
-    const { result, rerender } = renderHook(() => useBloc(LifecycleBloc));
-    const ref1 = result.current[2];
-
-    rerender();
-    const ref2 = result.current[2];
-
-    rerender();
-    const ref3 = result.current[2];
-
-    expect(ref1).toBe(ref2);
-    expect(ref2).toBe(ref3);
-    expect(ref1).toHaveProperty('current');
-  });
-
   it('onUnmount is called before instance release', () => {
     let isDisposedAtUnmount: boolean | undefined;
     const onUnmount = vi.fn((bloc: LifecycleBloc) => {

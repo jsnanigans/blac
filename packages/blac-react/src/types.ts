@@ -4,7 +4,6 @@ import type {
   InstanceReadonlyState,
   StateContainerConstructor,
 } from '@blac/core';
-import type { RefObject } from 'react';
 
 /**
  * Conditional `args` field:
@@ -61,7 +60,6 @@ export type UseBlocOptions<TBloc extends StateContainerConstructor> =
  * Tuple return type from {@link useBloc}.
  * - [0] Current state value
  * - [1] State container instance (bloc) for calling actions
- * - [2] Ref object for accessing component ref (advanced use cases)
  *
  * @typeParam TBloc - The state container constructor type
  * @public
@@ -69,10 +67,4 @@ export type UseBlocOptions<TBloc extends StateContainerConstructor> =
 export type UseBlocReturn<
   TBloc extends StateContainerConstructor,
   S = ExtractState<TBloc>,
-> = [S, InstanceReadonlyState<TBloc>, RefObject<ComponentRef>];
-
-/**
- * Internal ref structure for component-bloc binding.
- * @internal
- */
-export type ComponentRef = Record<string, never>;
+> = [S, InstanceReadonlyState<TBloc>];

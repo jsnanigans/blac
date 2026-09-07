@@ -8,14 +8,10 @@ import { ExtractState } from '@blac/core';
 import type { InstanceReadonlyState } from '@blac/core';
 import { ReactElement } from 'react';
 import { ReactNode } from 'react';
-import type { RefObject } from 'react';
 import { StateContainer } from '@blac/core';
 import { StateContainerConstructor } from '@blac/core';
 import type { StateContainerRegistry } from '@blac/core';
 import { untracked } from '@dirtytalk/structural';
-
-// @public
-export interface BlacReactConfig {}
 
 // @public
 export function BlocProvider<T extends StateContainerConstructor>(
@@ -29,9 +25,6 @@ export interface BlocProviderProps<T extends StateContainerConstructor> {
   // (undocumented)
   children: ReactNode;
 }
-
-// @public
-export function configureBlacReact(config: Partial<BlacReactConfig>): void;
 
 // @public
 export function RegistryProvider(input: RegistryProviderProps): ReactElement;
@@ -70,13 +63,11 @@ export type UseBlocOptions<TBloc extends StateContainerConstructor> =
     onUnmount?: (bloc: InstanceType<TBloc>) => void;
   };
 
-// Warning: (ae-forgotten-export) The symbol "ComponentRef" needs to be exported by the entry point index.d.ts
-//
 // @public
 export type UseBlocReturn<
   TBloc extends StateContainerConstructor,
   S = ExtractState<TBloc>,
-> = [S, InstanceReadonlyState<TBloc>, RefObject<ComponentRef>];
+> = [S, InstanceReadonlyState<TBloc>];
 
 // @public
 export function useProvidedArgs<T extends StateContainerConstructor>(

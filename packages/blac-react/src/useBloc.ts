@@ -1,12 +1,10 @@
 import {
   useContext,
   useEffect,
-  useId,
   useLayoutEffect,
   useMemo,
   useRef,
   useSyncExternalStore,
-  type RefObject,
 } from 'react';
 import {
   DEP_BRAND,
@@ -31,7 +29,7 @@ import {
 import { useProvidedArgs } from './BlocProvider';
 import { RegistryContext } from './RegistryProvider';
 import { buildTrackedProxy } from './buildTrackedProxy';
-import type { ComponentRef, UseBlocOptions, UseBlocReturn } from './types';
+import type { UseBlocOptions, UseBlocReturn } from './types';
 
 let nextConsumerId = 0;
 
@@ -105,8 +103,6 @@ export function useBloc<
 ): UseBlocReturn<T, ExtractState<T>> {
   type TBloc = InstanceState<T>;
 
-  const componentRef = useRef<ComponentRef>({});
-
   // Registry scoping: the nearest RegistryProvider wins over the module-global
   // default. Resolved once here (top level, per React's rules of hooks) and
   // closed over by every effect/memo below instead of each calling
@@ -121,9 +117,6 @@ export function useBloc<
     consumerIdRef.current = `useBloc-${nextConsumerId++}`;
   }
   const consumerId = consumerIdRef.current;
-  // Reserve a useId slot — kept for forwards compatibility and to match
-  // BlocProvider-driven SSR hydration alignment (no-op call).
-  useId();
 
   // Refs that always carry the latest option callbacks, so the commit effect
   // can read them without re-keying.
@@ -628,11 +621,7 @@ export function useBloc<
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [consumerId, registry]);
 
-  return [
-    state,
-    trackedBloc,
-    componentRef as RefObject<ComponentRef>,
-  ] as UseBlocReturn<T, ExtractState<T>>;
+  return [state, trackedBloc] as UseBlocReturn<T, ExtractState<T>>;
 }
 
 // ---------------------------------------------------------------------------
