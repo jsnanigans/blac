@@ -263,8 +263,8 @@ const MultiSelect = <O extends string>({
   getOptionCount,
 }: {
   label: string;
-  options: O[];
-  selected: O[];
+  options: readonly O[];
+  selected: readonly O[];
   onChange: (selected: O[]) => void;
   showSearch?: boolean;
   getOptionCount?: (option: O) => number;
@@ -397,7 +397,7 @@ const MultiSelect = <O extends string>({
               }}
             >
               <button
-                onClick={() => onChange(filteredOptions)}
+                onClick={() => onChange([...filteredOptions])}
                 style={{
                   padding: '2px 8px',
                   background: 'transparent',

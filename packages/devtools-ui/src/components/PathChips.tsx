@@ -8,7 +8,7 @@ import { T } from '../theme';
  * are dimmed — used to call out the paths that matched the latest change.
  */
 export const PathChips: FC<{
-  paths: string[] | 'all';
+  paths: readonly string[] | 'all';
   /** Paths to render emphasised (must match a string in `paths` exactly). */
   highlight?: ReadonlySet<string>;
   /** Max chips shown before collapsing the remainder into a `+N` chip. */

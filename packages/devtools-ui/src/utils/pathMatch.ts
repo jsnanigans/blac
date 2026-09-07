@@ -19,8 +19,8 @@ const pathsOverlap = (w: string, c: string): boolean =>
  * `changed`? `'all'` on either side matches everything.
  */
 export function consumerWoke(
-  watched: string[] | 'all',
-  changed: string[] | 'all' | undefined,
+  watched: readonly string[] | 'all',
+  changed: readonly string[] | 'all' | undefined,
 ): boolean {
   if (changed === undefined) return false;
   if (watched === 'all' || changed === 'all') return true;
@@ -40,8 +40,8 @@ export function consumerWoke(
  * is `'all'`.
  */
 export function matchedPaths(
-  watched: string[] | 'all',
-  changed: string[] | 'all' | undefined,
+  watched: readonly string[] | 'all',
+  changed: readonly string[] | 'all' | undefined,
 ): ReadonlySet<string> {
   if (watched === 'all' || changed === undefined) return new Set();
   if (changed === 'all') return new Set(watched);

@@ -202,7 +202,7 @@ export class DevToolsLogsBloc extends Cubit<LogsState> {
    * Get unique instance IDs filtered by selected class names
    * If no classes are selected, returns all instance IDs
    */
-  getAvailableInstanceIdsForClasses(classNames: string[]): string[] {
+  getAvailableInstanceIdsForClasses(classNames: readonly string[]): string[] {
     // If no classes selected, return all instance IDs
     if (classNames.length === 0) {
       return this.availableInstanceIds;

@@ -9,7 +9,7 @@ import { SearchBar } from './SearchBar';
 import { InstanceListItem } from './InstanceListItem';
 import { T } from '../theme';
 
-const EMPTY_TRIGGERS: number[] = [];
+const EMPTY_TRIGGERS: readonly number[] = [];
 // Stable empty selector: subscribe to the bloc instance without re-rendering
 // on its state changes (replacement for the removed `autoTrack: false`).
 const NO_RERENDER = (): unknown[] => [];

@@ -24,7 +24,7 @@ export interface DevToolsUIProps {
 export interface GetterInfo {
   value: unknown;
   error?: string;
-  dependsOn?: string[];
+  dependsOn?: readonly string[];
 }
 
 export interface RefHolderInfo {
@@ -40,7 +40,7 @@ export interface RefHolderInfo {
  */
 export interface ConsumerInfo {
   consumerId: string;
-  paths: string[] | 'all';
+  paths: readonly string[] | 'all';
 }
 
 export interface InstanceData {
@@ -65,16 +65,16 @@ export interface InstanceData {
   /** Computed getter values */
   getters?: Record<string, GetterInfo>;
   /** All active reference IDs holding this instance (from named ref tracking) */
-  refIds?: string[];
+  refIds?: readonly string[];
   /** Enriched reference holder info with stack traces (dev mode only) */
-  refHolders?: RefHolderInfo[];
+  refHolders?: readonly RefHolderInfo[];
   /** Per-consumer watched paths — which state paths re-render each consumer */
-  consumers?: ConsumerInfo[];
+  consumers?: readonly ConsumerInfo[];
   /**
    * Paths that changed on the most recent update. Used to attribute which
    * consumers actually re-rendered. `'all'` = everything changed.
    */
-  lastPaths?: string[] | 'all';
+  lastPaths?: readonly string[] | 'all';
   /** Stack trace showing where the instance was first created */
   createdFrom?: string;
   /** Args passed at acquire time; keys instance identity (serialized) */

@@ -31,7 +31,7 @@ function getCachedStateBytes(instance: InstanceData): number {
 interface InstanceListItemProps {
   instance: InstanceData;
   isSelected: boolean;
-  animationTriggers: number[];
+  animationTriggers: readonly number[];
   updatesIn10s: number;
   onSelect: () => void;
 }

@@ -62,7 +62,7 @@ const GetterDepPill: FC<{
 const GetterRow: FC<{
   name: string;
   info: GetterInfo;
-  instances: InstanceData[];
+  instances: readonly InstanceData[];
   onNavigate: (id: string) => void;
 }> = ({ name, info, instances, onNavigate }) => {
   const findInstance = (cls: string) =>
@@ -142,7 +142,7 @@ interface ComputedGettersSectionProps {
   getters?: Record<string, GetterInfo>;
   isExpanded: boolean;
   onToggle: () => void;
-  instances: InstanceData[];
+  instances: readonly InstanceData[];
   onNavigate: (id: string) => void;
 }
 
@@ -193,7 +193,7 @@ ComputedGettersSection.displayName = 'ComputedGettersSection';
 
 const ConsumerRow: FC<{
   consumer: ConsumerInfo;
-  lastPaths?: string[] | 'all';
+  lastPaths?: readonly string[] | 'all';
 }> = ({ consumer, lastPaths }) => {
   const woke = consumerWoke(consumer.paths, lastPaths);
   const matched = matchedPaths(consumer.paths, lastPaths);
@@ -233,8 +233,8 @@ const ConsumerRow: FC<{
 };
 
 interface ConsumersSectionProps {
-  consumers?: ConsumerInfo[];
-  lastPaths?: string[] | 'all';
+  consumers?: readonly ConsumerInfo[];
+  lastPaths?: readonly string[] | 'all';
   isExpanded: boolean;
   onToggle: () => void;
 }
