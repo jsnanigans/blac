@@ -42,43 +42,46 @@ export interface BlacConfig {
 }
 
 // @public
-export interface BlacHydration<S extends object> {
+export class BlacHydration<S extends object> {
+  // @internal
+  constructor(container: object);
   // (undocumented)
   apply(next: S): boolean;
   // (undocumented)
   begin(): void;
   // (undocumented)
-  readonly changedWhileHydrating: boolean;
+  get changedWhileHydrating(): boolean;
   // (undocumented)
-  readonly error: Error | undefined;
+  get error(): Error | undefined;
   // (undocumented)
   fail(error: Error): void;
   // (undocumented)
   finish(): void;
   // (undocumented)
-  readonly isHydrated: boolean;
+  get isHydrated(): boolean;
   // (undocumented)
-  readonly status: HydrationStatus;
+  get status(): HydrationStatus;
   // (undocumented)
   wait(): Promise<void>;
 }
 
 // @public
-export interface BlacMeta<S extends object = any> {
+export class BlacMeta<S extends object = any> {
+  // @internal
+  constructor(container: object);
   // (undocumented)
-  readonly createdAt: number;
+  get createdAt(): number;
   // (undocumented)
-  readonly debug: boolean;
+  get debug(): boolean;
   // (undocumented)
-  readonly dependencies: ReadonlyMap<StateContainerConstructor, string>;
+  get dependencies(): ReadonlyMap<StateContainerConstructor, string>;
   // (undocumented)
-  readonly disposed: boolean;
+  get disposed(): boolean;
+  get hydration(): BlacHydration<S>;
   // (undocumented)
-  readonly hydration: BlacHydration<S>;
+  get id(): string;
   // (undocumented)
-  readonly id: string;
-  // (undocumented)
-  readonly name: string;
+  get name(): string;
 }
 
 // @public

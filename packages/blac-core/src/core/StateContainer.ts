@@ -22,7 +22,7 @@ import {
 } from './symbols';
 import { type EqualityFn, getBlacConfig } from '../config';
 import { getClassEquality, getBlacName } from '../utils/static-props';
-import { type BlacMeta, createMeta, META_BRAND } from './meta';
+import { BlacMeta, META_BRAND } from './meta';
 
 /**
  * Brand symbol carried (non-enumerable) on every handle returned by
@@ -344,10 +344,10 @@ export abstract class StateContainer<
    * Reserved meta namespace: identity (`name`/`id`/`debug`/`createdAt`),
    * lifecycle (`disposed`/`dependencies`), and the `hydration` sub-surface.
    * Own, frozen, branded data property — `buildTrackedProxy` only intercepts
-   * prototype getters, so this own property and its closure-based getters are
-   * proxy-safe. See `createMeta`.
+   * prototype getters of the container, so this own property is proxy-safe.
+   * Its members are prototype accessors over the container (non-enumerable).
    */
-  readonly $blac: BlacMeta<S> = createMeta<S>(this);
+  readonly $blac: BlacMeta<S> = new BlacMeta<S>(this);
 
   /**
    * Both set only for the duration of a `[WITH_TRACKED_STATE]` call. TS-private
