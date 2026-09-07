@@ -37,6 +37,30 @@ Raw state management throughput measured without React involvement. Instantiates
 - Outlier removal (2.5 sigma from median via MAD)
 - Reports: min, median, mean, p95, max, stddev
 
+### Op set — deliberately minimal
+
+The pure-state suite keeps **one op per aspect**. It was trimmed from 29 ops to 20 because
+extra ops cost run time and reviewer attention without adding signal. Before adding an op,
+check it is not already covered; before re-adding one of these, read why it went:
+
+| Removed                              | Why                                                                                                            |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `create 10k`                         | Same code path as `create 1k`, just bigger. Scaling is not what this suite tests                               |
+| `getter track multiple`              | Measured identical to `getter track simple` (79.5µs vs 75.2µs) — a second plain accessor over `.state` is free |
+| `getter change detection miss`       | 4.3µs — at the 5µs timer floor, and there is no read interception to detect                                    |
+| `proxy change detection miss`        | 5.1µs — same, floor-level noise                                                                                |
+| `proxy change detection hit`         | Same emit loop as `getter track simple`, differing only by a free getter                                       |
+| `proxy track deep nested (5 levels)` | Floor-level plain property access; `.state` is an O(1) field read                                              |
+| `acquire shared instance`            | `acquire/release cycle` already covers the registry path                                                       |
+| `selector notification skip`         | `redundant patch` already covers no-op change filtering                                                        |
+| `cross-store propagation`            | `multi-store coordination` is the strict superset (3 stores vs 2)                                              |
+
+`proxy cache reuse` was removed earlier: it was a byte-identical duplicate of
+`proxy track 20 fields` (now `read 20 fields (baseline)`).
+
+Removing those ops also made the `derived` and `deepNested` containers dead in every
+library; they were deleted, so each `setup()` now builds 10 containers instead of 12.
+
 ### Reading the numbers — caveats
 
 Know these before drawing conclusions from a run:

@@ -13,13 +13,7 @@ interface Props {
 }
 
 const CATEGORIES: Record<string, string[]> = {
-  'CRUD Operations': [
-    'create 1k',
-    'create 10k',
-    'append 1k',
-    'update every 10th',
-    'clear',
-  ],
+  'CRUD Operations': ['create 1k', 'append 1k', 'update every 10th', 'clear'],
   'State Update Patterns': [
     'redundant emit',
     'redundant patch',
@@ -30,12 +24,10 @@ const CATEGORIES: Record<string, string[]> = {
   ],
   'Subscription & Notification': [
     'notify 100 subscribers',
-    'selector notification skip',
     'subscriber with computed filter',
   ],
   'Derived & Cross-Store': [
     'derived state computation',
-    'cross-store propagation',
     'multi-store coordination',
   ],
 };
@@ -46,11 +38,7 @@ const CATEGORIES: Record<string, string[]> = {
 // ownership tracking and real disposal. Comparing them measures "does
 // refcounting exist", not speed. Tracked as a Blac-only regression series
 // (absolute numbers, no ratios) and excluded from the scorecard.
-const LIFECYCLE_OPS = [
-  'acquire/release cycle',
-  'acquire shared instance',
-  'instance create/dispose',
-];
+const LIFECYCLE_OPS = ['acquire/release cycle', 'instance create/dispose'];
 
 const isLifecycleOp = (operation: string): boolean =>
   LIFECYCLE_OPS.includes(operation);

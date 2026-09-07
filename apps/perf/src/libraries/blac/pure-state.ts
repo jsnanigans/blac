@@ -55,12 +55,6 @@ class SourceBloc extends Cubit<{ value: number }> {
   }
 }
 
-class DerivedBloc extends Cubit<{ doubled: number }> {
-  constructor() {
-    super({ doubled: 0 });
-  }
-}
-
 class CounterABloc extends Cubit<CounterState> {
   constructor() {
     super({ count: 0 });
@@ -76,24 +70,6 @@ class CounterBBloc extends Cubit<CounterState> {
 class CounterCBloc extends Cubit<CounterState> {
   constructor() {
     super({ count: 0 });
-  }
-}
-
-class DeepNestedBloc extends Cubit<{
-  level1: {
-    level2: {
-      level3: {
-        level4: {
-          level5: { value: number };
-        };
-      };
-    };
-  };
-}> {
-  constructor() {
-    super({
-      level1: { level2: { level3: { level4: { level5: { value: 0 } } } } },
-    });
   }
 }
 
@@ -128,11 +104,9 @@ interface BlacHandle {
   nested: NestedBloc;
   counter: CounterBloc;
   source: SourceBloc;
-  derived: DerivedBloc;
   counterA: CounterABloc;
   counterB: CounterBBloc;
   counterC: CounterCBloc;
-  deepNested: DeepNestedBloc;
   getter: GetterBloc;
   wideGetters: WideGettersBloc;
 }
@@ -147,11 +121,9 @@ export const blacPureState: PureStateBenchmark = {
       nested: new NestedBloc(),
       counter: new CounterBloc(),
       source: new SourceBloc(),
-      derived: new DerivedBloc(),
       counterA: new CounterABloc(),
       counterB: new CounterBBloc(),
       counterC: new CounterCBloc(),
-      deepNested: new DeepNestedBloc(),
       getter: new GetterBloc(),
       wideGetters: new WideGettersBloc(),
     } satisfies BlacHandle;
@@ -162,10 +134,6 @@ export const blacPureState: PureStateBenchmark = {
     'create 1k': (h) => {
       const { demo } = h as BlacHandle;
       demo.emit({ data: buildData(1000), selected: null });
-    },
-    'create 10k': (h) => {
-      const { demo } = h as BlacHandle;
-      demo.emit({ data: buildData(10000), selected: null });
     },
     'update every 10th': (h) => {
       const { demo } = h as BlacHandle;
@@ -284,23 +252,6 @@ export const blacPureState: PureStateBenchmark = {
       }
       unsubs.forEach((u) => u());
     },
-    'selector notification skip': (h) => {
-      const { demo } = h as BlacHandle;
-      demo.emit({ data: buildData(100), selected: 42 });
-      let notifyCount = 0;
-      const unsub = demo.subscribe(
-        () => ALL_PATHS,
-        () => {
-          void demo.state.selected;
-          notifyCount++;
-        },
-      );
-      for (let i = 0; i < 1000; i++) {
-        demo.patch({ selected: 42 });
-      }
-      unsub();
-      void notifyCount;
-    },
     'subscriber with computed filter': (h) => {
       const { demo } = h as BlacHandle;
       let hitCount = 0;
@@ -336,13 +287,6 @@ export const blacPureState: PureStateBenchmark = {
         result = source.state.value * 2;
       }
       void result;
-    },
-    'cross-store propagation': (h) => {
-      const { source, derived } = h as BlacHandle;
-      for (let i = 0; i < 1000; i++) {
-        source.patch({ value: i });
-        derived.patch({ doubled: source.state.value * 2 });
-      }
     },
     'multi-store coordination': (h) => {
       const { counterA, counterB, counterC } = h as BlacHandle;
@@ -403,27 +347,6 @@ export const blacPureState: PureStateBenchmark = {
         }
       }
     },
-    'proxy track deep nested (5 levels)': (h) => {
-      const { deepNested } = h as BlacHandle;
-      for (let i = 0; i < 1000; i++) {
-        void deepNested.state.level1.level2.level3.level4.level5.value;
-      }
-    },
-    'proxy change detection miss': (h) => {
-      const { counter } = h as BlacHandle;
-      counter.emit({ count: 42 });
-      const ref = counter.state;
-      for (let i = 0; i < 1000; i++) {
-        void (counter.state === ref);
-      }
-    },
-    'proxy change detection hit': (h) => {
-      const { counter } = h as BlacHandle;
-      for (let i = 0; i < 1000; i++) {
-        counter.emit({ count: i });
-        void counter.state;
-      }
-    },
 
     // ── Getter Tracking ──
     //
@@ -437,26 +360,11 @@ export const blacPureState: PureStateBenchmark = {
         void getter.doubled;
       }
     },
-    'getter track multiple': (h) => {
-      const { getter } = h as BlacHandle;
-      for (let i = 0; i < 1000; i++) {
-        getter.emit({ count: i });
-        void getter.doubled;
-        void getter.squared;
-      }
-    },
     'getter track wide aggregate': (h) => {
       const { wideGetters } = h as BlacHandle;
       for (let i = 0; i < 1000; i++) {
         wideGetters.patch({ field0: i });
         void wideGetters.sum;
-      }
-    },
-    'getter change detection miss': (h) => {
-      const { getter } = h as BlacHandle;
-      getter.emit({ count: 42 });
-      for (let i = 0; i < 1000; i++) {
-        void getter.doubled;
       }
     },
 
@@ -475,14 +383,6 @@ export const blacPureState: PureStateBenchmark = {
         void inst;
       }
     },
-    'acquire shared instance': () => {
-      const args = { id: 'shared-bench' };
-      for (let i = 0; i < 1000; i++) {
-        const inst = acquire(CounterBloc, { args, refId: `ref-${i}` });
-        release(CounterBloc, { args, refId: `ref-${i}` });
-        void inst;
-      }
-    },
     'instance create/dispose': () => {
       for (let i = 0; i < 1000; i++) {
         const bloc = new CounterBloc();
@@ -497,11 +397,9 @@ export const blacPureState: PureStateBenchmark = {
     handle.nested.dispose();
     handle.counter.dispose();
     handle.source.dispose();
-    handle.derived.dispose();
     handle.counterA.dispose();
     handle.counterB.dispose();
     handle.counterC.dispose();
-    handle.deepNested.dispose();
     handle.getter.dispose();
     handle.wideGetters.dispose();
   },

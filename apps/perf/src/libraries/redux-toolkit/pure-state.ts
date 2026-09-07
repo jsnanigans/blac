@@ -101,16 +101,6 @@ const sourceSlice = createSlice({
   },
 });
 
-const derivedSlice = createSlice({
-  name: 'derived',
-  initialState: { doubled: 0 },
-  reducers: {
-    setDoubled(state, action: PayloadAction<number>) {
-      state.doubled = action.payload;
-    },
-  },
-});
-
 const counterASlice = createSlice({
   name: 'counterA',
   initialState: { count: 0 } as CounterState,
@@ -149,7 +139,6 @@ function createBenchmarkStore() {
       nested: nestedSlice.reducer,
       counter: counterSlice.reducer,
       source: sourceSlice.reducer,
-      derived: derivedSlice.reducer,
       counterA: counterASlice.reducer,
       counterB: counterBSlice.reducer,
       counterC: counterCSlice.reducer,
@@ -174,12 +163,6 @@ export const reduxToolkitPureState: PureStateBenchmark = {
       const store = h as BenchmarkStore;
       store.dispatch(
         demoSlice.actions.setData({ data: buildData(1000), selected: null }),
-      );
-    },
-    'create 10k': (h) => {
-      const store = h as BenchmarkStore;
-      store.dispatch(
-        demoSlice.actions.setData({ data: buildData(10000), selected: null }),
       );
     },
     'update every 10th': (h) => {
@@ -289,30 +272,6 @@ export const reduxToolkitPureState: PureStateBenchmark = {
       }
       unsubs.forEach((u) => u());
     },
-    'selector notification skip': (h) => {
-      const store = h as BenchmarkStore;
-      store.dispatch(
-        demoSlice.actions.setData({ data: buildData(100), selected: 42 }),
-      );
-      let notifyCount = 0;
-      const selectSelected = createSelector(
-        (state: ReturnType<BenchmarkStore['getState']>) => state.demo.selected,
-        (selected) => selected,
-      );
-      let lastSelected = selectSelected(store.getState());
-      const unsub = store.subscribe(() => {
-        const next = selectSelected(store.getState());
-        if (next !== lastSelected) {
-          lastSelected = next;
-          notifyCount++;
-        }
-      });
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(demoSlice.actions.setSelected(42));
-      }
-      unsub();
-      void notifyCount;
-    },
     'subscriber with computed filter': (h) => {
       const store = h as BenchmarkStore;
       let hitCount = 0;
@@ -348,15 +307,6 @@ export const reduxToolkitPureState: PureStateBenchmark = {
       for (let i = 0; i < 1000; i++) {
         store.dispatch(sourceSlice.actions.setValue(i));
         void selectDerived(store.getState());
-      }
-    },
-    'cross-store propagation': (h) => {
-      const store = h as BenchmarkStore;
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(sourceSlice.actions.setValue(i));
-        store.dispatch(
-          derivedSlice.actions.setDoubled(store.getState().source.value * 2),
-        );
       }
     },
     'multi-store coordination': (h) => {
@@ -401,27 +351,6 @@ export const reduxToolkitPureState: PureStateBenchmark = {
         }
       }
     },
-    'proxy track deep nested (5 levels)': (h) => {
-      const store = h as BenchmarkStore;
-      for (let i = 0; i < 1000; i++) {
-        void store.getState().nested.a.b.c;
-      }
-    },
-    'proxy change detection miss': (h) => {
-      const store = h as BenchmarkStore;
-      store.dispatch(counterSlice.actions.setCount(42));
-      const ref = store.getState().counter;
-      for (let i = 0; i < 1000; i++) {
-        void (store.getState().counter === ref);
-      }
-    },
-    'proxy change detection hit': (h) => {
-      const store = h as BenchmarkStore;
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(counterSlice.actions.setCount(i));
-        void store.getState().counter;
-      }
-    },
 
     // ── Getter Tracking (selectors) ──
 
@@ -434,22 +363,6 @@ export const reduxToolkitPureState: PureStateBenchmark = {
       for (let i = 0; i < 1000; i++) {
         store.dispatch(counterSlice.actions.setCount(i));
         void selectDoubled(store.getState());
-      }
-    },
-    'getter track multiple': (h) => {
-      const store = h as BenchmarkStore;
-      const selectDoubled = createSelector(
-        (state: ReturnType<BenchmarkStore['getState']>) => state.counter.count,
-        (count) => count * 2,
-      );
-      const selectSquared = createSelector(
-        (state: ReturnType<BenchmarkStore['getState']>) => state.counter.count,
-        (count) => count ** 2,
-      );
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(counterSlice.actions.setCount(i));
-        void selectDoubled(store.getState());
-        void selectSquared(store.getState());
       }
     },
     'getter track wide aggregate': (h) => {
@@ -469,29 +382,12 @@ export const reduxToolkitPureState: PureStateBenchmark = {
         void selectSum(store.getState());
       }
     },
-    'getter change detection miss': (h) => {
-      const store = h as BenchmarkStore;
-      store.dispatch(counterSlice.actions.setCount(42));
-      const selectDoubled = createSelector(
-        (state: ReturnType<BenchmarkStore['getState']>) => state.counter.count,
-        (count) => count * 2,
-      );
-      for (let i = 0; i < 1000; i++) {
-        void selectDoubled(store.getState());
-      }
-    },
 
     // ── Registry Lifecycle (store create + destroy) ──
 
     'acquire/release cycle': () => {
       for (let i = 0; i < 1000; i++) {
         const s = createBenchmarkStore();
-        void s.getState();
-      }
-    },
-    'acquire shared instance': () => {
-      const s = createBenchmarkStore();
-      for (let i = 0; i < 1000; i++) {
         void s.getState();
       }
     },

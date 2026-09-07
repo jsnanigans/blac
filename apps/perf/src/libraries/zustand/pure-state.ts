@@ -22,7 +22,6 @@ interface ZustandHandle {
   nested: Store<NestedState>;
   counter: Store<CounterState>;
   source: Store<{ value: number }>;
-  derived: Store<{ doubled: number }>;
   counterA: Store<CounterState>;
   counterB: Store<CounterState>;
   counterC: Store<CounterState>;
@@ -38,7 +37,6 @@ export const zustandPureState: PureStateBenchmark = {
       nested: createStore<NestedState>(() => createNestedState()),
       counter: createStore<CounterState>(() => ({ count: 0 })),
       source: createStore<{ value: number }>(() => ({ value: 0 })),
-      derived: createStore<{ doubled: number }>(() => ({ doubled: 0 })),
       counterA: createStore<CounterState>(() => ({ count: 0 })),
       counterB: createStore<CounterState>(() => ({ count: 0 })),
       counterC: createStore<CounterState>(() => ({ count: 0 })),
@@ -50,10 +48,6 @@ export const zustandPureState: PureStateBenchmark = {
     'create 1k': (h) => {
       const { demo } = h as ZustandHandle;
       demo.setState({ data: buildData(1000), selected: null });
-    },
-    'create 10k': (h) => {
-      const { demo } = h as ZustandHandle;
-      demo.setState({ data: buildData(10000), selected: null });
     },
     'update every 10th': (h) => {
       const { demo } = h as ZustandHandle;
@@ -163,20 +157,6 @@ export const zustandPureState: PureStateBenchmark = {
       }
       unsubs.forEach((u) => u());
     },
-    'selector notification skip': (h) => {
-      const { demo } = h as ZustandHandle;
-      demo.setState({ data: buildData(100), selected: 42 });
-      let notifyCount = 0;
-      const unsub = demo.subscribe((state) => {
-        void state.selected;
-        notifyCount++;
-      });
-      for (let i = 0; i < 1000; i++) {
-        demo.setState({ selected: 42 });
-      }
-      unsub();
-      void notifyCount;
-    },
     'subscriber with computed filter': (h) => {
       const { demo } = h as ZustandHandle;
       let hitCount = 0;
@@ -208,13 +188,6 @@ export const zustandPureState: PureStateBenchmark = {
         result = source.getState().value * 2;
       }
       void result;
-    },
-    'cross-store propagation': (h) => {
-      const { source, derived } = h as ZustandHandle;
-      for (let i = 0; i < 1000; i++) {
-        source.setState({ value: i });
-        derived.setState({ doubled: source.getState().value * 2 });
-      }
     },
     'multi-store coordination': (h) => {
       const { counterA, counterB, counterC } = h as ZustandHandle;
@@ -263,27 +236,6 @@ export const zustandPureState: PureStateBenchmark = {
         }
       }
     },
-    'proxy track deep nested (5 levels)': (h) => {
-      const { nested } = h as ZustandHandle;
-      for (let i = 0; i < 1000; i++) {
-        void nested.getState().a.b.c;
-      }
-    },
-    'proxy change detection miss': (h) => {
-      const { counter } = h as ZustandHandle;
-      counter.setState({ count: 42 });
-      const ref = counter.getState();
-      for (let i = 0; i < 1000; i++) {
-        void (counter.getState() === ref);
-      }
-    },
-    'proxy change detection hit': (h) => {
-      const { counter } = h as ZustandHandle;
-      for (let i = 0; i < 1000; i++) {
-        counter.setState({ count: i });
-        counter.getState();
-      }
-    },
 
     // ── Getter Tracking (use selector functions) ──
 
@@ -293,16 +245,6 @@ export const zustandPureState: PureStateBenchmark = {
       for (let i = 0; i < 1000; i++) {
         counter.setState({ count: i });
         void select(counter.getState());
-      }
-    },
-    'getter track multiple': (h) => {
-      const { counter } = h as ZustandHandle;
-      const selectDoubled = (s: CounterState) => s.count * 2;
-      const selectSquared = (s: CounterState) => s.count ** 2;
-      for (let i = 0; i < 1000; i++) {
-        counter.setState({ count: i });
-        void selectDoubled(counter.getState());
-        void selectSquared(counter.getState());
       }
     },
     'getter track wide aggregate': (h) => {
@@ -319,26 +261,12 @@ export const zustandPureState: PureStateBenchmark = {
         void selectSum(wide.getState());
       }
     },
-    'getter change detection miss': (h) => {
-      const { counter } = h as ZustandHandle;
-      counter.setState({ count: 42 });
-      const select = (s: CounterState) => s.count * 2;
-      for (let i = 0; i < 1000; i++) {
-        void select(counter.getState());
-      }
-    },
 
     // ── Registry Lifecycle (store create + destroy) ──
 
     'acquire/release cycle': () => {
       for (let i = 0; i < 1000; i++) {
         const store = createStore<CounterState>(() => ({ count: 0 }));
-        void store.getState();
-      }
-    },
-    'acquire shared instance': () => {
-      const store = createStore<CounterState>(() => ({ count: 0 }));
-      for (let i = 0; i < 1000; i++) {
         void store.getState();
       }
     },
