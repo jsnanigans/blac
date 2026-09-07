@@ -519,14 +519,13 @@ describe('StructuralContainer — equality option', () => {
     expect(countCb).not.toHaveBeenCalled(); // equality override said "equal"
   });
 
-  it('(PN6) _equalsFn is memoized: same closure across calls when configured, undefined when not', () => {
-    // No custom equality → always undefined (unchanged fast path).
+  it('(PN6) _equalsFn is resolved once: a closure when configured, undefined when not', () => {
+    // No custom equality → undefined (unchanged fast path).
     const plain = make();
-    const plainFn = plain as unknown as { _equalsFn: () => unknown };
-    expect(plainFn._equalsFn()).toBeUndefined();
-    expect(plainFn._equalsFn()).toBeUndefined();
+    const plainFn = plain as unknown as { _equalsFn: unknown };
+    expect(plainFn._equalsFn).toBeUndefined();
 
-    // With custom equality → one closure reused across many calls.
+    // With custom equality → one closure built at construction.
     const c = make(
       { count: 0, label: 'a' },
       {
@@ -535,13 +534,11 @@ describe('StructuralContainer — equality option', () => {
       },
     );
     const withFn = c as unknown as {
-      _equalsFn: () => (id: PathId, a: unknown, b: unknown) => boolean;
+      _equalsFn: (id: PathId, a: unknown, b: unknown) => boolean;
     };
-    const f1 = withFn._equalsFn();
-    const f2 = withFn._equalsFn();
-    expect(f1).toBe(f2); // memoized — same reference
+    const f1 = withFn._equalsFn;
 
-    // Still produces correct results: matched path → custom eq, others → Object.is.
+    // Produces correct results: matched path → custom eq, others → Object.is.
     const countId = c.interner.intern('count');
     const labelId = c.interner.intern('label');
     expect(f1(countId, 1, 2)).toBe(true); // custom eq says equal

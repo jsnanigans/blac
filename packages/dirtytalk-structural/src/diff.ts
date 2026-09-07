@@ -8,10 +8,13 @@ import { ALL_PATHS, emptyPathSet, type PathSet } from './path-set';
  * semantics — patching with one replaces the whole branch.
  */
 const isPlainPatchObject = (v: unknown): v is Record<string, unknown> => {
-  if (v === null || typeof v !== 'object' || Array.isArray(v)) return false;
+  if (v === null || typeof v !== 'object') return false;
   const proto = Object.getPrototypeOf(v);
   return proto === Object.prototype || proto === null;
 };
+
+const isObjectLike = (v: unknown): boolean =>
+  v !== null && typeof v === 'object';
 
 /**
  * Read a value at a dotted path from `state`.
@@ -142,16 +145,18 @@ const walkPatch = (
  * consumer skeleton, so raw channel subscribers wake correctly — without
  * over-waking siblings when a patch over-spreads an unchanged parent.
  *
- * For every path replaced *atomically* (an array, `null`, a primitive, a class
- * instance — anything this walk can't descend into) an additional
- * *ancestor-watch* mark is emitted via `interner.internAncestor`. A consumer
- * that read a descendant of such a path (e.g. `items.length` under the array
- * `items`) expands its interest with matching ancestor-watch ids, so it wakes
- * even though only the parent is in the patch shape. Plain-object branches emit
- * no ancestor-watch mark — recursion already marks their precise changed
- * leaves, which descendant-readers match directly. This is what keeps object
+ * For every path replaced *atomically* (an array, `null`, a class instance —
+ * anything this walk can't descend into) an additional *ancestor-watch* mark
+ * is emitted via `interner.internAncestorOf`. A consumer that read a
+ * descendant of such a path (e.g. `items.length` under the array `items`)
+ * expands its interest with matching ancestor-watch ids, so it wakes even
+ * though only the parent is in the patch shape. Plain-object branches emit no
+ * ancestor-watch mark — recursion already marks their precise changed leaves,
+ * which descendant-readers match directly. This is what keeps object
  * sibling-leaf updates strict (a `user.name` change does not wake a
  * `user.email` reader) while array / wholesale-replacement readers still wake.
+ * A primitive-to-primitive change emits no ancestor-watch either: nothing can
+ * have read below a primitive, so the plain mark is sufficient.
  *
  * `equalsAt` is the same per-path custom-equality seam as `diffAlongSkeleton`;
  * default is reference equality (`Object.is`).
@@ -198,14 +203,15 @@ export const changedPathsFromPatch = <S>(
         // Plain-object branch: recurse and mark the precise changed leaves,
         // which descendant-readers match directly — no ancestor-watch needed.
         walk(childPatch, pv, nv, childPath);
-      } else {
-        // Atomic replacement (array, null, primitive, class instance, Date,
-        // Map, …): the diff can't see inside it, so a consumer that read a
-        // *descendant* (e.g. `items.length`, `profile.bio`) has nothing to
-        // match the normal `childPath` mark. Emit the ancestor-watch mark so
-        // its expanded-ancestor interest intersects. (`walk` would early-return
-        // here anyway, so recursion behaviour is unchanged.)
-        out.add(interner.internAncestor(childPath));
+      } else if (isObjectLike(pv) || isObjectLike(nv)) {
+        // Atomic replacement of something readable-into (array, null'd object,
+        // class instance, Date, Map, …): the diff can't see inside it, so a
+        // consumer that read a *descendant* (e.g. `items.length`,
+        // `profile.bio`) has nothing to match the normal `childPath` mark.
+        // Emit the ancestor-watch mark so its expanded-ancestor interest
+        // intersects. Skipped when both sides are primitives — no descendant
+        // path can have been recorded beneath one.
+        out.add(interner.internAncestorOf(id));
       }
     }
   };

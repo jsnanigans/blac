@@ -148,7 +148,8 @@ const isStructurallyWrappable = (v: object): boolean => {
 
 interface TrackSession {
   paths: Set<PathId>;
-  pinned: Set<PathId>;
+  /** Allocated on first pin; most renders never pin anything. */
+  pinned: Set<PathId> | null;
   armed: boolean;
   instance: number;
 }
@@ -208,16 +209,16 @@ export class ProxyCache {
 
   /**
    * @internal — used by `trackRender` after a call completes. Discards every
-   * cached `(target, prefix)` entry for `target` whose prefix is not in
-   * `keepPrefixes` (this call's touched prefixes for that target), so an
-   * object read at a shifting prefix (e.g. a reordered list item) doesn't
-   * accumulate one stale entry per prefix it has ever been read at.
+   * cached `(target, prefix)` entry for `target` not claimed by `live` (this
+   * call's session), so an object read at a shifting prefix (e.g. a reordered
+   * list item) doesn't accumulate one stale entry per prefix it has ever been
+   * read at.
    */
-  _prune(target: object, keepPrefixes: ReadonlySet<string>): void {
+  _prune(target: object, live: TrackSession): void {
     const byPrefix = this.byTarget.get(target);
     if (byPrefix === undefined) return;
-    for (const prefix of byPrefix.keys()) {
-      if (!keepPrefixes.has(prefix)) byPrefix.delete(prefix);
+    for (const [prefix, entry] of byPrefix) {
+      if (entry.session !== live) byPrefix.delete(prefix);
     }
   }
 }
@@ -302,7 +303,7 @@ export const trackRender = <S>(
   // (via `entry.session`) rather than baking in stale closed-over variables.
   const session: TrackSession = {
     paths: new Set<PathId>(),
-    pinned: new Set<PathId>(),
+    pinned: null,
     armed: true,
     instance: ++traceInstanceSeq,
   };
@@ -316,8 +317,12 @@ export const trackRender = <S>(
   // promote to module scope. Keying by prefix (not target alone) means the
   // same object reached via two distinct paths gets two proxies, each
   // recording its own prefix, while a repeat read at the same path is
-  // ===-identical.
-  const proxyByTarget = new WeakMap<object, Map<string, unknown>>();
+  // ===-identical. With a `cache`, its entries claimed by this call's
+  // `session` play the same role, so nothing per-call is allocated.
+  const proxyByTarget =
+    cache === undefined
+      ? new WeakMap<object, Map<string, unknown>>()
+      : undefined;
 
   // Targets touched this call, so a supplied `cache` can be pruned down to
   // only the prefixes actually read this render (see `ProxyCache._prune`).
@@ -325,24 +330,27 @@ export const trackRender = <S>(
   const touchedTargets = cache !== undefined ? new Set<object>() : undefined;
 
   const wrap = (target: object, prefix: string): unknown => {
-    touchedTargets?.add(target);
-    let byPrefix = proxyByTarget.get(target);
-    if (byPrefix === undefined) {
-      byPrefix = new Map<string, unknown>();
-      proxyByTarget.set(target, byPrefix);
-    }
-    const cached = byPrefix.get(prefix);
-    if (cached !== undefined) return cached;
-
+    let byPrefix: Map<string, unknown> | undefined;
     if (cache !== undefined) {
       const existing = cache._get(target, prefix);
       if (existing !== undefined) {
-        existing.session = session;
-        existing.interner = interner;
-        existing.wrap = wrap;
-        byPrefix.set(prefix, existing.proxy);
+        if (existing.session !== session) {
+          existing.session = session;
+          existing.interner = interner;
+          existing.wrap = wrap;
+          touchedTargets!.add(target);
+        }
         return existing.proxy;
       }
+      touchedTargets!.add(target);
+    } else {
+      byPrefix = proxyByTarget!.get(target);
+      if (byPrefix === undefined) {
+        byPrefix = new Map<string, unknown>();
+        proxyByTarget!.set(target, byPrefix);
+      }
+      const cached = byPrefix.get(prefix);
+      if (cached !== undefined) return cached;
     }
 
     const isArray = Array.isArray(target);
@@ -366,7 +374,7 @@ export const trackRender = <S>(
       if (prefix === '') return;
       const id = prefixId();
       entry.session.paths.add(id);
-      entry.session.pinned.add(id);
+      (entry.session.pinned ??= new Set<PathId>()).add(id);
       traceHook?.({
         instance: entry.session.instance,
         kind: 'pin',
@@ -474,7 +482,7 @@ export const trackRender = <S>(
           const parentId = prefixId();
           // Keep an iteration-pinned array path: `.length` (or any own read)
           // must not narrow away a content dependency the consumer also has.
-          if (!entry.session.pinned.has(parentId)) {
+          if (entry.session.pinned?.has(parentId) !== true) {
             entry.session.paths.delete(parentId);
             traceHook?.({
               instance: entry.session.instance,
@@ -599,10 +607,11 @@ export const trackRender = <S>(
 
     const proxy = new Proxy(target, handler);
     entry.proxy = proxy;
-    byPrefix.set(prefix, proxy);
     proxyToTarget.set(proxy, target);
     if (cache !== undefined) {
       cache._set(target, prefix, entry);
+    } else {
+      byPrefix!.set(prefix, proxy);
     }
     return proxy;
   };
@@ -621,16 +630,11 @@ export const trackRender = <S>(
       // reused entries — see `entry.wrap` repointing above) until `armed`
       // flips false below, so `touchedTargets` is only fully settled here,
       // once this render's synchronous read pass is over. Prune each touched
-      // target's cache entry down to just the prefixes this render actually
-      // touched, dropping stale prefixes from prior renders (e.g. an item
-      // that has since shifted index).
+      // target's cache entries down to the ones this render claimed, dropping
+      // stale prefixes from prior renders (e.g. an item that has since
+      // shifted index).
       if (touchedTargets !== undefined) {
-        for (const target of touchedTargets) {
-          const keepPrefixes = proxyByTarget.get(target);
-          if (keepPrefixes !== undefined) {
-            cache!._prune(target, new Set(keepPrefixes.keys()));
-          }
-        }
+        for (const target of touchedTargets) cache!._prune(target, session);
       }
       session.armed = false;
       traceHook?.({

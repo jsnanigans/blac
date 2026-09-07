@@ -30,7 +30,6 @@ export type DeepPartial<T> =
         : T;
 import {
   ALL_PATHS,
-  emptyPathSet,
   pathSetEquals,
   PathSetSpace,
   type PathSet,
@@ -98,7 +97,6 @@ export abstract class StructuralContainer<S> {
   private readonly _channel: DirtyChannel<PathSet>;
   private readonly _consumerPaths = new Map<ConsumerId, PathSet>();
   private _state: S;
-  private _skeleton: PathSet = emptyPathSet();
   // Incremental skeleton refcounting (replaces the O(consumers × paths)
   // from-scratch union). `_skeletonSet` is the live backing set for `_skeleton`
   // when no ALL_PATHS consumer is registered; `_pathRefCounts` tracks how many
@@ -107,11 +105,10 @@ export abstract class StructuralContainer<S> {
   private readonly _pathRefCounts = new Map<PathId, number>();
   private _allPathsConsumers = 0;
   private readonly _skeletonSet = new Set<PathId>();
-  private readonly _equalsByPathId: Map<
-    PathId,
-    (a: unknown, b: unknown) => boolean
-  >;
-  private _equalsFnCached?: (id: PathId, a: unknown, b: unknown) => boolean;
+  private _skeleton: PathSet = this._skeletonSet;
+  // Allocated only when `options.equality` is given; `_equalsFn` derives the
+  // per-path callback from it.
+  private _equalsFn?: (id: PathId, a: unknown, b: unknown) => boolean;
   // Resolved once per instance: the interner is keyed by constructor and never
   // changes, but `patch`/`emit` and the refine loop hit it repeatedly, so a
   // WeakMap lookup per access showed up on the hot path.
@@ -125,11 +122,15 @@ export abstract class StructuralContainer<S> {
       onError: options.onError,
     });
 
-    this._equalsByPathId = new Map();
-    if (options.equality) {
+    if (options.equality && options.equality.size > 0) {
+      const byPathId = new Map<PathId, (a: unknown, b: unknown) => boolean>();
       for (const [path, eq] of options.equality) {
-        this._equalsByPathId.set(this.interner.intern(path), eq);
+        byPathId.set(this._interner.intern(path), eq);
       }
+      this._equalsFn = (id, a, b) => {
+        const eq = byPathId.get(id);
+        return eq ? eq(a, b) : Object.is(a, b);
+      };
     }
   }
 
@@ -188,8 +189,8 @@ export abstract class StructuralContainer<S> {
         prev,
         next,
         this._skeleton,
-        this.interner,
-        this._equalsFn(),
+        this._interner,
+        this._equalsFn,
       );
       // The skeleton only covers registered consumers' watched paths. A
       // change outside every skeleton path (e.g. an untracked field) yields
@@ -204,7 +205,7 @@ export abstract class StructuralContainer<S> {
         (dirty as Set<PathId>).size === 0 &&
         !Object.is(prev, next)
       ) {
-        dirty = new Set<PathId>([this.interner.rootId()]);
+        dirty = new Set<PathId>([this._interner.rootId()]);
       }
     }
     this._channel.mark(dirty);
@@ -251,8 +252,8 @@ export abstract class StructuralContainer<S> {
       prev,
       next,
       partial as Partial<S>,
-      this.interner,
-      this._equalsFn(),
+      this._interner,
+      this._equalsFn,
     );
     this._channel.mark(this._refineAncestorMarks(rough, prev, next));
   }
@@ -290,19 +291,6 @@ export abstract class StructuralContainer<S> {
   // Internals
   // ---------------------------------------------------------------------------
 
-  // Per-path custom-equality callback shared by `emit` and `patch`, or
-  // `undefined` when no overrides are configured (the common case → default
-  // `Object.is`).
-  private _equalsFn():
-    | ((id: PathId, a: unknown, b: unknown) => boolean)
-    | undefined {
-    if (this._equalsByPathId.size === 0) return undefined;
-    return (this._equalsFnCached ??= (id, a, b) => {
-      const eq = this._equalsByPathId.get(id);
-      return eq ? eq(a, b) : Object.is(a, b);
-    });
-  }
-
   // Incrementally fold a single consumer's `prev`→`next` interest change into
   // the refcounted skeleton, then republish `_skeleton`. `undefined` on either
   // side means "no interest" (register of a new id / unregister). `ALL_PATHS`
@@ -315,10 +303,18 @@ export abstract class StructuralContainer<S> {
     prev: PathSet | undefined,
     next: PathSet | undefined,
   ): void {
+    // Ids present on both sides keep their count; only the symmetric
+    // difference touches the refcount map, so a consumer whose interest grew
+    // by a few paths (a longer list) pays for the delta, not the whole set.
+    const prevSet =
+      prev !== ALL_PATHS ? (prev as Set<PathId> | undefined) : undefined;
+    const nextSet =
+      next !== ALL_PATHS ? (next as Set<PathId> | undefined) : undefined;
     if (prev === ALL_PATHS) {
       this._allPathsConsumers--;
-    } else if (prev !== undefined) {
-      for (const id of prev as Set<PathId>) {
+    } else if (prevSet !== undefined) {
+      for (const id of prevSet) {
+        if (nextSet !== undefined && nextSet.has(id)) continue;
         const count = (this._pathRefCounts.get(id) ?? 0) - 1;
         if (count <= 0) {
           this._pathRefCounts.delete(id);
@@ -330,8 +326,9 @@ export abstract class StructuralContainer<S> {
     }
     if (next === ALL_PATHS) {
       this._allPathsConsumers++;
-    } else if (next !== undefined) {
-      for (const id of next as Set<PathId>) {
+    } else if (nextSet !== undefined) {
+      for (const id of nextSet) {
+        if (prevSet !== undefined && prevSet.has(id)) continue;
         const count = (this._pathRefCounts.get(id) ?? 0) + 1;
         this._pathRefCounts.set(id, count);
         if (count === 1) this._skeletonSet.add(id);
@@ -404,7 +401,7 @@ export abstract class StructuralContainer<S> {
     // An ancestor-watch mark with no decodable target leaves nothing to refine.
     if (targetIds.size === 0) return rough;
 
-    const equalsFn = this._equalsFn();
+    const equalsFn = this._equalsFn;
     // Seed with the non-ancestor marks collected above. Consumers whose
     // expanded interest relied on the dropped ancestor-watch marks match the
     // precise leaves added below instead.
@@ -414,7 +411,7 @@ export abstract class StructuralContainer<S> {
     // ancestor is marked iff its value actually changed (one read per leaf,
     // never re-walked per ancestor). Same value-compare as diffAlongSkeleton.
     for (const skelId of skeleton) {
-      const ancestors = this.interner.ancestorIds(skelId);
+      const ancestors = interner.ancestorIds(skelId);
       let descends = false;
       for (let i = 0; i < ancestors.length; i++) {
         if (targetIds.has(ancestors[i])) {
@@ -423,7 +420,7 @@ export abstract class StructuralContainer<S> {
         }
       }
       if (!descends) continue;
-      const segments = this.interner.lookupSegments(skelId);
+      const segments = interner.lookupSegments(skelId);
       const pv = getAtSegments(prev, segments);
       const nv = getAtSegments(next, segments);
       const eq = equalsFn ? equalsFn(skelId, pv, nv) : Object.is(pv, nv);
@@ -447,7 +444,7 @@ export abstract class StructuralContainer<S> {
 // ---------------------------------------------------------------------------
 
 const isPlainPatchObject = (v: unknown): v is Record<string, unknown> => {
-  if (v === null || typeof v !== 'object' || Array.isArray(v)) return false;
+  if (v === null || typeof v !== 'object') return false;
   const proto = Object.getPrototypeOf(v);
   return proto === Object.prototype || proto === null;
 };
@@ -485,20 +482,19 @@ const deepMerge = <S>(target: S, patch: Partial<S>): S => {
   // only materialized on the first changed key — unchanged keys are already
   // correct once `out` is spread from `target`, so no per-key assignment is
   // needed for them.
+  // `for...in` over a plain object (verified above) visits exactly its own
+  // enumerable keys without allocating a key array.
   let out: Record<string, unknown> | undefined;
-  for (const key of Object.keys(patch)) {
+  for (const key in patch) {
     const nextVal = (patch as Record<string, unknown>)[key];
     const prevVal = (target as Record<string, unknown>)[key];
     let mergedVal: unknown;
-    let keyChanged: boolean;
     if (isPlainPatchObject(nextVal) && isPlainPatchObject(prevVal)) {
       mergedVal = deepMerge(prevVal, nextVal as Partial<typeof prevVal>);
-      keyChanged = !Object.is(mergedVal, prevVal);
     } else {
       mergedVal = nextVal;
-      keyChanged = !Object.is(nextVal, prevVal);
     }
-    if (keyChanged) {
+    if (!Object.is(mergedVal, prevVal)) {
       if (out === undefined) out = { ...(target as Record<string, unknown>) };
       setMergedKey(out, key, mergedVal);
     }

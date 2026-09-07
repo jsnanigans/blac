@@ -36,12 +36,19 @@ export class PathInterner {
   // Parallel cache: for an ancestor-watch id, the id of the underlying real
   // path (see `internAncestor` / `ancestorTargetId`).
   private readonly _ancestorTarget: (PathId | undefined)[] = [];
+  // Parallel cache: for a real path id, its ancestor-watch id once interned
+  // (see `internAncestorOf`).
+  private readonly _ancestorOf: (PathId | undefined)[] = [];
   // Parallel cache: memoized existing ancestor ids per id (see `ancestorIds`).
   private readonly _ancestorIds: (readonly PathId[])[] = [];
   // Parallel cache: `_paths.length` at the time `_ancestorIds[id]` was
   // computed, so a stale entry (interner grew since) can be detected and
   // recomputed lazily per id instead of clearing the whole cache on `intern`.
+  // Entries that already hold every prefix are final and skip the check.
   private readonly _ancestorIdsVersion: number[] = [];
+  // Parallel cache: ancestor-watch ids of every strict-ancestor prefix per id
+  // (see `ancestorWatchIds`). Force-interned, so never stale.
+  private readonly _ancestorWatchIds: (readonly PathId[])[] = [];
   private _warnedSize = false;
 
   intern(path: string): PathId {
@@ -77,10 +84,42 @@ export class PathInterner {
    * string decode.
    */
   internAncestor(path: string): PathId {
-    const realId = this.intern(path);
-    const ancestorId = this.intern(`${ANCESTOR_SENTINEL}${path}`);
+    return this.internAncestorOf(this.intern(path));
+  }
+
+  /**
+   * {@link internAncestor} keyed by the real path's id. Memoized per id, so
+   * hot mutation paths that already hold the id pay one array read instead of
+   * a string concatenation and map lookup.
+   */
+  internAncestorOf(realId: PathId): PathId {
+    const cached = this._ancestorOf[realId];
+    if (cached !== undefined) return cached;
+    const ancestorId = this.intern(
+      `${ANCESTOR_SENTINEL}${this._paths[realId]}`,
+    );
     this._ancestorTarget[ancestorId] = realId;
+    this._ancestorOf[realId] = ancestorId;
     return ancestorId;
+  }
+
+  /**
+   * Ancestor-watch ids for every non-root strict-ancestor prefix of `id`'s
+   * path, longest first: `'a.b.c'` → `[watch('a.b'), watch('a')]`. Interns
+   * the prefixes it needs, so the result is complete and memoized forever.
+   * Consumers expand a leaf interest with these so an atomic replacement of
+   * any ancestor wakes them.
+   */
+  ancestorWatchIds(id: PathId): readonly PathId[] {
+    const cached = this._ancestorWatchIds[id];
+    if (cached !== undefined) return cached;
+    const segments = this.lookupSegments(id);
+    const result: PathId[] = [];
+    for (let k = segments.length - 1; k >= 1; k--) {
+      result.push(this.internAncestor(segments.slice(0, k).join('.')));
+    }
+    this._ancestorWatchIds[id] = result;
+    return result;
   }
 
   /**
@@ -115,11 +154,9 @@ export class PathInterner {
    */
   ancestorIds(id: PathId): readonly PathId[] {
     const cached = this._ancestorIds[id];
-    if (
-      cached !== undefined &&
-      this._ancestorIdsVersion[id] === this._paths.length
-    ) {
-      return cached;
+    if (cached !== undefined) {
+      const version = this._ancestorIdsVersion[id];
+      if (version === -1 || version === this._paths.length) return cached;
     }
     const segments = this.lookupSegments(id);
     const result: PathId[] = [];
@@ -128,7 +165,10 @@ export class PathInterner {
       if (prefixId !== undefined) result.push(prefixId);
     }
     this._ancestorIds[id] = result;
-    this._ancestorIdsVersion[id] = this._paths.length;
+    // Every prefix present → no later intern can change the answer; mark final
+    // so unrelated interning never forces a recompute.
+    this._ancestorIdsVersion[id] =
+      result.length === segments.length - 1 ? -1 : this._paths.length;
     return result;
   }
 

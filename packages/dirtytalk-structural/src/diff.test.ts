@@ -478,8 +478,7 @@ describe('changedPathsFromPatch', () => {
     // Plain parent: pulse-up mark only, no ancestor-watch.
     expect(result.has(interner.intern('user'))).toBe(true);
     expect(result.has(interner.internAncestor('user'))).toBe(false);
-    // Terminal string leaf gets the ancestor-watch (harmless: nothing reads
-    // below a string), but the unchanged sibling is untouched in both lanes.
+    // The unchanged sibling is untouched in both lanes.
     expect(result.has(interner.intern('user.email'))).toBe(false);
     expect(result.has(interner.internAncestor('user.email'))).toBe(false);
   });
