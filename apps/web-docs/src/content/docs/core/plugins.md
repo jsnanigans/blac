@@ -44,6 +44,14 @@ const myPlugin: BlacPlugin = {
 
   // Fires on every hydration status transition of any container.
   onHydrationChange(ctx, status, previousStatus) {},
+
+  // Fires when a container gains its first owner. The signal aborts when
+  // the container is deactivated or disposed — use it to clean up.
+  onActivate(ctx, signal) {},
+
+  // Fires when a container loses its last owner but is not disposed
+  // (keepAlive containers). Not called on dispose — use onDestroyed.
+  onDeactivate(ctx) {},
 };
 ```
 
@@ -61,6 +69,12 @@ Every per-container hook receives the focal bloc as `ctx.container`, not as a se
 | `onStateChange`     | `(ctx, prev, next, paths)`      | Once per microtask flush after a state change.    |
 | `onDestroyed`       | `(ctx)`                         | Synchronously after a container is disposed.      |
 | `onHydrationChange` | `(ctx, status, previousStatus)` | On each hydration status transition.              |
+| `onActivate`        | `(ctx, signal)`                 | When a container gains its first owner.           |
+| `onDeactivate`      | `(ctx)`                         | When it loses its last owner, without disposal.   |
+
+:::note[Activation is ownership, not lifetime]
+`onActivate` / `onDeactivate` track whether anything currently holds a reference, and both are idempotent — a second owner does not re-activate. For an ordinary container, losing the last owner disposes it, so you get `onDestroyed`; `onDeactivate` fires only for containers that survive at zero owners (`keepAlive`) and may later re-activate with a fresh signal. Disposal aborts the signal without firing `onDeactivate`, so teardown has exactly one path.
+:::
 
 <details>
 <summary>Internal devtools-only hooks</summary>
@@ -248,4 +262,4 @@ These official plugins are themselves authored against the interface above — r
 - [Plugin Overview](/plugins/overview) — the plugin catalog and where to start
 - [System Events](/core/system-events) — per-instance lifecycle hooks and when to use them instead
 - [Persistence](/plugins/persistence) — a complete plugin that drives the hydration API
-- [Glossary](/guide/glossary) — definitions for plugin, hydration, interner, and `PathSet`
+- [Core Concepts](/guide/concepts/) — definitions for plugin, hydration, interner, and `PathSet`

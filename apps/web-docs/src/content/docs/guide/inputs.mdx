@@ -11,7 +11,7 @@ Blocs sometimes need external data — a user ID to load, an endpoint URL, a DOM
 A naive answer is "pass one `props`-style object into the bloc." That breaks the moment two components share an instance: if both write the same input, whoever rendered last wins, and the value flickers on every render — an _override race_. The fix is to recognise that "inputs" is really **three different needs**, each with its own lifetime and its own answer. Sorting an input into the right lane is what makes shared instances safe.
 :::
 
-The three lanes — `args`, `deps`, and events — and the [identity model](#identity-model-and-precedence) below are the whole story. For the broader _why_ behind shared, ref-counted instances see the [Mental Model](/guide/mental-model), and for the judgment of _which lane to reach for_ see [Best Practices](/guide/best-practices).
+The three lanes — `args`, `deps`, and events — and the [identity model](#identity-model-and-precedence) below are the whole story. For the broader _why_ behind shared, ref-counted instances see the [Mental Model](/guide/mental-model),.
 
 ## The three input lanes
 
@@ -81,7 +81,7 @@ const DocumentCubit = blac({ key: (args) => args.docId })(
 );
 ```
 
-See [Configuration](/core/configuration) for the rest of the `blac()` options (`keepAlive`, `equality`, `excludeFromDevTools`) and [Glossary](/guide/glossary) for how `args` and `static key` relate.
+See [Configuration](/core/configuration) for the rest of the `blac()` options (`keepAlive`, `equality`, `excludeFromDevTools`) and [Core Concepts](/guide/concepts/) for how `args` and `static key` relate.
 
 ### Per-component private instances
 
@@ -306,9 +306,7 @@ The `select` option (the per-consumer re-render selector) is unrelated to the `d
 
 ## See also
 
-- [Best Practices](/guide/best-practices) — _which_ lane to choose, and the judgment behind it
+- [Core Concepts](/guide/concepts/) — the vocabulary these lanes are built on
 - [Mental Model](/guide/mental-model) — _why_ instances are shared and ref-counted
 - [useBloc](/react/use-bloc) — the complete option list and identity precedence (canonical)
-- [Glossary](/guide/glossary) — definitions of `args`, `deps`, `static key`
-- [Patterns & Recipes](/guide/patterns) — concrete copy-paste recipes
 - [Cubit](/core/cubit) — `init(args)`, `onDepsChanged`, and the mutation API

@@ -1076,3 +1076,67 @@ discards persisted user state for the pattern the docs themselves recommend —
 it is the only finding that loses data. Phases 0–2 are all patch/minor-safe and
 should ship before any architectural work begins; Phase 3 can run in parallel
 with anything. Phase 5 is the only item that needs a coordinated major.
+
+## Docs reduction (2026-09-07)
+
+`apps/web-docs` cut to essentials and re-verified against HEAD.
+59 pages / 17,685 lines → 36 pages / 10,703 lines (−39%).
+
+**Deleted (30 pages):** 3 "Coming from…" ports, comparison, glossary,
+versioning, best-practices, patterns, 7 recipes, 3 integrations
+(nextjs/remix/react-native), showcase, playground, react/preact
+(documented a package that does not exist in the repo), and 9 dirtytalk
+sub-pages collapsed to a single `/dirtytalk/` page. Orphaned demo data
+(`demos/showcase/`, `playground-starter.ts`) removed with them.
+
+**Corrected against HEAD** — these were false after the Phase 5 rewrite:
+
+- `react/use-bloc.mdx`, `guide/async.mdx` asserted `useBloc` does **not**
+  use `useSyncExternalStore`. It does, since this session. Replaced the
+  mechanism prose with the behavioural guarantee.
+- `guide/internals.md` described a `useReducer` tick and `useStructural`;
+  both gone. Rewrote the React subsection.
+
+**Added** — new public API that had no docs:
+
+- `RegistryProvider` in `react/getting-started.mdx`, and `integrations/ssr.md`
+  reworked around it (it replaces the racy global `setRegistry` swap; the
+  AsyncLocalStorage bridge section is deleted).
+- `onActivate`/`onDeactivate` in `core/plugins.md`, incl. the note that
+  disposal aborts the signal without firing `onDeactivate`.
+
+**Verified:** 0 broken internal links, 0 self-links (36 pages, scripted
+check); 38 sidebar links all resolve, no page absent from the sidebar;
+every `@blac/*` symbol imported in docs exists in the api reports or
+package exports; clean `pnpm run build` from scratch, EXIT=0,
+"✓ No snippet errors", 37 pages.
+
+Suggested commit:
+`docs(web-docs)!: cut docs to essentials and sync with HEAD`
+
+### Pre-commit fix — `astro.config.mjs` implicit-any (2026-09-07)
+
+`vp staged` (the `.vite-hooks/pre-commit` hook) failed with 11
+`typescript(TS7006)` implicit-any errors, all in `apps/web-docs/astro.config.mjs`.
+
+**Not caused by the docs work.** `git show HEAD:…/astro.config.mjs` has the
+identical code at the identical lines. Root cause: `vite.config.ts`
+`lint.ignorePatterns` skips `**/*.config.js` and `**/*.config.ts` but **not**
+`**/*.config.mjs`, so this file had never been linted. Staging it for the first
+time pulled it into `vp check`'s file set, and `lint.options.typeAware` then
+flagged the untyped JSDoc callbacks.
+
+Fixed by annotating the 11 params in the file's existing
+`/** @param {any} … */` style rather than widening the ignore pattern — the
+file already carries 6 JSDoc annotations, so keeping it type-checked matches
+author intent. `transform` needed inline `/** @type {string} */` params: the
+formatter strips a JSDoc block above an object-method shorthand.
+
+**Verified:** `vp check` clean on the file; `vp staged` EXIT=0 on all 25 staged
+files; clean docs rebuild EXIT=0 / 37 pages / no snippet errors; the
+head-propagation workaround still does its job (`riso-heading` styles inlined
+on the homepage, `blac-demo` on the demo pages — the regression test named in
+that file's own comment).
+
+Note: `vp staged` uses `git stash` internally via lint-staged. It reverted
+cleanly on the failing run; all work was intact.

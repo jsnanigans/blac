@@ -72,7 +72,7 @@ The proxy and tracker are created per `useBloc` call and torn down with it. Ther
 
 When many components share a container, computing "what changed" separately for each one re-does the same equality checks N times — quadratic in consumer count exactly when you have the most consumers. BlaC inverts it: maintain one **skeleton** (the union of every live consumer's interest), diff the change once bounded to that skeleton, then settle each consumer with a set intersection. One walk plus N cheap intersections.
 
-This is not a BlaC-specific trick; it is the core algorithm of the [`@dirtytalk/structural`](/dirtytalk/structural/concepts) engine that BlaC's `StateContainer` extends. If you want the path-interning, skeleton, and proxy-recorder internals in full — including the exact recording rules for arrays, `Map`/`Set`/`Date`, and iteration — that page is the source of truth. The short version of the recording rules:
+This is not a BlaC-specific trick; it is the core algorithm of the [`@dirtytalk/structural`](/dirtytalk/) engine that BlaC's `StateContainer` extends. For the path-interning, skeleton, and proxy-recorder internals in full, see [How BlaC Works Internally](/guide/internals). The short version of the recording rules:
 
 - **Leaf-only:** `a.b.c` records `a.b.c`, not `a.b`.
 - **Iteration coarsens:** `.map`/`for..of`/`.find` over `state.items` records `items`, not per-index paths. Direct index access (`state.items[2].name`) records the leaf.
@@ -151,7 +151,7 @@ A related consequence: mutations are **coalesced per microtask**. Several `emit`
 
 BlaC borrows liberally and differs deliberately. Its distinctive bet is **transparent reactivity (like MobX) over immutable snapshots (like Redux), with no provider and automatic lifecycle (unlike both)** — the granularity of an atom library without managing atoms, the testability of a class without the reducer boilerplate. And when your problem is genuinely a serializable event log, a tree-scoped config value, or a handful of `useState` hooks, the honest answer is that another tool fits better.
 
-The full side-by-side — the rubric table, the Zustand/Jotai/BlaC counter written three ways, the "reach for it instead when" column for Redux, MobX, Context, and atoms, plus the decision guide — lives on the [Comparison](/guide/comparison) page, which is the canonical home for positioning.
+The full side-by-side — the rubric table, the Zustand/Jotai/BlaC counter written three ways, the "reach for it instead when" column for Redux, MobX, Context, and atoms, plus the decision guide — lives on the [Comparison](/guide/introduction/) page, which is the canonical home for positioning.
 
 ## The full lifecycle: mount to unmount
 
@@ -199,4 +199,4 @@ Two details worth internalizing:
 - [Core Concepts](/guide/concepts) — the quick tour this page goes deep on
 - [Dependency Tracking](/react/dependency-tracking) — auto-track vs `select` in practice
 - [Inputs: args and deps](/guide/inputs) — the input lanes and identity precedence
-- [Structural: Concepts](/dirtytalk/structural/concepts) — the path-tracking engine BlaC is built on
+- [DirtyTalk](/dirtytalk/) — the path-tracking engine BlaC is built on

@@ -118,4 +118,4 @@ In short: **inside React → `useBloc`; outside React → `watch`** for almost e
 - [watch](/core/watch) — the outside-React wrapper around this method; prefer it unless you need raw channel access
 - [Tracking](/core/tracked) — how `useBloc` builds a fine-grained `Set<PathId>` interest so it re-renders only on the fields you read
 - [System Events](/core/system-events) — the microtask flush and coalescing model behind every channel callback
-- [DirtyTalk engine: DirtyChannel](/dirtytalk/engine/api-reference#dirtychannel-region) — the underlying channel, its flush semantics, and the `Space`/`Scheduler` it is built on
+- [DirtyTalk](/dirtytalk/) — the underlying channel and the `Space`/`Scheduler` model it is built on

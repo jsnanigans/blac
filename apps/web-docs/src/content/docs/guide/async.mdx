@@ -264,7 +264,7 @@ class ListCubit extends Cubit<ListState> {
 
 BlaC does **not** integrate with React Suspense, and `useBloc` does **not** work with the `use()` hook for data fetching. This is by design, and it's worth being precise about why.
 
-`useBloc` subscribes to the bloc's path-scoped channel and re-renders through a `useReducer` dispatch — React's ordinary update path. It does **not** use `useSyncExternalStore`, and it never throws a promise to a Suspense boundary or unwraps one via `use()`. There is no code path in `useBloc` that suspends a component. (Verified in [useBloc](/react/use-bloc); the hook reads state directly during render and forces an update on change.)
+`useBloc` never throws a promise to a Suspense boundary or unwraps one via `use()`. There is no code path in `useBloc` that suspends a component.
 
 So you don't get a `<Suspense fallback={…}>` boundary catching a BlaC load for free. Instead, **model the loading state explicitly** — which is exactly what the `status` union and the loadable surface above are for. The "fallback" is just the `loading` branch of your switch:
 
@@ -377,8 +377,7 @@ If you don't use an `AbortController`, an async action that resumes after dispos
 
 ## See also
 
-- [Patterns & Recipes](/guide/patterns) — the request-id recipe in context, plus hydration-aware loading
 - [Cubit](/core/cubit) — `emit` / `patch` / `update`, getters, and the `init` hook
-- [useBloc](/react/use-bloc) — `onMount`, `select`, and why there's no `useSyncExternalStore`
+- [useBloc](/react/use-bloc) — `onMount`, `select`, and how re-renders are scoped
 - [System Events](/core/system-events) — the `dispose` and `hydrationChanged` lifecycle hooks
-- [Best Practices](/guide/best-practices) — why an explicit `status` union beats scattered booleans
+- [Core Concepts](/guide/concepts/) — the vocabulary and model behind these APIs

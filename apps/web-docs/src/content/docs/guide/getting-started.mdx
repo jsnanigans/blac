@@ -14,23 +14,23 @@ BlaC v2 is in pre-release (beta). While in beta, **breaking API changes may ship
 <Tabs syncKey="pkg">
   <TabItem label="pnpm">
 
-  ```bash
-  pnpm add @blac/core @blac/react
-  ```
+```bash
+pnpm add @blac/core @blac/react
+```
 
   </TabItem>
   <TabItem label="npm">
 
-  ```bash
-  npm install @blac/core @blac/react
-  ```
+```bash
+npm install @blac/core @blac/react
+```
 
   </TabItem>
   <TabItem label="yarn">
 
-  ```bash
-  yarn add @blac/core @blac/react
-  ```
+```bash
+yarn add @blac/core @blac/react
+```
 
   </TabItem>
 </Tabs>
@@ -175,7 +175,7 @@ class TodoCubit extends Cubit<{ items: string[]; input: string }> {
 
 Notice the two write styles: `addTodo` uses `update` and lists _both_ keys (replacing the whole state), while `removeTodo` uses `patch` and mentions _only_ `items` (merging into the rest). Both are correct — the difference is exactly the replace-vs-merge rule from Step 1.
 
-Getters like `isEmpty` derive a value on every read, so they can never drift from `items`. When a component reads `todo.isEmpty` during render, auto-tracking records the getter's underlying `this.state.items.length` read through the proxy. Use `select` only when you want the getter's return value to be the explicit re-render boundary. The full rule is in [Dependency Tracking](/react/dependency-tracking). For async work (loading flags, fetches, request guards), see [Patterns & Recipes](/guide/patterns).
+Getters like `isEmpty` derive a value on every read, so they can never drift from `items`. When a component reads `todo.isEmpty` during render, auto-tracking records the getter's underlying `this.state.items.length` read through the proxy. Use `select` only when you want the getter's return value to be the explicit re-render boundary. The full rule is in [Dependency Tracking](/react/dependency-tracking). For async work (loading flags, fetches, request guards), see [Async](/guide/async).
 
 :::caution[Component not re-rendering?]
 The two most common first-time causes:
@@ -246,7 +246,6 @@ Each of these steps has a "why" worth understanding once your app grows — why 
 
 - [Core Concepts](/guide/concepts) — A quick tour of registry, tracking, and lifecycle
 - [Mental Model](/guide/mental-model) — The deep version of "what just happened?"
-- [Patterns & Recipes](/guide/patterns) — Async patterns, cross-bloc communication, persistence
 - [Cubit](/core/cubit) — Full Cubit API
 - [useBloc](/react/use-bloc) — Hook options and tracking modes
 
