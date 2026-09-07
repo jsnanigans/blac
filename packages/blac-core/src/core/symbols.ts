@@ -37,3 +37,12 @@ export const INIT_CONFIG = Symbol('blac.initConfig');
  * the real instance, so ES `#private` works in user blocs.
  */
 export const WITH_TRACKED_STATE = Symbol('blac.withTrackedState');
+
+/**
+ * @internal Drive the activation lifecycle from the registry's 0↔1 ownership
+ * transition. Owns the per-instance AbortController so `onActivate`'s signal
+ * aborts on the matching deactivation and on dispose.
+ *
+ * Framework-only — `StateContainerRegistry` is the sole caller.
+ */
+export const SET_ACTIVE = Symbol('blac.setActive');

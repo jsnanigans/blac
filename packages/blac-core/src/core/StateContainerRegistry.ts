@@ -15,7 +15,7 @@ import {
   InstanceReadonlyState,
   StateContainerConstructor,
 } from '../types/utilities';
-import { INIT_CONFIG } from './symbols';
+import { INIT_CONFIG, SET_ACTIVE } from './symbols';
 
 /**
  * Entry in the instance registry, tracking the instance and its named references
@@ -186,11 +186,29 @@ export class StateContainerRegistry {
     Type: StateContainerConstructor,
     entry: InstanceEntry,
   ): boolean {
+    return this._hasNoOwners(entry) && !isKeepAliveClass(Type);
+  }
+
+  /**
+   * Pure ownership: refs plus `depend()` dependents, with no keepAlive term.
+   * `_isUnowned` is "may be disposed"; this is "nothing is using it", which is
+   * what the activation lifecycle keys off — a keepAlive instance still
+   * deactivates when its last owner goes.
+   */
+  private _hasNoOwners(entry: InstanceEntry): boolean {
     return (
       entry.refs.size === 0 &&
-      (entry.dependents === undefined || entry.dependents.size === 0) &&
-      !isKeepAliveClass(Type)
+      (entry.dependents === undefined || entry.dependents.size === 0)
     );
+  }
+
+  /**
+   * Single funnel for the 0↔1 ownership transition. `SET_ACTIVE` is idempotent,
+   * so every acquire/release path can call this unconditionally rather than
+   * each computing the edge itself.
+   */
+  private _syncActivation(entry: InstanceEntry): void {
+    entry.instance[SET_ACTIVE](!this._hasNoOwners(entry));
   }
 
   /**
@@ -241,9 +259,11 @@ export class StateContainerRegistry {
     const entry = instances?.get(key);
     if (!entry) return;
     entry.dependents?.delete(dependent);
-    if (this._isUnowned(Type, entry) && !entry.instance.$blac.disposed) {
-      entry.instance.dispose();
+    if (this._isUnowned(Type, entry)) {
+      if (!entry.instance.$blac.disposed) entry.instance.dispose();
+      return;
     }
+    this._syncActivation(entry);
   }
 
   /**
@@ -409,9 +429,11 @@ export class StateContainerRegistry {
    * @param instanceKey - Pre-resolved instance key (defaults to 'default')
    * @param options - Acquisition options: `canCreate` (create when absent,
    *   default true), `countRef` (add a reference, default true), `refId`
-   *   (named reference for debugging, auto-generated when omitted), and
+   *   (named reference for debugging, auto-generated when omitted),
    *   `dependent` — the `depend()`-owner resolving this instance, recorded so
-   *   its dependent edge is released on the owner's disposal.
+   *   its dependent edge is released on the owner's disposal — and
+   *   `sweepIfUnowned`, for callers that create speculatively and claim
+   *   ownership later (see {@link _scheduleSweep}).
    * @returns The state container instance
    */
   acquire<T extends StateContainerConstructor = StateContainerConstructor>(
@@ -423,6 +445,7 @@ export class StateContainerRegistry {
       refId?: string;
       args?: unknown;
       dependent?: StateContainer<any, any, any>;
+      sweepIfUnowned?: boolean;
     } = {},
   ): InstanceType<T> {
     const { canCreate = true, countRef = true } = options;
@@ -471,6 +494,8 @@ export class StateContainerRegistry {
         this._recordDependentEdge(options.dependent, Type, resolvedKey);
       }
 
+      this._syncActivation(entry);
+
       return entry.instance;
     }
 
@@ -514,7 +539,37 @@ export class StateContainerRegistry {
       this.emit('refAcquired', instance, initialRefId);
     }
 
+    this._syncActivation(newEntry);
+
+    if (options.sweepIfUnowned && this._hasNoOwners(newEntry)) {
+      this._scheduleSweep(Type, newEntry);
+    }
+
     return instance;
+  }
+
+  /**
+   * Speculative creates (`useBloc`'s render-time create) leak forever when the
+   * render is discarded or never commits — SSR has no commit at all, so nothing
+   * ever claims ownership. Sweep at the end of the microtask unless the entry
+   * gained an owner or is keepAlive.
+   *
+   * Opt-in, not automatic: a bare `ensure()` hands the instance to a caller
+   * that legitimately holds it without a ref, and sweeping those would make
+   * `ensure` unusable across an `await`.
+   */
+  private _scheduleSweep(
+    Type: StateContainerConstructor,
+    entry: InstanceEntry,
+  ): void {
+    queueMicrotask(() => {
+      const instances = this.instancesByConstructor.get(Type);
+      if (instances?.get(entry.key) !== entry) return;
+      if (entry.instance.$blac.disposed) return;
+      if (!this._isUnowned(Type, entry)) return;
+      entry.instance.dispose();
+      instances.delete(entry.key);
+    });
   }
 
   /**
@@ -648,12 +703,17 @@ export class StateContainerRegistry {
 
     // Auto-dispose only when nothing owns the entry. A `depend()`-owner that
     // is still alive keeps its dependency, even once the last public ref goes.
+    // Dispose is checked first so a disposing entry never also fires
+    // `onDeactivate` — dispose is the single teardown path for that case.
     if (this._isUnowned(Type, entry)) {
       if (!entry.instance.$blac.disposed) {
         entry.instance.dispose();
       }
       instances.delete(instanceKey);
+      return;
     }
+
+    this._syncActivation(entry);
   }
 
   /**

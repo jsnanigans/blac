@@ -17,6 +17,7 @@ import {
   INIT_CONFIG,
   ON_DISPOSE,
   REMOVE_DEPS_OWNER,
+  SET_ACTIVE,
   WITH_TRACKED_STATE,
 } from './symbols';
 import { type EqualityFn, getBlacConfig } from '../config';
@@ -211,6 +212,28 @@ export abstract class StateContainer<
     return this.onSystemEvent('dispose', handler);
   }
 
+  /**
+   * @internal Drive the 0↔1 ownership transition. Idempotent: repeated calls
+   * with the same value are no-ops, so the registry can call it from every
+   * acquire/release without tracking edges itself.
+   */
+  [SET_ACTIVE](active: boolean): void {
+    if (this._disposed) return;
+    if (active === (this._activation !== null)) return;
+    if (active) {
+      this._activation = new AbortController();
+      this.onActivate(this._activation.signal);
+      return;
+    }
+    this._abortActivation();
+    this.onDeactivate();
+  }
+
+  private _abortActivation(): void {
+    this._activation?.abort();
+    this._activation = null;
+  }
+
   private reconcileDeps(): void {
     const prev = this._deps;
     const next: Partial<Deps> = {};
@@ -253,6 +276,7 @@ export abstract class StateContainer<
   private _hydrationPromiseSettled = false;
   private _config: StateContainerConfig = {};
   private _initCalled = false;
+  private _activation: AbortController | null = null;
 
   // Dev-only emit-rate circuit breaker state (see configureBlac.maxEmitsPerSecond).
   private _emitWindowStart = 0;
@@ -426,6 +450,26 @@ export abstract class StateContainer<
   protected init(_args: Args): void {}
 
   /**
+   * Called when this instance goes from unowned to owned (first ref or first
+   * `depend()` dependent). Override to start work that should only run while
+   * something is actually using the instance — fetches, timers, listeners.
+   *
+   * `signal` aborts on the matching {@link onDeactivate} and on dispose, so
+   * async work started here can be cancelled without extra bookkeeping.
+   *
+   * Runs before the first `useBlocDeps` slice is applied, so `this.deps` is
+   * empty on first activation — use `onDepsChanged` for deps-driven work.
+   */
+  protected onActivate(_signal: AbortSignal): void {}
+
+  /**
+   * Called when this instance goes from owned back to unowned while surviving
+   * in the registry (i.e. `keepAlive`). A disposed instance does NOT get this
+   * callback — `dispose()` is the teardown path for that case.
+   */
+  protected onDeactivate(): void {}
+
+  /**
    * @internal Framework-only configuration entry point (registry + testing
    * helpers). Writes the `_`-private identity fields directly, resolves
    * per-class equality, emits the registry `created` event, and runs `init()`
@@ -499,6 +543,11 @@ export abstract class StateContainer<
     // Tear down the channel bridge so we don't leak a subscription.
     this._bridgeUnsub?.();
     this._bridgeUnsub = null;
+
+    // Dispose is the teardown path for an active instance: the signal aborts
+    // but `onDeactivate` does NOT fire, so a container has exactly one teardown
+    // callback per lifecycle rather than two.
+    this._abortActivation();
 
     this._systemEventHandlers.clear();
     this._pendingChange = null;
