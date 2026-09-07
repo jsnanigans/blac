@@ -4,8 +4,8 @@ import {
   useId,
   useLayoutEffect,
   useMemo,
-  useReducer,
   useRef,
+  useSyncExternalStore,
   type RefObject,
 } from 'react';
 import {
@@ -195,23 +195,14 @@ export function useBloc<
   // interested in. The PRIMARY bloc is the first uniform entry; every dep
   // reached through `this.<handle>.track()` inside a tracked getter adds an
   // entry. The layout-effect reconcile (below) diffs this map vs the previous
-  // render to subscribe new deps and release dropped ones. The session lives in
-  // this hook's refs only — there is no global ambient state, so sibling
-  // renders never cross-contaminate.
+  // render to subscribe new deps and release dropped ones. The session lives on
+  // this hook's consumer object only — there is no global ambient state, so
+  // sibling renders never cross-contaminate.
   // ---------------------------------------------------------------------------
-  const sessionRef = useRef<Map<StateContainer, SessionEntry>>(new Map());
-  // Channel subscriptions for DEP containers (the primary keeps its own
-  // dedicated effect). container -> { unsubscribe, interestRef, refId held }.
-  const depSubsRef = useRef<Map<StateContainer, DepSub>>(new Map());
+  const proxyCacheRef = useRef(new ProxyCache());
   // Per-handle wrapper cache, allocated once per bloc acquisition (in the memo)
   // so wrappers are stable across renders. handle -> session-bound wrapper.
   const depWrapperCacheRef = useRef<Map<object, unknown>>(new Map());
-  const proxyCacheRef = useRef(new ProxyCache());
-  // Snapshot of the last FULL reconcile's shape, used by the layout-effect
-  // below to short-circuit when nothing actually changed. `null` means "no
-  // prior full run to compare against" (first commit, or the previous commit
-  // was in select-mode) — always forces a full reconcile in that case.
-  const lastReconcileRef = useRef<ReconcileSignature | null>(null);
 
   // Rebind nonce: bumped by the ownership layout-effect when the instance the
   // render captured was disposed + recreated out from under us. This happens on
@@ -219,9 +210,22 @@ export function useBloc<
   // prior owner's effect cleanup releases refs→0 and SYNCHRONOUSLY disposes the
   // instance before this consumer's layout setup re-acquires (creating a fresh
   // one) — and equivalently under StrictMode's setup→cleanup→setup double-invoke
-  // for a lone owner. Threaded into the memo deps so bumping it re-ensures `bloc`
-  // against the LIVE registry entry instead of the disposed instance.
-  const [rebindNonce, bumpRebind] = useReducer((x: number) => x + 1, 0);
+  // for a lone owner. Threaded into the memo deps so bumping it rebuilds `bloc`
+  // and its tracked proxy against the LIVE registry entry: the proxy binds its
+  // target at construction and cannot be retargeted in place.
+  //
+  // Held in a ref rather than useReducer state because the re-render it needs
+  // is already delivered by the consumer's version bump through uSES.
+  const rebindNonceRef = useRef(0);
+  const rebindNonce = rebindNonceRef.current;
+
+  // The uSES store for this hook instance. Created once and mutated in place:
+  // it must outlive a rebind (which rebuilds `bloc` + proxy) so the live
+  // subscription and version counter are not reset under React.
+  const consumerRef = useRef<Consumer | null>(null);
+  consumerRef.current ??= createConsumer();
+  const consumer = consumerRef.current;
+
   // The live instance actually owned (ref held) by the ownership layout-effect,
   // read by its cleanup so onUnmount always fires with the owned instance.
   const ownedBlocRef = useRef<TBloc | null>(null);
@@ -265,7 +269,7 @@ export function useBloc<
         consumerId,
         registry,
         trackedStateRef,
-        sessionRef,
+        consumer,
         onDepHandle,
       );
       cache.set(handle, wrapper);
@@ -286,146 +290,97 @@ export function useBloc<
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [BlocClass, ownArgsKey, providerArgsKey, rebindNonce, registry]);
 
+  // The memo is the single writer of the container the consumer reads and
+  // subscribes to; a re-key or rebind retargets it here, before any effect runs.
+  consumer.container = bloc as unknown as StateContainer;
+
   // ---------------------------------------------------------------------------
-  // Channel subscription
+  // Channel subscription via useSyncExternalStore.
+  //
+  // `subscribe` is memoised on [BlocClass, instanceKey] — NOT on `bloc` — so a
+  // genuine re-key (args change, OR a BlocClass swap) re-subscribes while a
+  // pure instance replacement under the same class+key does not churn the
+  // subscription.
+  //
+  // `BlocClass` MUST stay in the dep array even though `instanceKey` alone
+  // often determines identity: `resolveInstanceKey`/`resolveKey` collapse to
+  // the same `DEFAULT_STRUCTURAL_KEY` sentinel across DIFFERENT classes when
+  // neither has args nor a `static key` (e.g.
+  // `useBloc(cond ? AdminBloc : UserBloc)`). Memoising on `bloc` alone would
+  // reintroduce that leak: swapping classes at that shared key would never
+  // re-subscribe.
   //
   // We talk directly to `bloc.channel` — the StructuralContainer's path-scoped
   // DirtyChannel. Subscribing with a dynamic interest function lets us narrow
   // wakeups per consumer, so a component only re-renders when a path it
   // actually read changes (rather than on every state change).
   // ---------------------------------------------------------------------------
-  const [, force] = useReducer((x: number) => x + 1, 0);
-  const pathRef = useRef<PathSet>(emptyPathSet());
-  // Expanded interest: leaf paths PLUS *ancestor-watch* ids for their parents,
-  // so that when `patch` atomically replaces a parent (e.g. the array 'items')
-  // and the consumer tracked a child (e.g. 'items.length'), the intersection
-  // still fires — while a structural pulse-up of a plain-object parent (e.g.
-  // 'user' when a sibling 'user.name' changed) does NOT, because pulse-up marks
-  // are normal ids and ancestor-watch ids only intersect their own lane.
-  // Updated in useLayoutEffect after each render once pathRef.current is
-  // populated.
-  const expandedInterestRef = useRef<PathSet>(emptyPathSet());
-  // For select-mode: cache the last selected array so we can compare against
-  // the next one before forcing a re-render.
-  const lastSelectionRef = useRef<unknown[] | null>(null);
-  // Render-time raw-state snapshot, seeded each render (below) and read by the
-  // subscription effect to close the mount gap (R2): an emit landing between the
-  // render read and the passive subscribe would otherwise be lost.
-  const renderStateRef = useRef<unknown>(undefined);
-  // Bloc identity from the previous render, so select-mode can reset its cached
-  // selection when the underlying instance changes (re-key).
-  const prevBlocRef = useRef<unknown>(null);
-
-  useEffect(() => {
-    // Subscribe via the channel directly. For auto-track we re-register the
-    // current path interest on each commit (below); for select-mode we use
-    // ALL_PATHS and compare selections in the callback.
-    //
-    // Self-healing note: this effect can run once against a pre-rebind (possibly
-    // disposed) `bloc` before the ownership layout-effect's nonce bump triggers a
-    // re-render that swaps `bloc` to the live instance (the memo dep array
-    // includes `rebindNonce`). That's benign — `channel.subscribe` and
-    // `unregisterConsumer` are plain Map operations that don't check disposal
-    // state and never throw on a disposed container — so this effect's cleanup
-    // runs cleanly and the re-render re-subscribes against the live instance.
-    const channel = (bloc as unknown as StateContainer).channel;
-    const isSelectMode = selectRef.current !== undefined;
-
-    if (isSelectMode) {
-      const unsub = channel.subscribe(
-        () => ALL_PATHS,
+  const subscribe = useMemo(
+    () => (onStoreChange: () => void) => {
+      consumer.notify = onStoreChange;
+      const container = consumer.container;
+      const unsubscribe = container.channel.subscribe(
+        () => consumer.interest,
         () => {
-          const select = selectRef.current;
-          if (!select) {
-            force();
-            return;
+          if (consumer.isSelectMode) {
+            const select = selectRef.current;
+            if (select) {
+              const next = select(
+                container.state as ExtractState<T>,
+                container as unknown as InstanceState<T>,
+              );
+              const prev = consumer.selection;
+              if (prev !== null && shallowArrayEqual(prev, next)) return;
+              consumer.selection = next;
+            }
           }
-          const next = select(
-            (bloc as unknown as StateContainer).state as ExtractState<T>,
-            bloc as InstanceState<T>,
-          );
-          const prev = lastSelectionRef.current;
-          if (prev !== null && shallowArrayEqual(prev, next)) return;
-          lastSelectionRef.current = next;
-          force();
+          consumer.bump();
         },
       );
-      // Close the mount gap (R2): an emit between the render's selector seed and
-      // this subscribe would be lost. Recompute against LIVE state and force if
-      // the selection advanced.
-      const select = selectRef.current;
-      if (select) {
-        const next = select(
-          (bloc as unknown as StateContainer).state as ExtractState<T>,
-          bloc as InstanceState<T>,
-        );
-        const prev = lastSelectionRef.current;
-        if (prev === null || !shallowArrayEqual(prev, next)) {
-          lastSelectionRef.current = next;
-          force();
-        }
-      }
-      return unsub;
-    }
+      container.registerConsumerPaths(consumerId, consumer.paths);
+      // No render→subscribe mount-gap compensation is needed: the channel
+      // accumulates marks and flushes on its scheduler, so an emit raised
+      // during render is still pending when this subscriber registers and is
+      // delivered by that flush. The pre-uSES hook needed `renderStateRef` +
+      // a manual force dispatch here only because its subscribe ran in a
+      // passive effect keyed on the instance.
+      return () => {
+        consumer.notify = noop;
+        unsubscribe();
+        container.unregisterConsumer(consumerId);
+      };
+    },
+    // `rebindNonce` is here for the same reason it is in the memo above: a
+    // rebind swaps the underlying instance (and therefore its channel) without
+    // changing the class or key, so the subscription must be re-established
+    // against the live container.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+    [BlocClass, instanceKey, consumerId, rebindNonce],
+  );
 
-    // Auto-track mode: subscribe with the expanded interest (leaf paths + their
-    // ancestors). This ensures that when `patch` marks a parent path (e.g.
-    // 'items') and the consumer tracked a child (e.g. 'items.length'), the
-    // channel intersection still fires a re-render.
-    //
-    // `expandedInterestRef.current` is updated by the useLayoutEffect below
-    // after each render, so the interest is always fresh at flush time.
-    const unsub = channel.subscribe(
-      () => expandedInterestRef.current,
-      () => force(),
-    );
-    // Register the consumer's leaf paths with the container for skeleton
-    // recomputation, so the source-side diff can skip us when our paths don't
-    // intersect the change.
-    (bloc as unknown as StateContainer).registerConsumerPaths(
-      consumerId,
-      pathRef.current,
-    );
-    // Close the mount gap (R2): if the container's state advanced between the
-    // render snapshot (renderStateRef) and this subscribe, the emit was lost —
-    // force one re-render so we don't stay stale.
-    if ((bloc as unknown as StateContainer).state !== renderStateRef.current) {
-      force();
-    }
-    return () => {
-      unsub();
-      (bloc as unknown as StateContainer).unregisterConsumer(consumerId);
-    };
-  }, [bloc, consumerId]);
+  useSyncExternalStore(
+    subscribe,
+    consumer.getSnapshot,
+    consumer.getServerSnapshot,
+  );
 
   // ---------------------------------------------------------------------------
   // Ownership + mount / unmount lifecycle.
   //
   // The ownership ref is claimed HERE (a layout effect), not in the render/memo,
   // so acquire and release are perfectly paired: a memo re-run can no longer
-  // double-count (R3) and an uncommitted render can no longer leak (R4). Keyed
-  // on [BlocClass, instanceKey, consumerId] — NOT `bloc` — so a genuine re-key
-  // (args change, OR a BlocClass swap) releases the old ref and acquires the new
-  // one, while a pure rebind (same class+key, instance replaced under us) does
-  // NOT re-run this effect and therefore never releases the single ref we just
-  // took (which, for a sole owner, would synchronously dispose the
-  // freshly-created instance and churn indefinitely).
+  // double-count (R3) and an uncommitted render can no longer leak (R4). It
+  // MUST stay a *layout* effect: the render-time `acquire` above schedules a
+  // microtask sweep that disposes entries still unowned when it runs. Layout
+  // effects flush before that microtask drains; passive effects do not, so
+  // moving this acquire to a passive effect would let the sweep dispose live
+  // mounts.
   //
-  // `BlocClass` MUST stay in the dep array even though `instanceKey` alone often
-  // determines identity: `resolveInstanceKey`/`resolveKey` collapse to the same
-  // `DEFAULT_STRUCTURAL_KEY` sentinel across DIFFERENT classes when neither has
-  // args nor a `static key` (e.g. `useBloc(cond ? AdminBloc : UserBloc)`). Without
-  // `BlocClass` here, swapping classes at that shared key would never re-run this
-  // effect: the old class's ref would leak until unmount, and the new class's
-  // instance (only `ensure`d by the render memo, countRef:false) would be held
-  // with zero ownership refs — exposed to disposal by unrelated traffic on that
-  // class+key, with no rebind path to recover it.
+  // Keyed on [BlocClass, instanceKey, consumerId] for the same reason the
+  // subscription is — see the `BlocClass`-in-deps hazard documented above.
   //
-  // `acquire` returns the authoritative LIVE instance for the key. If it differs
-  // from the instance the render captured (`bloc`), the render read a disposed /
-  // replaced instance (same-commit shared-key handoff, or StrictMode remount);
-  // we bump the rebind nonce so the memo re-ensures `bloc` against this live one.
-  // onMount/onUnmount fire with the owned live instance and stay co-located with
+  // `acquire` returns the authoritative LIVE instance for the key. onMount /
+  // onUnmount fire with that owned live instance and stay co-located with
   // acquire/release so onUnmount(bloc) runs BEFORE release(...) within one
   // cleanup, keeping the instance alive while the callback runs.
   // ---------------------------------------------------------------------------
@@ -439,11 +394,12 @@ export function useBloc<
     onMountRef.current?.(live as InstanceType<T>);
     // Rebind if the render captured a stale (disposed/replaced) instance so the
     // component renders + subscribes against the live registry entry, not a
-    // disposed one. Only bumps on an actual mismatch, so it can fire at most once
-    // per handoff and never loops (the re-ensured `bloc` equals `live`, and this
-    // effect is not keyed on `bloc` so it won't re-run and re-release).
+    // disposed one. Only bumps on an actual mismatch, so it can fire at most
+    // once per handoff and never loops (the re-ensured `bloc` equals `live`,
+    // and this effect is not keyed on `bloc` so it won't re-run and re-release).
     if (live !== bloc) {
-      bumpRebind();
+      rebindNonceRef.current++;
+      consumer.bump();
     }
     return () => {
       onUnmountRef.current?.((ownedBlocRef.current ?? bloc) as InstanceType<T>);
@@ -455,54 +411,43 @@ export function useBloc<
   // ---------------------------------------------------------------------------
   // Snapshot
   //
-  // - Auto-track: wrap state in trackRender, record paths into pathRef, and
-  //   re-register with the container so the skeleton picks up new interest.
+  // - Auto-track: wrap state in trackRender, record paths into consumer.paths,
+  //   and re-register with the container so the skeleton picks up new interest.
   // - Select-mode: return state directly; the subscription callback compares
   //   selections to decide whether to re-render.
   // ---------------------------------------------------------------------------
-  const rawState = (bloc as unknown as StateContainer).state as ExtractState<T>;
-  // Seed the render-time snapshot so the subscription effect can detect an emit
-  // that landed in the render→subscribe window (R2 mount gap).
-  renderStateRef.current = rawState;
-  // Reset the cached selection when the bloc identity changes (re-key) so the
-  // select seed below re-seeds against the NEW instance instead of comparing
-  // against a stale selection from the previous instance.
-  if (prevBlocRef.current !== bloc) {
-    prevBlocRef.current = bloc;
-    lastSelectionRef.current = null;
-  }
+  const container = consumer.container;
+  const rawState = container.state as ExtractState<T>;
+  const select = selectRef.current;
+  consumer.isSelectMode = select !== undefined;
   let state: ExtractState<T>;
-  if (selectRef.current !== undefined) {
+  if (select !== undefined) {
     state = rawState;
     // Seed the last selection on the first render so we don't fire an
     // immediate "different from null" wakeup on the first emit.
-    if (lastSelectionRef.current === null) {
-      lastSelectionRef.current = selectRef.current(
-        rawState,
-        bloc as InstanceState<T>,
-      );
+    if (consumer.selection === null) {
+      consumer.selection = select(rawState, bloc as InstanceState<T>);
     }
+    // Select-mode wakes on every change and filters in the callback.
+    consumer.interest = ALL_PATHS;
   } else {
     const tracked = trackRender(
       rawState,
-      (bloc as unknown as StateContainer).interner,
+      container.interner,
       proxyCacheRef.current,
     );
     state = tracked.value as ExtractState<T>;
     trackedStateRef.current = tracked.value;
-    pathRef.current = tracked.paths;
+    consumer.paths = tracked.paths;
     // Rebuild the per-consumer session for this render. The primary bloc is the
     // first uniform entry; its `paths` are the SAME PathSet object the proxy
     // mutates during JSX (so it stays live as getters record leaves). Dep
     // entries are appended during JSX as `this.<handle>.track()` runs. Cleared
     // here (not in the layout effect) so a render that no longer tracks a dep
     // produces a session without it, and the reconcile drops it.
-    const session = sessionRef.current;
+    const session = consumer.session;
     session.clear();
-    session.set(bloc as unknown as StateContainer, {
-      kind: 'primary',
-      paths: tracked.paths,
-    });
+    session.set(container, { kind: 'primary', paths: tracked.paths });
     // Freeze this render's tracking proxy after the synchronous render+commit
     // pass. The microtask fires only once the current task unwinds, so all
     // render-time JSX reads still record; reads afterwards — effects, event
@@ -519,7 +464,7 @@ export function useBloc<
     // useLayoutEffect below registers the populated set after render.
   }
 
-  // After the render commits, pathRef.current is the consumer's actual leaf
+  // After the render commits, consumer.paths is the consumer's actual leaf
   // interest (populated by the proxy during JSX evaluation). Re-register with
   // the container so the skeleton reflects the latest paths, and expand the
   // interest to include ancestor paths for the channel subscription.
@@ -534,31 +479,31 @@ export function useBloc<
     // method→getter chains) fall through to live state instead of reading this
     // render's frozen snapshot. The render body re-seeds it next render.
     trackedStateRef.current = null;
-    if (selectRef.current !== undefined) {
+    if (consumer.isSelectMode) {
       // Switching into (or staying in) select-mode: invalidate any prior full
       // reconcile so a later switch back to auto-track mode never mistakes a
       // stale signature for "unchanged" and skips a needed reconcile.
-      lastReconcileRef.current = null;
+      consumer.lastReconcile = null;
       return;
     }
-    const container = bloc as unknown as StateContainer;
-    const paths = pathRef.current;
-    const session = sessionRef.current;
+    const primary = consumer.container;
+    const paths = consumer.paths;
+    const session = consumer.session;
 
     // ---------------------------------------------------------------------
     // Short-circuit: if the primary path set AND the full dep session are
     // set-equal (paths + key/refId/args) to the last FULL reconcile, none of
     // registerConsumerPaths/subscribe/unsubscribe/expandWithAncestors below
     // can have anything new to do — skip the whole block. Any mismatch, or
-    // `lastReconcileRef.current === null` (first commit, or the immediately
+    // `consumer.lastReconcile === null` (first commit, or the immediately
     // preceding commit was select-mode / uncertain), falls through to the
     // full reconcile. Never skip on uncertainty — a missed re-subscribe would
     // leave a stale/dropped subscription.
     // ---------------------------------------------------------------------
-    const last = lastReconcileRef.current;
+    const last = consumer.lastReconcile;
     if (
       last !== null &&
-      last.primaryContainer === container &&
+      last.primaryContainer === primary &&
       pathSetEquals(last.primaryPaths, paths)
     ) {
       let unchanged = last.deps.size === session.size - 1;
@@ -581,28 +526,25 @@ export function useBloc<
       if (unchanged) return;
     }
 
-    container.registerConsumerPaths(consumerId, paths);
+    primary.registerConsumerPaths(consumerId, paths);
     // Register the *normal* leaf paths above for the source-side skeleton, then
     // build the channel interest as leaves + ancestor-watch ids so that an
     // atomic `patch` replacement of a parent (e.g. the array 'items') wakes a
     // consumer that tracked a child (e.g. 'items.length').
-    expandedInterestRef.current = expandWithAncestors(
-      paths,
-      container.interner,
-    );
+    consumer.interest = expandWithAncestors(paths, primary.interner);
 
     // -----------------------------------------------------------------------
     // Reconcile DEP containers (cross-bloc `.track()` interest).
     //
-    // The primary bloc keeps its own dedicated subscription effect above; this
-    // block manages only the *dep* containers recorded in the session this
-    // render. We diff the new dep set vs the previously-subscribed set:
+    // The primary bloc keeps its own dedicated subscription above; this block
+    // manages only the *dep* containers recorded in the session this render.
+    // We diff the new dep set vs the previously-subscribed set:
     //   - new dep      -> acquire was already done in `.track()`; subscribe its
     //                     channel + registerConsumerPaths + seed interest.
     //   - surviving    -> refresh its interest ref (subscribe closure reads it).
     //   - dropped      -> unsubscribe, unregisterConsumer, and release its ref.
     // -----------------------------------------------------------------------
-    const subs = depSubsRef.current;
+    const subs = consumer.depSubs;
 
     // Pass 1: drop containers no longer in the session.
     for (const [depContainer, sub] of subs) {
@@ -635,7 +577,7 @@ export function useBloc<
       const interestRef: { current: PathSet } = { current: interest };
       const unsubscribe = depContainer.channel.subscribe(
         () => interestRef.current,
-        () => force(),
+        () => consumer.bump(),
       );
       subs.set(depContainer, {
         unsubscribe,
@@ -661,8 +603,8 @@ export function useBloc<
         args: entry.args,
       });
     }
-    lastReconcileRef.current = {
-      primaryContainer: container,
+    consumer.lastReconcile = {
+      primaryContainer: primary,
       primaryPaths: paths,
       deps: depsSignature,
     };
@@ -670,13 +612,11 @@ export function useBloc<
 
   // Unmount: tear down every dep subscription + ref exactly once. Kept in its
   // own effect (consumerId is stable for the component's lifetime, so this only
-  // runs on final unmount, not on every reconcile). depSubsRef is mutated in
-  // place by the reconcile, so the captured Map reference still holds the live
-  // set at unmount.
+  // runs on final unmount, not on every reconcile). consumer.depSubs is mutated
+  // in place by the reconcile, so the captured Map reference still holds the
+  // live set at unmount.
   useEffect(() => {
-    // Capture the ref's Map (mutated in place across renders) so the cleanup
-    // reads the captured reference rather than depSubsRef.current directly.
-    const subs = depSubsRef.current;
+    const subs = consumer.depSubs;
     return () => {
       for (const [depContainer, sub] of subs) {
         sub.unsubscribe();
@@ -685,6 +625,7 @@ export function useBloc<
       }
       subs.clear();
     };
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [consumerId, registry]);
 
   return [
@@ -695,13 +636,75 @@ export function useBloc<
 }
 
 // ---------------------------------------------------------------------------
+// Per-consumer store object.
+// ---------------------------------------------------------------------------
+
+const noop = (): void => {};
+
+/**
+ * Everything one `useBloc` call keeps between renders, re-created whenever the
+ * hook re-keys on `[BlocClass, instanceKey]`.
+ *
+ * `version` is the `useSyncExternalStore` snapshot: a plain number, so
+ * `getSnapshot` is stable and never allocates. `bump` increments it BEFORE
+ * calling `notify` — uSES requires `getSnapshot()` to already reflect the
+ * change by the time it is notified, and the channel delivers deferred, so
+ * doing it the other way round silently drops renders.
+ */
+interface Consumer {
+  /** The live container this consumer currently reads and subscribes to.
+   * Written by the render memo, which is its single writer. */
+  container: StateContainer;
+  version: number;
+  /** uSES's wake callback; `noop` while unsubscribed. */
+  notify: () => void;
+  bump: () => void;
+  getSnapshot: () => number;
+  getServerSnapshot: () => number;
+  /** Channel interest: expanded leaf paths, or ALL_PATHS in select-mode. */
+  interest: PathSet;
+  /** Raw tracked leaf paths from the latest render (skeleton registration). */
+  paths: PathSet;
+  isSelectMode: boolean;
+  /** Last select-mode result, compared before waking. */
+  selection: unknown[] | null;
+  session: Map<StateContainer, SessionEntry>;
+  depSubs: Map<StateContainer, DepSub>;
+  lastReconcile: ReconcileSignature | null;
+}
+
+function createConsumer(): Consumer {
+  const consumer: Consumer = {
+    // Assigned by the render memo before any read; never observed unset.
+    container: null as unknown as StateContainer,
+    version: 0,
+    notify: noop,
+    bump: () => {
+      consumer.version++;
+      consumer.notify();
+    },
+    getSnapshot: () => consumer.version,
+    getServerSnapshot: () => consumer.version,
+    interest: emptyPathSet(),
+    paths: emptyPathSet(),
+    isSelectMode: false,
+    selection: null,
+    session: new Map(),
+    depSubs: new Map(),
+    lastReconcile: null,
+  };
+  return consumer;
+}
+
+// ---------------------------------------------------------------------------
 // Cross-bloc session types + dep-handle wrapper.
 // ---------------------------------------------------------------------------
 
 /**
  * One entry in a consumer's per-render session map. Discriminated on `kind`:
- * the primary bloc is managed by its own dedicated effect, while dep entries
- * carry the registry coordinates the reconcile needs to release their ref.
+ * the primary bloc is managed by its own dedicated subscription, while dep
+ * entries carry the registry coordinates the reconcile needs to release their
+ * ref.
  */
 type SessionEntry =
   | {
@@ -736,7 +739,7 @@ interface DepSub {
 /**
  * Snapshot of one dep's shape from the last FULL reconcile, compared against
  * the current session entry to decide whether the dep-reconcile layout effect
- * can short-circuit (see `lastReconcileRef` in `useBloc`).
+ * can short-circuit (see `Consumer.lastReconcile`).
  */
 interface ReconcileDepSignature {
   paths: PathSet;
@@ -797,7 +800,7 @@ function makeDepWrapper(
   consumerId: string,
   registry: StateContainerRegistry,
   trackedStateRef: { current: unknown },
-  sessionRef: { current: Map<StateContainer, SessionEntry> },
+  consumer: Consumer,
   onDepHandle: (handle: object) => unknown,
 ): DepHandleLike {
   const brand = handle[DEP_BRAND];
@@ -835,7 +838,7 @@ function makeDepWrapper(
         return [dep.state, dep];
       }
 
-      const session = sessionRef.current;
+      const session = consumer.session;
       const existing = session.get(dep);
 
       // Render only ENSUREs the dep instance (via `resolve()` above); it does
