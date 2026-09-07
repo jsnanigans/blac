@@ -91,6 +91,8 @@ type SystemEventHandler<S, E extends SystemEvent> = (
 // mutated, so no container pays for an empty object it may never fill.
 const EMPTY_RECORD: Readonly<Record<string, never>> = Object.freeze({});
 
+let deactivatedReason: DOMException | undefined;
+
 /**
  * Shallow per-key `Object.is` comparison of two plain records. Keys are
  * considered: a key present in one but not the other (regardless of value)
@@ -241,7 +243,14 @@ export abstract class StateContainer<
   }
 
   private _abortActivation(): void {
-    this._activation?.abort();
+    // A bare `abort()` builds a new AbortError (stack trace included) on every
+    // deactivation; one shared reason keeps the same `name` without that cost.
+    this._activation?.abort(
+      (deactivatedReason ??= new DOMException(
+        'The bloc was deactivated',
+        'AbortError',
+      )),
+    );
     this._activation = null;
   }
 
@@ -494,14 +503,12 @@ export abstract class StateContainer<
    */
   [INIT_CONFIG](config: StateContainerConfig): void {
     this._config = { ...config };
-    this._name =
-      this._config.name ||
-      getBlacName(this.constructor as StateContainerConstructor);
-    this._debug = this._config.debug ?? false;
-    this._instanceId = generateSimpleId(
-      getBlacName(this.constructor as StateContainerConstructor),
-      this._config.instanceId,
+    const className = getBlacName(
+      this.constructor as StateContainerConstructor,
     );
+    this._name = this._config.name || className;
+    this._debug = this._config.debug ?? false;
+    this._instanceId = generateSimpleId(className, this._config.instanceId);
     const perClass = getClassEquality(
       this.constructor as StateContainerConstructor,
     );

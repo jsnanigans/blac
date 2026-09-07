@@ -133,13 +133,11 @@ export class StateContainerRegistry {
     Map<StateContainerConstructor, Set<string>>
   >();
 
-  /** Reverse lookup from instance to its entry, so `_pruneEntry` is O(1). */
-  private readonly _entryByInstance = new WeakMap<
-    StateContainer<any, any, any>,
-    InstanceEntry
-  >();
-
-  /** Reverse lookup from `$blac.id` to its entry, for `PluginContext.getRefIds`. */
+  /**
+   * Reverse lookup from `$blac.id` to its entry, for `PluginContext.getRefIds`
+   * and the O(1) prune on dispose. Ids are `<name>:<key>`, so an entry is
+   * matched by instance identity as well.
+   */
   private readonly _entryById = new Map<string, InstanceEntry>();
 
   private readonly listeners = new Map<
@@ -253,10 +251,11 @@ export class StateContainerRegistry {
     Type: StateContainerConstructor,
     container: StateContainer<any, any, any>,
   ): boolean {
-    const entry = this._entryByInstance.get(container);
-    if (!entry) return false;
+    const id = container.$blac.id;
+    const entry = this._entryById.get(id);
+    if (entry === undefined || entry.instance !== container) return false;
     this.instancesByConstructor.get(Type)?.delete(entry.key);
-    this._entryById.delete(container.$blac.id);
+    this._entryById.delete(id);
     return true;
   }
 
@@ -353,7 +352,6 @@ export class StateContainerRegistry {
     }
     const entry: InstanceEntry = { instance, key: instanceKey, refs };
     instances.set(instanceKey, entry);
-    this._entryByInstance.set(instance, entry);
     this._entryById.set(instance.$blac.id, entry);
   }
 
@@ -538,7 +536,6 @@ export class StateContainerRegistry {
       this._recordDependentEdge(options.dependent, Type, resolvedKey);
     }
     instances.set(resolvedKey, newEntry);
-    this._entryByInstance.set(instance, newEntry);
     this._entryById.set(instance.$blac.id, newEntry);
 
     // Register type for lifecycle coordination
