@@ -112,9 +112,14 @@ export abstract class StructuralContainer<S> {
     (a: unknown, b: unknown) => boolean
   >;
   private _equalsFnCached?: (id: PathId, a: unknown, b: unknown) => boolean;
+  // Resolved once per instance: the interner is keyed by constructor and never
+  // changes, but `patch`/`emit` and the refine loop hit it repeatedly, so a
+  // WeakMap lookup per access showed up on the hot path.
+  private readonly _interner: PathInterner;
 
   constructor(initial: S, options: StructuralContainerOptions = {}) {
     this._state = initial;
+    this._interner = StructuralContainer.getInternerFor(this.constructor);
     const scheduler = options.scheduler ?? sharedScheduler;
     this._channel = new DirtyChannel<PathSet>(PathSetSpace, scheduler, {
       onError: options.onError,
@@ -137,7 +142,7 @@ export abstract class StructuralContainer<S> {
   }
 
   get interner(): PathInterner {
-    return StructuralContainer.getInternerFor(this.constructor);
+    return this._interner;
   }
 
   get channel(): DirtyChannel<PathSet> {
@@ -366,23 +371,38 @@ export abstract class StructuralContainer<S> {
     // non-ancestor marks to keep (e.g. PathId("items") for whole-array readers
     // that pinned the parent directly, e.g. via .map()). Ancestor-watch marks
     // are dropped — they are replaced by the precise leaf marks below.
+    // Pre-scan before allocating: a plain-object patch (the common case) has no
+    // ancestor-watch marks at all, and the two collections below would be built
+    // only to be thrown away at the `targetIds.size === 0` exit. Detecting that
+    // first is what makes this path genuinely zero-overhead.
+    const interner = this._interner;
+    let hasAncestorMark = false;
+    for (const id of roughSet) {
+      if (interner.isAncestorId(id)) {
+        hasAncestorMark = true;
+        break;
+      }
+    }
+    if (!hasAncestorMark) return rough;
+
+    // Fast exit: nothing in the skeleton to refine against. Checked before the
+    // single pass below so an unrefinable patch allocates nothing either.
+    if (this._skeleton === ALL_PATHS) return rough;
+    const skeleton = this._skeleton as Set<PathId>;
+    if (skeleton.size === 0) return rough;
+
     const targetIds = new Set<PathId>();
     const nonAncestorIds: PathId[] = [];
     for (const id of roughSet) {
-      if (this.interner.isAncestorId(id)) {
-        const target = this.interner.ancestorTargetId(id);
+      if (interner.isAncestorId(id)) {
+        const target = interner.ancestorTargetId(id);
         if (target !== undefined) targetIds.add(target);
       } else {
         nonAncestorIds.push(id);
       }
     }
-    // Fast exit: no ancestor-watch marks → plain-object patch, zero overhead.
+    // An ancestor-watch mark with no decodable target leaves nothing to refine.
     if (targetIds.size === 0) return rough;
-
-    // Fast exit: nothing in the skeleton to refine against.
-    if (this._skeleton === ALL_PATHS) return rough;
-    const skeleton = this._skeleton as Set<PathId>;
-    if (skeleton.size === 0) return rough;
 
     const equalsFn = this._equalsFn();
     // Seed with the non-ancestor marks collected above. Consumers whose

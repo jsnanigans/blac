@@ -316,10 +316,14 @@ export abstract class StateContainer<
     this.constructor as StateContainerConstructor,
   );
   private _debug: boolean = false;
-  private _instanceId: string = generateSimpleId(
-    getBlacName(this.constructor as StateContainerConstructor),
-    'main',
-  );
+  // Left undefined until first read: generating an id costs a `Date.now()` plus
+  // a random base-36 string, and a container that is never registered or
+  // inspected never needs one. `$blac.id` fills it in on demand (see
+  // `createMeta`), and `[INIT_CONFIG]` overwrites it when the registry supplies
+  // a configured instanceId. Deliberately a plain field, not a getter —
+  // devtools enumerates prototype getters to find user-defined ones, and a
+  // `_instanceId` accessor would show up there as bloc state.
+  private _instanceId?: string;
   private _createdAt: number = Date.now();
 
   /**

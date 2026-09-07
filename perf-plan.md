@@ -229,11 +229,84 @@ construction cost. Move the getters to a shared prototype/shape so per-instance 
 small object holding the closed-over fields. `$blac` is a documented public surface — keep
 enumerability, freezing and the brand identical, and keep the meta tests green.
 
+### 2.1 / 2.2 outcome: LANDED
+
+Warmed A/B (median of 31, 1000 patches on a 20-field container, tracked consumer):
+
+| consumer paths | interner uncached | cached (2.1 + 2.2) | saved |
+| -------------- | ----------------- | ------------------ | ----- |
+| 1              | 327.3µs           | 326.9µs            | ~0%   |
+| 20             | 492.8µs           | 426.4µs            | 13%   |
+
+As predicted, the win scales with how often the refine loop touches the interner: nothing
+at one path, 13% at twenty. Note that an unwarmed harness reported 525µs/617µs for the same
+code — always warm before comparing, or the noise swamps the effect.
+
+### 2.3 outcome: LANDED, but no measurable headline effect
+
+`_instanceId` is now generated on first `$blac.id` read instead of in a field initializer
+(verified: `_instanceId` is `undefined` after `new`, materializes on read, stable across
+reads). Construction stayed at ~1309µs vs the 1306µs baseline — the deferred `Date.now()` +
+random base-36 string is a small slice of the ~1.3µs total. Kept because it is strictly less
+work and correct, not because it shows up in the benchmark.
+
+**Regression caught during this:** the first attempt made `_instanceId` a `private get`,
+which put an accessor on the prototype. `devtools-connect` enumerates prototype getters to
+find user-defined ones, so two of its tests failed with `expected { Object (_instanceId) }
+to be undefined` — an internal was leaking into devtools output as bloc state. Fixed by
+keeping `_instanceId` a plain optional field and moving the lazy fill into `createMeta`'s
+`id` getter. Do not turn container internals into prototype accessors.
+
+### 2.4 outcome: ABANDONED — measured, reverted
+
+Confirmed the cost first: `createMeta` is **690µs per 1000 calls, ~53% of the 1306µs** that
+1000 × (`new` + `dispose`) costs. So the target was real.
+
+Tried moving the accessors to two shared frozen prototypes, with the container in one own
+`Symbol` slot via `Object.create`. Result: construction **1306µs → 1129µs (14% faster)**, all
+682 core tests green including the `isFrozen` and `META_BRAND` assertions.
+
+But it silently changed observable public API. Prototype accessors are not own-enumerable, so:
+
+- `Object.keys($blac)` returned `["hydration"]` instead of all seven keys.
+- `JSON.stringify($blac)` returned `{"hydration":{}}` instead of the full object.
+
+No test covered this, but `$blac` is a documented public surface, so that is a breaking
+change, not a free win. Restoring enumerability with reused own-accessor descriptor
+templates spread into `Object.create` measured **1877µs — 44% worse than baseline**: the
+descriptor-map walk costs more than the original object literals it replaced.
+
+Both viable outcomes are unacceptable, so this was reverted. The accessor-literal cost is
+the price of `$blac`'s enumerable-live-getter contract. Do not retry without first changing
+that contract (e.g. accepting non-enumerable members in a major version), and re-measure —
+`Object.create` with descriptor maps is not the answer.
+
 ### 2.5 Single-key scalar fast path in `patch`
 
 `container.ts:228` calls `deepMerge` before it can prove nothing changed. For the very common
 single-key primitive patch, compare first and bail with zero allocation. Must preserve
 `deepMerge`'s reference-return no-op contract that `changedPathsFromPatch` relies on.
+
+### 2.5 outcome: SKIPPED — premise was wrong, no win available
+
+The premise was that `deepMerge` allocates before it can prove nothing changed. It does not:
+`out` is materialized only on the **first changed key** (`container.ts:468`), so a pure no-op
+patch already allocates nothing and just compares.
+
+Measured (median of 21, 1000 patches on a 2-field container):
+
+| case                              | cost   | per patch |
+| --------------------------------- | ------ | --------- |
+| redundant patch, tracked consumer | 46.8µs | ~47ns     |
+| changing patch, tracked consumer  | 246µs  | ~246ns    |
+| redundant patch, no consumer      | 26.7µs | ~27ns     |
+
+The no-op path is already ~5x cheaper than a real patch. A single-key scalar fast path would
+save a fraction of ~47ns while adding a branch to the _hot_ changing path and more code to
+`patch`'s already subtle no-op contract. Not worth it — skipped on YAGNI/KISS grounds.
+
+The `changing patch` figure is the real remaining cost centre on this path
+(`deepMerge` + `changedPathsFromPatch`), matching Phase 1's conclusion.
 
 ### Explicitly rejected
 

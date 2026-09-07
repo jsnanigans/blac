@@ -8,6 +8,8 @@
  * keeps this own, frozen property independent of the proxy entirely.
  */
 
+import { generateSimpleId } from '../utils/idGenerator';
+import { getBlacName } from '../utils/static-props';
 import type { HydrationStatus } from './StateContainer';
 import type { StateContainerConstructor } from '../types/utilities';
 
@@ -69,8 +71,9 @@ const EMPTY_DEPS: ReadonlyMap<StateContainerConstructor, string> = new Map();
  * container has a single source of truth for the hydration state machine.
  */
 interface MetaInternals<S extends object> {
+  readonly constructor: StateContainerConstructor;
   _name: string;
-  _instanceId: string;
+  _instanceId?: string;
   _debug: boolean;
   _createdAt: number;
   _disposed: boolean;
@@ -135,7 +138,12 @@ export function createMeta<S extends object>(container: object): BlacMeta<S> {
       return c._name;
     },
     get id() {
-      return c._instanceId;
+      // Generated on first read — the container leaves it undefined so an
+      // instance nobody registers or inspects never pays for one.
+      return (c._instanceId ??= generateSimpleId(
+        getBlacName(c.constructor),
+        'main',
+      ));
     },
     get debug() {
       return c._debug;
