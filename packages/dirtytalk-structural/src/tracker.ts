@@ -1,6 +1,6 @@
 import type { PathId } from './types';
 import type { PathSet } from './path-set';
-import type { PathInterner } from './path-interner';
+import { NO_PARENT, type PathInterner } from './path-interner';
 
 /**
  * When true, array iteration methods (.map, .filter, .forEach, .find,
@@ -167,7 +167,7 @@ interface CachedProxyEntry {
    * fast path), silently bypassing the persistent-cache repoint logic for
    * every level below the one that was actually reused.
    */
-  wrap: (target: object, prefix: string) => unknown;
+  wrap: (target: object, prefix: string, prefixId: PathId) => unknown;
 }
 
 /**
@@ -190,38 +190,33 @@ interface CachedProxyEntry {
  * normally.
  */
 export class ProxyCache {
-  private byTarget = new WeakMap<object, Map<string, CachedProxyEntry>>();
-
-  /** @internal — used by `trackRender`'s `wrap()` only. */
-  _get(target: object, prefix: string): CachedProxyEntry | undefined {
-    return this.byTarget.get(target)?.get(prefix);
-  }
-
-  /** @internal — used by `trackRender`'s `wrap()` only. */
-  _set(target: object, prefix: string, entry: CachedProxyEntry): void {
-    let byPrefix = this.byTarget.get(target);
-    if (byPrefix === undefined) {
-      byPrefix = new Map<string, CachedProxyEntry>();
-      this.byTarget.set(target, byPrefix);
-    }
-    byPrefix.set(prefix, entry);
-  }
+  private byTarget = new WeakMap<object, Map<PathId, CachedProxyEntry>>();
 
   /**
-   * @internal — used by `trackRender` after a call completes. Discards every
-   * cached `(target, prefix)` entry for `target` not claimed by `live` (this
-   * call's session), so an object read at a shifting prefix (e.g. a reordered
-   * list item) doesn't accumulate one stale entry per prefix it has ever been
-   * read at.
+   * @internal — used by `trackRender`'s `wrap()` only. The entries for
+   * `target`, keyed by prefix id, created on first use.
    */
-  _prune(target: object, live: TrackSession): void {
-    const byPrefix = this.byTarget.get(target);
-    if (byPrefix === undefined) return;
-    for (const [prefix, entry] of byPrefix) {
-      if (entry.session !== live) byPrefix.delete(prefix);
+  _entries(target: object): Map<PathId, CachedProxyEntry> {
+    let byPrefix = this.byTarget.get(target);
+    if (byPrefix === undefined) {
+      byPrefix = new Map<PathId, CachedProxyEntry>();
+      this.byTarget.set(target, byPrefix);
     }
+    return byPrefix;
   }
 }
+
+// Discard every entry not claimed by `live` (the completed call's session), so
+// an object read at a shifting prefix (e.g. a reordered list item) doesn't
+// accumulate one stale entry per prefix it has ever been read at.
+const pruneStale = (
+  entries: Map<PathId, CachedProxyEntry>,
+  live: TrackSession,
+): void => {
+  for (const [prefixId, entry] of entries) {
+    if (entry.session !== live) entries.delete(prefixId);
+  }
+};
 
 /**
  * Wrap `state` in a recording `Proxy` and return the proxy plus a fresh
@@ -321,35 +316,41 @@ export const trackRender = <S>(
   // `session` play the same role, so nothing per-call is allocated.
   const proxyByTarget =
     cache === undefined
-      ? new WeakMap<object, Map<string, unknown>>()
+      ? new WeakMap<object, Map<PathId, unknown>>()
       : undefined;
 
-  // Targets touched this call, so a supplied `cache` can be pruned down to
-  // only the prefixes actually read this render (see `ProxyCache._prune`).
-  // Only allocated when a cache is in play — zero-cost otherwise.
-  const touchedTargets = cache !== undefined ? new Set<object>() : undefined;
+  // Cache entry maps holding more than one prefix for a target this call, so
+  // `disarm` can drop the prefixes this render did not claim (see
+  // `pruneStale`). A single-entry map can hold nothing stale, and most never
+  // grow past one, so this usually stays empty.
+  const touched =
+    cache !== undefined ? new Set<Map<PathId, CachedProxyEntry>>() : undefined;
 
-  const wrap = (target: object, prefix: string): unknown => {
-    let byPrefix: Map<string, unknown> | undefined;
+  // `prefixId` is the interned id of `prefix` (`NO_PARENT` at the root); the
+  // parent's `get` trap interns it right before wrapping, so child reads and
+  // cache lookups key on the number instead of re-hashing the joined string.
+  const wrap = (target: object, prefix: string, prefixId: PathId): unknown => {
+    let byPrefix: Map<PathId, unknown> | undefined;
+    let entries: Map<PathId, CachedProxyEntry> | undefined;
     if (cache !== undefined) {
-      const existing = cache._get(target, prefix);
+      entries = cache._entries(target);
+      const existing = entries.get(prefixId);
       if (existing !== undefined) {
         if (existing.session !== session) {
           existing.session = session;
           existing.interner = interner;
           existing.wrap = wrap;
-          touchedTargets!.add(target);
         }
+        if (entries.size > 1) touched!.add(entries);
         return existing.proxy;
       }
-      touchedTargets!.add(target);
     } else {
       byPrefix = proxyByTarget!.get(target);
       if (byPrefix === undefined) {
-        byPrefix = new Map<string, unknown>();
+        byPrefix = new Map<PathId, unknown>();
         proxyByTarget!.set(target, byPrefix);
       }
-      const cached = byPrefix.get(prefix);
+      const cached = byPrefix.get(prefixId);
       if (cached !== undefined) return cached;
     }
 
@@ -362,19 +363,12 @@ export const trackRender = <S>(
       wrap,
     };
 
-    // Lazily intern this proxy's own prefix at most once. Must stay lazy — do
-    // not compute at wrap() entry, or interning timing/size would change.
-    let _prefixId: PathId | undefined;
-    const prefixId = (): PathId =>
-      (_prefixId ??= entry.interner.intern(prefix));
-
     // Pin this array's own entry path as a content dependency. Called when an
     // iteration entry point (Symbol.iterator) or any array method is accessed.
     const pinArrayPath = (): void => {
-      if (prefix === '') return;
-      const id = prefixId();
-      entry.session.paths.add(id);
-      (entry.session.pinned ??= new Set<PathId>()).add(id);
+      if (prefixId === NO_PARENT) return;
+      entry.session.paths.add(prefixId);
+      (entry.session.pinned ??= new Set<PathId>()).add(prefixId);
       traceHook?.({
         instance: entry.session.instance,
         kind: 'pin',
@@ -412,7 +406,7 @@ export const trackRender = <S>(
               // (e.g. this[0], this.length) go through the get trap and
               // record per-index paths.
               return (sv as (...a: unknown[]) => unknown).bind(
-                entry.wrap(t, prefix),
+                entry.wrap(t, prefix, prefixId),
               );
             }
             // Iteration entry point (Symbol.iterator → for..of / spread). The
@@ -452,7 +446,7 @@ export const trackRender = <S>(
               // receive sub-proxies and their property accesses record precise
               // leaf paths (e.g. items.0.title) instead of the coarse entry.
               return (value as (...a: unknown[]) => unknown).bind(
-                entry.wrap(t, prefix),
+                entry.wrap(t, prefix, prefixId),
               );
             }
             // Array method (.map, .find, .reduce, .includes, …). Using one
@@ -468,22 +462,21 @@ export const trackRender = <S>(
         // this deeper read supersedes it, leaving only maximal (leaf) paths.
         // Reference changes to an ancestor object therefore can't falsely wake
         // a consumer that only read a specific leaf beneath it.
-        const path = childPath(prefix, key as string);
-        entry.session.paths.add(entry.interner.intern(path));
+        const id = entry.interner.internChild(prefixId, key as string);
+        entry.session.paths.add(id);
         traceHook?.({
           instance: entry.session.instance,
           kind: 'record',
           prefix,
           key: key as string,
-          path,
+          path: childPath(prefix, key as string),
           armed: entry.session.armed,
         });
-        if (prefix !== '') {
-          const parentId = prefixId();
+        if (prefixId !== NO_PARENT) {
           // Keep an iteration-pinned array path: `.length` (or any own read)
           // must not narrow away a content dependency the consumer also has.
-          if (entry.session.pinned?.has(parentId) !== true) {
-            entry.session.paths.delete(parentId);
+          if (entry.session.pinned?.has(prefixId) !== true) {
+            entry.session.paths.delete(prefixId);
             traceHook?.({
               instance: entry.session.instance,
               kind: 'drop-parent',
@@ -507,7 +500,7 @@ export const trackRender = <S>(
           // unbound to avoid breaking native iteration receivers.)
           if (!isArray) {
             return (value as (...a: unknown[]) => unknown).bind(
-              entry.wrap(t, prefix),
+              entry.wrap(t, prefix, prefixId),
             );
           }
           return value;
@@ -532,7 +525,11 @@ export const trackRender = <S>(
           return value;
         }
 
-        return entry.wrap(value as object, path);
+        return entry.wrap(
+          value as object,
+          childPath(prefix, key as string),
+          id,
+        );
       },
 
       ownKeys(t) {
@@ -558,14 +555,15 @@ export const trackRender = <S>(
         // `key in obj` queries a specific child path — record it so the
         // consumer wakes when that key is added or removed.
         if (entry.session.armed && typeof key !== 'symbol') {
-          const path = childPath(prefix, key as string);
-          entry.session.paths.add(entry.interner.intern(path));
+          entry.session.paths.add(
+            entry.interner.internChild(prefixId, key as string),
+          );
           traceHook?.({
             instance: entry.session.instance,
             kind: 'has',
             prefix,
             key: key as string,
-            path,
+            path: childPath(prefix, key as string),
             armed: entry.session.armed,
           });
         }
@@ -608,10 +606,11 @@ export const trackRender = <S>(
     const proxy = new Proxy(target, handler);
     entry.proxy = proxy;
     proxyToTarget.set(proxy, target);
-    if (cache !== undefined) {
-      cache._set(target, prefix, entry);
+    if (entries !== undefined) {
+      entries.set(prefixId, entry);
+      if (entries.size > 1) touched!.add(entries);
     } else {
-      byPrefix!.set(prefix, proxy);
+      byPrefix!.set(prefixId, proxy);
     }
     return proxy;
   };
@@ -623,18 +622,17 @@ export const trackRender = <S>(
     armed: session.armed,
   });
   return {
-    value: wrap(state as object, '') as S,
+    value: wrap(state as object, '', NO_PARENT) as S,
     paths: session.paths,
     disarm: () => {
       // Property reads keep routing through this call's `wrap` (even for
       // reused entries — see `entry.wrap` repointing above) until `armed`
-      // flips false below, so `touchedTargets` is only fully settled here,
-      // once this render's synchronous read pass is over. Prune each touched
-      // target's cache entries down to the ones this render claimed, dropping
-      // stale prefixes from prior renders (e.g. an item that has since
-      // shifted index).
-      if (touchedTargets !== undefined) {
-        for (const target of touchedTargets) cache!._prune(target, session);
+      // flips false below, so `touched` is only fully settled here, once this
+      // render's synchronous read pass is over. Prune each touched entry map
+      // down to the prefixes this render claimed, dropping stale ones from
+      // prior renders (e.g. an item that has since shifted index).
+      if (touched !== undefined) {
+        for (const entries of touched) pruneStale(entries, session);
       }
       session.armed = false;
       traceHook?.({

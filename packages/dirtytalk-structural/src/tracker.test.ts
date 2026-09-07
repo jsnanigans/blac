@@ -8,6 +8,7 @@ import {
 } from './tracker';
 import type { PathSet } from './path-set';
 import { ALL_PATHS } from './path-set';
+import type { PathId } from './types';
 
 const asPathStrings = (paths: PathSet, interner: PathInterner): string[] => {
   if (paths === ALL_PATHS || !(paths instanceof Set)) {
@@ -599,7 +600,7 @@ describe('trackRender — ProxyCache', () => {
       // `@internal` field, reached for assertion only — not part of the public API.
       const byTarget = (
         cache as unknown as {
-          byTarget: WeakMap<object, Map<string, unknown>>;
+          byTarget: WeakMap<object, Map<PathId, unknown>>;
         }
       ).byTarget;
 
@@ -620,7 +621,9 @@ describe('trackRender — ProxyCache', () => {
       // the cache does not accumulate one entry per index it has ever been at.
       const byPrefix = byTarget.get(shared);
       expect(byPrefix?.size).toBe(1);
-      expect([...(byPrefix?.keys() ?? [])]).toEqual(['list.2']);
+      expect(
+        [...(byPrefix?.keys() ?? [])].map((id) => interner.lookup(id)),
+      ).toEqual(['list.2']);
     } finally {
       __setPersistTrackingProxies(null);
     }

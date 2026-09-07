@@ -28,9 +28,16 @@ const ANCESTOR_SENTINEL = '\0a:';
  */
 const ROOT_SENTINEL = '\0root';
 
+/** `parentId` for {@link PathInterner.internChild} when the key is top-level. */
+export const NO_PARENT: PathId = -1;
+
 export class PathInterner {
   private readonly _map = new Map<string, PathId>();
   private readonly _paths: string[] = [];
+  // Parallel cache: child ids per parent, keyed by the child's own key (see
+  // `internChild`). Top-level keys live in `_rootChildren`.
+  private readonly _children: (Map<string, PathId> | undefined)[] = [];
+  private readonly _rootChildren = new Map<string, PathId>();
   // Parallel cache: memoized `path.split('.')` per id (see `lookupSegments`).
   private readonly _segments: (readonly string[])[] = [];
   // Parallel cache: for an ancestor-watch id, the id of the underlying real
@@ -70,6 +77,27 @@ export class PathInterner {
           '`PathInterner.size` doc).',
       );
     }
+    return id;
+  }
+
+  /**
+   * `intern` of `parent.key` without building the joined string. Tracking
+   * proxies resolve every property read through here, so the per-parent
+   * cache turns the hot path into two indexed lookups.
+   */
+  internChild(parentId: PathId, key: string): PathId {
+    let children =
+      parentId === NO_PARENT ? this._rootChildren : this._children[parentId];
+    if (children === undefined) {
+      children = new Map<string, PathId>();
+      this._children[parentId] = children;
+    }
+    const cached = children.get(key);
+    if (cached !== undefined) return cached;
+    const id = this.intern(
+      parentId === NO_PARENT ? key : `${this._paths[parentId]}.${key}`,
+    );
+    children.set(key, id);
     return id;
   }
 
