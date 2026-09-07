@@ -3,13 +3,11 @@ import { watch } from '@blac/core';
 import { useBloc } from '@blac/react';
 import { ExampleLayout } from '../../shared/ExampleLayout';
 import { Card } from '../../shared/components';
-import { TodoCubit } from './TodoCubit';
+import { TodoCubit, STORAGE_KEY } from './TodoCubit';
 import { TodoList } from './TodoList';
 import { TodoStats } from './TodoStats';
 import { TodoToolbar } from './TodoToolbar';
 import { QuickAdd } from './QuickAdd';
-
-const STORAGE_KEY = 'blac-examples-todos';
 
 export function TodoDemo() {
   const [logs, setLogs] = useState<string[]>([]);
@@ -20,7 +18,8 @@ export function TodoDemo() {
     setLogs((prev) => [...prev.slice(-50), `[${time}] ${msg}`]);
   }, []);
 
-  // watch() - persist items to localStorage whenever they change
+  // watch() observes the cubit from outside React. onActivate restores and
+  // saves on the ownership edges; watch() covers every change in between.
   useEffect(() => {
     const unwatch = watch(TodoCubit, (bloc) => {
       const items = bloc.state.items;
@@ -54,11 +53,11 @@ export function TodoDemo() {
   return (
     <ExampleLayout
       title="Todo List"
-      description="A full-featured todo app demonstrating watch(), lifecycle hooks, manual dependencies, and the action-only pattern."
+      description="A todo surface wired to the lifecycle hooks: onActivate restores from localStorage on the 0→1 ownership edge and saves on the way out, watch() persists every change in between, and QuickAdd never re-renders from state at all."
       features={[
-        'watch() for localStorage persistence',
-        'onMount / onUnmount lifecycle hooks',
-        'Manual dependency mode for optimized re-renders',
+        'onActivate(signal) restores on mount and saves on abort',
+        'watch() persists from outside React',
+        'onMount / onUnmount component-level hooks',
         'Action-only pattern (QuickAdd never re-renders from state)',
       ]}
     >
@@ -99,9 +98,14 @@ export function TodoDemo() {
               <h4>Key Concepts</h4>
               <div className="stack-xs text-small text-muted">
                 <p>
+                  <strong>onActivate(signal)</strong> restores saved items when
+                  the instance is first owned, and registers an abort listener
+                  that writes them back when the last owner goes away. I/O
+                  belongs here, not in the constructor.
+                </p>
+                <p>
                   <strong>watch()</strong> observes a Cubit from outside React.
-                  Here it auto-saves items to localStorage on every state
-                  change.
+                  Here it auto-saves items on every state change in between.
                 </p>
                 <p>
                   <strong>Manual dependencies</strong> let you explicitly define

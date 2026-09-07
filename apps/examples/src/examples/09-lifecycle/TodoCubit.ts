@@ -13,7 +13,7 @@ export interface TodoState {
   filter: TodoFilter;
 }
 
-const STORAGE_KEY = 'blac-examples-todos';
+export const STORAGE_KEY = 'blac-examples-todos';
 
 function loadFromStorage(): Todo[] {
   try {
@@ -26,9 +26,17 @@ function loadFromStorage(): Todo[] {
 
 export class TodoCubit extends Cubit<TodoState> {
   constructor() {
-    super({
-      items: loadFromStorage(),
-      filter: 'all',
+    super({ items: [], filter: 'all' });
+  }
+
+  // I/O belongs in onActivate, not the constructor: a bloc may be constructed
+  // before anything owns it, and the constructor has no signal to unwind with.
+  protected override onActivate(signal: AbortSignal): void {
+    const restored = loadFromStorage();
+    if (restored.length > 0) this.patch({ items: restored });
+
+    signal.addEventListener('abort', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state.items));
     });
   }
 
