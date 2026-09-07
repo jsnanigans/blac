@@ -272,6 +272,12 @@ export default defineConfig({
         },
       },
       {
+        files: ['**/*.astro'],
+        rules: {
+          'no-undef': 'off',
+        },
+      },
+      {
         files: ['**/*.test.ts', '**/*.test.tsx', '**/*.typetest.ts'],
         rules: {
           '@typescript-eslint/no-explicit-any': 'off',

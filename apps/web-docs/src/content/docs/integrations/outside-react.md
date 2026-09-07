@@ -1,6 +1,6 @@
 ---
 title: Using BlaC outside React
-description: "@blac/core has no dependency on React — use blocs in vanilla JS, Node.js, or any framework via watch (observe) and acquire/release (own the lifecycle)."
+description: '@blac/core has no dependency on React — use blocs in vanilla JS, Node.js, or any framework via watch (observe) and acquire/release (own the lifecycle).'
 ---
 
 `@blac/core` has no dependency on React. You can use blocs in vanilla JavaScript, Node.js scripts, worker threads, or any framework — without `@blac/react` installed. This page covers the two main patterns: **observing** state with `watch` and **owning** the lifecycle with `acquire`/`release`.

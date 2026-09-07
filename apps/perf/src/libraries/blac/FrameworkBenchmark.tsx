@@ -1,8 +1,8 @@
-import { Cubit, borrow } from "@blac/core";
-import { untracked, useBloc } from "@blac/react";
-import React, { memo, useEffect, useMemo } from "react";
-import { buildData } from "../../shared/data";
-import type { BenchmarkAPI, DataItem } from "../../shared/types";
+import { Cubit } from '@blac/core';
+import { untracked, useBloc } from '@blac/react';
+import React, { memo, useEffect } from 'react';
+import { buildData } from '../../shared/data';
+import type { BenchmarkAPI, DataItem } from '../../shared/types';
 
 interface DemoState {
   data: DataItem[];
@@ -30,7 +30,7 @@ class DemoBloc extends Cubit<DemoState> {
     const newData = this.state.data.slice(0);
     for (let i = 0, len = newData.length; i < len; i += 10) {
       const r = newData[i];
-      newData[i] = { id: r.id, label: r.label + " !!!" };
+      newData[i] = { id: r.id, label: r.label + ' !!!' };
     }
     this.patch({ data: newData });
   };
@@ -67,7 +67,7 @@ class DemoBloc extends Cubit<DemoState> {
 const Row: React.FC<{ item: DataItem }> = memo(({ item }) => {
   const [{ selected }, { remove, select }] = useBloc(DemoBloc);
   return (
-    <tr className={selected === item.id ? "danger" : ""}>
+    <tr className={selected === item.id ? 'danger' : ''}>
       <td className="col-md-1">{item.id}</td>
       <td className="col-md-4">
         <a onClick={() => select(item.id)}>{item.label}</a>

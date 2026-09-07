@@ -5,8 +5,11 @@ import {
   type ProfilerHandle,
 } from './harness/ProfilerWrapper';
 import { measureEndToEnd } from './harness/timing';
-import type { BenchmarkAPI } from './shared/types';
-import { OPERATION_LABELS, type OperationName } from './shared/types';
+import {
+  OPERATION_LABELS,
+  type BenchmarkAPI,
+  type OperationName,
+} from './shared/types';
 import './demo.css';
 
 const MAX_LOG_ENTRIES = 8;

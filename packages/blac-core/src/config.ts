@@ -55,8 +55,8 @@ export interface BlacConfig {
  */
 export const shallowEqualState: EqualityFn = (prev, next) => {
   if (Object.is(prev, next)) return true;
-  if (typeof prev !== "object" || prev === null) return false;
-  if (typeof next !== "object" || next === null) return false;
+  if (typeof prev !== 'object' || prev === null) return false;
+  if (typeof next !== 'object' || next === null) return false;
 
   const prevKeys = Object.keys(prev as object);
   if (prevKeys.length !== Object.keys(next as object).length) return false;

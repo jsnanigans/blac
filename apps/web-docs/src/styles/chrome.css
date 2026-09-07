@@ -54,7 +54,9 @@
 .sidebar a {
   color: var(--blac-ink-dim);
   border-radius: 4px;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .sidebar a:hover {
@@ -80,7 +82,9 @@
 .sidebar details > summary {
   color: var(--blac-ink-dim);
   border-radius: 4px;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .sidebar details > summary:hover {
@@ -191,7 +195,11 @@ starlight-sidebar-topics-dropdown summary:hover,
 .topics-dropdown summary:hover {
   color: var(--blac-dusty);
   border-color: var(--blac-dusty);
-  background-color: color-mix(in srgb, var(--blac-dusty) 8%, var(--blac-surface-2));
+  background-color: color-mix(
+    in srgb,
+    var(--blac-dusty) 8%,
+    var(--blac-surface-2)
+  );
 }
 
 starlight-sidebar-topics-dropdown summary:focus-visible,
@@ -222,7 +230,9 @@ starlight-sidebar-topics-dropdown li a,
   align-items: center;
   gap: 0.5rem;
   border-radius: 4px;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
   text-decoration: none;
 }
 
@@ -266,7 +276,11 @@ site-search button:hover,
 [data-search-trigger]:hover {
   border-color: var(--blac-dusty);
   color: var(--blac-ink);
-  background-color: color-mix(in srgb, var(--blac-dusty) 6%, var(--blac-surface-2));
+  background-color: color-mix(
+    in srgb,
+    var(--blac-dusty) 6%,
+    var(--blac-surface-2)
+  );
 }
 
 site-search button:focus-visible,
@@ -549,7 +563,15 @@ starlight-toc a:focus-visible {
   We do NOT use outline: none without replacement — this is a global enhancement.
 */
 
-:where(a, button, [role='button'], details > summary, input, select, textarea):focus-visible {
+:where(
+  a,
+  button,
+  [role='button'],
+  details > summary,
+  input,
+  select,
+  textarea
+):focus-visible {
   outline: 2px solid var(--blac-dusty);
   outline-offset: 2px;
   /* Remove any existing outlines that differ per-browser */

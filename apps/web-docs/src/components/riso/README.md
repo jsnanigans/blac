@@ -44,9 +44,9 @@ import Grain from '../components/riso/Grain.astro';
 None. Opacity and blend mode are controlled globally via CSS custom properties
 in `riso.css`:
 
-| Property              | Default | Effect                       |
-| --------------------- | ------- | ---------------------------- |
-| `--blac-grain-opacity`| `0.035` | Paper-grain strength (0 – 1) |
+| Property               | Default | Effect                       |
+| ---------------------- | ------- | ---------------------------- |
+| `--blac-grain-opacity` | `0.035` | Paper-grain strength (0 – 1) |
 
 To adjust opacity for a set-piece section, scope the override to the section's
 ancestor, not the `<Grain />` element itself — the grain is fixed-position and
@@ -79,19 +79,19 @@ import RisoHeading from '../components/riso/RisoHeading.astro';
 
 ### Props
 
-| Prop        | Type                                           | Default    | Effect                                                        |
-| ----------- | ---------------------------------------------- | ---------- | ------------------------------------------------------------- |
-| `as`        | `'h1'` – `'h6'`                               | `'h2'`     | Heading level rendered to the DOM.                            |
-| `intensity` | `'subtle'` \| `'normal'` \| `'loud'`           | `'normal'` | Scales `--blac-misregister`; see table below.                 |
-| `class`     | `string`                                       | —          | Forwarded to the heading element for caller-side overrides.   |
+| Prop        | Type                                 | Default    | Effect                                                      |
+| ----------- | ------------------------------------ | ---------- | ----------------------------------------------------------- |
+| `as`        | `'h1'` – `'h6'`                      | `'h2'`     | Heading level rendered to the DOM.                          |
+| `intensity` | `'subtle'` \| `'normal'` \| `'loud'` | `'normal'` | Scales `--blac-misregister`; see table below.               |
+| `class`     | `string`                             | —          | Forwarded to the heading element for caller-side overrides. |
 
 **Intensity → misregister mapping:**
 
-| Value     | `--blac-misregister` | Classes applied                          |
-| --------- | -------------------- | ---------------------------------------- |
-| `subtle`  | `0.75px`             | `.riso-overprint` only                   |
-| `normal`  | `1.5px`              | `.riso-overprint` + `.riso-misregister`  |
-| `loud`    | `3px`                | `.riso-overprint` + `.riso-misregister`, plus `font-variation-settings: 'SOFT' 100, 'WONK' 1` |
+| Value    | `--blac-misregister` | Classes applied                                                                               |
+| -------- | -------------------- | --------------------------------------------------------------------------------------------- |
+| `subtle` | `0.75px`             | `.riso-overprint` only                                                                        |
+| `normal` | `1.5px`              | `.riso-overprint` + `.riso-misregister`                                                       |
+| `loud`   | `3px`                | `.riso-overprint` + `.riso-misregister`, plus `font-variation-settings: 'SOFT' 100, 'WONK' 1` |
 
 ### Slot
 

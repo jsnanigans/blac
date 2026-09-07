@@ -328,7 +328,7 @@ The getter runs against real state, so you test real logic — not a mocked retu
 
 - **Mismatched args key.** If the component resolves a named or args-keyed instance but you register the stub under different args (or no args), the component will spin up its own real instance and ignore your stub. Pass the same `args` to `renderWithBloc` that the component passes to `useBloc` so the resolved keys match.
 - **Asserting before React commits.** Direct bloc mutations need `act()`; user-driven flows need `await userEvent...`; async data needs `await screen.findBy*` (or `await flush()` then a sync query). A missing `await` is the usual cause of "the test sees the old UI."
-:::
+  :::
 
 ## See also
 

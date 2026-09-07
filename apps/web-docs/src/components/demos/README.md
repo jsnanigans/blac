@@ -77,12 +77,12 @@ tutorial's projects live in `tutorial-sandpack-files.ts` as plain strings.
 
 How it differs from the islands — and why those differences are deliberate:
 
-| Aspect      | Island (`DemoFrame`)          | `BlacSandpack`                                   |
-| ----------- | ----------------------------- | ------------------------------------------------ |
-| blac source | live `workspace:*`            | **pinned published** version, from Sandpack CDN  |
-| Editable?   | no                            | yes (the point)                                  |
-| Defends API | yes — breaks the build        | no — accepts version drift                       |
-| Mount       | `client:visible` / `idle`     | **`client:only="react"`**                        |
+| Aspect      | Island (`DemoFrame`)      | `BlacSandpack`                                  |
+| ----------- | ------------------------- | ----------------------------------------------- |
+| blac source | live `workspace:*`        | **pinned published** version, from Sandpack CDN |
+| Editable?   | no                        | yes (the point)                                 |
+| Defends API | yes — breaks the build    | no — accepts version drift                      |
+| Mount       | `client:visible` / `idle` | **`client:only="react"`**                       |
 
 Key rules:
 

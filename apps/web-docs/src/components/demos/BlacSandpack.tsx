@@ -151,9 +151,7 @@ export function BlacSandpack({
   // `files` wins over `code`; `code` is the single-file convenience targeting
   // /App.tsx. At least one must be supplied.
   const resolvedFiles =
-    files && Object.keys(files).length > 0
-      ? files
-      : { '/App.tsx': code ?? '' };
+    files && Object.keys(files).length > 0 ? files : { '/App.tsx': code ?? '' };
 
   return (
     <div className={`blac-sp${codeOpen ? ' blac-sp--open' : ''} not-content`}>

@@ -1,4 +1,4 @@
-import { Cubit, acquire, configureBlac, release } from '@blac/core';
+import { ALL_PATHS, Cubit, acquire, configureBlac, release } from '@blac/core';
 import { buildData, resetId } from '../../shared/data';
 
 // Lift the dev-only emit-rate circuit breaker. Several ops intentionally emit
@@ -233,9 +233,12 @@ export const blacPureState: PureStateBenchmark = {
     'batch rapid updates': (h) => {
       const { counter } = h as BlacHandle;
       let total = 0;
-      const unsub = counter.subscribe((s) => {
-        total += s.count;
-      });
+      const unsub = counter.subscribe(
+        () => ALL_PATHS,
+        () => {
+          total += counter.state.count;
+        },
+      );
       for (let i = 0; i < 1000; i++) {
         counter.patch({ count: i });
       }
@@ -249,7 +252,12 @@ export const blacPureState: PureStateBenchmark = {
       const { demo } = h as BlacHandle;
       const unsubs: (() => void)[] = [];
       for (let i = 0; i < 100; i++) {
-        unsubs.push(demo.subscribe(() => {}));
+        unsubs.push(
+          demo.subscribe(
+            () => ALL_PATHS,
+            () => {},
+          ),
+        );
       }
       for (let i = 0; i < 100; i++) {
         demo.emit({ data: [], selected: i });
@@ -260,10 +268,13 @@ export const blacPureState: PureStateBenchmark = {
       const { demo } = h as BlacHandle;
       demo.emit({ data: buildData(100), selected: 42 });
       let notifyCount = 0;
-      const unsub = demo.subscribe((state) => {
-        void state.selected;
-        notifyCount++;
-      });
+      const unsub = demo.subscribe(
+        () => ALL_PATHS,
+        () => {
+          void demo.state.selected;
+          notifyCount++;
+        },
+      );
       for (let i = 0; i < 1000; i++) {
         demo.patch({ selected: 42 });
       }
@@ -277,11 +288,15 @@ export const blacPureState: PureStateBenchmark = {
       for (let i = 0; i < 10; i++) {
         const threshold = (i + 1) * 10;
         unsubs.push(
-          demo.subscribe((state) => {
-            if (state.selected !== null && state.selected >= threshold) {
-              hitCount++;
-            }
-          }),
+          demo.subscribe(
+            () => ALL_PATHS,
+            () => {
+              const { selected } = demo.state;
+              if (selected !== null && selected >= threshold) {
+                hitCount++;
+              }
+            },
+          ),
         );
       }
       for (let i = 0; i < 1000; i++) {
@@ -312,15 +327,24 @@ export const blacPureState: PureStateBenchmark = {
     'multi-store coordination': (h) => {
       const { counterA, counterB, counterC } = h as BlacHandle;
       let notifications = 0;
-      const unsubA = counterA.subscribe(() => {
-        notifications++;
-      });
-      const unsubB = counterB.subscribe(() => {
-        notifications++;
-      });
-      const unsubC = counterC.subscribe(() => {
-        notifications++;
-      });
+      const unsubA = counterA.subscribe(
+        () => ALL_PATHS,
+        () => {
+          notifications++;
+        },
+      );
+      const unsubB = counterB.subscribe(
+        () => ALL_PATHS,
+        () => {
+          notifications++;
+        },
+      );
+      const unsubC = counterC.subscribe(
+        () => ALL_PATHS,
+        () => {
+          notifications++;
+        },
+      );
       for (let i = 0; i < 1000; i++) {
         counterA.patch({ count: i });
         counterB.patch({ count: counterA.state.count * 2 });

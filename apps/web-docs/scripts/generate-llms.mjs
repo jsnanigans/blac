@@ -198,7 +198,10 @@ async function main() {
     indexLines.push('');
   }
   const llmsTxt =
-    indexLines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';
+    indexLines
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trimEnd() + '\n';
   await writeFile(path.join(PUBLIC_DIR, 'llms.txt'), llmsTxt, 'utf8');
   written.push(`llms.txt (index, ${pages.length - 1} pages)`);
 
