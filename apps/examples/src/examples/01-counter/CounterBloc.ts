@@ -7,18 +7,29 @@ export interface CounterState {
   lastAction: string;
 }
 
-export type CounterArgs = { id?: string };
+export type CounterArgs = { id?: string; start?: number };
+
+const initialState = (start = 0): CounterState => ({
+  count: start,
+  incrementCount: 0,
+  decrementCount: 0,
+  lastAction: 'initialized',
+});
 
 export class CounterBloc extends Cubit<CounterState, CounterArgs> {
   static key = (a?: CounterArgs) => a?.id ?? 'default';
 
-  constructor(initialCount: number = 0) {
-    super({
-      count: initialCount,
-      incrementCount: 0,
-      decrementCount: 0,
-      lastAction: 'initialized',
-    });
+  private start = 0;
+
+  constructor() {
+    super(initialState());
+  }
+
+  // The framework constructs every bloc with `new Type()`, so seed values
+  // arrive through `init(args)` — never through constructor parameters.
+  protected override init(args?: CounterArgs): void {
+    this.start = args?.start ?? 0;
+    if (this.start !== 0) this.emit(initialState(this.start));
   }
 
   increment = () => {
@@ -38,18 +49,10 @@ export class CounterBloc extends Cubit<CounterState, CounterArgs> {
   };
 
   reset = () => {
-    this.emit({
-      count: 0,
-      incrementCount: 0,
-      decrementCount: 0,
-      lastAction: 'reset',
-    });
+    this.emit(initialState(this.start));
   };
 
   setValue = (value: number) => {
-    this.patch({
-      count: value,
-      lastAction: `set to ${value}`,
-    });
+    this.patch({ count: value, lastAction: `set to ${value}` });
   };
 }
