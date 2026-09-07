@@ -97,6 +97,33 @@ same-tick marks.
 
 This is live in production for any synchronous burst, not just in benchmarks.
 
+### Correction (measured 2026-09-07): it only triggers with path-scoped consumers
+
+`patch()` takes the zero-consumer branch (`container.ts:241`) and marks `ALL_PATHS` when no
+consumer paths are registered — and `pathSetUnion` short-circuits on the `ALL_PATHS` symbol
+without copying. So the O(n²) needs registered consumer paths to bite.
+
+Instrumented `PathSetSpace.union` over 200 same-tick patches:
+
+| scenario                       | union calls | real Set copies |
+| ------------------------------ | ----------- | --------------- |
+| with path-scoped consumer      | 199         | **198**         |
+| without (zero-consumer branch) | 199         | **0**           |
+
+`registerConsumerPaths` is called only from the React hooks (`blac-react/src/useBloc.ts:339`,
+`dirtytalk-structural/src/react-hook.ts:33,60`) — never from the pure-state benchmarks.
+
+**Consequences:**
+
+- The bug is real and hits **real React apps** (any component subscribed via `useBloc` while
+  something patches repeatedly in one tick), which is the case that matters most.
+- It is **not** the cause of the `derived state computation` (2.7x) or
+  `batch rapid updates` (2.0x) pure-state gaps — those have no consumer paths, so they never
+  copy. My earlier attribution of those two rows to this bug was wrong; their residual gap
+  belongs to the Phase 2 constants.
+- Phase 0.4's new op must call `registerConsumerPaths` (or drive the burst through a mounted
+  `useBloc` component), otherwise it will measure the zero-copy path and show nothing.
+
 ### Measured cost (median of 15, Node)
 
 Simulating 1000 same-tick marks with the current `union`:

@@ -37,6 +37,28 @@ Raw state management throughput measured without React involvement. Instantiates
 - Outlier removal (2.5 sigma from median via MAD)
 - Reports: min, median, mean, p95, max, stddev
 
+### Reading the numbers — caveats
+
+Know these before drawing conclusions from a run:
+
+- **Timer resolution is 5µs.** `vite.config.ts` sets COOP/COEP so `performance.now()` gets
+  5µs resolution instead of the default 100µs clamp, but every measurement is still a
+  multiple of 5µs. A row showing `StdDev 0µs / CV 0.0%` is **below the timer's resolution**,
+  not perfectly stable. Treat differences under ~15µs (3 ticks) as noise, and don't chase
+  a "1.10x slower" that is one tick wide.
+- **Each pure-state sample is one run of the whole op body.** Most op bodies contain their
+  own internal 1000-iteration loop, so the reported median is the cost of ~1000 operations,
+  not one. Per-operation cost is roughly `median / 1000`.
+- **`setup()` runs inside the measured loop**, once per sample, but outside the timed
+  region. Only Blac defines a `teardown` (it disposes its containers); Zustand and Redux
+  define none, so they leave their stores to GC.
+- **Cross-library ops must do equivalent work.** Ops with no counterpart in another library
+  are reported separately without ratios — see "Registry Lifecycle" in the generated report.
+  When adding an op, make the comparison fair or mark it per-library.
+- **Read-only ops measure JS property access.** `.state` / `getState()` is an O(1) field
+  read in all three libraries, so `read 20 fields (baseline)` mostly measures the 20 dynamic
+  `field${j}` lookups in the benchmark loop itself.
+
 ## Adding a New Library
 
 1. Create `src/libraries/<name>/FrameworkBenchmark.tsx` — a React component accepting `onReady: (api: BenchmarkAPI) => void`

@@ -99,6 +99,33 @@ const Row: React.FC<{
   );
 });
 
+// Scenario B (per-row subscription): counterpart to Blac's default row — each
+// row selects `selected` itself, so a select re-renders only affected rows at
+// the cost of one subscription per row on mount.
+const SubRow: React.FC<{
+  item: DataItem;
+  store: ReturnType<typeof createDemoStore>;
+}> = memo(({ item, store }) => {
+  const isSelected = useStore(store, (s) => s.selected === item.id);
+  const select = useStore(store, (s) => s.select);
+  const remove = useStore(store, (s) => s.remove);
+
+  return (
+    <tr className={isSelected ? 'danger' : ''}>
+      <td className="col-md-1">{item.id}</td>
+      <td className="col-md-4">
+        <a onClick={() => select(item.id)}>{item.label}</a>
+      </td>
+      <td className="col-md-1">
+        <a onClick={() => remove(item.id)}>
+          <span className="glyphicon glyphicon-remove" aria-hidden="true" />
+        </a>
+      </td>
+      <td className="col-md-6" />
+    </tr>
+  );
+});
+
 export const ZustandFrameworkBenchmark: React.FC<{
   onReady: (api: BenchmarkAPI) => void;
 }> = ({ onReady }) => {
@@ -132,6 +159,40 @@ export const ZustandFrameworkBenchmark: React.FC<{
               isSelected={selected === item.id}
               store={store}
             />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export const ZustandPerRowFrameworkBenchmark: React.FC<{
+  onReady: (api: BenchmarkAPI) => void;
+}> = ({ onReady }) => {
+  const storeRef = useRef(createDemoStore());
+  const store = storeRef.current;
+  const data = useStore(store, (s) => s.data);
+
+  useEffect(() => {
+    const s = store.getState();
+    onReady({
+      run: s.run,
+      runLots: s.runLots,
+      add: s.add,
+      update: s.updateEveryTenth,
+      clear: s.clear,
+      swapRows: s.swapRows,
+      select: s.select,
+      remove: s.remove,
+    });
+  }, [store, onReady]);
+
+  return (
+    <div className="container">
+      <table className="table table-hover table-striped test-data">
+        <tbody>
+          {data.map((item) => (
+            <SubRow key={item.id} item={item} store={store} />
           ))}
         </tbody>
       </table>

@@ -259,6 +259,23 @@ export const reduxToolkitPureState: PureStateBenchmark = {
       void total;
     },
 
+    // ── Same-tick burst (scoped subscriber) ──
+    //
+    // Counterpart to Blac's path-scoped consumer: a subscriber reading one
+    // field. 1000 synchronous dispatches in one tick.
+    'same-tick burst 1000 (tracked consumer)': (h) => {
+      const store = h as BenchmarkStore;
+      let seen = 0;
+      const unsub = store.subscribe(() => {
+        seen += store.getState().wide.field10;
+      });
+      for (let i = 0; i < 1000; i++) {
+        store.dispatch(wideSlice.actions.setField10(i));
+      }
+      unsub();
+      void seen;
+    },
+
     // ── Subscription & Notification ──
 
     'notify 100 subscribers': (h) => {
@@ -372,7 +389,10 @@ export const reduxToolkitPureState: PureStateBenchmark = {
         void store.getState().counter.count;
       }
     },
-    'proxy track 20 fields': (h) => {
+    // Pure read cost: `.state`/`getState()` is an O(1) field read in every
+    // library here, so this measures the 20 dynamic `field${j}` string lookups
+    // in this loop, not library machinery. Kept as a shared baseline.
+    'read 20 fields (baseline)': (h) => {
       const store = h as BenchmarkStore;
       for (let i = 0; i < 1000; i++) {
         const s = store.getState().wide;
@@ -400,15 +420,6 @@ export const reduxToolkitPureState: PureStateBenchmark = {
       for (let i = 0; i < 1000; i++) {
         store.dispatch(counterSlice.actions.setCount(i));
         void store.getState().counter;
-      }
-    },
-    'proxy cache reuse': (h) => {
-      const store = h as BenchmarkStore;
-      for (let i = 0; i < 1000; i++) {
-        const s = store.getState().wide;
-        for (let j = 0; j < 20; j++) {
-          void s[`field${j}` as keyof WideState];
-        }
       }
     },
 

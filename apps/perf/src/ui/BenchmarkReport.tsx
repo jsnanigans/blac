@@ -26,6 +26,7 @@ const CATEGORIES: Record<string, string[]> = {
     'patch 1 of 20 fields',
     'nested object update',
     'batch rapid updates',
+    'same-tick burst 1000 (tracked consumer)',
   ],
   'Subscription & Notification': [
     'notify 100 subscribers',
@@ -39,6 +40,21 @@ const CATEGORIES: Record<string, string[]> = {
   ],
 };
 
+// Registry-lifecycle ops have no cross-library equivalent: Zustand and Redux
+// have no acquire/release/dispose concept, so their versions just allocate a
+// store and tear down nothing, while Blac does keyed lookup, refcounting,
+// ownership tracking and real disposal. Comparing them measures "does
+// refcounting exist", not speed. Tracked as a Blac-only regression series
+// (absolute numbers, no ratios) and excluded from the scorecard.
+const LIFECYCLE_OPS = [
+  'acquire/release cycle',
+  'acquire shared instance',
+  'instance create/dispose',
+];
+
+const isLifecycleOp = (operation: string): boolean =>
+  LIFECYCLE_OPS.includes(operation);
+
 interface ComparisonRow {
   operation: string;
   results: Map<string, PureStateResult>;
@@ -48,7 +64,11 @@ interface ComparisonRow {
 }
 
 function buildComparisons(results: PureStateResult[]): ComparisonRow[] {
-  const operations = [...new Set(results.map((r) => r.operation))];
+  const operations = [
+    ...new Set(
+      results.map((r) => r.operation).filter((op) => !isLifecycleOp(op)),
+    ),
+  ];
   return operations.map((op) => {
     const opResults = results.filter((r) => r.operation === op);
     const byLib = new Map(opResults.map((r) => [r.library, r]));
@@ -285,6 +305,31 @@ export function generateMarkdownReport(
           if (!r) continue;
           ln(`| ${lib} | ${statRow(r.avgDuration)} |`);
         }
+      }
+    }
+
+    // Registry lifecycle — absolute numbers only, no cross-library ratios.
+    const lifecycleRows = pureResults.filter((r) => isLifecycleOp(r.operation));
+    if (lifecycleRows.length > 0) {
+      ln();
+      ln('## Registry Lifecycle (per-library, not comparable)');
+      ln();
+      ln(
+        'Zustand and Redux have no acquire/release/dispose concept — their versions of',
+      );
+      ln(
+        'these ops allocate a store and tear down nothing, so ratios here would measure',
+      );
+      ln(
+        'feature presence, not speed. Tracked per library against its own history.',
+      );
+      ln();
+      ln(
+        '| Library | Operation | Min | Median | Mean | P95 | Max | StdDev | Spread | CV% | Skew |',
+      );
+      ln('|---|---|---|---|---|---|---|---|---|---|---|');
+      for (const r of lifecycleRows) {
+        ln(`| ${r.library} | ${r.operation} | ${statRow(r.avgDuration)} |`);
       }
     }
   }

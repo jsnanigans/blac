@@ -133,6 +133,23 @@ export const zustandPureState: PureStateBenchmark = {
       void total;
     },
 
+    // ── Same-tick burst (scoped subscriber) ──
+    //
+    // Counterpart to Blac's path-scoped consumer: the nearest Zustand analogue
+    // is a subscriber reading one field. 1000 synchronous updates in one tick.
+    'same-tick burst 1000 (tracked consumer)': (h) => {
+      const { wide } = h as ZustandHandle;
+      let seen = 0;
+      const unsub = wide.subscribe((s) => {
+        seen += s.field0;
+      });
+      for (let i = 0; i < 1000; i++) {
+        wide.setState({ field0: i });
+      }
+      unsub();
+      void seen;
+    },
+
     // ── Subscription & Notification ──
 
     'notify 100 subscribers': (h) => {
@@ -234,7 +251,10 @@ export const zustandPureState: PureStateBenchmark = {
         void s.count;
       }
     },
-    'proxy track 20 fields': (h) => {
+    // Pure read cost: `.state`/`getState()` is an O(1) field read in every
+    // library here, so this measures the 20 dynamic `field${j}` string lookups
+    // in this loop, not library machinery. Kept as a shared baseline.
+    'read 20 fields (baseline)': (h) => {
       const { wide } = h as ZustandHandle;
       for (let i = 0; i < 1000; i++) {
         const s = wide.getState();
@@ -262,15 +282,6 @@ export const zustandPureState: PureStateBenchmark = {
       for (let i = 0; i < 1000; i++) {
         counter.setState({ count: i });
         counter.getState();
-      }
-    },
-    'proxy cache reuse': (h) => {
-      const { wide } = h as ZustandHandle;
-      for (let i = 0; i < 1000; i++) {
-        const s = wide.getState();
-        for (let j = 0; j < 20; j++) {
-          void s[`field${j}` as keyof WideState];
-        }
       }
     },
 

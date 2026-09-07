@@ -64,6 +64,9 @@ class DemoBloc extends Cubit<DemoState> {
   };
 }
 
+// Scenario B (per-row subscription): each row subscribes and reads `selected`
+// itself, so a select re-renders only the affected rows — but mounting pays one
+// subscription per row.
 const Row: React.FC<{ item: DataItem }> = memo(({ item }) => {
   const [{ selected }, { remove, select }] = useBloc(DemoBloc);
   return (
@@ -81,6 +84,29 @@ const Row: React.FC<{ item: DataItem }> = memo(({ item }) => {
     </tr>
   );
 });
+
+// Scenario A (prop-drilled): the row subscribes to nothing. `isSelected` and the
+// callbacks arrive as props, so a select re-renders the parent and diffs every
+// row, but mounting allocates no per-row subscription.
+const PropRow: React.FC<{
+  item: DataItem;
+  isSelected: boolean;
+  onSelect: (id: number) => void;
+  onRemove: (id: number) => void;
+}> = memo(({ item, isSelected, onSelect, onRemove }) => (
+  <tr className={isSelected ? 'danger' : ''}>
+    <td className="col-md-1">{item.id}</td>
+    <td className="col-md-4">
+      <a onClick={() => onSelect(item.id)}>{item.label}</a>
+    </td>
+    <td className="col-md-1">
+      <a onClick={() => onRemove(item.id)}>
+        <span className="glyphicon glyphicon-remove" aria-hidden="true" />
+      </a>
+    </td>
+    <td className="col-md-6" />
+  </tr>
+));
 
 export const BlacFrameworkBenchmark: React.FC<{
   onReady: (api: BenchmarkAPI) => void;
@@ -107,6 +133,43 @@ export const BlacFrameworkBenchmark: React.FC<{
           {/* adding untracked here prevents the child from registering new paths for reactive rerending, when the label or id change then the whole item is a new object */}
           {state.data.map((item) => (
             <Row key={item.id} item={untracked(item)} />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export const BlacPropDrilledFrameworkBenchmark: React.FC<{
+  onReady: (api: BenchmarkAPI) => void;
+}> = ({ onReady }) => {
+  const [state, bloc] = useBloc(DemoBloc);
+
+  useEffect(() => {
+    onReady({
+      run: bloc.run,
+      runLots: bloc.runLots,
+      add: bloc.add,
+      update: bloc.updateEveryTenth,
+      clear: bloc.clear,
+      swapRows: bloc.swapRows,
+      select: bloc.select,
+      remove: bloc.remove,
+    });
+  }, [bloc, onReady]);
+
+  return (
+    <div className="container">
+      <table className="table table-hover table-striped test-data">
+        <tbody>
+          {state.data.map((item) => (
+            <PropRow
+              key={item.id}
+              item={untracked(item)}
+              isSelected={state.selected === item.id}
+              onSelect={bloc.select}
+              onRemove={bloc.remove}
+            />
           ))}
         </tbody>
       </table>

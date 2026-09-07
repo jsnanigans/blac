@@ -246,6 +246,26 @@ export const blacPureState: PureStateBenchmark = {
       void total;
     },
 
+    // ── Same-tick burst (path-scoped consumer) ──
+    //
+    // Registers a path-scoped consumer, which is what a mounted `useBloc`
+    // component does. That switches `patch` off the zero-consumer ALL_PATHS
+    // shortcut and onto the precise per-path lane, where every `mark()` unions
+    // into the channel's accumulated set. With a microtask scheduler the flush
+    // only runs at end of tick, so a synchronous burst accumulates. This op
+    // exists to keep that path honest — see perf-plan.md Phase 1.
+    'same-tick burst 1000 (tracked consumer)': (h) => {
+      const { wide } = h as BlacHandle;
+      wide.registerConsumerPaths(
+        'bench',
+        new Set([wide.interner.intern('field0')]),
+      );
+      for (let i = 0; i < 1000; i++) {
+        wide.patch({ field0: i });
+      }
+      wide.unregisterConsumer('bench');
+    },
+
     // ── Subscription & Notification ──
 
     'notify 100 subscribers': (h) => {
@@ -371,7 +391,10 @@ export const blacPureState: PureStateBenchmark = {
         void counter.state.count;
       }
     },
-    'proxy track 20 fields': (h) => {
+    // Pure read cost: `.state`/`getState()` is an O(1) field read in every
+    // library here, so this measures the 20 dynamic `field${j}` string lookups
+    // in this loop, not library machinery. Kept as a shared baseline.
+    'read 20 fields (baseline)': (h) => {
       const { wide } = h as BlacHandle;
       for (let i = 0; i < 1000; i++) {
         const s = wide.state;
@@ -399,15 +422,6 @@ export const blacPureState: PureStateBenchmark = {
       for (let i = 0; i < 1000; i++) {
         counter.emit({ count: i });
         void counter.state;
-      }
-    },
-    'proxy cache reuse': (h) => {
-      const { wide } = h as BlacHandle;
-      for (let i = 0; i < 1000; i++) {
-        const s = wide.state;
-        for (let j = 0; j < 20; j++) {
-          void s[`field${j}` as keyof WideState];
-        }
       }
     },
 

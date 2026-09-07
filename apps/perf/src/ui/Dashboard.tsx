@@ -272,7 +272,7 @@ export const Dashboard: React.FC = () => {
     };
 
     for (const lib of activeLibs) {
-      if (!lib.pureState) continue; // Blac opts out of pure-state — see registry.ts.
+      if (!lib.pureState) continue; // "(prop rows)" variants are React-only — see registry.ts.
       const results = await runPureStateBenchmark(
         lib.pureState,
         runConfig,

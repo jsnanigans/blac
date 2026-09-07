@@ -70,6 +70,8 @@ function createDemoStore() {
   });
 }
 
+// Scenario A (prop-drilled): `isSelected` arrives as a prop, so a select
+// re-renders the parent and diffs every row.
 const Row: React.FC<{
   item: DataItem;
   isSelected: boolean;
@@ -135,6 +137,75 @@ export const ReduxToolkitFrameworkBenchmark: React.FC<{
   return (
     <Provider store={storeRef.current}>
       <BenchmarkInner onReady={onReady} />
+    </Provider>
+  );
+};
+
+// Scenario B (per-row subscription): each row selects its own `isSelected`.
+const SubRow: React.FC<{ item: DataItem }> = memo(({ item }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const isSelected = useSelector(
+    (state: RootState) => state.selected === item.id,
+  );
+
+  return (
+    <tr className={isSelected ? 'danger' : ''}>
+      <td className="col-md-1">{item.id}</td>
+      <td className="col-md-4">
+        <a onClick={() => dispatch(demoSlice.actions.select(item.id))}>
+          {item.label}
+        </a>
+      </td>
+      <td className="col-md-1">
+        <a onClick={() => dispatch(demoSlice.actions.remove(item.id))}>
+          <span className="glyphicon glyphicon-remove" aria-hidden="true" />
+        </a>
+      </td>
+      <td className="col-md-6" />
+    </tr>
+  );
+});
+
+const PerRowBenchmarkInner: React.FC<{
+  onReady: (api: BenchmarkAPI) => void;
+}> = ({ onReady }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const data = useSelector((state: RootState) => state.data);
+
+  useEffect(() => {
+    onReady({
+      run: () => dispatch(demoSlice.actions.run()),
+      runLots: () => dispatch(demoSlice.actions.runLots()),
+      add: () => dispatch(demoSlice.actions.add()),
+      update: () => dispatch(demoSlice.actions.updateEveryTenth()),
+      clear: () => dispatch(demoSlice.actions.clear()),
+      swapRows: () => dispatch(demoSlice.actions.swapRows()),
+      select: (id: number) => dispatch(demoSlice.actions.select(id)),
+      remove: (id: number) => dispatch(demoSlice.actions.remove(id)),
+    });
+  }, [dispatch, onReady]);
+
+  return (
+    <div className="container">
+      <table className="table table-hover table-striped test-data">
+        <tbody>
+          {data.map((item) => (
+            <SubRow key={item.id} item={item} />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export const ReduxToolkitPerRowFrameworkBenchmark: React.FC<{
+  onReady: (api: BenchmarkAPI) => void;
+}> = ({ onReady }) => {
+  const storeRef = useRef(createDemoStore());
+
+  return (
+    <Provider store={storeRef.current}>
+      <PerRowBenchmarkInner onReady={onReady} />
     </Provider>
   );
 };
