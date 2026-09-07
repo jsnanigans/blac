@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   DEFAULT_CONFIG,
   DEFAULT_PURE_CONFIG,
+  measureRetainedMemory,
   runPureStateBenchmark,
   runReactBenchmark,
   type ProgressCallback,
@@ -29,6 +30,7 @@ import type {
   RerenderLibraryResults,
   RerenderOperationResult,
   RerenderScenario,
+  RetainedMemoryResult,
 } from '../shared/types';
 import { OPERATION_LABELS, RERENDER_SCENARIO_LABELS } from '../shared/types';
 import { BenchmarkReport } from './BenchmarkReport';
@@ -69,6 +71,9 @@ export const Dashboard: React.FC = () => {
   const [progress, setProgress] = useState('');
   const [reactResults, setReactResults] = useState<LibraryResults[]>([]);
   const [pureResults, setPureResults] = useState<PureStateResult[]>([]);
+  const [memoryResults, setMemoryResults] = useState<RetainedMemoryResult[]>(
+    [],
+  );
   const [rerenderResults, setRerenderResults] = useState<
     RerenderLibraryResults[]
   >([]);
@@ -262,7 +267,9 @@ export const Dashboard: React.FC = () => {
   const runPureBenchmarks = async () => {
     setRunning(true);
     setPureResults([]);
+    setMemoryResults([]);
     const allResults: PureStateResult[] = [];
+    const allMemory: RetainedMemoryResult[] = [];
 
     const activeLibs = libraries.filter((l) => selectedLibs.has(l.name));
 
@@ -281,9 +288,14 @@ export const Dashboard: React.FC = () => {
         },
       );
       allResults.push(...results);
+
+      setProgress(`${lib.name}: retained memory`);
+      const memory = await measureRetainedMemory(lib.pureState);
+      if (memory) allMemory.push(memory);
     }
 
     setPureResults(allResults);
+    setMemoryResults(allMemory);
     setProgress('');
     setRunning(false);
   };
@@ -293,6 +305,7 @@ export const Dashboard: React.FC = () => {
       react: reactResults,
       rerender: rerenderResults,
       pureState: pureResults,
+      memory: memoryResults,
       config,
       timestamp: Date.now(),
       userAgent: navigator.userAgent,
@@ -615,11 +628,14 @@ export const Dashboard: React.FC = () => {
         </>
       )}
 
-      {tab === 'pure-state' && <PureStateResults results={pureResults} />}
+      {tab === 'pure-state' && (
+        <PureStateResults results={pureResults} memory={memoryResults} />
+      )}
 
       {tab === 'report' && (
         <BenchmarkReport
           pureResults={pureResults}
+          memoryResults={memoryResults}
           reactResults={reactResults}
         />
       )}

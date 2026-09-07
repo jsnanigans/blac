@@ -76,6 +76,14 @@ export interface PureStateResult {
   operation: string;
   opsPerSecond: number;
   avgDuration: StatResult;
+  /** Back-to-back op calls per timed sample; `avgDuration` is per call. */
+  repetitions: number;
+}
+
+export interface RetainedMemoryResult {
+  library: string;
+  instances: number;
+  bytesPerInstance: StatResult;
 }
 
 export interface WideState {
@@ -143,6 +151,11 @@ export interface PureStateBenchmark {
   setup: () => unknown;
   operations: Record<string, (handle: unknown) => void>;
   teardown?: (handle: unknown) => void;
+  /**
+   * Create `n` minimal live instances and return a function that releases
+   * them. Used to measure retained bytes per instance.
+   */
+  retain?: (n: number) => () => void;
 }
 
 export interface LibraryDefinition {

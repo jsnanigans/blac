@@ -73,6 +73,14 @@ Know these before drawing conclusions from a run:
 - **Each pure-state sample is one run of the whole op body.** Most op bodies contain their
   own internal 1000-iteration loop, so the reported median is the cost of ~1000 operations,
   not one. Per-operation cost is roughly `median / 1000`.
+- **Op bodies under 50µs are timed over 10 back-to-back calls per sample** and divided by
+  10, so a 5µs tick is a few percent of the window instead of a third of it. The runner
+  probes each op after warmup to decide; the report lists which ops were repeated.
+- **Retained memory is Chrome-only.** `performance.measureUserAgentSpecificMemory()` needs
+  the cross-origin isolation the dev server already sets. Each library's `retain(n)` creates
+  10k minimal instances; the reported figure is the memory delta per instance, median of
+  five. The two readings land on different GC cycles, so a run with 1000 instances showed
+  a ±250 B/instance jitter; 10k keeps it under ~25 B. Other browsers skip the section.
 - **`setup()` runs inside the measured loop**, once per sample, but outside the timed
   region. Only Blac defines a `teardown` (it disposes its containers); Zustand and Redux
   define none, so they leave their stores to GC.

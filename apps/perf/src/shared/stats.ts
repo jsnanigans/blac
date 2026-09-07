@@ -64,6 +64,12 @@ export function removeOutliers(
   return values.filter((v) => Math.abs(v - median) / mad <= sigmaThreshold);
 }
 
+export function formatBytes(bytes: number): string {
+  if (Math.abs(bytes) < 1024) return `${bytes.toFixed(0)} B`;
+  if (Math.abs(bytes) < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 export function formatMs(ms: number): string {
   if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;
   if (ms < 100) return `${ms.toFixed(1)}ms`;

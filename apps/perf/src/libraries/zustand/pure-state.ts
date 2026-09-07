@@ -277,4 +277,12 @@ export const zustandPureState: PureStateBenchmark = {
       }
     },
   },
+  retain: (n) => {
+    const stores = Array.from({ length: n }, () =>
+      createStore<CounterState>(() => ({ count: 0 })),
+    );
+    return () => {
+      stores.length = 0;
+    };
+  },
 };

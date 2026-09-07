@@ -1,12 +1,46 @@
 import React from 'react';
-import { formatMs } from '../shared/stats';
-import type { PureStateResult } from '../shared/types';
+import { formatBytes, formatMs } from '../shared/stats';
+import type { PureStateResult, RetainedMemoryResult } from '../shared/types';
 
 interface Props {
   results: PureStateResult[];
+  memory: RetainedMemoryResult[];
 }
 
-export const PureStateResults: React.FC<Props> = ({ results }) => {
+const RetainedMemory: React.FC<{ memory: RetainedMemoryResult[] }> = ({
+  memory,
+}) => {
+  if (memory.length === 0) return null;
+  return (
+    <div className="results-section">
+      <h3>Retained Memory (per live instance)</h3>
+      <table className="results-table">
+        <thead>
+          <tr>
+            <th>Library</th>
+            <th>Instances</th>
+            <th>Median</th>
+            <th>Min</th>
+            <th>Max</th>
+          </tr>
+        </thead>
+        <tbody>
+          {memory.map((m) => (
+            <tr key={m.library}>
+              <td>{m.library}</td>
+              <td>{m.instances}</td>
+              <td>{formatBytes(m.bytesPerInstance.median)}</td>
+              <td>{formatBytes(m.bytesPerInstance.min)}</td>
+              <td>{formatBytes(m.bytesPerInstance.max)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export const PureStateResults: React.FC<Props> = ({ results, memory }) => {
   if (results.length === 0) return null;
 
   const libraries = [...new Set(results.map((r) => r.library))];
@@ -68,6 +102,7 @@ export const PureStateResults: React.FC<Props> = ({ results }) => {
           })}
         </tbody>
       </table>
+      <RetainedMemory memory={memory} />
     </div>
   );
 };

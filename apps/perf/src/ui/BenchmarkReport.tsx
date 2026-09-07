@@ -1,14 +1,16 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { formatMs } from '../shared/stats';
+import { formatBytes, formatMs } from '../shared/stats';
 import type {
   LibraryResults,
   OperationResult,
   PureStateResult,
+  RetainedMemoryResult,
   StatResult,
 } from '../shared/types';
 
 interface Props {
   pureResults: PureStateResult[];
+  memoryResults: RetainedMemoryResult[];
   reactResults: LibraryResults[];
 }
 
@@ -105,6 +107,7 @@ function statRow(stat: StatResult): string {
 
 export function generateMarkdownReport(
   pureResults: PureStateResult[],
+  memoryResults: RetainedMemoryResult[],
   reactResults: LibraryResults[],
 ): string {
   const lines: string[] = [];
@@ -238,6 +241,18 @@ export function generateMarkdownReport(
     ln();
     ln('## Pure State — Detailed Breakdown');
 
+    const repeated = [
+      ...new Set(
+        pureResults.filter((r) => r.repetitions > 1).map((r) => r.operation),
+      ),
+    ];
+    if (repeated.length > 0) {
+      ln();
+      ln(
+        `Ops under 50µs are timed over 10 back-to-back calls per sample (numbers are per call): ${repeated.join(', ')}.`,
+      );
+    }
+
     const allCategorized = Object.values(CATEGORIES).flat();
     const uncategorized = comparisons
       .filter((c) => !allCategorized.includes(c.operation))
@@ -319,6 +334,28 @@ export function generateMarkdownReport(
       for (const r of lifecycleRows) {
         ln(`| ${r.library} | ${r.operation} | ${statRow(r.avgDuration)} |`);
       }
+    }
+  }
+
+  if (memoryResults.length > 0) {
+    ln();
+    ln('## Retained Memory (per live instance)');
+    ln();
+    ln(
+      'Agent memory after creating N minimal instances minus memory before, via',
+    );
+    ln(
+      '`performance.measureUserAgentSpecificMemory()` (Chrome, cross-origin isolated).',
+    );
+    ln('Five samples per library; the median is the headline number.');
+    ln();
+    ln('| Library | Instances | Median | Min | Max |');
+    ln('|---|---|---|---|---|');
+    for (const m of memoryResults) {
+      const b = m.bytesPerInstance;
+      ln(
+        `| ${m.library} | ${m.instances} | ${formatBytes(b.median)} | ${formatBytes(b.min)} | ${formatBytes(b.max)} |`,
+      );
     }
   }
 
@@ -942,6 +979,7 @@ function ReactReport({ results }: { results: LibraryResults[] }) {
 
 export const BenchmarkReport: React.FC<Props> = ({
   pureResults,
+  memoryResults,
   reactResults,
 }) => {
   const libraries = useMemo(
@@ -961,8 +999,8 @@ export const BenchmarkReport: React.FC<Props> = ({
   }, [comparisons]);
 
   const markdown = useMemo(
-    () => generateMarkdownReport(pureResults, reactResults),
-    [pureResults, reactResults],
+    () => generateMarkdownReport(pureResults, memoryResults, reactResults),
+    [pureResults, memoryResults, reactResults],
   );
 
   const [copied, setCopied] = useState(false);

@@ -7,6 +7,7 @@ import type {
   ProfilerMetric,
   PureStateBenchmark,
   PureStateResult,
+  RetainedMemoryResult,
 } from '../shared/types';
 import { delay, measureEndToEnd } from './timing';
 import type { ProfilerHandle } from './ProfilerWrapper';
@@ -171,6 +172,8 @@ export async function runPureStateBenchmark(
       benchmark.teardown?.(handle);
     }
 
+    const reps = repetitionsFor(benchmark, opFn);
+
     onProgress?.(opName, 'measure', 0, iterations);
     await delay(100);
 
@@ -179,9 +182,9 @@ export async function runPureStateBenchmark(
     for (let i = 0; i < iterations; i++) {
       const handle = benchmark.setup();
       const start = performance.now();
-      opFn(handle);
+      for (let r = 0; r < reps; r++) opFn(handle);
       const end = performance.now();
-      durations.push(end - start);
+      durations.push((end - start) / reps);
       benchmark.teardown?.(handle);
     }
 
@@ -198,6 +201,7 @@ export async function runPureStateBenchmark(
       operation: opName,
       opsPerSecond,
       avgDuration,
+      repetitions: reps,
     });
 
     // yield to the main thread between operations
@@ -205,4 +209,67 @@ export async function runPureStateBenchmark(
   }
 
   return results;
+}
+
+// `performance.now()` resolves to 5µs. An op body that finishes in under ten
+// ticks is timed over several back-to-back calls per sample so one tick is a
+// few percent of the window instead of a third of it.
+const FAST_OP_MS = 0.05;
+const FAST_OP_REPS = 10;
+
+function repetitionsFor(
+  benchmark: PureStateBenchmark,
+  opFn: (handle: unknown) => void,
+): number {
+  let fastest = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < 3; i++) {
+    const handle = benchmark.setup();
+    const start = performance.now();
+    opFn(handle);
+    fastest = Math.min(fastest, performance.now() - start);
+    benchmark.teardown?.(handle);
+  }
+  return fastest < FAST_OP_MS ? FAST_OP_REPS : 1;
+}
+
+declare global {
+  interface Performance {
+    measureUserAgentSpecificMemory?: () => Promise<{ bytes: number }>;
+  }
+}
+
+export const supportsMemoryMeasurement = (): boolean =>
+  typeof performance.measureUserAgentSpecificMemory === 'function';
+
+/**
+ * Retained bytes per live instance: agent memory after creating `instances`
+ * minus memory before, repeated `samples` times. Chrome only, and only in a
+ * cross-origin-isolated page (see the COOP/COEP headers in `vite.config.ts`).
+ *
+ * The two readings land on different GC cycles, so garbage left by earlier
+ * ops adds a few hundred KB of jitter to the delta; 10k instances keep that
+ * under ~25 B per instance.
+ */
+export async function measureRetainedMemory(
+  benchmark: PureStateBenchmark,
+  instances = 10_000,
+  samples = 5,
+): Promise<RetainedMemoryResult | null> {
+  const measure = performance.measureUserAgentSpecificMemory;
+  if (!benchmark.retain || !measure) return null;
+
+  const perInstance: number[] = [];
+  for (let i = 0; i < samples; i++) {
+    const before = (await measure.call(performance)).bytes;
+    const release = benchmark.retain(instances);
+    const after = (await measure.call(performance)).bytes;
+    release();
+    perInstance.push((after - before) / instances);
+  }
+
+  return {
+    library: benchmark.name,
+    instances,
+    bytesPerInstance: computeStats(perInstance),
+  };
 }

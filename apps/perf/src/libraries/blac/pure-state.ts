@@ -390,6 +390,10 @@ export const blacPureState: PureStateBenchmark = {
       }
     },
   },
+  retain: (n) => {
+    const blocs = Array.from({ length: n }, () => new CounterABloc());
+    return () => blocs.forEach((b) => b.dispose());
+  },
   teardown: (h) => {
     const handle = h as BlacHandle;
     handle.demo.dispose();

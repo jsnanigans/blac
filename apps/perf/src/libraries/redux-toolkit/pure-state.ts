@@ -398,4 +398,12 @@ export const reduxToolkitPureState: PureStateBenchmark = {
       }
     },
   },
+  retain: (n) => {
+    const stores = Array.from({ length: n }, () =>
+      configureStore({ reducer: { counter: counterSlice.reducer } }),
+    );
+    return () => {
+      stores.length = 0;
+    };
+  },
 };
