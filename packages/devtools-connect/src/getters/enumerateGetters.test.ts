@@ -6,7 +6,8 @@ import {
   afterEach,
   vi,
 } from 'vite-plus/test';
-import { Cubit, getPluginManager, acquire, clearAll } from '@blac/core';
+import { Cubit, acquire, clearAll } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 import { enumerateGetters } from './enumerateGetters';
 import { DevToolsBrowserPlugin } from '../plugin/DevToolsBrowserPlugin';
 

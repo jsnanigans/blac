@@ -4,7 +4,8 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@blac/core": ["../blac-core/dist/index.d.ts"]
+      "@blac/core": ["../blac-core/dist/index.d.ts"],
+      "@blac/core/plugins": ["../blac-core/dist/plugins.d.ts"]
     }
   },
   "include": ["src/**/*"],
