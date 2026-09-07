@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { getPluginManager } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 import { ExampleLayout } from '../../shared/ExampleLayout';
 import { Card } from '../../shared/components';
 import { analyticsPlugin, clearAnalyticsEntries } from './AnalyticsPlugin';

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getPluginManager } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 import { ExampleLayout } from '../../shared/ExampleLayout';
 import { Button, Card } from '../../shared/components';
 import {

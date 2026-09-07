@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getPluginManager, getStats } from '@blac/core';
+import { getStats } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 import { useBloc } from '@blac/react';
 import { ExampleLayout } from '../../shared/ExampleLayout';
 import { Card, Button, RenderCounter } from '../../shared/components';
