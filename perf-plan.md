@@ -466,6 +466,80 @@ within its ±10% run-to-run noise in both directions; the list-read saving is ~0
   two `Object.getPrototypeOf` plain-object checks, the three-level `patch` override chain
   and the mark/schedule call; nothing left there is a single hot spot.
 
+## Phase 6 — Report review, regression fix, contract change (landed 2026-09-07)
+
+Comparing the Phase 5 browser report against Phase 4's:
+
+- Geometric mean 1.30x → 1.24x, wins 7 → 11 (five ops became ties), `acquire/release`
+  2.3 → 1.3ms. The new "critical" `derived state computation` and worse
+  `batch rapid updates` ratios are Zustand's medians halving (30 → 15µs, 35 → 20µs) at a
+  5µs timer floor, not Blac moving — Blac improved on both.
+- The sub-rows `run`/`add` render increase did not reproduce: the jsdom mount harness
+  (`perf.mount.test.tsx`) at HEAD vs 396d0ee9 was faster on every op (mount 30.9 → 24.8ms,
+  add 32.1 → 27.8ms, select 10.0 → 7.8ms medians). Browser noise until a re-run says
+  otherwise.
+- **`instance create/dispose` regressed 455 → 540µs.** Node A/B with the two core files
+  from before 8139d751: min 0.522 → 0.637ms per 1000. `_pruneEntry` had swapped its
+  `WeakMap` identity lookup for `container.$blac.id`, which lazily builds a fresh
+  `"<Name>:main"` string per bare instance and hashes it for a guaranteed `Map` miss.
+
+### What changed
+
+- **core** — `_pruneEntry` returns early when `_instanceId` was never generated; a
+  registered instance always has one because the entry is keyed by `$blac.id`.
+- **core** — `IS_DEV` is now `process.env.NODE_ENV` defined and not `'production'`. A
+  browser bundle without a `process` shim used to run every dev check (a `Date.now()` per
+  emit/patch for the rate breaker, the deps collision scan, the acquire args-mismatch key)
+  in production. The benchmark never saw this because it disables the breaker.
+- **core** — `$blac` is a class (`BlacMeta`, with `BlacHydration` built on first access):
+  prototype accessors over one `#private` back-reference, frozen, brand on the prototype.
+  This is the contract change 2.4 refused: members are no longer own-enumerable, so
+  `Object.keys($blac)` and `JSON.stringify($blac)` return empty. Nothing in the monorepo
+  enumerated them (devtools excludes `$blac` by name). `etc/core.api.md` was updated by
+  hand and needs `api-extractor run --local` after the next build to confirm.
+- **perf app** — op bodies under 50µs are timed over 10 back-to-back calls per sample so a
+  tick is a few percent of the window; the report lists which ops were repeated. New
+  `retain(n)` hook per library plus `measureRetainedMemory` (Chrome,
+  `performance.measureUserAgentSpecificMemory()`, works because the dev server is already
+  cross-origin isolated) reports retained bytes per live instance.
+
+### Measured (Node 24, `perf.bench.ts`, per 1000 ops)
+
+| op                    | Phase 5 | after   | change |
+| --------------------- | ------- | ------- | ------ |
+| construct + dispose   | 0.637ms | 0.116ms | −82%   |
+| acquire/release cycle | 1.76ms  | 0.65ms  | −63%   |
+
+Core (682), react (191), structural (207) and engine (61) tests green.
+
+### Browser re-run (`apps/perf/bench-report_3.md`)
+
+| metric                             | Phase 5 | Phase 6 |
+| ---------------------------------- | ------- | ------- |
+| geometric mean                     | 1.24x   | 1.17x   |
+| wins (Blac / Zustand)              | 11 / 12 | 12 / 8  |
+| instance create/dispose (per 1000) | 540µs   | 130µs   |
+| acquire/release cycle (per 1000)   | 1.3ms   | 755µs   |
+| CV% on sub-50µs ops                | 8–60%   | 1–3%    |
+
+The repetition change did its job: the four remaining gaps are now a clean signal, not
+timer ticks. `proxy track 1 field` 37 vs 16µs, `derived state computation` 28 vs 16µs,
+`batch rapid updates` 40 vs 21µs, `multi-store coordination` 115 vs 65µs — all the same
+~12–20ns flat cost per zero-consumer `patch` over a bare `Object.assign` store. `create 1k`
+and `read 20 fields` closed to ties, as predicted (both were GC/JIT variance).
+
+Retained memory at 1000 instances was too noisy to read (Blac median 47 B, min −6 B,
+max 257 B, against a stable 262 B for Zustand and 1.9 KB for Redux): the before/after
+readings land on different GC cycles and the garbage from earlier ops swamps a ~50 KB
+signal. The harness now retains 10k instances over five samples; the first real numbers
+need another run.
+
+### Not done, on purpose
+
+- Lazy `_createdAt`: a `createdAt` that reports first-read time is wrong, not cheaper.
+- Resolving the class name once for `_name` and `INIT_CONFIG`: `getBlacName` is one static
+  property read on the acquire path; a cached field would cost a slot on every instance.
+
 ## Expected outcome
 
 - Phase 0: two bogus "critical" rows (179.7x, 55.7x) removed; React and read-op numbers
