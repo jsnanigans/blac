@@ -99,19 +99,18 @@ function ArticleCard({ article }: { article: Article }) {
 }
 
 export function FeedDemo() {
-  // Owns the FeedCubit instance and triggers the initial load.
-  // autoTrack: false means this component never re-renders from state.
-  const [, _bloc] = useBloc(FeedCubit, {
-    select: () => [],
-    onMount: (b) => void b.loadAuthor(AUTHORS[0].id),
-  });
+  // Owns the FeedCubit instance. `select: () => []` opts this shell out of
+  // auto-tracking, so it never re-renders from state. The initial load runs
+  // from the bloc's own onActivate.
+  useBloc(FeedCubit, { select: () => [] });
 
   return (
     <ExampleLayout
       title="Async Data"
       description="Loading, error, and retry patterns for async operations. Three components share one FeedCubit but track different slices of state, so each re-renders independently."
       features={[
-        'loadAuthor() is async — switching authors immediately cancels the previous request via request ID',
+        'onActivate(signal) kicks off the first load and aborts it if the instance deactivates',
+        'Switching authors aborts the in-flight fetch through a real AbortSignal',
         'AuthorTabs only re-renders when the selected author changes, not when posts load',
         'LoadStatus only re-renders on status transitions: idle → loading → success/error',
         'ArticleList only re-renders when the articles array actually changes',
@@ -133,10 +132,10 @@ export function FeedDemo() {
             <div className="stack-xs text-small text-muted">
               <p>
                 <strong>Request cancellation:</strong> Each{' '}
-                <code>loadAuthor()</code> increments an internal{' '}
-                <code>_reqId</code>. When the async call resolves, it checks if
-                its ID is still current. Switching authors mid-flight silently
-                drops the stale response.
+                <code>loadAuthor()</code> aborts the previous{' '}
+                <code>AbortController</code> before starting. A superseded fetch
+                rejects as <code>AbortError</code> and is swallowed, so a stale
+                response can never overwrite fresh state.
               </p>
               <p>
                 <strong>Granular re-renders:</strong> Watch the render badges.
@@ -152,10 +151,11 @@ export function FeedDemo() {
                 stored in state — no props or closures needed.
               </p>
               <p>
-                <strong>autoTrack: false:</strong> The parent{' '}
-                <code>FeedDemo</code> component uses{' '}
-                <code>autoTrack: false</code> to own the Cubit lifecycle and
-                trigger the initial load without subscribing to state updates.
+                <strong>onActivate:</strong> The first load fires from{' '}
+                <code>onActivate(signal)</code> on the 0→1 ownership transition
+                — not from a component effect. Its <code>signal</code> aborts on{' '}
+                <code>onDeactivate</code>, so leaving the route cancels the
+                request in flight.
               </p>
             </div>
           </Card>

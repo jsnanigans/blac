@@ -120,8 +120,15 @@ const ARTICLES: Record<number, Article[]> = {
 
 async function fakeFetch(
   authorId: number,
+  signal: AbortSignal,
 ): Promise<{ author: Author; articles: Article[] }> {
-  await new Promise((r) => setTimeout(r, 700 + Math.random() * 600));
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(resolve, 700 + Math.random() * 600);
+    signal.addEventListener('abort', () => {
+      clearTimeout(timer);
+      reject(signal.reason);
+    });
+  });
   if (Math.random() < 0.3) {
     throw new Error('Network timeout — please try again.');
   }
@@ -130,7 +137,9 @@ async function fakeFetch(
 }
 
 export class FeedCubit extends Cubit<FeedState> {
-  private _reqId = 0;
+  private inflight?: AbortController;
+  /** Aborted when the instance deactivates; cancels whatever is in flight. */
+  private lifetime?: AbortSignal;
 
   constructor() {
     super({
@@ -142,8 +151,22 @@ export class FeedCubit extends Cubit<FeedState> {
     });
   }
 
+  // Side effects belong on the 0→1 ownership transition, not in a component
+  // effect. `signal` aborts on onDeactivate, so leaving the route cancels the
+  // request in flight.
+  protected override onActivate(signal: AbortSignal): void {
+    this.lifetime = signal;
+    signal.addEventListener('abort', () => this.inflight?.abort(signal.reason));
+    void this.loadAuthor(this.state.authorId);
+  }
+
   loadAuthor = async (authorId: number) => {
-    const myId = ++this._reqId;
+    // Supersede any in-flight request; its rejection is swallowed below.
+    this.inflight?.abort(new DOMException('Superseded', 'AbortError'));
+    const controller = new AbortController();
+    this.inflight = controller;
+    if (this.lifetime?.aborted) return;
+
     this.emit({
       status: 'loading',
       authorId,
@@ -152,11 +175,12 @@ export class FeedCubit extends Cubit<FeedState> {
       error: null,
     });
     try {
-      const { author, articles } = await fakeFetch(authorId);
-      if (this._reqId !== myId) return;
+      const { author, articles } = await fakeFetch(authorId, controller.signal);
       this.emit({ status: 'success', authorId, author, articles, error: null });
     } catch (err) {
-      if (this._reqId !== myId) return;
+      // An aborted request was replaced or the instance went away — the
+      // winning call owns the state, so drop this one silently.
+      if (controller.signal.aborted) return;
       this.emit({
         status: 'error',
         authorId,
