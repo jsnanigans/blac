@@ -216,17 +216,24 @@ export abstract class StateContainer<
    * @internal Drive the 0↔1 ownership transition. Idempotent: repeated calls
    * with the same value are no-ops, so the registry can call it from every
    * acquire/release without tracking edges itself.
+   *
+   * Returns which real transition (if any) just happened, so the registry can
+   * emit the matching `activated`/`deactivated` plugin event without exposing
+   * `_activation` itself — `'none'` for an idempotent no-op call.
    */
-  [SET_ACTIVE](active: boolean): void {
-    if (this._disposed) return;
-    if (active === (this._activation !== null)) return;
+  [SET_ACTIVE](
+    active: boolean,
+  ): { kind: 'activated'; signal: AbortSignal } | 'deactivated' | 'none' {
+    if (this._disposed) return 'none';
+    if (active === (this._activation !== null)) return 'none';
     if (active) {
       this._activation = new AbortController();
       this.onActivate(this._activation.signal);
-      return;
+      return { kind: 'activated', signal: this._activation.signal };
     }
     this._abortActivation();
     this.onDeactivate();
+    return 'deactivated';
   }
 
   private _abortActivation(): void {

@@ -465,6 +465,54 @@ describe('PluginManager', () => {
       });
     });
 
+    describe('onActivate / onDeactivate', () => {
+      class KeptAliveCounter extends CounterCubit {
+        static keepAlive = true;
+      }
+
+      it('fires once per ownership span, with the deactivating signal aborted', () => {
+        const onActivate = vi.fn();
+        const onDeactivate = vi.fn();
+        const plugin: BlacPlugin = {
+          name: 'test-plugin',
+          version: '1.0.0',
+          onActivate,
+          onDeactivate,
+        };
+
+        manager.install(plugin);
+
+        const counter = acquire(KeptAliveCounter, { args: { id: 'span' } });
+        expect(onActivate).toHaveBeenCalledOnce();
+        const [ctx, signal] = onActivate.mock.calls[0];
+        expect(ctx).toEqual(expect.objectContaining({ container: counter }));
+        expect(signal.aborted).toBe(false);
+
+        release(KeptAliveCounter, { args: { id: 'span' } });
+
+        expect(onDeactivate).toHaveBeenCalledWith(
+          expect.objectContaining({ container: counter }),
+        );
+        expect(signal.aborted).toBe(true);
+      });
+
+      it('does not fire onDeactivate on dispose', () => {
+        const onDeactivate = vi.fn();
+        const plugin: BlacPlugin = {
+          name: 'test-plugin',
+          version: '1.0.0',
+          onDeactivate,
+        };
+
+        manager.install(plugin);
+
+        acquire(CounterCubit, { args: { id: 'no-keep-alive' } });
+        release(CounterCubit, { args: { id: 'no-keep-alive' } });
+
+        expect(onDeactivate).not.toHaveBeenCalled();
+      });
+    });
+
     describe('onHydrationChange', () => {
       it('should call onHydrationChange on begin -> hydrated transitions', () => {
         const onHydrationChange = vi.fn();

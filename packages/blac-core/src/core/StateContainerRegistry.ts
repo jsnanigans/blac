@@ -51,7 +51,9 @@ export type LifecycleEvent =
   | 'refAcquired'
   | 'refReleased'
   | 'depsChanged'
-  | 'hydrationChanged';
+  | 'hydrationChanged'
+  | 'activated'
+  | 'deactivated';
 
 /**
  * Listener function type for each lifecycle event
@@ -84,7 +86,14 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
                   status: HydrationStatus,
                   previousStatus: HydrationStatus,
                 ) => void
-              : never;
+              : E extends 'activated'
+                ? (
+                    container: StateContainer<any, any, any>,
+                    signal: AbortSignal,
+                  ) => void
+                : E extends 'deactivated'
+                  ? (container: StateContainer<any, any, any>) => void
+                  : never;
 
 /**
  * Central registry for managing StateContainer instances.
@@ -205,10 +214,19 @@ export class StateContainerRegistry {
   /**
    * Single funnel for the 0↔1 ownership transition. `SET_ACTIVE` is idempotent,
    * so every acquire/release path can call this unconditionally rather than
-   * each computing the edge itself.
+   * each computing the edge itself. Emits `activated`/`deactivated` for
+   * plugins to observe the same transition `onActivate`/`onDeactivate` expose
+   * to bloc authors — after `SET_ACTIVE` has already run the instance's own
+   * hook, so plugins always see a container that has finished reacting.
    */
   private _syncActivation(entry: InstanceEntry): void {
-    entry.instance[SET_ACTIVE](!this._hasNoOwners(entry));
+    const transition = entry.instance[SET_ACTIVE](!this._hasNoOwners(entry));
+    if (transition === 'none') return;
+    if (transition === 'deactivated') {
+      this.emit('deactivated', entry.instance);
+    } else {
+      this.emit('activated', entry.instance, transition.signal);
+    }
   }
 
   /**
@@ -958,6 +976,12 @@ export class StateContainerRegistry {
     status: HydrationStatus,
     previousStatus: HydrationStatus,
   ): void;
+  emit(
+    event: 'activated',
+    container: StateContainer<any, any, any>,
+    signal: AbortSignal,
+  ): void;
+  emit(event: 'deactivated', container: StateContainer<any, any, any>): void;
   emit(event: LifecycleEvent, ...args: any[]): void {
     const listeners = this.listeners.get(event);
     if (!listeners || listeners.size === 0) return; // Zero overhead when no listeners

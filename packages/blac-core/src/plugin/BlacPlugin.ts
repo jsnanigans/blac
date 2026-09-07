@@ -138,6 +138,22 @@ export interface BlacPlugin {
   ): void;
 
   /**
+   * Fires on the same 0↔1 ownership transition that drives the container's
+   * own `onActivate`, after that hook has already run. `signal` aborts on the
+   * matching `onDeactivate` and on dispose — dispose does NOT fire
+   * `onDeactivate` (or this hook), matching `StateContainer`'s single
+   * teardown path.
+   */
+  onActivate?(ctx: PluginContext, signal: AbortSignal): void;
+
+  /**
+   * Fires when an active container goes back to unowned while surviving in
+   * the registry (i.e. `keepAlive`), after the container's own `onDeactivate`
+   * has already run. Not fired on dispose.
+   */
+  onDeactivate?(ctx: PluginContext): void;
+
+  /**
    * @internal Devtools-only — fires when a named ref is acquired.
    * Not part of the state-change event payload.
    */

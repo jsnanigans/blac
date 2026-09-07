@@ -46,7 +46,8 @@ interface ContainerBridge {
  * The manager hooks into two surfaces:
  *
  * 1. **Registry lifecycle events** (`created`, `disposed`, `refAcquired`,
- *    `refReleased`, `depsChanged`) — synchronous, fired by the registry.
+ *    `refReleased`, `depsChanged`, `activated`, `deactivated`) — synchronous,
+ *    fired by the registry.
  *
  * 2. **Per-container channel flushes** — microtask-coalesced. For each
  *    container, the manager subscribes once at create-time with
@@ -272,6 +273,12 @@ export class PluginManager {
           );
         },
       ),
+      this.registry.on('activated', (instance, signal) => {
+        this.notifyPlugins('onActivate', instance, signal);
+      }),
+      this.registry.on('deactivated', (instance) => {
+        this.notifyPlugins('onDeactivate', instance);
+      }),
     ];
   }
 

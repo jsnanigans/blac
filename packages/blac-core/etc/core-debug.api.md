@@ -81,7 +81,9 @@ export type LifecycleEvent =
   | 'refAcquired'
   | 'refReleased'
   | 'depsChanged'
-  | 'hydrationChanged';
+  | 'hydrationChanged'
+  | 'activated'
+  | 'deactivated';
 
 // Warning: (ae-forgotten-export) The symbol "HydrationStatus" needs to be exported by the entry point debug.d.ts
 //
@@ -112,7 +114,14 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
                   status: HydrationStatus,
                   previousStatus: HydrationStatus,
                 ) => void
-              : never;
+              : E extends 'activated'
+                ? (
+                    container: StateContainer<any, any, any>,
+                    signal: AbortSignal,
+                  ) => void
+                : E extends 'deactivated'
+                  ? (container: StateContainer<any, any, any>) => void
+                  : never;
 
 // @public (undocumented)
 export function register<T extends StateContainerConstructor>(
