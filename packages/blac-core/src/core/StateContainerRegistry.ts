@@ -251,7 +251,11 @@ export class StateContainerRegistry {
     Type: StateContainerConstructor,
     container: StateContainer<any, any, any>,
   ): boolean {
-    const id = container.$blac.id;
+    // Registration always materializes `_instanceId` (the entry is keyed by
+    // `$blac.id`), so a container without one was never registered. Reading
+    // `$blac.id` here instead would allocate an id for every bare instance.
+    const id = (container as unknown as { _instanceId?: string })._instanceId;
+    if (id === undefined) return false;
     const entry = this._entryById.get(id);
     if (entry === undefined || entry.instance !== container) return false;
     this.instancesByConstructor.get(Type)?.delete(entry.key);
