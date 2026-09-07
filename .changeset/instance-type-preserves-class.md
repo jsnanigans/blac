@@ -1,6 +1,6 @@
 ---
 '@blac/core': minor
-'@blac/react': major
+'@blac/react': minor
 ---
 
 Preserve the class type in `InstanceReadonlyState` / `InstanceState` /

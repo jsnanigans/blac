@@ -1254,9 +1254,125 @@ Phase 2 measured the plugin-system decoupling alone as +50 B, so the barrel cut
 is the untested half of 03 §2 — if it does not shrink core, close the finding as
 won't-fix rather than ship a break for nothing.
 
-- [ ] `register()` re-keying onto constructor identity
-- [ ] Remove `configureBlacReact` + `BlacReactConfig` (delete `src/config.ts`)
-- [ ] Drop `./debug`, `./plugins`, `./watch`, `./types`; cut `getPluginManager` from the barrel _(size-gated)_
-- [ ] `useBloc` tuple 3 → 2, then drop the no-op `useId()` (separate commits — the latter shifts hook order)
-- [ ] `DeepReadonly<S>` for `ExtractState` / `state` / `select`
-- [ ] Naming pass — **last**, and only if 04 §4 will not delete `ensure`/`borrow`
+- [x] `register()` re-keying onto constructor identity
+- [x] Remove `configureBlacReact` + `BlacReactConfig` (delete `src/config.ts`)
+- [x] Drop `./debug`, `./watch`, `./types`; cut `getPluginManager` from the barrel — **`/plugins` kept**, see below
+- [x] `useBloc` tuple 3 → 2, and drop the no-op `useId()`
+- [x] `DeepReadonly<S>` for `ExtractState` (and `select`, which flows from it)
+- [ ] Naming pass — **not started**, deliberately: still gated on 04 §4, which may delete `ensure`/`borrow`
+
+### Built 2026-09-07
+
+**`register()` re-keying.** `registeredTypeNames` (a `Set<string>` of resolved
+bloc names) deleted outright — `this.types` is already a
+`Set<StateContainerConstructor>` that `registerType` populates and `clearAll`
+clears, so the name set was redundant as well as wrong. The guard now reads
+`this.types.has(constructor)`. Mutation-verified: restoring a name-keyed guard
+fails the new test.
+
+**`configureBlacReact` removed.** `src/config.ts` deleted whole (4 exports) plus
+2 barrel lines. Nothing referenced it — the scope doc's predicted doc fallout
+(`blac-react/README.md:318` + 2 web-docs pages) **did not exist**; the
+2026-09-07 docs reduction had already removed those mentions. Note `configureBlac`
+(core, no "React") is a different, live function and was not touched.
+
+**Subpath drops — `/plugins` had to be kept, and the barrel cut is the whole
+win.** Measured the `getPluginManager` barrel cut in isolation before committing
+to it, per the gate: **9.47 → 8.37 kB brotli, −1.10 kB (11.5%)**. That is the
+half of 03 §2 that works; Phase 2's decoupling alone had measured +50 B.
+
+But the cut only pays off if plugin authors have another route, so `/plugins`
+**must stay** — dropping it would leave `getPluginManager` unreachable. Final
+shape: `.`, `./plugins`, `./testing` (6 → 3, not 6 → 2).
+
+`./debug`, `./watch` and `./types` were **pure duplicates** — every symbol they
+exported was already in the barrel (verified per symbol), and their only
+"import sites" were docstrings, not code. Dropping them costs nothing. Removed
+their `src/*.ts` entries, `vite.config.ts` entry-map members, api-extractor
+configs and `etc/*.api.md` reports; `api:check` globs `api-extractor.*.json`, so
+it self-adjusted.
+
+**Six `getPluginManager` consumers had to be repointed**, four of which
+`pnpm typecheck` did **not** catch because `apps/examples` is not in the
+typecheck set — found by grep, not by the compiler. Also added a
+`@blac/core/plugins` alias to `apps/examples`' `vite.config.ts` + `tsconfig.json`
+and `devtools-connect`'s `tsconfig.json`: without it the new imports resolve to
+built `dist` while the barrel resolves to source, which would give the app **two
+`PluginManager` singletons**. That file's own comment says the two maps must
+mirror each other for exactly this reason.
+
+**`useBloc` tuple 3 → 2.** `componentRef` was returned as element 3; dropping it
+made the `componentRef` ref, the `ComponentRef` type and the `RefObject` import
+all dead, so they went too. One test (`componentRef is a stable RefObject
+across re-renders`) pinned the removed element and was deleted with it. The
+no-op `useId()` went in the same pass: its comment claimed it existed "to match
+BlocProvider-driven SSR hydration alignment", but `BlocProvider`'s only `useId`
+reference is a docstring example — **the alignment dependency did not exist**.
+(`useBlocDeps` uses `useId` for real; untouched.)
+
+**`DeepReadonly<S>`.** New `DeepReadonly<T>` in `types/utilities.ts`, applied to
+`ExtractState`. `select`'s first arg needed no separate change — it is typed
+`ExtractState<TBloc>` and inherited it. The **class-internal `state` getter was
+deliberately left as `S`**: it returns the class's own type param, so deep-freezing
+it there would break every internal `this.state` read and every `emit(next)`
+call. Consumer-facing readonly-ness is what the finding is about.
+
+Functions and boxed collections are passed through rather than mapped, so call
+signatures and `Map`/`Set` methods survive. Exported from the barrel — forced,
+since public `ExtractState` now references it (`ae-forgotten-export`).
+
+Verified it bites rather than passing vacuously: a probe asserting `s.a.b = 2`
+and `s.list.push('x')` fails with TS2540 and TS2339 while a plain read compiles.
+
+**A false negative worth recording:** the first `pnpm typecheck` after adding
+`DeepReadonly` reported **0 errors**, and that was wrong. `devtools-ui`
+typechecks against `blac-core/dist`, not source, so its 6 real errors only
+appeared after a rebuild. Same trap the R1 and Cubit sessions hit with
+`plugin-persist`. **Rebuild core before believing a downstream typecheck.**
+
+**Changesets.** New `.changeset/breaking-batch-r4.md` (minor on both). The
+pending `instance-type-preserves-class` changeset was **rewritten `major` →
+`minor` on `@blac/react`** to hold the `2.x` line, per the release decision;
+`protected-mutation` and `dirtytalk-caret-range` were already minor.
+
+**`DeepReadonly` fallout, and it was all in `devtools-ui`.** 6 errors across 3
+components, fixed by **widening the readers, not casting the state** — every
+site was a genuine read-only consumer, so `readonly` propagated cleanly through
+`InstanceData`'s nested types (`refIds`, `refHolders`, `consumers`, `lastPaths`,
+`GetterInfo.dependsOn`, `ConsumerInfo.paths`) into `InstanceListItem`,
+`PathChips`, `StateViewer`, `LogsView` and `pathMatch.ts`. Audited the diff for
+`as any` / `as T[]` / `@ts-ignore` / non-null assertions: **none**.
+
+One site is not pure widening and is worth knowing about: `LogsView.tsx:400`
+now calls `onChange([...filteredOptions])`. `MultiSelect`'s `onChange` takes a
+mutable `O[]` because it stores the array into the bloc, so a copy is correct
+there — a cast would have handed the bloc a frozen array. (The two `as O[]`
+casts at `:277`/`:279` are pre-existing and untouched.)
+
+**Docs:** 13 files updated (5 package READMEs, `blac-core/src/plugin/README.md`,
+and 7 web-docs pages) for the `@blac/core/plugins` import move, plus the
+`blac-core/README.md` entry-point table cut to the two surviving subpaths.
+Docs site rebuilds clean: 37 pages, "no snippet errors".
+
+**Verification:** `pnpm test` 9 packages / 93 files / **1302 tests**, 0 failures
+· `pnpm typecheck` **0 errors** on all 9 · `pnpm lint` **0 errors** (6 warnings,
+all pre-existing: 5 in `dirtytalk-structural/container.test.ts`, 1 at
+`PluginManager.ts:140` — both files byte-identical to HEAD) · `pnpm size` core
+**8.37/15 kB**, react 5.68/5.8 kB · docs build clean.
+
+API reports regenerated for all 5 surviving entry points. Note `api:check`'s
+`for f in api-extractor.*.json; do … || exit 1; done` **bails on the first
+config**, so a report downstream of a failing one is silently left stale — that
+is why `29cc8e46` only partly refreshed them. Run each config individually when
+regenerating.
+
+**Suggested commits:**
+
+- `fix(blac-core): key register() on constructor identity`
+- `refactor(blac-react)!: remove inert configureBlacReact`
+- `perf(blac-core)!: cut plugin manager from the barrel`
+- `refactor(blac-core)!: drop duplicate subpath exports`
+- `refactor(blac-react)!: return a two-element useBloc tuple`
+- `feat(blac-core)!: make extracted state deeply readonly`
+- `refactor(devtools-ui): accept readonly state in components`
+- `docs(blac): import the plugin manager from /plugins`
