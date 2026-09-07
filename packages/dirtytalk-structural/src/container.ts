@@ -38,6 +38,16 @@ import type { ConsumerId, PathId } from './types';
 
 const sharedScheduler = /* @__PURE__ */ new MicrotaskScheduler();
 
+interface ConsumerIndex {
+  readonly paths: Map<ConsumerId, PathSet>;
+  readonly refCounts: Map<PathId, number>;
+  readonly skeleton: Set<PathId>;
+}
+
+// `_skeleton` before any consumer registers. Shared and never mutated: the
+// refcounting only ever writes to a container's own `ConsumerIndex.skeleton`.
+const EMPTY_SKELETON: PathSet = new Set<PathId>();
+
 export interface StructuralContainerOptions {
   /**
    * Scheduler for the underlying DirtyChannel.
@@ -95,17 +105,17 @@ export abstract class StructuralContainer<S> {
   }
 
   private readonly _channel: DirtyChannel<PathSet>;
-  private readonly _consumerPaths = new Map<ConsumerId, PathSet>();
   private _state: S;
-  // Incremental skeleton refcounting (replaces the O(consumers × paths)
-  // from-scratch union). `_skeletonSet` is the live backing set for `_skeleton`
-  // when no ALL_PATHS consumer is registered; `_pathRefCounts` tracks how many
-  // consumers reference each id so an id leaves the skeleton only on its final
-  // 1→0 transition; `_allPathsConsumers` counts ALL_PATHS-interest consumers.
-  private readonly _pathRefCounts = new Map<PathId, number>();
+  // Consumer bookkeeping, allocated by the first `registerConsumerPaths` so a
+  // container nobody tracks never pays for it. Incremental skeleton
+  // refcounting (replaces the O(consumers × paths) from-scratch union):
+  // `skeleton` is the live backing set for `_skeleton` when no ALL_PATHS
+  // consumer is registered; `refCounts` tracks how many consumers reference
+  // each id so an id leaves the skeleton only on its final 1→0 transition;
+  // `_allPathsConsumers` counts ALL_PATHS-interest consumers.
+  private _consumers: ConsumerIndex | null = null;
   private _allPathsConsumers = 0;
-  private readonly _skeletonSet = new Set<PathId>();
-  private _skeleton: PathSet = this._skeletonSet;
+  private _skeleton: PathSet = EMPTY_SKELETON;
   // Allocated only when `options.equality` is given; `_equalsFn` derives the
   // per-path callback from it.
   private _equalsFn?: (id: PathId, a: unknown, b: unknown) => boolean;
@@ -155,7 +165,7 @@ export abstract class StructuralContainer<S> {
   }
 
   get consumerCount(): number {
-    return this._consumerPaths.size;
+    return this._consumers?.paths.size ?? 0;
   }
 
   /**
@@ -166,7 +176,7 @@ export abstract class StructuralContainer<S> {
    * any change. Select-mode consumers don't register here at all.
    */
   getConsumerPaths(): ReadonlyMap<ConsumerId, PathSet> {
-    return new Map(this._consumerPaths);
+    return new Map(this._consumers?.paths);
   }
 
   // ---------------------------------------------------------------------------
@@ -179,7 +189,8 @@ export abstract class StructuralContainer<S> {
     this._state = next;
 
     let dirty: PathSet;
-    if (this._consumerPaths.size === 0) {
+    const consumers = this._consumers;
+    if (consumers === null || consumers.paths.size === 0) {
       // Zero-consumer skip: nothing is registered to diff against, so mark
       // the whole space for any ALL_PATHS subscribers (blac bridge, plugins,
       // watch/select).
@@ -225,16 +236,10 @@ export abstract class StructuralContainer<S> {
    * value changed.
    */
   protected patch(partial: DeepPartial<S>): void {
-    let _empty = true;
-    for (const _k in partial as object) {
-      _empty = false;
-      break;
-    }
-    if (_empty) return;
     const prev = this._state;
     const next = deepMerge(prev, partial as Partial<S>);
     // `deepMerge` returns `prev` by reference when nothing actually changed
-    // (shallow or deep no-op) — no paths to mark, no subscribers to wake.
+    // (empty patch, shallow or deep no-op) — no paths to mark, nobody to wake.
     if (Object.is(prev, next)) return;
     // Apply state mutation atomically *before* mark so consumers see the new
     // state when they read it inside the dirty callback.
@@ -244,7 +249,8 @@ export abstract class StructuralContainer<S> {
     // subscribers (blac bridge, plugins, watch, manual `subscribe`) wake on
     // any mark regardless. So skip the `changedPathsFromPatch` +
     // `_refineAncestorMarks` diff work entirely and mark the whole space.
-    if (this._consumerPaths.size === 0) {
+    const consumers = this._consumers;
+    if (consumers === null || consumers.paths.size === 0) {
       this._channel.mark(ALL_PATHS);
       return;
     }
@@ -275,16 +281,23 @@ export abstract class StructuralContainer<S> {
   }
 
   registerConsumerPaths(id: ConsumerId, paths: PathSet): void {
-    const prev = this._consumerPaths.get(id);
+    const index = (this._consumers ??= {
+      paths: new Map(),
+      refCounts: new Map(),
+      skeleton: new Set(),
+    });
+    const prev = index.paths.get(id);
     if (prev && pathSetEquals(prev, paths)) return; // fast-path skip
 
-    this._consumerPaths.set(id, paths);
-    this._applyRefDelta(prev, paths);
+    index.paths.set(id, paths);
+    this._applyRefDelta(index, prev, paths);
   }
 
   unregisterConsumer(id: ConsumerId): void {
-    const prev = this._consumerPaths.get(id);
-    if (this._consumerPaths.delete(id)) this._applyRefDelta(prev, undefined);
+    const index = this._consumers;
+    if (index === null) return;
+    const prev = index.paths.get(id);
+    if (index.paths.delete(id)) this._applyRefDelta(index, prev, undefined);
   }
 
   // ---------------------------------------------------------------------------
@@ -300,6 +313,7 @@ export abstract class StructuralContainer<S> {
   // result is always set-equal to a from-scratch union of all current
   // consumers' paths.
   private _applyRefDelta(
+    index: ConsumerIndex,
     prev: PathSet | undefined,
     next: PathSet | undefined,
   ): void {
@@ -315,12 +329,12 @@ export abstract class StructuralContainer<S> {
     } else if (prevSet !== undefined) {
       for (const id of prevSet) {
         if (nextSet !== undefined && nextSet.has(id)) continue;
-        const count = (this._pathRefCounts.get(id) ?? 0) - 1;
+        const count = (index.refCounts.get(id) ?? 0) - 1;
         if (count <= 0) {
-          this._pathRefCounts.delete(id);
-          this._skeletonSet.delete(id);
+          index.refCounts.delete(id);
+          index.skeleton.delete(id);
         } else {
-          this._pathRefCounts.set(id, count);
+          index.refCounts.set(id, count);
         }
       }
     }
@@ -329,13 +343,12 @@ export abstract class StructuralContainer<S> {
     } else if (nextSet !== undefined) {
       for (const id of nextSet) {
         if (prevSet !== undefined && prevSet.has(id)) continue;
-        const count = (this._pathRefCounts.get(id) ?? 0) + 1;
-        this._pathRefCounts.set(id, count);
-        if (count === 1) this._skeletonSet.add(id);
+        const count = (index.refCounts.get(id) ?? 0) + 1;
+        index.refCounts.set(id, count);
+        if (count === 1) index.skeleton.add(id);
       }
     }
-    this._skeleton =
-      this._allPathsConsumers > 0 ? ALL_PATHS : this._skeletonSet;
+    this._skeleton = this._allPathsConsumers > 0 ? ALL_PATHS : index.skeleton;
   }
 
   /**
@@ -488,12 +501,15 @@ const deepMerge = <S>(target: S, patch: Partial<S>): S => {
   for (const key in patch) {
     const nextVal = (patch as Record<string, unknown>)[key];
     const prevVal = (target as Record<string, unknown>)[key];
-    let mergedVal: unknown;
-    if (isPlainPatchObject(nextVal) && isPlainPatchObject(prevVal)) {
-      mergedVal = deepMerge(prevVal, nextVal as Partial<typeof prevVal>);
-    } else {
-      mergedVal = nextVal;
-    }
+    // Recurse only when both sides are objects; the recursive call's own
+    // plain-object check settles the rest (a non-plain side replaces).
+    const mergedVal =
+      typeof nextVal === 'object' &&
+      nextVal !== null &&
+      typeof prevVal === 'object' &&
+      prevVal !== null
+        ? deepMerge(prevVal, nextVal)
+        : nextVal;
     if (!Object.is(mergedVal, prevVal)) {
       if (out === undefined) out = { ...(target as Record<string, unknown>) };
       setMergedKey(out, key, mergedVal);
