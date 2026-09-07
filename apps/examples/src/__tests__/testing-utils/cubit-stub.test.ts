@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Cubit } from '@blac/core';
+import { Cubit, watch } from '@blac/core';
 import { blacTestSetup, createCubitStub } from '@blac/core/testing';
 import {
   CounterCubit,
@@ -136,11 +136,15 @@ describe('createCubitStub', () => {
   });
 
   describe('stub instances are fully functional', () => {
-    it('supports subscribe/emit like real instances', async () => {
+    it('supports observation/emit like real instances', async () => {
       const stub = createCubitStub(CounterCubit);
       const listener = vi.fn();
 
-      stub.subscribe(listener);
+      // watch() fires once immediately with the current state.
+      const unwatch = watch(CounterCubit, listener);
+      expect(listener).toHaveBeenCalledOnce();
+      listener.mockClear();
+
       stub.increment();
 
       // Channel flushes are microtask-coalesced; listeners fire after a tick.
@@ -148,6 +152,7 @@ describe('createCubitStub', () => {
 
       expect(listener).toHaveBeenCalledOnce();
       expect(stub.state.count).toBe(1);
+      unwatch();
     });
 
     it('supports dispose', () => {

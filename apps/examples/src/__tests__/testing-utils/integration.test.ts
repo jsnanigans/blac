@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { ensure, acquire, release } from '@blac/core';
+import { ensure, acquire, release, watch } from '@blac/core';
 import {
   blacTestSetup,
   withTestRegistry,
@@ -102,13 +102,14 @@ describe('integration: mixed helpers workflow', () => {
 });
 
 describe('integration: subscription and lifecycle', () => {
-  it('stubs respond to subscribe/emit like real cubits', async () => {
+  it('stubs respond to observation/emit like real cubits', async () => {
     const stub = createCubitStub(CounterCubit, { state: { count: 10 } });
     registerOverride(CounterCubit, stub);
 
     const listener = vi.fn();
     const cubit = ensure(CounterCubit);
-    cubit.subscribe(listener);
+    const unwatch = watch(CounterCubit, listener);
+    listener.mockClear(); // drop watch()'s immediate first call
 
     cubit.increment();
 
@@ -117,6 +118,7 @@ describe('integration: subscription and lifecycle', () => {
 
     expect(listener).toHaveBeenCalledOnce();
     expect(cubit.state.count).toBe(11);
+    unwatch();
   });
 
   it('stubs with mocked methods still support subscription for other mutations', async () => {
@@ -128,7 +130,8 @@ describe('integration: subscription and lifecycle', () => {
 
     const listener = vi.fn();
     const cubit = ensure(CounterCubit);
-    cubit.subscribe(listener);
+    const unwatch = watch(CounterCubit, listener);
+    listener.mockClear(); // drop watch()'s immediate first call
 
     // Mocked method — no state change, no notification
     cubit.increment();
@@ -140,6 +143,7 @@ describe('integration: subscription and lifecycle', () => {
     await Promise.resolve();
     expect(listener).toHaveBeenCalledOnce();
     expect(cubit.state.count).toBe(-1);
+    unwatch();
   });
 });
 
