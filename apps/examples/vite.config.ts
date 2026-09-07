@@ -24,15 +24,7 @@ export default defineConfig({
         find: /^@blac\/core\/plugins$/,
         replacement: src('blac-core/src/plugins.ts'),
       },
-      {
-        find: /^@blac\/core\/tracking$/,
-        replacement: src('blac-core/src/tracking.ts'),
-      },
       { find: /^@blac\/core$/, replacement: src('blac-core/src/index.ts') },
-      {
-        find: /^@blac\/adapter$/,
-        replacement: src('blac-adapter/src/index.ts'),
-      },
       {
         find: /^@blac\/react\/testing$/,
         replacement: src('blac-react/src/testing.ts'),
