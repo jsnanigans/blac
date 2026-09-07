@@ -1,9 +1,16 @@
 import type { StateContainer } from '../core/StateContainer';
 
 /**
- * Recursively marks every property readonly. Functions, and the boxed
- * collection types, are left alone — mapping over them would erase their
- * call signatures and methods.
+ * Recursively mark all properties readonly. The mirror of
+ * `DeepPartial` in `@dirtytalk/structural`, and carves out the same
+ * built-ins for the same reason.
+ *
+ * - Arrays become `ReadonlyArray`, recursing into the element type.
+ * - `Map`/`Set` become their `Readonly` counterparts so their contents are
+ *   frozen too, rather than only the binding.
+ * - `Date | RegExp` are kept as-is; mapping over them would freeze their
+ *   prototype methods instead of their (inaccessible) internal state.
+ * - Primitives and functions pass through unchanged.
  *
  * @typeParam T - The type to deeply freeze
  * @public
@@ -16,9 +23,11 @@ export type DeepReadonly<T> = T extends (...args: any[]) => any
       ? ReadonlyMap<DeepReadonly<K>, DeepReadonly<V>>
       : T extends ReadonlySet<infer U>
         ? ReadonlySet<DeepReadonly<U>>
-        : T extends object
-          ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
-          : T;
+        : T extends Date | RegExp
+          ? T
+          : T extends object
+            ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
+            : T;
 
 /**
  * Extract the state type from a StateContainer, deeply readonly.

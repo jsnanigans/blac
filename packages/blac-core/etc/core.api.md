@@ -223,11 +223,13 @@ export type DeepReadonly<T> = T extends (...args: any[]) => any
       ? ReadonlyMap<DeepReadonly<K>, DeepReadonly<V>>
       : T extends ReadonlySet<infer U>
         ? ReadonlySet<DeepReadonly<U>>
-        : T extends object
-          ? {
-              readonly [K in keyof T]: DeepReadonly<T[K]>;
-            }
-          : T;
+        : T extends Date | RegExp
+          ? T
+          : T extends object
+            ? {
+                readonly [K in keyof T]: DeepReadonly<T[K]>;
+              }
+            : T;
 
 // Warning: (ae-internal-missing-underscore) The name "DEP_BRAND" should be prefixed with an underscore because the declaration is marked as @internal
 //
