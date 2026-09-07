@@ -46,12 +46,7 @@ export default defineConfig({
       reporter: ['text', 'json', 'html', 'lcov'],
       reportsDirectory: './coverage',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: [
-        'src/index.ts',
-        'src/types.ts',
-        'src/**/*.test.ts',
-        'src/**/*.spec.ts',
-      ],
+      exclude: ['src/index.ts', 'src/**/*.test.ts', 'src/**/*.spec.ts'],
     },
     onConsoleLog(log) {
       if (log.startsWith('UNIT')) {

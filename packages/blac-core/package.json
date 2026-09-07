@@ -22,17 +22,8 @@
       "testing": [
         "./dist/testing.d.ts"
       ],
-      "debug": [
-        "./dist/debug.d.ts"
-      ],
       "plugins": [
         "./dist/plugins.d.ts"
-      ],
-      "watch": [
-        "./dist/watch-entry.d.ts"
-      ],
-      "types": [
-        "./dist/types.d.ts"
       ]
     }
   },
