@@ -11,12 +11,18 @@ export class DirtyChannel<Region> {
   readonly #space: Space<Region>;
   readonly #scheduler: Scheduler;
 
-  // Accumulated dirty region since the last flush. Re-entrant marks during a
-  // flush land here too — the flush snapshots `accumulated` at step 1, resets
-  // it to empty(), and then any subsequent mark() calls (from callbacks) write
-  // into the freshly-reset field. At the end of flush we check whether it is
-  // non-empty; if so we schedule another flush.
-  #accumulated: Region;
+  // Accumulated dirty region since the last flush, or `undefined` when nothing
+  // has been marked. Re-entrant marks during a flush land here too — the flush
+  // snapshots `accumulated` at step 1, resets it, and then any subsequent
+  // mark() calls (from callbacks) write into the freshly-reset field. At the
+  // end of flush we check whether it is non-empty; if so we schedule another
+  // flush.
+  #accumulated: Region | undefined = undefined;
+
+  // True once `#accumulated` is a region this channel allocated itself (via
+  // `union`), so `unionInto` may mutate it in place. The first mark of a cycle
+  // is stored by reference to skip a copy, and must never be mutated.
+  #owned = false;
 
   // True while a flush has been requested but not yet drained.
   #scheduled = false;
@@ -39,10 +45,6 @@ export class DirtyChannel<Region> {
 
   readonly #onError?: (err: unknown) => void;
 
-  // Resolved once: `mark()` is the hot path and should not re-check for an
-  // optional method on every call.
-  readonly #unionInto?: (acc: Region, b: Region) => Region;
-
   constructor(
     space: Space<Region>,
     scheduler: Scheduler,
@@ -50,10 +52,8 @@ export class DirtyChannel<Region> {
   ) {
     this.#space = space;
     this.#scheduler = scheduler;
-    this.#accumulated = space.empty();
     this.#boundFlush = () => this.#flush();
     this.#onError = options?.onError;
-    this.#unionInto = space.unionInto?.bind(space);
   }
 
   mark(r: Region): void {
@@ -63,14 +63,26 @@ export class DirtyChannel<Region> {
     // If flushing, the current flush already snapshotted `accumulated` and
     // reset it; so writing here is safe — it queues work for the *next* flush.
     //
-    // `unionInto` accumulates in place where the space supports it. A copying
-    // `union` makes a burst of N same-tick marks O(N²) in total copying, since
-    // each call re-copies everything accumulated so far. `#accumulated` is
-    // private and is replaced with a fresh `empty()` before subscribers see the
-    // old value, so mutating it here is unobservable.
-    this.#accumulated = this.#unionInto
-      ? this.#unionInto(this.#accumulated, r)
-      : this.#space.union(this.#accumulated, r);
+    // The first mark of a cycle is kept by reference (no allocation). A second
+    // mark unions into a region we own, after which `unionInto` — where the
+    // space supports it — accumulates in place: a copying `union` would make a
+    // burst of N same-tick marks O(N²) in total copying. `#accumulated` is
+    // private and is detached before subscribers see it, so mutating an owned
+    // region here is unobservable.
+    const acc = this.#accumulated;
+    const space = this.#space;
+    if (acc === undefined) {
+      this.#accumulated = r;
+      this.#owned = false;
+    } else if (this.#owned && space.unionInto !== undefined) {
+      this.#accumulated = space.unionInto(acc, r);
+    } else {
+      const merged = space.union(acc, r);
+      this.#accumulated = merged;
+      // `union` may return one of its inputs by reference; only a fresh region
+      // is ours to mutate.
+      this.#owned = merged !== acc && merged !== r;
+    }
 
     // Only schedule a new flush when we are not already inside a flush.
     // If we are flushing, the tail of #flush() will detect the non-empty
@@ -102,12 +114,12 @@ export class DirtyChannel<Region> {
 
     // Step 1 — snapshot the dirty region and reset state.
     const dirty = this.#accumulated;
-    this.#accumulated = this.#space.empty();
+    this.#accumulated = undefined;
     this.#scheduled = false;
 
     // Step 2 — empty fast-path: no work to do, skip the subscriber loop
     // entirely. Consumers may rely on "no callback fires for no-op flushes."
-    if (this.#space.isEmpty(dirty)) return;
+    if (dirty === undefined || this.#space.isEmpty(dirty)) return;
 
     // Step 3 — enter flushing mode.
     this.#flushing = true;
@@ -147,12 +159,13 @@ export class DirtyChannel<Region> {
         }
       }
     } else {
-      // Snapshot the subscriber list. New subscribers added during
-      // callbacks will not be in this list and will NOT run this cycle.
-      const live = Array.from(this.#subscribers.values());
-
-      // Iterate the snapshot.
-      for (const entry of live) {
+      // Ids are monotonic and the map is insertion-ordered, so every entry at
+      // or past `firstNewId` was subscribed during this flush: stop there
+      // instead of snapshotting the list. New subscribers will NOT run this
+      // cycle; unsubscribed ones are skipped by the map itself or `alive`.
+      const firstNewId = this.#nextId;
+      for (const [id, entry] of this.#subscribers) {
+        if (id >= firstNewId) break;
         // Check the alive flag on the entry, not the map — the map may have been
         // mutated by an earlier callback (subscribe or unsubscribe).
         if (!entry.alive) continue;
@@ -195,7 +208,10 @@ export class DirtyChannel<Region> {
     // Step 9 — if re-entrant marks arrived during the flush they are sitting in
     // `accumulated` (non-empty). Schedule the next flush now that flushing is
     // cleared so mark()'s guard won't double-schedule.
-    if (!this.#space.isEmpty(this.#accumulated)) {
+    if (
+      this.#accumulated !== undefined &&
+      !this.#space.isEmpty(this.#accumulated)
+    ) {
       this.#scheduled = true;
       this.#scheduler.request(this.#boundFlush);
     }
@@ -219,7 +235,7 @@ export class DirtyChannel<Region> {
       this.#scheduled = false;
     }
 
-    this.#accumulated = this.#space.empty();
+    this.#accumulated = undefined;
     this.#subscribers.clear();
   }
 }
