@@ -894,7 +894,7 @@ doing them separately means rewriting the reconcile logic twice. Exception:
 - [x] `useSyncExternalStore` with a per-consumer version snapshot — [04 §1](./04-architecture.md#1-usesyncexternalstore-with-a-per-consumer-version-snapshot) — _step 2, see below_
 - [ ] **[01 §7](./01-correctness.md#7-tearing-under-concurrent-rendering) tearing — still open.** uSES does **not** fix it; verified against both hooks (see step 2 below). The plan and 04 §1 both assumed it would.
 - [x] Activation lifecycle (`onActivate`/`onDeactivate`) + zero-ref sweep; pure render — [04 §2](./04-architecture.md#2-activation-lifecycle-and-a-pure-render), [01 §6](./01-correctness.md#6-instance-creation-and-init-side-effects-run-inside-render) — _step 1, see below_
-- [ ] Consolidate ~17 refs / 3 effects into one consumer object — [02 §6](./02-performance.md#6-per-consumer-hook-cost)
+- [~] Consolidate ~17 refs / 3 effects into one consumer object — [02 §6](./02-performance.md#6-per-consumer-hook-cost) — _partial: step 2 added the `Consumer` object and folded ~6 refs into it; **16 `useRef` and 8 effects remain** (verified 2026-09-07)_
 - [ ] One ownership model: collapse `refs` + `dependents` into one `owners` set; `ensure()` gated behind a dependent — [04 §4](./04-architecture.md#4-one-ownership-model) — _moved here from R2: the bare `Set` is only safe once uSES guarantees subscribe/unsubscribe pairing. Public surface — see the R2 audit above for the `getRefIds`/circuit-breaker call sites._
 - [x] Registry scoping through React context — [04 §5](./04-architecture.md#5-registry-scoping-through-context) — _step 3, see below_
 - [x] Emit ordering and plugin hooks — [04 §6](./04-architecture.md#6-emit-ordering-and-plugin-hooks) — _step 6, see below_
@@ -1033,10 +1033,10 @@ files, incl. 200-seed fuzz), `pnpm typecheck` clean on 9, `pnpm lint` 0 errors.
 Also removed an unused `vi` import that step 1 left in
 `StateContainerRegistry.activation.test.ts` (a live lint warning).
 
-**API reports need regenerating** — `blac-react` (`RegistryProvider`,
-`RegistryProviderProps`) and `blac-core` (`LifecycleEvent`, `BlacPlugin`, across
-`core.api.md`, `core-debug.api.md`, `core-plugins.api.md`). Use the documented
-`cp temp/*.api.md etc/ && vp fmt` workflow.
+~~**API reports need regenerating**~~ — **done** in `29cc8e46`. Verified
+2026-09-07: `RegistryProvider`/`RegistryProviderProps` are in
+`blac-react/etc/react.api.md`, and `'activated'`/`onActivate` are in
+`blac-core/etc/core-debug.api.md` + `core-plugins.api.md`.
 
 **Suggested commits:**
 
@@ -1050,9 +1050,8 @@ rewrite **must keep claiming ownership in a layout effect** — moving it to a
 passive effect puts a macrotask in the gap and the sweep starts disposing live
 mounts. Silent failure: no type error, no obvious test.
 
-**Not yet done:** `packages/blac-react/etc/*.api.md` needs regenerating —
-`RegistryProvider` + `RegistryProviderProps` are new public exports. Use the
-documented `cp temp/react.api.md etc/ && vp fmt` workflow.
+~~**Not yet done:** `packages/blac-react/etc/*.api.md` needs regenerating~~ —
+**done** in `29cc8e46`; same verification as above.
 
 **Suggested commits:**
 
@@ -1140,3 +1139,124 @@ that file's own comment).
 
 Note: `vp staged` uses `git stash` internally via lint-staged. It reverted
 cleanly on the failing run; all work was intact.
+
+---
+
+## Verification sweep (2026-09-07, `f60ac717`)
+
+Re-measured every gate and re-checked each open item against current source
+rather than against the log. No code changed in this pass.
+
+| Gate              | Result                                              |
+| ----------------- | --------------------------------------------------- |
+| `pnpm test`       | ✅ 9 packages, 93 files, **1302 tests**, 0 failures |
+| `pnpm typecheck`  | ✅ clean on all 9                                   |
+| `pnpm lint`       | ✅ 0 warnings, 0 errors                             |
+| `pnpm size` core  | ✅ 9.48 kB / **15 kB** (budget raised, see below)   |
+| `pnpm size` react | ✅ 5.69 kB / 5.8 kB                                 |
+
+Per-package tests: structural 203, engine 61, spatial 93, core 681, react 191,
+plugin-persist 18, devtools-connect 30, devtools-ui 20, logging 5.
+
+**`@blac/core` went 181 B over budget, and the budget was raised to 15 kB.**
+Phase 5 steps 1 and 6 (activation lifecycle + plugin activation hooks) added
+surface after the last recorded measurement of 9.18/9.3 kB, and neither step
+re-ran `pnpm size`.
+
+Resolved 2026-09-07 by **raising the core budget 9.3 kB → 15 kB** (decision:
+Brendan). Actual is 9.48 kB, so this is deliberate headroom for the remaining
+Phase 5 work rather than a ratchet against current size — the ratchet function
+Phase 2 set up is suspended for core until the breaking batch lands and sizes
+settle, then it should be re-tightened to just above actual. `@blac/react` was
+green (5.69/5.8 kB) and its budget was **left alone**, so it still ratchets.
+
+**Stale references, for anyone navigating by the line numbers above.**
+`blac-core/src` was reorganised after most of this log was written:
+`StateContainer.ts`, `StateContainerRegistry.ts`, `Cubit.ts`, `meta.ts` and
+`symbols.ts` now live in `src/core/`, `PluginManager.ts` in `src/plugin/`, and
+`src/registry/` holds the 8 wrapper files (`acquire`, `borrow`, `config`,
+`ensure`, `index`, `management`, `queries`, `release`). Earlier entries quote
+pre-move paths and line numbers; they are kept as written, as a record of what
+was true at the time.
+
+### Open items, re-verified against source
+
+| Item                                                                                         | Verified state                                                                                                                                              |
+| -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [01 §7](./01-correctness.md#7-tearing-under-concurrent-rendering) tearing                    | **Open, confirmed.** `useBloc.ts:420` still reads `container.state` live in render; the uSES snapshot is a version, not the state.                          |
+| [02 §6](./02-performance.md#6-per-consumer-hook-cost) refs/effects                           | **Open.** `useBloc.ts` is 951 lines with **16 `useRef`** and **8 effects**. The `Consumer` object exists and absorbed ~6 refs; the rest were not folded in. |
+| [04 §4](./04-architecture.md#4-one-ownership-model) one ownership model                      | **Open.** `refs` and `dependents` are still separate: `_isUnowned` and `_hasNoOwners` both read `entry.dependents` alongside the refcount.                  |
+| [05 §3](./05-api-and-types.md#3-dead-and-redundant-surface) useBloc tuple                    | **Open.** 3rd element (`componentRef`) still returned; the no-op `useId()` is still called with a comment saying it is reserved.                            |
+| [05 §8](./05-api-and-types.md#8-naming) naming pass                                          | **Open.** `ensure`/`borrow`/`borrowSafe` unrenamed — correctly blocked on 04 §4, which may delete them.                                                     |
+| [03 §3](./03-bundle-and-packaging.md#3-subpath-exports-duplicate-the-barrel) subpath exports | **Open.** `@blac/core` still exports `.`, `./debug`, `./plugins`, `./watch`, `./types`, `./testing` alongside the barrel.                                   |
+| [02 §2](./02-performance.md#2-three-notification-pipelines-per-emit) pipelines               | **Still must not be collapsed** as written; `notifyStateChanged`/`flushStateChanged`/`_pendingStateChanges` remain by design.                               |
+
+### What to do next
+
+1. ~~Resolve the core size regression~~ — **done**, budget raised to 15 kB.
+   Re-tighten to just above actual once the breaking batch lands.
+2. **Land the breaking batch — now unblocked, scoped in
+   [scope-breaking-batch.md](./scope-breaking-batch.md).** Decisions taken
+   2026-09-07: stay on **`2.x`** and accept the semver break (alpha); **one
+   barrel with `getPluginManager` cut**; `/testing` **kept** while the other
+   four subpaths are dropped. Covers the `configureBlacReact` removal, the
+   `useBloc` tuple arity and its `useId()`, `register()` re-keying,
+   `DeepReadonly<S>` state ([05 §2.2](./05-api-and-types.md#2-type-safety) type
+   half), subpath exports
+   ([03 §3](./03-bundle-and-packaging.md#3-subpath-exports-duplicate-the-barrel))
+   and the naming pass ([05 §8](./05-api-and-types.md#8-naming)).
+3. **04 §4 + 02 §6 together**, after the batch is agreed: both touch
+   `useBloc.ts` ownership/refs, and 05 §8 depends on 04 §4's outcome.
+4. **01 §7 tearing** needs a design pass, not a patch — snapshotting state per
+   render pass is entangled with the tracking proxy.
+
+Three changesets are pending and unreleased: `dirtytalk-caret-range`,
+`instance-type-preserves-class` (major on `@blac/react`), `protected-mutation`.
+
+---
+
+## R4 — the breaking batch — unblocked (2026-09-07)
+
+**Scoped: [scope-breaking-batch.md](./scope-breaking-batch.md).** The batching
+decision that had blocked Phase 4's remainder for several sessions is taken.
+
+**Decisions (Brendan):** assume no external consumers · stay on **`2.x`**,
+shipping the breaks as a minor and accepting the semver violation deliberately
+(alpha) · **one barrel, `getPluginManager` cut from it** · `configureBlacReact`
+removed · naming pass approved.
+
+**Three findings from scoping that changed the shape of the work:**
+
+- **`/testing` is kept**, against the original "drop subpath exports" brief. It
+  carries **56 import sites (55 in tests) and 7 build aliases**, versus 0–1
+  imports for each of the other four. It exports 10 test-harness helpers with no
+  test-runner dependency, so folding it into the barrel is possible — but that
+  puts `createCubitStub`/`blacTestSetup` in the same entry as `Cubit` and
+  `useBloc`, which is the same problem as `getPluginManager` and rests on the
+  tree-shaking assumption that already failed for `PluginManager`. Net: 5
+  subpaths → 1, `getPluginManager` still cut. Confirmed by Brendan.
+- **`configureBlacReact` is inert, not merely empty.** `getBlacReactConfig()`,
+  the only reader, has **zero callers** — nothing in `useBloc` or anywhere else
+  consults the config, so `configureBlacReact({...})` writes to a variable no
+  code path reads. Removing it loses no capability: tree-scoped config is
+  `RegistryProvider`, per-bloc config is the `@blac()` decorator.
+- **`register()`'s remaining defect is identity, not minification.** R1 already
+  moved it off `constructor.name` to `getBlacName`, but the guard is still a
+  `Set<string>` keyed by name, so two distinct classes sharing a `blacName`
+  collide. `this.types` is already a `Set<constructor>` holding the right key.
+
+**Changeset consequence:** the pending `instance-type-preserves-class` changeset
+is `major` on `@blac/react` and would force `3.0.0`. It must be rewritten to
+`minor` to hold the `2.x` line.
+
+**Gate on the barrel cut:** it ships only if `pnpm size` shows a real reduction.
+Phase 2 measured the plugin-system decoupling alone as +50 B, so the barrel cut
+is the untested half of 03 §2 — if it does not shrink core, close the finding as
+won't-fix rather than ship a break for nothing.
+
+- [ ] `register()` re-keying onto constructor identity
+- [ ] Remove `configureBlacReact` + `BlacReactConfig` (delete `src/config.ts`)
+- [ ] Drop `./debug`, `./plugins`, `./watch`, `./types`; cut `getPluginManager` from the barrel _(size-gated)_
+- [ ] `useBloc` tuple 3 → 2, then drop the no-op `useId()` (separate commits — the latter shifts hook order)
+- [ ] `DeepReadonly<S>` for `ExtractState` / `state` / `select`
+- [ ] Naming pass — **last**, and only if 04 §4 will not delete `ensure`/`borrow`
