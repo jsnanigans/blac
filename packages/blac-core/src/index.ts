@@ -81,8 +81,8 @@ export {
   getBlacName,
 } from './utils/static-props';
 
-// Plugin System
-export { getPluginManager, PluginManager } from './plugins';
+// Plugin System — the manager itself lives in `@blac/core/plugins` so it
+// tree-shakes out of apps that never install a plugin.
 export type {
   BlacPlugin,
   BlacPluginWithInit,
@@ -103,6 +103,7 @@ export {
 // Types
 export type {
   StateContainerConstructor,
+  DeepReadonly,
   ExtractState,
   ExtractStateMutable,
   ExtractConstructorArgs,

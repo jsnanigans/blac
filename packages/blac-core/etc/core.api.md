@@ -94,7 +94,9 @@ export interface BlacOptions {
 export interface BlacPlugin {
   // (undocumented)
   readonly name: string;
+  onActivate?(ctx: PluginContext, signal: AbortSignal): void;
   onCreated?(ctx: PluginContext): void;
+  onDeactivate?(ctx: PluginContext): void;
   // @internal
   onDepsChanged?(
     ctx: PluginContext,
@@ -212,6 +214,21 @@ export abstract class Cubit<
   update(fn: (state: S) => S): void;
 }
 
+// @public
+export type DeepReadonly<T> = T extends (...args: any[]) => any
+  ? T
+  : T extends ReadonlyArray<infer U>
+    ? ReadonlyArray<DeepReadonly<U>>
+    : T extends ReadonlyMap<infer K, infer V>
+      ? ReadonlyMap<DeepReadonly<K>, DeepReadonly<V>>
+      : T extends ReadonlySet<infer U>
+        ? ReadonlySet<DeepReadonly<U>>
+        : T extends object
+          ? {
+              readonly [K in keyof T]: DeepReadonly<T[K]>;
+            }
+          : T;
+
 // Warning: (ae-internal-missing-underscore) The name "DEP_BRAND" should be prefixed with an underscore because the declaration is marked as @internal
 //
 // @internal
@@ -270,7 +287,7 @@ export type ExtractDeps<T> = T extends new () => StateContainer<
 
 // @public
 export type ExtractState<T> =
-  T extends StateContainerConstructor<infer S> ? Readonly<S> : never;
+  T extends StateContainerConstructor<infer S> ? DeepReadonly<S> : never;
 
 // @public (undocumented)
 export type ExtractStateMutable<T> =
@@ -296,9 +313,6 @@ export function getBlacConfig(): BlacConfig;
 export function getBlacName<T extends StateContainerConstructor>(
   Type: T,
 ): string;
-
-// @public
-export function getPluginManager(): PluginManager;
 
 // @public (undocumented)
 export function getRefCount<T extends StateContainerConstructor>(
@@ -426,7 +440,9 @@ export type LifecycleEvent =
   | 'refAcquired'
   | 'refReleased'
   | 'depsChanged'
-  | 'hydrationChanged';
+  | 'hydrationChanged'
+  | 'activated'
+  | 'deactivated';
 
 // @public
 export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
@@ -455,7 +471,14 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
                   status: HydrationStatus,
                   previousStatus: HydrationStatus,
                 ) => void
-              : never;
+              : E extends 'activated'
+                ? (
+                    container: StateContainer<any, any, any>,
+                    signal: AbortSignal,
+                  ) => void
+                : E extends 'deactivated'
+                  ? (container: StateContainer<any, any, any>) => void
+                  : never;
 
 // Warning: (ae-internal-missing-underscore) The name "ON_DISPOSE" should be prefixed with an underscore because the declaration is marked as @internal
 //
@@ -512,19 +535,6 @@ export interface PluginContext {
   waitForHydration(instance: StateContainer<any, any, any>): Promise<void>;
 }
 
-// @public
-export class PluginManager {
-  constructor(registry: StateContainerRegistry);
-  clear(): void;
-  // (undocumented)
-  destroy(): void;
-  getAllPlugins(): BlacPlugin[];
-  getPlugin(pluginName: string): BlacPlugin | undefined;
-  hasPlugin(pluginName: string): boolean;
-  install(plugin: BlacPlugin, config?: PluginConfig): void;
-  uninstall(pluginName: string): void;
-}
-
 // @public (undocumented)
 export function register<T extends StateContainerConstructor>(
   BlocClass: T,
@@ -578,6 +588,14 @@ export abstract class StateContainer<
   // @internal
   [REMOVE_DEPS_OWNER](ownerId: string): void;
   // @internal
+  [SET_ACTIVE](active: boolean):
+    | {
+        kind: 'activated';
+        signal: AbortSignal;
+      }
+    | 'deactivated'
+    | 'none';
+  // @internal
   [WITH_TRACKED_STATE]<R>(
     tracked: S,
     fn: () => R,
@@ -603,6 +621,8 @@ export abstract class StateContainer<
   // (undocumented)
   protected emit(next: S): void;
   protected init(_args: Args): void;
+  protected onActivate(_signal: AbortSignal): void;
+  protected onDeactivate(): void;
   // (undocumented)
   protected onDepsChanged(_next: Readonly<Deps>, _prev: Readonly<Deps>): void;
   // Warning: (ae-forgotten-export) The symbol "SystemEventHandler" needs to be exported by the entry point index.d.ts
@@ -651,6 +671,7 @@ export class StateContainerRegistry {
       refId?: string;
       args?: unknown;
       dependent?: StateContainer<any, any, any>;
+      sweepIfUnowned?: boolean;
     },
   ): InstanceType<T>;
   // @internal
@@ -710,6 +731,14 @@ export class StateContainerRegistry {
     status: HydrationStatus,
     previousStatus: HydrationStatus,
   ): void;
+  // (undocumented)
+  emit(
+    event: 'activated',
+    container: StateContainer<any, any, any>,
+    signal: AbortSignal,
+  ): void;
+  // (undocumented)
+  emit(event: 'deactivated', container: StateContainer<any, any, any>): void;
   // @internal
   ensure<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,

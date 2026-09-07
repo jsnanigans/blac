@@ -1,11 +1,36 @@
 import type { StateContainer } from '../core/StateContainer';
 
 /**
- * Extract the state type from a StateContainer
+ * Recursively marks every property readonly. Functions, and the boxed
+ * collection types, are left alone — mapping over them would erase their
+ * call signatures and methods.
+ *
+ * @typeParam T - The type to deeply freeze
+ * @public
+ */
+export type DeepReadonly<T> = T extends (...args: any[]) => any
+  ? T
+  : T extends ReadonlyArray<infer U>
+    ? ReadonlyArray<DeepReadonly<U>>
+    : T extends ReadonlyMap<infer K, infer V>
+      ? ReadonlyMap<DeepReadonly<K>, DeepReadonly<V>>
+      : T extends ReadonlySet<infer U>
+        ? ReadonlySet<DeepReadonly<U>>
+        : T extends object
+          ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
+          : T;
+
+/**
+ * Extract the state type from a StateContainer, deeply readonly.
+ *
+ * State is owned by the container: consumers read it and mutate only through
+ * `emit`/`patch`, so nested writes are a compile error rather than a silent
+ * desync from the change-tracking channel.
+ *
  * @typeParam T - The StateContainer type
  */
 export type ExtractState<T> =
-  T extends StateContainerConstructor<infer S> ? Readonly<S> : never;
+  T extends StateContainerConstructor<infer S> ? DeepReadonly<S> : never;
 
 export type ExtractStateMutable<T> =
   T extends StateContainerConstructor<infer S> ? S : never;

@@ -47,16 +47,6 @@
         "default": "./dist/index.cjs"
       }
     },
-    "./debug": {
-      "import": {
-        "types": "./dist/debug.d.ts",
-        "default": "./dist/debug.js"
-      },
-      "require": {
-        "types": "./dist/debug.d.cts",
-        "default": "./dist/debug.cjs"
-      }
-    },
     "./plugins": {
       "import": {
         "types": "./dist/plugins.d.ts",
@@ -65,26 +55,6 @@
       "require": {
         "types": "./dist/plugins.d.cts",
         "default": "./dist/plugins.cjs"
-      }
-    },
-    "./watch": {
-      "import": {
-        "types": "./dist/watch-entry.d.ts",
-        "default": "./dist/watch-entry.js"
-      },
-      "require": {
-        "types": "./dist/watch-entry.d.cts",
-        "default": "./dist/watch-entry.cjs"
-      }
-    },
-    "./types": {
-      "import": {
-        "types": "./dist/types.d.ts",
-        "default": "./dist/types.js"
-      },
-      "require": {
-        "types": "./dist/types.d.cts",
-        "default": "./dist/types.cjs"
       }
     },
     "./testing": {
