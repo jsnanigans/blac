@@ -834,9 +834,9 @@ all 9; all 8 api-extractor reports pass `api:check`.
 
 **Suggested commit:** `refactor(blac)!: keep the class type in instance aliases`
 
-## Open: pre-existing lint error in `blac-react/src/config.ts`
+## Lint error in `blac-react/src/config.ts` — fixed
 
-`pnpm lint` fails on `main`, independently of any review work:
+- [x] `pnpm lint` was red on `main`, independently of any review work:
 
 ```
 src/config.ts:15:34: error typescript(no-empty-object-type):
@@ -856,29 +856,132 @@ web-docs pages that state the config is "intentionally empty today". Removing
 it is therefore a breaking change and belongs in the **same batch as the
 `DepsTarget` removal**, not a drive-by fix — which is why it was left alone.
 
-Two coherent outcomes when that batch is assembled:
+**Took option 2** (keep the surface, fix the suppression) — deleting
+`configureBlacReact` stays with the breaking batch. The stale ESLint comment is
+now `// oxlint-disable-next-line typescript/no-empty-object-type`, matching the
+6 existing oxlint suppressions in the repo (`useBloc.ts`, `buildTrackedProxy`).
+It also sat _between_ the doc block and the interface, splitting the TSDoc in
+two; folding `@public` into the prose block leaves one comment. Verified
+`@public` still attaches — the symbol is still `@public` in `temp/react.api.md`
+(the trailing "(undocumented)" is pre-existing: api-extractor does not count a
+block whose only tag is `@public`).
 
-1. Delete `configureBlacReact` + `BlacReactConfig` (05 §3's recommendation),
-   updating the three doc references; or
-2. Keep the surface and fix the lint properly — an `oxlint-disable-next-line`
-   comment, or giving the interface a real member once there is a knob (the
-   array-coarsening threshold is the review's suggested first one).
+Still open for the breaking batch: option 1, deleting `configureBlacReact` +
+`BlacReactConfig` outright per 05 §3, updating `blac-react/README.md:318` and
+the two web-docs pages.
 
-Until then `pnpm lint` is red at the root.
+**Verification:** `pnpm lint` green at the root, `pnpm typecheck` clean on 9,
+`pnpm test` 89 files / 0 failures.
+
+**Suggested commit:** `fix(blac-react): use an oxlint suppression in config`
 
 ## Phase 5 — The `@blac/react` rewrite (one coordinated change)
 
+> **Scoped: [scope-react-rewrite.md](./scope-react-rewrite.md) ·
+> Planned: [plan-react-rewrite.md](./plan-react-rewrite.md).**
+> The scope doc's headline correction: the feared `init()` migration **does not
+> exist** — zero `async init(` in any `.ts`, and all 3 non-test `init()` bodies
+> are synchronous. R3 is a hook rewrite plus a 9-file docs pass, not "a rewrite
+> of every consumer app". Two further corrections: a bare `Set` for 04 §4 is
+> **unsafe** (per-refId refcounting at `StateContainerRegistry.ts:464`/`:626`
+> means it disposes one release early), and 04 §6 is ~2/3 already landed.
+
 Items below touch the same ~900 lines of `useBloc.ts`. **Ship together** —
-doing them separately means rewriting the reconcile logic twice.
+doing them separately means rewriting the reconcile logic twice. Exception:
+04 §4 splits out (plan decision 2) — it is the only part touching published
+`blac-core` surface and the hook rewrite does not depend on it.
 
 - [ ] `useSyncExternalStore` with a per-consumer version snapshot; fixes tearing — [04 §1](./04-architecture.md#1-usesyncexternalstore-with-a-per-consumer-version-snapshot), [01 §7](./01-correctness.md#7-tearing-under-concurrent-rendering)
-- [ ] Activation lifecycle (`onActivate`/`onDeactivate`) + zero-ref sweep; pure render — [04 §2](./04-architecture.md#2-activation-lifecycle-and-a-pure-render), [01 §6](./01-correctness.md#6-instance-creation-and-init-side-effects-run-inside-render)
+- [x] Activation lifecycle (`onActivate`/`onDeactivate`) + zero-ref sweep; pure render — [04 §2](./04-architecture.md#2-activation-lifecycle-and-a-pure-render), [01 §6](./01-correctness.md#6-instance-creation-and-init-side-effects-run-inside-render) — _step 1, see below_
 - [ ] Consolidate ~17 refs / 3 effects into one consumer object — [02 §6](./02-performance.md#6-per-consumer-hook-cost)
 - [ ] One ownership model: collapse `refs` + `dependents` into one `owners` set; `ensure()` gated behind a dependent — [04 §4](./04-architecture.md#4-one-ownership-model) — _moved here from R2: the bare `Set` is only safe once uSES guarantees subscribe/unsubscribe pairing. Public surface — see the R2 audit above for the `getRefIds`/circuit-breaker call sites._
-- [ ] Registry scoping through React context — [04 §5](./04-architecture.md#5-registry-scoping-through-context)
-- [ ] Emit ordering and plugin hooks — [04 §6](./04-architecture.md#6-emit-ordering-and-plugin-hooks)
+- [x] Registry scoping through React context — [04 §5](./04-architecture.md#5-registry-scoping-through-context) — _step 3, see below_
+- [ ] Emit ordering and plugin hooks — [04 §6](./04-architecture.md#6-emit-ordering-and-plugin-hooks) — _only the `onActivate`/`onDeactivate` plugin hooks remain; the other two thirds already landed_
 
 **Exit:** major release. SSR-safe, concurrent-safe, render is pure.
+
+### Steps 1, 3, 4 — landed (2026-09-07)
+
+Built per [plan-react-rewrite.md](./plan-react-rewrite.md). Steps 2, 5, 6 are
+still open; step 2 (the uSES rewrite) was deliberately not started until step 1
+was green, since it builds on the activation lifecycle.
+
+**Step 1 — activation lifecycle + sweep (`blac-core`).** New `SET_ACTIVE`
+symbol drives the 0↔1 ownership transition; `protected onActivate(signal)` /
+`onDeactivate()` on `StateContainer`, both no-op base methods like `init()`.
+`SET_ACTIVE` is idempotent, so the registry calls `_syncActivation(entry)` from
+every acquire/release path without computing edges itself. The predicate split
+is the load-bearing detail: `_isUnowned` (which includes the keepAlive term)
+means "may be disposed", while the new `_hasNoOwners` is pure ownership — a
+keepAlive instance still _deactivates_ when its last owner goes, it just is not
+disposed. One `AbortController` per activation, aborted on deactivate **and on
+dispose**; dispose deliberately does not also fire `onDeactivate`, so a
+container has exactly one teardown callback per lifecycle.
+
+The zero-ref sweep landed **opt-in**, gated behind `sweepIfUnowned` on
+`acquire` and passed only by `useBloc`'s speculative render-time create. A bare
+`ensure()` is not swept — it hands the instance to a caller that legitimately
+holds it without a ref, and sweeping those would break `ensure` across an
+`await`.
+
+**Step 3 — registry scoping (`blac-react`).** `RegistryContext` +
+`RegistryProvider`; `useBloc` resolves `useContext(RegistryContext) ??
+getRegistry()` once at the top level and closes over it at all 6 former
+`getRegistry()` sites. `makeDepWrapper` takes the registry as a parameter
+rather than reaching for the global — the dep lane is where scoping would
+otherwise silently half-apply. Effects that acquire got `registry` added to
+their dep arrays so a swap is a paired release+reacquire, matching the existing
+`BlocClass`/`instanceKey` pattern. `RegistryContext` itself stays unexported,
+mirroring `ProvidedArgsContext`.
+
+This also gives SSR a leak fix with no timing heuristic: a per-request registry
+wrapped round the tree, then `registry.clearAll()` (which already existed) after
+`renderToString`.
+
+**Step 4 — docs (11 files).** Every `init()` side-effect example moved to
+`onActivate`, framed as "the recommendation moves, `init()` still works" — no
+migration language, because none is needed. The `useBlocDeps` ordering caveat is
+documented wherever `onActivate` is introduced: it fires in a layout effect,
+before the first deps slice, so `this.deps` is empty on first activation and
+`onDepsChanged` is the right hook for deps-driven work.
+
+`CHANGELOG.md`'s false `useSyncExternalStore` claim (shipped since 2.x) was
+**not** rewritten — the historical entry stands with a forward-looking
+correction above it. Docs that currently state uSES is _not_ used were left
+accurate; they flip in step 2's own diff, not before.
+
+**Corrections to the plan, found while building** (full write-up in
+[plan-react-rewrite.md](./plan-react-rewrite.md)):
+
+- `packages/blac-react/README.md:20` has **no** uSES claim — a stale reference
+  inherited from the scope doc and repeated in the plan without checking. A
+  first pass at step 4 "corrected" it by _adding_ one; caught and reverted.
+- The sweep's safety was reversed three times on bad measurements. The decisive
+  error was running the full suite while another agent was mid-edit on
+  `StateContainerRegistry.ts` and treating the resulting red as ground truth.
+  Isolated re-runs against the settled tree pass 5/5. **Never conclude from a
+  suite run during concurrent edits.**
+
+**Verification:** full workspace `pnpm test` — 9 packages, 92 files, 0 failures
+(`blac-core` 679, `blac-react` 189). `pnpm typecheck` clean on all 9.
+`pnpm lint` green (one unused-expression error in a new test fixed with `void`).
+
+**Constraint for step 2:** the sweep is a microtask scheduled at render-time
+create, and only spares entries that have an owner by the time it runs. Layout
+effects run before that microtask drains; passive effects do not. The uSES
+rewrite **must keep claiming ownership in a layout effect** — moving it to a
+passive effect puts a macrotask in the gap and the sweep starts disposing live
+mounts. Silent failure: no type error, no obvious test.
+
+**Not yet done:** `packages/blac-react/etc/*.api.md` needs regenerating —
+`RegistryProvider` + `RegistryProviderProps` are new public exports. Use the
+documented `cp temp/react.api.md etc/ && vp fmt` workflow.
+
+**Suggested commits:**
+
+- `feat(blac-core): add activation lifecycle with abort signal`
+- `feat(blac-react): scope useBloc to a registry via context`
+- `docs(blac): recommend onActivate for side effects`
 
 ---
 
