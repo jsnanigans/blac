@@ -7,11 +7,10 @@
  * re-renders are driven by per-index `Object.is` over the returned array.
  *
  * Reserved for forwards-compatible knobs; currently empty.
- */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-/**
+ *
  * @public
  */
+// oxlint-disable-next-line typescript/no-empty-object-type
 export interface BlacReactConfig {}
 
 const defaultConfig: BlacReactConfig = {};
