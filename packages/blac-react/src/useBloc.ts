@@ -1,4 +1,5 @@
 import {
+  useContext,
   useEffect,
   useId,
   useLayoutEffect,
@@ -16,6 +17,7 @@ import {
   type InstanceState,
   type StateContainer,
   type StateContainerConstructor,
+  type StateContainerRegistry,
 } from '@blac/core';
 import {
   ALL_PATHS,
@@ -27,6 +29,7 @@ import {
   type PathSet,
 } from '@dirtytalk/structural';
 import { useProvidedArgs } from './BlocProvider';
+import { RegistryContext } from './RegistryProvider';
 import { buildTrackedProxy } from './buildTrackedProxy';
 import type { ComponentRef, UseBlocOptions, UseBlocReturn } from './types';
 
@@ -104,6 +107,12 @@ export function useBloc<
 
   const componentRef = useRef<ComponentRef>({});
 
+  // Registry scoping: the nearest RegistryProvider wins over the module-global
+  // default. Resolved once here (top level, per React's rules of hooks) and
+  // closed over by every effect/memo below instead of each calling
+  // `getRegistry()` directly.
+  const registry = useContext(RegistryContext) ?? getRegistry();
+
   // Stable per-consumer id (for the structural container's consumer registry).
   // Plain counter rather than `useId()` so we don't compete with internal hooks
   // for SSR id slots.
@@ -158,16 +167,15 @@ export function useBloc<
   const providerArgsRef = useRef(providerArgs);
   providerArgsRef.current = providerArgs;
   // Same reference fast-path as ownArgsKey above.
-  const providerArgsKeyRef = useRef<{ ref: unknown; key: string | undefined }>(
-    {
-      ref: ARGS_UNSET,
-      key: undefined,
-    },
-  );
+  const providerArgsKeyRef = useRef<{ ref: unknown; key: string | undefined }>({
+    ref: ARGS_UNSET,
+    key: undefined,
+  });
   if (!Object.is(providerArgsKeyRef.current.ref, providerArgs)) {
     providerArgsKeyRef.current = {
       ref: providerArgs,
-      key: providerArgs === undefined ? undefined : JSON.stringify(providerArgs),
+      key:
+        providerArgs === undefined ? undefined : JSON.stringify(providerArgs),
     };
   }
   const providerArgsKey = providerArgsKeyRef.current.key;
@@ -230,7 +238,6 @@ export function useBloc<
         : providerArgsRef.current;
 
     const resolvedKey = resolveInstanceKey(BlocClass, effectiveArgs);
-    const registry = getRegistry();
     // Render only ENSUREs the instance exists (no ref). Ownership is claimed in
     // the layout effect below, so an abandoned/uncommitted render can never
     // leak a ref and a memo re-run can never double-count one (R3/R4).
@@ -238,6 +245,10 @@ export function useBloc<
       canCreate: true,
       countRef: false,
       args: effectiveArgs,
+      // A render that never commits (SSR, a discarded render) leaves this
+      // instance ref-less forever; let the registry sweep it if the layout
+      // effect below never claims ownership.
+      sweepIfUnowned: true,
     }) as TBloc;
 
     // Build a session-bound wrapper for a dep handle the first time a getter
@@ -252,6 +263,7 @@ export function useBloc<
       const wrapper = makeDepWrapper(
         handle as DepHandleLike,
         consumerId,
+        registry,
         trackedStateRef,
         sessionRef,
         onDepHandle,
@@ -272,7 +284,7 @@ export function useBloc<
       trackedBloc: proxy as TBloc,
     };
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [BlocClass, ownArgsKey, providerArgsKey, rebindNonce]);
+  }, [BlocClass, ownArgsKey, providerArgsKey, rebindNonce, registry]);
 
   // ---------------------------------------------------------------------------
   // Channel subscription
@@ -418,7 +430,6 @@ export function useBloc<
   // cleanup, keeping the instance alive while the callback runs.
   // ---------------------------------------------------------------------------
   useLayoutEffect(() => {
-    const registry = getRegistry();
     const live = registry.acquire(BlocClass, instanceKey, {
       canCreate: true,
       countRef: true,
@@ -436,15 +447,10 @@ export function useBloc<
     }
     return () => {
       onUnmountRef.current?.((ownedBlocRef.current ?? bloc) as InstanceType<T>);
-      registry.release(
-        BlocClass,
-        instanceKey,
-        false,
-        primaryRefId(consumerId),
-      );
+      registry.release(BlocClass, instanceKey, false, primaryRefId(consumerId));
     };
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [BlocClass, instanceKey, consumerId]);
+  }, [BlocClass, instanceKey, consumerId, registry]);
 
   // ---------------------------------------------------------------------------
   // Snapshot
@@ -603,7 +609,7 @@ export function useBloc<
       if (!session.has(depContainer)) {
         sub.unsubscribe();
         depContainer.unregisterConsumer(consumerId);
-        getRegistry().release(sub.Type, sub.key, false, sub.refId);
+        registry.release(sub.Type, sub.key, false, sub.refId);
         subs.delete(depContainer);
       }
     }
@@ -620,7 +626,7 @@ export function useBloc<
       }
       // First commit that sees this dep: take the ownership ref HERE (not in
       // render/`.track()`), so an uncommitted render can never leak it (R4).
-      getRegistry().acquire(entry.Type, entry.key, {
+      registry.acquire(entry.Type, entry.key, {
         canCreate: true,
         countRef: true,
         refId: entry.refId,
@@ -675,11 +681,11 @@ export function useBloc<
       for (const [depContainer, sub] of subs) {
         sub.unsubscribe();
         depContainer.unregisterConsumer(consumerId);
-        getRegistry().release(sub.Type, sub.key, false, sub.refId);
+        registry.release(sub.Type, sub.key, false, sub.refId);
       }
       subs.clear();
     };
-  }, [consumerId]);
+  }, [consumerId, registry]);
 
   return [
     state,
@@ -789,13 +795,13 @@ interface DepHandleLike {
 function makeDepWrapper(
   handle: DepHandleLike,
   consumerId: string,
+  registry: StateContainerRegistry,
   trackedStateRef: { current: unknown },
   sessionRef: { current: Map<StateContainer, SessionEntry> },
   onDepHandle: (handle: object) => unknown,
 ): DepHandleLike {
   const brand = handle[DEP_BRAND];
   const refId = depRefId(consumerId);
-  const registry = getRegistry();
   // Per-resolved-instance tracked-state ref + proxy. Call-time args mean one
   // handle can resolve several instances, so cache is keyed by the instance.
   const perDep = new Map<

@@ -17,3 +17,7 @@ export {
   useProvidedArgs,
   type BlocProviderProps,
 } from './BlocProvider';
+export {
+  RegistryProvider,
+  type RegistryProviderProps,
+} from './RegistryProvider';
