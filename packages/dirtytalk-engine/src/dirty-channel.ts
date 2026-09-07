@@ -35,8 +35,9 @@ export class DirtyChannel<Region> {
   // re-entrant mark() calls so we don't double-schedule.
   #flushing = false;
 
-  // Registration-ordered map from monotonic id → entry.
-  #subscribers = new Map<number, SubscriberEntry<Region>>();
+  // Registration-ordered map from monotonic id → entry, allocated by the
+  // first subscribe so a channel nobody listens to stays a bare object.
+  #subscribers: Map<number, SubscriberEntry<Region>> | null = null;
   #nextId = 0;
 
   // Stable reference to the flush function passed to the scheduler.
@@ -98,14 +99,15 @@ export class DirtyChannel<Region> {
 
     const id = this.#nextId++;
     const entry: SubscriberEntry<Region> = { interest, cb, alive: true };
-    this.#subscribers.set(id, entry);
+    const subscribers = (this.#subscribers ??= new Map());
+    subscribers.set(id, entry);
 
     let unsubscribed = false;
     return () => {
       if (unsubscribed) return;
       unsubscribed = true;
       entry.alive = false;
-      this.#subscribers.delete(id);
+      subscribers.delete(id);
     };
   }
 
@@ -120,6 +122,8 @@ export class DirtyChannel<Region> {
     // Step 2 — empty fast-path: no work to do, skip the subscriber loop
     // entirely. Consumers may rely on "no callback fires for no-op flushes."
     if (dirty === undefined || this.#space.isEmpty(dirty)) return;
+    const subscribers = this.#subscribers;
+    if (subscribers === null) return;
 
     // Step 3 — enter flushing mode.
     this.#flushing = true;
@@ -128,8 +132,8 @@ export class DirtyChannel<Region> {
 
     // Step 4/5 — for 0 or 1 subscribers, skip the array snapshot entirely and
     // run the per-entry logic directly on the sole captured entry.
-    if (this.#subscribers.size <= 1) {
-      const entry = this.#subscribers.values().next().value;
+    if (subscribers.size <= 1) {
+      const entry = subscribers.values().next().value;
       if (entry?.alive) {
         // Evaluate the interest thunk lazily, once per flush per subscriber.
         let interest: Region | undefined;
@@ -164,7 +168,7 @@ export class DirtyChannel<Region> {
       // instead of snapshotting the list. New subscribers will NOT run this
       // cycle; unsubscribed ones are skipped by the map itself or `alive`.
       const firstNewId = this.#nextId;
-      for (const [id, entry] of this.#subscribers) {
+      for (const [id, entry] of subscribers) {
         if (id >= firstNewId) break;
         // Check the alive flag on the entry, not the map — the map may have been
         // mutated by an earlier callback (subscribe or unsubscribe).
@@ -236,6 +240,6 @@ export class DirtyChannel<Region> {
     }
 
     this.#accumulated = undefined;
-    this.#subscribers.clear();
+    this.#subscribers = null;
   }
 }
