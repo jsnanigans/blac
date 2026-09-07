@@ -1,177 +1,80 @@
-# Blac Examples
+# BlaC Examples
 
-Interactive examples showcasing Blac's modern state management features.
+Thirteen interactive examples, sequenced from a single Cubit to a full messenger
+workspace. Each route isolates one idea; the numbering matches the folders in
+`src/examples/`.
 
-## Features
-
-- **Custom Blac-based Router** - No external routing library, demonstrates Blac for general state
-- **3 Progressive Examples** - From simple counter to advanced shopping cart
-- **Zero External Libraries** - Only React + Blac, custom CSS styling
-- **Educational Focus** - Well-commented code with console logging to show behavior
-
-## Examples
-
-### 1. Counter (Simple)
-
-Introduction to Blac fundamentals.
-
-**Showcases:**
-
-- Basic Cubit state container
-- Lifecycle hooks (onMount/onUnmount)
-- Instance management (shared vs named)
-- Automatic dependency tracking
-
-**Key Learning:** Components automatically re-render only when their accessed properties change.
-
-### 2. Todo List (Intermediate)
-
-Granular dependency tracking and persistence.
-
-**Showcases:**
-
-- Fine-grained dependency tracking with filters
-- Named instances for multiple independent lists
-- Computed properties pattern
-- LocalStorage persistence via lifecycle
-
-**Key Learning:** TodoList re-renders on todos/filter changes, TodoFilters only on filter, TodoStats only on todos - all automatic!
-
-### 3. Shopping Cart (Advanced)
-
-Complex state management with coordinated blocs.
-
-**Showcases:**
-
-- Complex nested state (array of objects)
-- Multiple coordinated Blocs
-- Async operations with loading states
-- Error handling
-
-**Key Learning:** Deep object tracking works automatically. Multiple blocs can coordinate state changes cleanly.
-
-### 4. Real-time Dashboard (Power Demo)
-
-**THE KILLER FEATURE** - Demonstrates the true power of automatic dependency tracking.
-
-**Showcases:**
-
-- Multiple widgets accessing different parts of shared state
-- Visual render counters (green badges) showing which widgets re-render
-- Each widget ONLY re-renders when its accessed properties change
-- Auto-updating metrics showing real-time selective rendering
-- Zero manual optimization needed
-
-**Key Learning:** Traditional React would require React.memo on every widget, useMemo for every value, and useCallback for every function. With Blac, it just works - zero boilerplate, perfect optimization by default.
-
-**Why This Matters:**
-
-- Update user metrics → Only 3 user widgets re-render
-- Update order metrics → Only 3 order widgets re-render
-- Update revenue → Only 3 revenue widgets re-render
-- 12 total widgets, but only 3 re-render on each update!
-- This is automatic - no manual optimization needed!
-
-## Running the Examples
+## Running
 
 ```bash
-# From the repository root
 pnpm install
-
-# Run the examples app
 cd apps/examples
 pnpm dev
 ```
 
-Then open http://localhost:3002
+Then open http://localhost:3002.
 
-## Project Structure
+## The examples
+
+| #   | Route            | Feature in focus                                                   |
+| --- | ---------------- | ------------------------------------------------------------------ |
+| 01  | `/counter`       | `Cubit`, `useBloc`, `emit` / `patch`, seeding through `init(args)` |
+| 02  | `/async`         | `onActivate(signal)`, real `AbortSignal` cancellation, retry       |
+| 03  | `/tracking-lab`  | The auto-tracking proxy: nested paths, array indices, getters      |
+| 04  | `/form`          | Getter tracking and computed validation, `args`-keyed instances    |
+| 05  | `/inputs`        | The three input lanes: `args`, `deps`, `onDepsChanged`             |
+| 06  | `/cross-bloc`    | `depend().track()`, transitive getters, conditional dependencies   |
+| 07  | `/db-persist`    | IndexedDB persistence plugin, hydration, state transforms          |
+| 08  | `/registry`      | Instance creation, sharing, disposal, lifecycle events             |
+| 09  | `/lifecycle`     | `onActivate` restore, `watch()` outside React, action-only pattern |
+| 10  | `/dashboard`     | Plugins, `depend()`, `keepAlive`, widget coordination              |
+| 11  | `/messenger`     | Capstone: named instances, `acquire` / `borrow`, persistence       |
+| 12  | `/encapsulation` | `StateContainer` vs `Cubit` — where invariants live                |
+| 13  | `/testing`       | `createCubitStub`, `withBlocState`, `RegistryProvider` isolation   |
+
+## Project structure
 
 ```
 src/
-├── router/              # Custom Blac-based router
-│   ├── RouterBloc.ts    # Router state management
-│   ├── Link.tsx         # Navigation component
-│   └── Route.tsx        # Route matching
 ├── examples/
-│   ├── 01-counter/      # Simple Cubit example
-│   ├── 02-todos/        # Intermediate with filtering
-│   ├── 03-shopping-cart/ # Advanced Cubit example
-│   └── 04-dashboard/    # Power demo - automatic optimization
-├── shared/
-│   └── ExampleLayout.tsx # Shared layout component
-├── App.tsx              # Main app with routing
-├── Home.tsx             # Landing page
-└── styles.css           # Global styles
+│   ├── 01-counter/ … 13-testing/   # one directory per route
+├── router/                         # BlaC-based router (no routing library)
+├── shared/                         # layout, UI primitives, RenderCounter
+├── App.tsx                         # route table
+├── exampleCatalog.ts               # single source of truth for nav + metadata
+└── Home.tsx
 ```
 
-## Key Concepts Demonstrated
+Adding an example means creating the directory, adding a `RouteMeta` entry to
+`exampleCatalog.ts`, and adding a `<Route>` in `App.tsx`.
 
-### Automatic Dependency Tracking
+## Reading the render badges
 
-Components only re-render when properties they access change. No manual optimization needed.
+Most examples render a `RenderCounter` badge in each panel. The badge counts
+renders of that component alone, which is the point: changing one slice of state
+should leave the other panels untouched. If a badge ticks when you did not expect
+it to, that component read a path it did not need.
 
-### Instance Management
+## DevTools
 
-- Default instances are shared across all uses
-- Use unique values in `args` for named/private instances
-- Named instances for multiple independent state containers
+DevTools are enabled in development. Press **Alt+D** for the in-app overlay
+(search, state diffs, draggable window), or install the
+[extension](../devtools-extension) for a Chrome DevTools panel. Both show the same
+data and work simultaneously.
 
-### Lifecycle Hooks
+## Tests
 
-- `onMount` - Called when first component mounts
-- `onUnmount` - Called when last component unmounts
-- `onDispose` - Called when instance is disposed
-- Perfect for subscriptions, timers, persistence
+`src/examples/13-testing/CheckoutCubit.test.ts` is a working example of testing a
+bloc without React. `src/__tests__/testing-utils/` covers the helpers themselves.
 
-### Cubit State Management
+```bash
+pnpm test
+```
 
-- Direct state mutations with `emit()`, `update()`, and `patch()`
-- Clear action methods for state changes
-- Easy to test and reason about
-- Great for complex workflows
+> Vitest resolves from the workspace root; run `pnpm install` at the repo root
+> first if the binary is missing.
 
-## Browser Console
+## Learn more
 
-Open your browser console while using the examples to see:
-
-- Lifecycle events (mount/unmount)
-- Component re-render logs showing granular updates
-- Event processing in the shopping cart
-- Router navigation events
-
-This helps understand how Blac's automatic dependency tracking works!
-
-## BlaC DevTools
-
-The examples app has BlaC DevTools enabled in development mode. Inspect and debug state in two ways:
-
-### 1. In-App Floating Overlay (Recommended)
-
-Press **Alt+D** to toggle a floating DevTools window:
-
-- 🔍 **Search & filter** instances by className or ID
-- 🎨 **Color-coded grouping** - same class = same color
-- 📊 **State diff view** - see previous vs current state side-by-side
-- 🪟 **Draggable & resizable** window
-- ⌨️ Close with **Escape** or click **×**
-
-### 2. Chrome DevTools Panel
-
-1. Install the [BlaC DevTools Extension](../../apps/devtools-extension) (load as unpacked extension)
-2. Open Chrome DevTools (F12)
-3. Navigate to "BlaC DevTools" tab
-
-Both modes show the same data and work simultaneously!
-
-**What You Can See:**
-
-- All Cubit instances (RouterBloc, CounterCubit, etc.)
-- Current state for each instance
-- State changes with diff highlighting
-- Instance lifecycle (disposed instances marked in red)
-
-## Learn More
-
-- [Blac Documentation](../../packages/blac-core/README.md)
-- [React Integration](../../packages/blac-react/README.md)
+- [Documentation](https://blac-docs.pages.dev)
+- [`@blac/core`](../../packages/blac-core/README.md) · [`@blac/react`](../../packages/blac-react/README.md)

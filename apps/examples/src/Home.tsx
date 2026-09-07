@@ -4,13 +4,13 @@ import { exampleCatalog } from './exampleCatalog';
 const quickFacts = [
   {
     label: 'Start here',
-    value: 'Counter → Async → Todo',
+    value: 'Counter → Async → Tracking',
     detail: 'Learn the reactive primitives in a clean order.',
   },
   {
     label: 'What scales',
-    value: 'Dashboard + Registry',
-    detail: 'See plugins, dependency wiring, and instance introspection.',
+    value: 'Cross-Bloc + Registry',
+    detail: 'See dependency wiring, plugins, and instance introspection.',
   },
   {
     label: 'Full surface',
@@ -19,7 +19,7 @@ const quickFacts = [
   },
 ];
 
-const recommendedPath = ['Counter', 'Async Data', 'Todo List', 'Messenger'];
+const recommendedPath = ['Counter', 'Async Data', 'Tracking Lab', 'Messenger'];
 
 export function Home() {
   return (
@@ -62,7 +62,7 @@ export function Home() {
       <section className="home-section-heading">
         <div className="stack-sm">
           <span className="home-section-heading__eyebrow">Choose a route</span>
-          <h2>Eight examples, from fundamentals to app-scale state</h2>
+          <h2>Thirteen examples, from fundamentals to app-scale state</h2>
         </div>
         <p>
           Open any card to inspect one architectural idea in isolation, then

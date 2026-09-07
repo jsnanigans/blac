@@ -27,7 +27,6 @@
         "../../packages/devtools-connect/src/index.ts"
       ],
       "@blac/devtools-ui": ["../../packages/devtools-ui/src/index.tsx"],
-      "@dirtytalk/spatial": ["../../packages/dirtytalk-spatial/src/index.ts"],
       "@dirtytalk/engine": ["../../packages/dirtytalk-engine/src/index.ts"]
     }
   },

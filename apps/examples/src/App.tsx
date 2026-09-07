@@ -3,21 +3,22 @@ import { RouterBloc } from './router/RouterBloc';
 import { Home } from './Home';
 import { CounterDemo } from './examples/01-counter/CounterDemo';
 import { FeedDemo } from './examples/02-async/FeedDemo';
-import { MessengerApp } from './messenger';
-import { TodoDemo } from './examples/03-todo/TodoDemo';
+import { TrackingDemo } from './examples/03-tracking/TrackingDemo';
 import { FormDemo } from './examples/04-form/FormDemo';
-import { DashboardDemo } from './examples/05-dashboard/DashboardDemo';
-import { DbPersistDemo } from './examples/06-db-persist/DbPersistDemo';
-import { RegistryDemo } from './examples/07-registry/RegistryDemo';
-import { TrackingDemo } from './examples/08-tracking/TrackingDemo';
-import { InputPatternDemo } from './examples/10-input-pattern/InputPatternDemo';
-import { SpatialDemo } from './spatial/SpatialDemo';
-import { CrossBlocDemo } from './examples/12-cross-bloc/CrossBlocDemo';
+import { InputPatternDemo } from './examples/05-inputs/InputPatternDemo';
+import { CrossBlocDemo } from './examples/06-cross-bloc/CrossBlocDemo';
+import { DbPersistDemo } from './examples/07-db-persist/DbPersistDemo';
+import { RegistryDemo } from './examples/08-registry/RegistryDemo';
+import { TodoDemo } from './examples/09-lifecycle/TodoDemo';
+import { DashboardDemo } from './examples/10-dashboard/DashboardDemo';
+import { MessengerApp } from './examples/11-messenger';
+import { EncapsulationDemo } from './examples/12-encapsulation/EncapsulationDemo';
+import { TestingDemo } from './examples/13-testing/TestingDemo';
 import { useState } from 'react';
 import { useBloc } from '@blac/react';
 import { PerformanceOverlay } from './shared/components';
 import { exampleCatalog, getRouteMeta } from './exampleCatalog';
-import './messenger/messenger.css';
+import './examples/11-messenger/messenger.css';
 
 export function App() {
   const [showPerf, setShowPerf] = useState(false);
@@ -141,14 +142,17 @@ export function App() {
               <Route path="/async">
                 <FeedDemo />
               </Route>
-              <Route path="/todo">
-                <TodoDemo />
+              <Route path="/tracking-lab">
+                <TrackingDemo />
               </Route>
               <Route path="/form">
                 <FormDemo />
               </Route>
-              <Route path="/dashboard">
-                <DashboardDemo />
+              <Route path="/inputs">
+                <InputPatternDemo />
+              </Route>
+              <Route path="/cross-bloc">
+                <CrossBlocDemo />
               </Route>
               <Route path="/db-persist">
                 <DbPersistDemo />
@@ -156,20 +160,20 @@ export function App() {
               <Route path="/registry">
                 <RegistryDemo />
               </Route>
-              <Route path="/tracking-lab">
-                <TrackingDemo />
+              <Route path="/lifecycle">
+                <TodoDemo />
               </Route>
-              <Route path="/input-pattern">
-                <InputPatternDemo />
+              <Route path="/dashboard">
+                <DashboardDemo />
               </Route>
               <Route path="/messenger">
                 <MessengerApp />
               </Route>
-              <Route path="/spatial">
-                <SpatialDemo />
+              <Route path="/encapsulation">
+                <EncapsulationDemo />
               </Route>
-              <Route path="/cross-bloc">
-                <CrossBlocDemo />
+              <Route path="/testing">
+                <TestingDemo />
               </Route>
             </div>
           </div>
