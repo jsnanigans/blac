@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { getPluginManager } from '@blac/core/plugins';
+import { useBloc } from '@blac/react';
 import { ExampleLayout } from '../../shared/ExampleLayout';
 import { Card } from '../../shared/components';
 import { analyticsPlugin, clearAnalyticsEntries } from './AnalyticsPlugin';
@@ -7,6 +8,35 @@ import { ThemeWidget } from './widgets/ThemeWidget';
 import { StatsWidget } from './widgets/StatsWidget';
 import { ActivityWidget } from './widgets/ActivityWidget';
 import { AnalyticsWidget } from './widgets/AnalyticsWidget';
+import { ThemeCubit } from './ThemeCubit';
+
+const FONT_SCALE = { small: '0.875rem', medium: '1rem', large: '1.125rem' };
+
+/**
+ * Applies the theme as scoped CSS custom properties. Reads only `accentColor`
+ * and `fontSize`, so toggling `mode` never re-renders this wrapper — the
+ * StatsWidget handles that path on its own.
+ */
+function ThemedDashboard() {
+  const [theme] = useBloc(ThemeCubit);
+
+  return (
+    <div
+      className="dashboard-grid"
+      style={
+        {
+          '--color-primary': theme.accentColor,
+          '--dashboard-font-size': FONT_SCALE[theme.fontSize],
+        } as React.CSSProperties
+      }
+    >
+      <ThemeWidget />
+      <StatsWidget />
+      <ActivityWidget />
+      <AnalyticsWidget />
+    </div>
+  );
+}
 
 export function DashboardDemo() {
   useEffect(() => {
@@ -34,12 +64,7 @@ export function DashboardDemo() {
       ]}
     >
       <section>
-        <div className="dashboard-grid">
-          <ThemeWidget />
-          <StatsWidget />
-          <ActivityWidget />
-          <AnalyticsWidget />
-        </div>
+        <ThemedDashboard />
       </section>
 
       <section className="stack-md">
@@ -57,9 +82,12 @@ export function DashboardDemo() {
             <p>
               <strong>depend():</strong> <code>StatsCubit</code> calls{' '}
               <code>this.depend(ThemeCubit)</code> to access theme state. The{' '}
-              <code>formattedRevenue</code> getter formats currency using the
-              theme's mode. Changing the theme triggers a re-render in
-              StatsWidget.
+              <code>formattedRevenue</code> getter reaches it with{' '}
+              <code>.track()</code>, so toggling Mode re-renders StatsWidget
+              alone and reformats the currency (<code>$</code> →{' '}
+              <code>US$</code>). Accent and font size are read by the wrapper
+              instead, so those controls leave StatsWidget untouched — watch the
+              render badge.
             </p>
             <p>
               <strong>keepAlive:</strong> <code>ThemeCubit</code> uses{' '}

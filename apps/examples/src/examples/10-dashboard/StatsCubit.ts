@@ -19,8 +19,12 @@ export class StatsCubit extends Cubit<StatsState> {
   }
 
   get formattedRevenue(): string {
-    const theme = this.theme.untracked();
-    const locale = theme.state.mode === 'dark' ? 'en-GB' : 'en-US';
+    // `.track()`, not `.untracked()`: this getter is read during render, so
+    // tracking subscribes the consumer to the theme's `mode` path. With
+    // `untracked()` the read takes no subscription and the widget would keep
+    // showing a stale currency format after the theme changes.
+    const [themeState] = this.theme.track();
+    const locale = themeState.mode === 'dark' ? 'en-GB' : 'en-US';
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'USD',

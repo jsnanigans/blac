@@ -15,8 +15,10 @@ export function StatsWidget() {
         <StatCard label="Orders" value={state.orders.toLocaleString()} />
       </div>
       <p className="text-xs text-muted">
-        <code>formattedRevenue</code> uses <code>depend(ThemeCubit)</code> —
-        changes when theme mode changes
+        <code>formattedRevenue</code> reaches ThemeCubit via{' '}
+        <code>depend().track()</code> — toggle Mode and the currency prefix
+        changes here, without this widget calling{' '}
+        <code>useBloc(ThemeCubit)</code>
       </p>
       <Button
         variant="ghost"

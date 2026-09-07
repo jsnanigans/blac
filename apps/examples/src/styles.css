@@ -1006,6 +1006,11 @@ select:focus {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-lg);
+  font-size: var(--dashboard-font-size, 1rem);
+}
+
+.dashboard-grid .stat-value {
+  font-size: 1.5em;
 }
 
 .widget {
