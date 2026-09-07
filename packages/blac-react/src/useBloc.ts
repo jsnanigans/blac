@@ -34,15 +34,9 @@ import type { UseBlocOptions, UseBlocReturn } from './types';
 let nextConsumerId = 0;
 
 // Sentinel that can never `Object.is`-equal a real args value (including
-// `undefined`). Used to lazily seed args-key refs so the structural key is
+// `undefined`). Used to lazily seed args-key caches so the structural key is
 // computed only when the guard actually runs, never on every render.
 const ARGS_UNSET: unique symbol = Symbol('blac.argsKeyUnset');
-
-// Registry refId formats for a consumer's primary bloc and its tracked deps.
-// Centralised so the `acquire` and `release` sites can never drift apart — a
-// mismatch would leak the ref and keep the bloc alive past unmount.
-const primaryRefId = (consumerId: string): string => `useBloc@${consumerId}`;
-const depRefId = (consumerId: string): string => `useBloc@${consumerId}:dep`;
 
 /**
  * React hook that connects a component to a state container with automatic
@@ -109,23 +103,16 @@ export function useBloc<
   // `getRegistry()` directly.
   const registry = useContext(RegistryContext) ?? getRegistry();
 
-  // Stable per-consumer id (for the structural container's consumer registry).
-  // Plain counter rather than `useId()` so we don't compete with internal hooks
-  // for SSR id slots.
-  const consumerIdRef = useRef<string | null>(null);
-  if (consumerIdRef.current === null) {
-    consumerIdRef.current = `useBloc-${nextConsumerId++}`;
-  }
-  const consumerId = consumerIdRef.current;
+  // Everything this hook instance keeps between renders lives on one object
+  // (see `Consumer`) rather than in a ref per field: fewer hook slots per
+  // mount, and the effects below read the latest values off it directly.
+  const consumerRef = useRef<Consumer | null>(null);
+  const consumer = (consumerRef.current ??= createConsumer());
+  const consumerId = consumer.id;
 
-  // Refs that always carry the latest option callbacks, so the commit effect
-  // can read them without re-keying.
-  const selectRef = useRef(options?.select);
-  selectRef.current = options?.select;
-  const onMountRef = useRef(options?.onMount);
-  onMountRef.current = options?.onMount;
-  const onUnmountRef = useRef(options?.onUnmount);
-  onUnmountRef.current = options?.onUnmount;
+  consumer.select = options?.select;
+  consumer.onMount = options?.onMount;
+  consumer.onUnmount = options?.onUnmount;
 
   // ---------------------------------------------------------------------------
   // Identity resolution
@@ -135,77 +122,28 @@ export function useBloc<
   // Args are user-supplied; callers commonly pass a fresh object literal each
   // render. Memoising on `args` directly would bust every render. We compute a
   // structural key (JSON.stringify) for the useMemo dep instead — undefined
-  // args (void-args blocs) collapse to an undefined key.
+  // args (void-args blocs) collapse to an undefined key. The key is only
+  // recomputed when the args REFERENCE changes, so a stable args object costs
+  // nothing per render.
   // ---------------------------------------------------------------------------
   const ownArgs = (options as { args?: ExtractArgs<T> } | undefined)?.args;
-  const ownArgsRef = useRef(ownArgs);
-  ownArgsRef.current = ownArgs;
-  // Fast-path: only recompute the structural key when the args REFERENCE
-  // changes. Callers commonly pass a stable args object (e.g. memoised or
-  // module-level), so this skips a JSON.stringify call every render.
-  const ownArgsKeyRef = useRef<{ ref: unknown; key: string | undefined }>({
-    ref: ARGS_UNSET,
-    key: undefined,
-  });
-  if (!Object.is(ownArgsKeyRef.current.ref, ownArgs)) {
-    ownArgsKeyRef.current = {
-      ref: ownArgs,
-      key: ownArgs === undefined ? undefined : JSON.stringify(ownArgs),
-    };
+  consumer.ownArgs = ownArgs;
+  if (!Object.is(consumer.ownArgsKeyFor, ownArgs)) {
+    consumer.ownArgsKeyFor = ownArgs;
+    consumer.ownArgsKey =
+      ownArgs === undefined ? undefined : JSON.stringify(ownArgs);
   }
-  const ownArgsKey = ownArgsKeyRef.current.key;
+  const ownArgsKey = consumer.ownArgsKey;
 
   // Read provided args from the nearest BlocProvider for this bloc class.
   const providerArgs = useProvidedArgs(BlocClass);
-  const providerArgsRef = useRef(providerArgs);
-  providerArgsRef.current = providerArgs;
-  // Same reference fast-path as ownArgsKey above.
-  const providerArgsKeyRef = useRef<{ ref: unknown; key: string | undefined }>({
-    ref: ARGS_UNSET,
-    key: undefined,
-  });
-  if (!Object.is(providerArgsKeyRef.current.ref, providerArgs)) {
-    providerArgsKeyRef.current = {
-      ref: providerArgs,
-      key:
-        providerArgs === undefined ? undefined : JSON.stringify(providerArgs),
-    };
+  consumer.providerArgs = providerArgs;
+  if (!Object.is(consumer.providerArgsKeyFor, providerArgs)) {
+    consumer.providerArgsKeyFor = providerArgs;
+    consumer.providerArgsKey =
+      providerArgs === undefined ? undefined : JSON.stringify(providerArgs);
   }
-  const providerArgsKey = providerArgsKeyRef.current.key;
-
-  // Own args win over provider args; provider args win over no args. Read from
-  // the refs (refreshed every render) so the render-time acquire and the layout
-  // effect below resolve args identically — the effect re-creates the instance
-  // when the rendered entry was disposed (StrictMode remount), and dropping
-  // args there would run `init(undefined)`.
-  const resolveEffectiveArgs = (): ExtractArgs<T> | undefined =>
-    ownArgsRef.current !== undefined
-      ? ownArgsRef.current
-      : (providerArgsRef.current as ExtractArgs<T> | undefined);
-
-  // Current render's tracking proxy. Declared before the memo so the stable
-  // ref object can be passed to buildTrackedProxy at acquisition time. The
-  // proxy trap only reads `.current` at invocation time (not during creation),
-  // so it is safe to pass on first mount even though the value is null.
-  // Populated during each auto-track render snapshot (below); cleared to null
-  // by useLayoutEffect after commit.
-  const trackedStateRef = useRef<unknown>(null);
-
-  // ---------------------------------------------------------------------------
-  // Per-consumer cross-bloc session.
-  //
-  // Each render rebuilds a map of every container this consumer is currently
-  // interested in. The PRIMARY bloc is the first uniform entry; every dep
-  // reached through `this.<handle>.track()` inside a tracked getter adds an
-  // entry. The layout-effect reconcile (below) diffs this map vs the previous
-  // render to subscribe new deps and release dropped ones. The session lives on
-  // this hook's consumer object only — there is no global ambient state, so
-  // sibling renders never cross-contaminate.
-  // ---------------------------------------------------------------------------
-  const proxyCacheRef = useRef(new ProxyCache());
-  // Per-handle wrapper cache, allocated once per bloc acquisition (in the memo)
-  // so wrappers are stable across renders. handle -> session-bound wrapper.
-  const depWrapperCacheRef = useRef<Map<object, unknown>>(new Map());
+  const providerArgsKey = consumer.providerArgsKey;
 
   // Rebind nonce: bumped by the ownership layout-effect when the instance the
   // render captured was disposed + recreated out from under us. This happens on
@@ -217,28 +155,18 @@ export function useBloc<
   // and its tracked proxy against the LIVE registry entry: the proxy binds its
   // target at construction and cannot be retargeted in place.
   //
-  // Held in a ref rather than useReducer state because the re-render it needs
-  // is already delivered by the consumer's version bump through uSES.
-  const rebindNonceRef = useRef(0);
-  const rebindNonce = rebindNonceRef.current;
-
-  // The uSES store for this hook instance. Created once and mutated in place:
-  // it must outlive a rebind (which rebuilds `bloc` + proxy) so the live
-  // subscription and version counter are not reset under React.
-  const consumerRef = useRef<Consumer | null>(null);
-  consumerRef.current ??= createConsumer();
-  const consumer = consumerRef.current;
-
-  // The live instance actually owned (ref held) by the ownership layout-effect,
-  // read by its cleanup so onUnmount always fires with the owned instance.
-  const ownedBlocRef = useRef<TBloc | null>(null);
+  // Held on the consumer rather than in useReducer state because the re-render
+  // it needs is already delivered by the consumer's version bump through uSES.
+  const rebindNonce = consumer.rebindNonce;
 
   const { bloc, instanceKey, trackedBloc } = useMemo<{
     bloc: TBloc;
     instanceKey: string;
     trackedBloc: TBloc;
   }>(() => {
-    const effectiveArgs = resolveEffectiveArgs();
+    const effectiveArgs = resolveEffectiveArgs(consumer) as
+      | ExtractArgs<T>
+      | undefined;
 
     const resolvedKey = resolveInstanceKey(BlocClass, effectiveArgs);
     // Render only ENSUREs the instance exists (no ref). Ownership is claimed in
@@ -260,14 +188,12 @@ export function useBloc<
     // `this.<otherHandle>.track()` inside a dep's getter records into the SAME
     // consumer session — that is what makes deep chains (A→B→C) reactive.
     const onDepHandle = (handle: object): unknown => {
-      const cache = depWrapperCacheRef.current;
+      const cache = (consumer.depWrappers ??= new Map());
       const cached = cache.get(handle);
       if (cached !== undefined) return cached;
       const wrapper = makeDepWrapper(
         handle as DepHandleLike,
-        consumerId,
         registry,
-        trackedStateRef,
         consumer,
         onDepHandle,
       );
@@ -277,7 +203,7 @@ export function useBloc<
 
     const { proxy } = buildTrackedProxy(
       instance as object,
-      trackedStateRef,
+      consumer.tracked,
       onDepHandle,
     );
 
@@ -322,7 +248,7 @@ export function useBloc<
         () => consumer.interest,
         () => {
           if (consumer.isSelectMode) {
-            const select = selectRef.current;
+            const select = consumer.select;
             if (select) {
               const next = select(
                 container.state as ExtractState<T>,
@@ -387,23 +313,23 @@ export function useBloc<
     const live = registry.acquire(BlocClass, instanceKey, {
       canCreate: true,
       countRef: true,
-      refId: primaryRefId(consumerId),
-      args: resolveEffectiveArgs(),
+      refId: consumer.primaryRefId,
+      args: resolveEffectiveArgs(consumer),
     }) as TBloc;
-    ownedBlocRef.current = live;
-    onMountRef.current?.(live as InstanceType<T>);
+    consumer.ownedBloc = live;
+    consumer.onMount?.(live as InstanceType<T>);
     // Rebind if the render captured a stale (disposed/replaced) instance so the
     // component renders + subscribes against the live registry entry, not a
     // disposed one. Only bumps on an actual mismatch, so it can fire at most
     // once per handoff and never loops (the re-ensured `bloc` equals `live`,
     // and this effect is not keyed on `bloc` so it won't re-run and re-release).
     if (live !== bloc) {
-      rebindNonceRef.current++;
+      consumer.rebindNonce++;
       consumer.bump();
     }
     return () => {
-      onUnmountRef.current?.((ownedBlocRef.current ?? bloc) as InstanceType<T>);
-      registry.release(BlocClass, instanceKey, false, primaryRefId(consumerId));
+      consumer.onUnmount?.((consumer.ownedBloc ?? bloc) as InstanceType<T>);
+      registry.release(BlocClass, instanceKey, false, consumer.primaryRefId);
     };
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [BlocClass, instanceKey, consumerId, registry]);
@@ -418,7 +344,7 @@ export function useBloc<
   // ---------------------------------------------------------------------------
   const container = consumer.container;
   const rawState = container.state as ExtractState<T>;
-  const select = selectRef.current;
+  const select = consumer.select;
   consumer.isSelectMode = select !== undefined;
   let state: ExtractState<T>;
   if (select !== undefined) {
@@ -434,11 +360,17 @@ export function useBloc<
     const tracked = trackRender(
       rawState,
       container.interner,
-      proxyCacheRef.current,
+      (consumer.proxyCache ??= new ProxyCache()),
     );
     state = tracked.value as ExtractState<T>;
-    trackedStateRef.current = tracked.value;
+    consumer.tracked.current = tracked.value;
     consumer.paths = tracked.paths;
+    // Frozen by the commit layout effect below, once the synchronous
+    // render+commit pass is over: all render-time JSX reads still record;
+    // reads afterwards — effects, event handlers, async callbacks, devtools
+    // inspecting `state` — hit the disarmed proxy and record nothing, so this
+    // render's path set can't be polluted by work that outlives it.
+    consumer.disarm = tracked.disarm;
     // Rebuild the per-consumer session for this render. The primary bloc is the
     // first uniform entry; its `paths` are the SAME PathSet object the proxy
     // mutates during JSX (so it stays live as getters record leaves). Dep
@@ -448,13 +380,6 @@ export function useBloc<
     const session = consumer.session;
     session.clear();
     session.set(container, { kind: 'primary', paths: tracked.paths });
-    // Freeze this render's tracking proxy after the synchronous render+commit
-    // pass. The microtask fires only once the current task unwinds, so all
-    // render-time JSX reads still record; reads afterwards — effects, event
-    // handlers, async callbacks, devtools inspecting `state` — hit the
-    // disarmed proxy and record nothing, so this render's path set can't be
-    // polluted by work that outlives the render that owns it.
-    queueMicrotask(tracked.disarm);
     // NOTE: registerConsumerPaths is intentionally NOT called here. The
     // proxy hasn't been accessed yet, so `tracked.paths` is an empty Set
     // that the proxy will mutate during JSX evaluation. Registering at
@@ -478,7 +403,12 @@ export function useBloc<
     // committed. Getters invoked after this point (event handlers, effects,
     // method→getter chains) fall through to live state instead of reading this
     // render's frozen snapshot. The render body re-seeds it next render.
-    trackedStateRef.current = null;
+    consumer.tracked.current = null;
+    const disarm = consumer.disarm;
+    if (disarm !== null) {
+      consumer.disarm = null;
+      disarm();
+    }
     if (consumer.isSelectMode) {
       // Switching into (or staying in) select-mode: invalidate any prior full
       // reconcile so a later switch back to auto-track mode never mistakes a
@@ -638,8 +568,7 @@ export function useBloc<
 const noop = (): void => {};
 
 /**
- * Everything one `useBloc` call keeps between renders, re-created whenever the
- * hook re-keys on `[BlocClass, instanceKey]`.
+ * Everything one `useBloc` call keeps between renders; one per mounted hook.
  *
  * `version` is the `useSyncExternalStore` snapshot: a plain number, so
  * `getSnapshot` is stable and never allocates. `bump` increments it BEFORE
@@ -648,6 +577,13 @@ const noop = (): void => {};
  * doing it the other way round silently drops renders.
  */
 interface Consumer {
+  /** Stable id for the structural container's consumer registry. */
+  id: string;
+  /** Registry refIds for the primary bloc and its tracked deps. Derived once
+   * from `id` so the acquire and release sites can never drift apart — a
+   * mismatch would leak the ref and keep the bloc alive past unmount. */
+  primaryRefId: string;
+  depRefId: string;
   /** The live container this consumer currently reads and subscribes to.
    * Written by the render memo, which is its single writer. */
   container: StateContainer;
@@ -667,10 +603,38 @@ interface Consumer {
   session: Map<StateContainer, SessionEntry>;
   depSubs: Map<StateContainer, DepSub>;
   lastReconcile: ReconcileSignature | null;
+  /** Latest option callbacks, refreshed every render. Typed loosely: the
+   * hook's `T` is per call site, and the consumer outlives any one call. */
+  select: ((state: any, bloc: any) => unknown[]) | undefined;
+  onMount: ((bloc: any) => void) | undefined;
+  onUnmount: ((bloc: any) => void) | undefined;
+  /** Latest args plus the structural key cached against their identity. */
+  ownArgs: unknown;
+  ownArgsKeyFor: unknown;
+  ownArgsKey: string | undefined;
+  providerArgs: unknown;
+  providerArgsKeyFor: unknown;
+  providerArgsKey: string | undefined;
+  /** Current render's tracking proxy; `null` outside a tracked render. Shared
+   * with the bloc's tracked proxy and dep wrappers, which read `.current`. */
+  tracked: { current: unknown };
+  /** Freezes the current render's proxy tree; run by the commit effect. */
+  disarm: (() => void) | null;
+  proxyCache: ProxyCache | null;
+  /** Dep handle -> session-bound wrapper (see `makeDepWrapper`). */
+  depWrappers: Map<object, unknown> | null;
+  rebindNonce: number;
+  /** Instance actually owned (ref held) by the ownership layout-effect, read
+   * by its cleanup so onUnmount always fires with the owned instance. */
+  ownedBloc: unknown;
 }
 
 function createConsumer(): Consumer {
+  const id = `useBloc-${nextConsumerId++}`;
   const consumer: Consumer = {
+    id,
+    primaryRefId: `useBloc@${id}`,
+    depRefId: `useBloc@${id}:dep`,
     // Assigned by the render memo before any read; never observed unset.
     container: null as unknown as StateContainer,
     version: 0,
@@ -688,9 +652,32 @@ function createConsumer(): Consumer {
     session: new Map(),
     depSubs: new Map(),
     lastReconcile: null,
+    select: undefined,
+    onMount: undefined,
+    onUnmount: undefined,
+    ownArgs: undefined,
+    ownArgsKeyFor: ARGS_UNSET,
+    ownArgsKey: undefined,
+    providerArgs: undefined,
+    providerArgsKeyFor: ARGS_UNSET,
+    providerArgsKey: undefined,
+    tracked: { current: null },
+    disarm: null,
+    proxyCache: null,
+    depWrappers: null,
+    rebindNonce: 0,
+    ownedBloc: null,
   };
   return consumer;
 }
+
+// Own args win over provider args; provider args win over no args. Read off
+// the consumer (refreshed every render) so the render-time acquire and the
+// layout effect resolve args identically — the effect re-creates the instance
+// when the rendered entry was disposed (StrictMode remount), and dropping args
+// there would run `init(undefined)`.
+const resolveEffectiveArgs = (consumer: Consumer): unknown =>
+  consumer.ownArgs !== undefined ? consumer.ownArgs : consumer.providerArgs;
 
 // ---------------------------------------------------------------------------
 // Cross-bloc session types + dep-handle wrapper.
@@ -774,7 +761,7 @@ interface DepHandleLike {
  * tracked getter's `this`. The wrapper exposes the same accessors as the core
  * handle and overrides `.track()`:
  *
- * - **Inside a render** (`trackedStateRef.current != null`): resolve (ENSURE,
+ * - **Inside a render** (`consumer.tracked.current != null`): resolve (ENSURE,
  *   no ref) the dep, `trackRender` its state, merge the recorded paths into the
  *   session entry, build/reuse a tracked proxy for the dep so its OWN getters
  *   track too, and return `[trackedValue, depProxy]`. The ownership ref is taken
@@ -793,14 +780,12 @@ interface DepHandleLike {
  */
 function makeDepWrapper(
   handle: DepHandleLike,
-  consumerId: string,
   registry: StateContainerRegistry,
-  trackedStateRef: { current: unknown },
   consumer: Consumer,
   onDepHandle: (handle: object) => unknown,
 ): DepHandleLike {
   const brand = handle[DEP_BRAND];
-  const refId = depRefId(consumerId);
+  const refId = consumer.depRefId;
   // Per-resolved-instance tracked-state ref + proxy. Call-time args mean one
   // handle can resolve several instances, so cache is keyed by the instance.
   const perDep = new Map<
@@ -830,7 +815,7 @@ function makeDepWrapper(
       const { dep, key, args } = resolve(options);
 
       // Outside a render: live values, no subscription (core base behavior).
-      if (trackedStateRef.current == null) {
+      if (consumer.tracked.current == null) {
         return [dep.state, dep];
       }
 
@@ -910,7 +895,7 @@ const shallowArrayEqual = (a: unknown[], b: unknown[]): boolean => {
  * would miss a `patch`-triggered atomic-replacement of `items`.
  *
  * Ancestors are added under the interner's *ancestor-watch* lane
- * (`internAncestor`), NOT as normal ids. The source emits a matching
+ * (`ancestorWatchIds`), NOT as normal ids. The source emits a matching
  * ancestor-watch mark only for paths it replaces atomically — never for a
  * plain-object structural pulse-up. So `{'items.length'}` wakes when the array
  * `items` is replaced, but `{'user.email'}` does NOT wake when a sibling
@@ -920,28 +905,19 @@ const shallowArrayEqual = (a: unknown[], b: unknown[]): boolean => {
  * Example: leaf `'a.b.c'` adds ancestor-watch ids for `'a.b'` and `'a'` (but
  * NOT the `''` root — a root change is covered by `ALL_PATHS` from the source,
  * and `''` would wake this consumer on every field change).
+ *
+ * Returns `paths` itself when no leaf has an ancestor (top-level fields only);
+ * the set is frozen by then (see `Consumer.disarm`), so sharing it is safe.
  */
 function expandWithAncestors(paths: PathSet, interner: PathInterner): PathSet {
   if (paths === ALL_PATHS) return ALL_PATHS;
   const leafPaths = paths as Set<number>;
-  if (leafPaths.size === 0) return paths;
-
-  const expanded = new Set<number>(leafPaths);
+  let expanded: Set<number> | undefined;
   for (const id of leafPaths) {
-    const str = interner.lookup(id);
-    // Add all non-root ancestor segments as *ancestor-watch* ids: 'a.b.c' →
-    // watch 'a.b' and 'a'. These live in the interner's ancestor lane so they
-    // only intersect the source's atomic-replacement marks (`internAncestor`),
-    // never a structural pulse-up mark of the same path. That is what lets a
-    // descendant-reader (e.g. `items.length`) wake on an array/null replacement
-    // without a sibling-leaf reader (`user.email`) waking when a sibling
-    // (`user.name`) changes and pulses up through `user`.
-    let idx = str.lastIndexOf('.');
-    while (idx > 0) {
-      const ancestor = str.slice(0, idx);
-      expanded.add(interner.internAncestor(ancestor));
-      idx = ancestor.lastIndexOf('.');
-    }
+    const watch = interner.ancestorWatchIds(id);
+    if (watch.length === 0) continue;
+    expanded ??= new Set<number>(leafPaths);
+    for (let i = 0; i < watch.length; i++) expanded.add(watch[i]);
   }
-  return expanded;
+  return expanded ?? paths;
 }

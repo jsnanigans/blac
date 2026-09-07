@@ -14,6 +14,30 @@ function supportsTrackedState(value: object): value is TrackedStateTarget {
   );
 }
 
+type Getter = (this: object) => unknown;
+
+// Prototype getters per class prototype. The chain is static, so walking it
+// once per class (not once per mounted component) keeps the get trap O(1).
+const gettersByProto = new WeakMap<object, Map<string | symbol, Getter>>();
+
+function collectGetters(proto: object): Map<string | symbol, Getter> {
+  const cached = gettersByProto.get(proto);
+  if (cached !== undefined) return cached;
+  const getters = new Map<string | symbol, Getter>();
+  let p: object | null = proto;
+  while (p !== null && p !== Object.prototype) {
+    for (const key of Reflect.ownKeys(p)) {
+      const desc = Object.getOwnPropertyDescriptor(p, key);
+      // A descriptor getter, always `.call`ed with an explicit receiver.
+      // oxlint-disable-next-line typescript/unbound-method
+      if (desc?.get && !getters.has(key)) getters.set(key, desc.get);
+    }
+    p = Object.getPrototypeOf(p);
+  }
+  gettersByProto.set(proto, getters);
+  return getters;
+}
+
 /**
  * Build a per-consumer proxy for a bloc instance.
  *
@@ -36,23 +60,11 @@ export function buildTrackedProxy<T extends object>(
   trackedStateRef: { current: unknown },
   onDepHandle?: (handle: object) => unknown,
 ): { proxy: T } {
-  // Getter descriptors from the prototype chain (excluding Object.prototype),
-  // collected once per acquisition so the get trap stays O(1) per access. Both
-  // string- and symbol-keyed getters are collected. Arrow-function class
-  // properties are own values, not getters, and pass through unmodified.
-  const getterDescs = new Map<string | symbol, PropertyDescriptor>();
-  let proto = Object.getPrototypeOf(instance);
-  while (proto && proto !== Object.prototype) {
-    const keys: (string | symbol)[] = [
-      ...Object.getOwnPropertyNames(proto),
-      ...Object.getOwnPropertySymbols(proto),
-    ];
-    for (const key of keys) {
-      const desc = Object.getOwnPropertyDescriptor(proto, key);
-      if (desc?.get && !getterDescs.has(key)) getterDescs.set(key, desc);
-    }
-    proto = Object.getPrototypeOf(proto);
-  }
+  // Both string- and symbol-keyed prototype getters (excluding
+  // Object.prototype). Arrow-function class properties are own values, not
+  // getters, and pass through unmodified.
+  const getters = collectGetters(Object.getPrototypeOf(instance) as object);
+  const tracksState = supportsTrackedState(instance as object);
 
   // Bound methods are cached so `bloc.method` keeps a stable identity across
   // reads — an unstable one would defeat memoisation in consumers.
@@ -72,18 +84,19 @@ export function buildTrackedProxy<T extends object>(
 
   const proxy = new Proxy(instance as object, {
     get(target, key) {
-      const desc = getterDescs.get(key);
-      // Not an unbound method — a descriptor getter, always `.call`ed below
-      // with an explicit receiver.
-      // oxlint-disable-next-line typescript/unbound-method
-      const getter = desc?.get;
-      if (getter) {
+      const getter = getters.get(key);
+      if (getter !== undefined) {
         const tracked = trackedStateRef.current;
-        const read = () => getter.call(target);
+        // `[WITH_TRACKED_STATE]` invokes the getter with `this` = the real
+        // instance, so no per-read thunk is needed.
         return wrapDepHandle(
-          tracked == null || !supportsTrackedState(target)
-            ? read()
-            : target[WITH_TRACKED_STATE](tracked, read, onDepHandle),
+          tracked == null || !tracksState
+            ? getter.call(target)
+            : (target as TrackedStateTarget)[WITH_TRACKED_STATE](
+                tracked,
+                getter,
+                onDepHandle,
+              ),
         );
       }
 
