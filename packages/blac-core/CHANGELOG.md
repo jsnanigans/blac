@@ -1,5 +1,94 @@
 # @blac/core
 
+## 2.0.21
+
+### Patch Changes
+
+- 80fea0d: Trim the published surface: one barrel per package, minus the dead and
+  duplicated entries.
+
+  **Breaking, shipped as a patch deliberately.** The project is pre-1.0 in
+  practice and has no known external consumers, so these land on the `2.0.x`
+  line rather than waiting for a `3.0`.
+
+  `@blac/core`:
+  - `getPluginManager` and `PluginManager` are no longer exported from the
+    barrel. Import them from `@blac/core/plugins` instead. This is what makes the
+    plugin system tree-shakeable — it cuts **1.10 kB brotli (9.47 → 8.37 kB,
+    11.5%)** from every app that never installs a plugin.
+  - The `./debug`, `./watch` and `./types` subpath exports are removed. Every
+    symbol they exposed was already exported from the barrel, so they were pure
+    duplicates; import from `@blac/core` instead. `./plugins` and `./testing`
+    remain — they exist to keep the plugin manager and the test harness out of
+    the production entry point.
+  - `register()` now guards on constructor identity rather than on the resolved
+    bloc name, so two distinct classes that share a `blacName` can both be
+    registered. Registering the same class twice still throws.
+
+  `@blac/react`:
+  - `configureBlacReact` and `BlacReactConfig` are removed. The config object was
+    inert: nothing ever read it, so setting it had no effect. Tree-scoped
+    configuration is `RegistryProvider`; per-bloc configuration is the `@blac()`
+    decorator.
+
+- dc4e95a: Preserve the class type in `InstanceReadonlyState` / `InstanceState` /
+  `StateContainerInstance`, and drop `DepsTarget`.
+
+  The three aliases built their narrowed `state` with `Omit<InstanceType<T>,
+'state'> & { state: ... }`. `Omit` maps the class into a plain object type,
+  which discards `private` members, so the result was no longer assignable to
+  `StateContainer`. That is what forced `@blac/react` to introduce the
+  structural `DepsTarget` interface for `useBlocDeps`.
+
+  They now use a plain intersection, `InstanceType<T> & { state: ... }`, which
+  keeps the nominal class intact. `state` is getter-only on `StateContainer`,
+  so assignment through the narrowed type is already a compile error and no
+  `readonly` modifier is needed.
+
+  BREAKING (`@blac/react`): `DepsTarget` is removed from the public surface and
+  `useBlocDeps` now takes `StateContainer<any, any, D>`. Callers passing a real
+  bloc — including the value `useBloc` returns — are unaffected; only code that
+  named `DepsTarget` explicitly, or passed a hand-rolled structural object, must
+  change.
+
+  A `WithState<I, S>` helper is exported alongside them; it is the shared
+  implementation of the three aliases.
+
+  `LifecycleListener`'s `stateChanged` payloads are typed
+  `Readonly<Record<string, unknown>>` instead of `any`, matching the
+  `depsChanged` branch.
+
+- 7fdcfb1: Make state mutation protected; `Cubit` is the public-mutation variant.
+
+  `emit`, `patch` and `update` are now `protected` on `StructuralContainer` and
+  `StateContainer`, and public on `Cubit`. Previously both classes exposed all
+  three publicly, so `Cubit` was an empty subclass that made no difference and
+  the choice between the two meant nothing — while the docs described the
+  encapsulation the code did not enforce.
+
+  `Cubit` is unchanged for callers: it re-declares the three as public, so every
+  bloc that extends `Cubit` and every external `bloc.emit(...)` keeps working.
+
+  **Migration.** A class that extends `StateContainer` (or `StructuralContainer`)
+  _and_ is mutated from outside must either extend `Cubit` instead, or expose its
+  own method that calls the protected mutator internally — the latter is the
+  pattern the docs already recommend:
+
+  ```ts
+  class Counter extends StateContainer<{ n: number }> {
+    increment() {
+      this.patch({ n: this.state.n + 1 }); // internal calls are unaffected
+    }
+  }
+  ```
+
+  Mutating a bloc from inside its own methods is unaffected, whichever base
+  class it uses.
+
+- Updated dependencies [6c8f484]
+- Updated dependencies [7fdcfb1]
+  - @dirtytalk/structural@0.1.1
+
 ## 2.0.20
 
 ### Patch Changes

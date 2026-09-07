@@ -1,5 +1,15 @@
 # @dirtytalk/spatial
 
+## 0.1.1
+
+### Patch Changes
+
+- 6c8f484: Nothing but a patch to pick up the protected-mutation change.
+
+  Both packages already sit on `0.1.0`, where `^0.1.0` admits patches as
+  intended — on `0.0.x` a caret carried no range at all, so dependents such as
+  `@blac/core` pinned a single structural patch.
+
 ## 0.0.6
 
 ### Patch Changes
