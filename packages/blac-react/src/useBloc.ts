@@ -173,6 +173,16 @@ export function useBloc<
   }
   const providerArgsKey = providerArgsKeyRef.current.key;
 
+  // Own args win over provider args; provider args win over no args. Read from
+  // the refs (refreshed every render) so the render-time acquire and the layout
+  // effect below resolve args identically — the effect re-creates the instance
+  // when the rendered entry was disposed (StrictMode remount), and dropping
+  // args there would run `init(undefined)`.
+  const resolveEffectiveArgs = (): ExtractArgs<T> | undefined =>
+    ownArgsRef.current !== undefined
+      ? ownArgsRef.current
+      : (providerArgsRef.current as ExtractArgs<T> | undefined);
+
   // Current render's tracking proxy. Declared before the memo so the stable
   // ref object can be passed to buildTrackedProxy at acquisition time. The
   // proxy trap only reads `.current` at invocation time (not during creation),
@@ -228,11 +238,7 @@ export function useBloc<
     instanceKey: string;
     trackedBloc: TBloc;
   }>(() => {
-    // Own args win over provider args; provider args win over no args.
-    const effectiveArgs =
-      ownArgsRef.current !== undefined
-        ? ownArgsRef.current
-        : providerArgsRef.current;
+    const effectiveArgs = resolveEffectiveArgs();
 
     const resolvedKey = resolveInstanceKey(BlocClass, effectiveArgs);
     // Render only ENSUREs the instance exists (no ref). Ownership is claimed in
@@ -382,6 +388,7 @@ export function useBloc<
       canCreate: true,
       countRef: true,
       refId: primaryRefId(consumerId),
+      args: resolveEffectiveArgs(),
     }) as TBloc;
     ownedBlocRef.current = live;
     onMountRef.current?.(live as InstanceType<T>);
