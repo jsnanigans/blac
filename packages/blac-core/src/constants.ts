@@ -47,11 +47,21 @@ export const BLAC_STATIC_PROPS = {
 export const BLAC_ERROR_PREFIX = '[BlaC]' as const;
 
 /**
- * True outside production builds.
+ * True only when `process.env.NODE_ENV` is defined and not `'production'`.
  *
- * Reads `process.env.NODE_ENV` defensively: plain ESM in the browser, Deno and
- * some test runners have no `process` binding, where a bare read throws.
- * Bundlers that define `process.env.NODE_ENV` still constant-fold this.
+ * Dev-only checks (emit-rate breaker, deps collision scan, args-mismatch key)
+ * cost real work per emit/acquire, so an environment that says nothing about
+ * its mode — plain ESM in the browser, Deno, a bundle without a `process`
+ * shim — is treated as production. Bundlers that define `process.env.NODE_ENV`
+ * still constant-fold the read.
  */
+const nodeEnv: string | undefined = (() => {
+  try {
+    return process.env.NODE_ENV;
+  } catch {
+    return undefined;
+  }
+})();
+
 export const IS_DEV: boolean =
-  typeof process === 'undefined' || process.env?.NODE_ENV !== 'production';
+  nodeEnv !== undefined && nodeEnv !== 'production';
