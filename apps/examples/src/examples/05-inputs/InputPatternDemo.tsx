@@ -75,14 +75,13 @@ export function InputPatternDemo() {
         <div className="stack-sm">
           <h2>2 — deps + onDepsChanged</h2>
           <p className="text-muted">
-            A canvas element ref is passed via{' '}
-            <code>
-              useBloc(CanvasCubit, {'{ autoInstance: true, deps: { canvas } }'})
-            </code>
-            .<code>onDepsChanged</code> fires when the canvas appears (starts
-            the loop) or disappears (stops it). Unmounting the canvas element is
-            enough to halt the RAF loop — no cleanup code needed in the
-            component.
+            A canvas element ref is contributed with{' '}
+            <code>useBlocDeps(bloc, {'{ canvas, onTick }'})</code> — deps are
+            never a <code>useBloc</code> option, because they must not key the
+            instance. <code>onDepsChanged</code> fires when the canvas appears
+            (starts the loop) or disappears (stops it). Unmounting the canvas
+            element is enough to halt the RAF loop — no cleanup code needed in
+            the component.
           </p>
         </div>
 
