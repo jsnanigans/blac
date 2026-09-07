@@ -142,8 +142,6 @@ export class StateContainerRegistry {
   /** Reverse lookup from `$blac.id` to its entry, for `PluginContext.getRefIds`. */
   private readonly _entryById = new Map<string, InstanceEntry>();
 
-  private readonly registeredTypeNames = new Set<string>();
-
   private readonly listeners = new Map<
     LifecycleEvent,
     Set<(...args: any[]) => void>
@@ -298,15 +296,12 @@ export class StateContainerRegistry {
    * @throws Error if type is already registered
    */
   register<T extends StateContainerConstructor>(constructor: T): void {
-    const className = getBlacName(constructor);
-
-    if (this.registeredTypeNames.has(className)) {
+    if (this.types.has(constructor)) {
       throw new Error(
-        `${BLAC_ERROR_PREFIX} Type "${className}" is already registered`,
+        `${BLAC_ERROR_PREFIX} Type "${getBlacName(constructor)}" is already registered`,
       );
     }
 
-    this.registeredTypeNames.add(className);
     this.registerType(constructor);
   }
 
@@ -869,7 +864,6 @@ export class StateContainerRegistry {
     }
     // Step 2: Now clear type tracking (resets registry state for tests)
     this.types.clear();
-    this.registeredTypeNames.clear();
   }
 
   /**

@@ -70,6 +70,25 @@ describe('StateContainer - Registry Features', () => {
       }).toThrow('Type "CounterBloc" is already registered');
     });
 
+    it('should allow distinct types that share a blacName', () => {
+      class A extends StateContainer<{ n: number }> {
+        static blacName = 'Shared';
+        constructor() {
+          super({ n: 0 });
+        }
+      }
+      class B extends StateContainer<{ n: number }> {
+        static blacName = 'Shared';
+        constructor() {
+          super({ n: 0 });
+        }
+      }
+
+      register(A);
+      expect(() => register(B)).not.toThrow();
+      expect(getStats().registeredTypes).toBe(2);
+    });
+
     it('should allow registering multiple different types', () => {
       register(CounterBloc);
       register(UserBloc);
