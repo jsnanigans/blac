@@ -891,12 +891,13 @@ doing them separately means rewriting the reconcile logic twice. Exception:
 04 §4 splits out (plan decision 2) — it is the only part touching published
 `blac-core` surface and the hook rewrite does not depend on it.
 
-- [ ] `useSyncExternalStore` with a per-consumer version snapshot; fixes tearing — [04 §1](./04-architecture.md#1-usesyncexternalstore-with-a-per-consumer-version-snapshot), [01 §7](./01-correctness.md#7-tearing-under-concurrent-rendering)
+- [x] `useSyncExternalStore` with a per-consumer version snapshot — [04 §1](./04-architecture.md#1-usesyncexternalstore-with-a-per-consumer-version-snapshot) — _step 2, see below_
+- [ ] **[01 §7](./01-correctness.md#7-tearing-under-concurrent-rendering) tearing — still open.** uSES does **not** fix it; verified against both hooks (see step 2 below). The plan and 04 §1 both assumed it would.
 - [x] Activation lifecycle (`onActivate`/`onDeactivate`) + zero-ref sweep; pure render — [04 §2](./04-architecture.md#2-activation-lifecycle-and-a-pure-render), [01 §6](./01-correctness.md#6-instance-creation-and-init-side-effects-run-inside-render) — _step 1, see below_
 - [ ] Consolidate ~17 refs / 3 effects into one consumer object — [02 §6](./02-performance.md#6-per-consumer-hook-cost)
 - [ ] One ownership model: collapse `refs` + `dependents` into one `owners` set; `ensure()` gated behind a dependent — [04 §4](./04-architecture.md#4-one-ownership-model) — _moved here from R2: the bare `Set` is only safe once uSES guarantees subscribe/unsubscribe pairing. Public surface — see the R2 audit above for the `getRefIds`/circuit-breaker call sites._
 - [x] Registry scoping through React context — [04 §5](./04-architecture.md#5-registry-scoping-through-context) — _step 3, see below_
-- [ ] Emit ordering and plugin hooks — [04 §6](./04-architecture.md#6-emit-ordering-and-plugin-hooks) — _only the `onActivate`/`onDeactivate` plugin hooks remain; the other two thirds already landed_
+- [x] Emit ordering and plugin hooks — [04 §6](./04-architecture.md#6-emit-ordering-and-plugin-hooks) — _step 6, see below_
 
 **Exit:** major release. SSR-safe, concurrent-safe, render is pure.
 
@@ -965,6 +966,82 @@ accurate; they flip in step 2's own diff, not before.
 **Verification:** full workspace `pnpm test` — 9 packages, 92 files, 0 failures
 (`blac-core` 679, `blac-react` 189). `pnpm typecheck` clean on all 9.
 `pnpm lint` green (one unused-expression error in a new test fixed with `void`).
+
+### Steps 2 and 6 — landed (2026-09-07)
+
+**Step 2 — `useBloc` on `useSyncExternalStore` (`blac-react`).** One `Consumer`
+object per hook instance holds the version counter, `notify` slot,
+`interest`/`paths`, `isSelectMode`, `selection`, `session`, `depSubs` and
+`lastReconcile` — folding ~6 refs into one. `getSnapshot` returns a plain
+number (allocation-free, so uSES cannot loop); the version increments **inside**
+the channel callback before `notify()`, which is the ordering uSES requires.
+Both `useReducer`s are gone. 948 → 947 lines.
+
+Three plan claims turned out wrong, each caught by a test rather than argument:
+
+1. **`rebindNonce` is load-bearing.** `buildTrackedProxy` binds its target at
+   construction, so when the layout-effect `acquire` returns a different
+   instance than the render captured, the returned proxy still wraps the
+   disposed one — retargeting `consumer.container` alone left 4 tests failing.
+   Kept, but demoted from `useReducer` state to a plain ref: the re-render it
+   needs already arrives via `consumer.bump()`.
+2. **`renderStateRef` really was deletable.** Mutation-confirmed unreachable —
+   the channel accumulates marks and delivers on flush, so the render→subscribe
+   window cannot drop a wake. Deleted.
+3. **`ownedBlocRef` survives** — but not for the reason the plan guessed.
+   Acquire/release _are_ co-located; the problem is that the unmount cleanup
+   closure captures the **pre-rebind** `bloc`, so `onUnmount` would fire with a
+   disposed instance without it.
+
+Final file: 947 lines — **497 code**, 390 comment, 60 blank. The plan's
+"~500 line" target was met in code; it was stated against a raw line count that
+is 41% deliberate explanatory comment. Count code, not lines.
+
+**01 §7 (tearing) is NOT closed, contrary to the plan.** Verified by running one
+probe against both hooks: sibling A emits from its own render body, A reads `0`
+and B reads `1` in the same commit — in the pre-uSES hook (`[0,1,1,1,1]`) and
+the post-uSES hook (`[0,1,1,1]`) alike, both converging afterwards. The cause is
+`useBloc.ts:420`, `const rawState = container.state`: the hook reads live state
+during render in both versions, and the uSES snapshot is a _version_, not the
+state. Fixing it means snapshotting state per render pass — a design change
+outside this step, and entangled with the tracking proxy. Filed as still open.
+
+Tests: 2 new (`useBloc.uses.test.tsx`). StrictMode subscribe/unsubscribe
+pairing — mutation-verified by me (`× pairs subscribe with unsubscribe`), and it
+patches the channel _prototype_ so counters survive StrictMode's
+dispose/recreate. Emit-during-first-render — mutation-verified against both the
+missing-notify and the notify-before-bump ordering hazard. A tearing test was
+attempted and **deliberately not shipped**: it passed with uSES ripped out
+entirely, so it measured nothing.
+
+**Step 6 — plugin activation hooks (`blac-core`).** `SET_ACTIVE` now returns
+`{kind:'activated', signal} | 'deactivated' | 'none'`, letting the registry
+distinguish a real transition from an idempotent no-op without new instance
+surface. New `activated`/`deactivated` `LifecycleEvent`s with matching
+`LifecycleListener`/`emit` overloads, wired through the existing
+`notifyPlugins`/`buildContext` path — no parallel notification lane. Public
+`BlacPlugin.onActivate?(ctx, signal)` / `onDeactivate?(ctx)`.
+
+Plugins fire _after_ the container's own hook, and never on dispose — matching
+`StateContainer.onDeactivate`, since `_syncActivation` is called only from the
+four ownership sites. I verified the edge behaviour independently: two acquires,
+two releases, plus a redundant release and one for a never-held refId emit
+exactly `['A','D']`.
+
+**Verification:** `blac-react` 191/191 (30 files), `blac-core` 681/681 (39
+files, incl. 200-seed fuzz), `pnpm typecheck` clean on 9, `pnpm lint` 0 errors.
+Also removed an unused `vi` import that step 1 left in
+`StateContainerRegistry.activation.test.ts` (a live lint warning).
+
+**API reports need regenerating** — `blac-react` (`RegistryProvider`,
+`RegistryProviderProps`) and `blac-core` (`LifecycleEvent`, `BlacPlugin`, across
+`core.api.md`, `core-debug.api.md`, `core-plugins.api.md`). Use the documented
+`cp temp/*.api.md etc/ && vp fmt` workflow.
+
+**Suggested commits:**
+
+- `feat(blac-react)!: rewrite useBloc on useSyncExternalStore`
+- `feat(blac-core): expose activation hooks to plugins`
 
 **Constraint for step 2:** the sweep is a microtask scheduled at render-time
 create, and only spares entries that have an owner by the time it runs. Layout

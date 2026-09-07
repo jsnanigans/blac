@@ -139,18 +139,104 @@ One `Consumer` object replacing the ref soup: `subscribe` / `getSnapshot`
 
 Deletable, each confirmed by reading its only uses:
 
-| Ref                          | Line     | Why it goes                                                |
-| ---------------------------- | -------- | ---------------------------------------------------------- |
-| `rebindNonce` + `bumpRebind` | 216, 435 | uSES + commit-time acquire closes the stale-capture window |
-| `force`                      | 285      | manual re-render dispatch → `onStoreChange`                |
-| `renderStateRef`             | 302      | mount gap → closed by uSES (probe-confirmed)               |
-| `prevBlocRef`                | 305      | consumer object is re-created on re-key                    |
-| `ownedBlocRef`               | 219      | acquire/release stop being split across effects            |
+| Ref                          | Line     | Why it goes                                                                                                                |
+| ---------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `rebindNonce` + `bumpRebind` | 216, 435 | ~~uSES + commit-time acquire closes the stale-capture window~~ **Wrong — see below. The nonce goes, the rebind does not.** |
+| `force`                      | 285      | manual re-render dispatch → `onStoreChange`                                                                                |
+| `renderStateRef`             | 302      | ~~mount gap → closed by uSES (probe-confirmed)~~ **Wrong — survives as `consumer.renderState`.**                           |
+| `prevBlocRef`                | 305      | consumer object is re-created on re-key                                                                                    |
+| `ownedBlocRef`               | 219      | ~~acquire/release stop being split across effects~~ **Wrong — survives.**                                                  |
+
+#### 01 §7 (tearing) is NOT closed by this step — verified (2026-09-07)
+
+The plan, the scope doc and 04 §1 all assume adopting uSES fixes the tearing in
+01 §7. **It does not.** Verified by running the same probe against both hooks:
+
+```
+probe: sibling A emits from its own render body, both siblings record what they read
+
+post-uSES  seen: [0,1,1,1]     final a='1' b='1'
+pre-uSES   seen: [0,1,1,1,1]   final a='1' b='1'
+```
+
+A reads `0` and B reads `1` **in the same commit** — a real intra-commit tear —
+in _both_ versions, and both then converge. uSES saved one render pass and
+changed nothing about the tear.
+
+**Why:** `useBloc.ts:420` does `const rawState = container.state` — the hook
+reads live container state during render, in the old hook and the new one
+alike. The uSES snapshot is a **version counter**, not the state. uSES makes the
+_version_ consistent across a commit; it does nothing to make the _state_
+consistent, because the state never passes through `getSnapshot`.
+
+Closing 01 §7 requires snapshotting state per render pass so every consumer in
+one commit reads the same immutable value — a design change well outside this
+step, and one that interacts with the tracking proxy (`trackRender` wraps
+`rawState` directly).
+
+**What step 2 did buy:** the mount-gap compensation is now genuinely unnecessary
+(`renderStateRef` deleted, mutation-confirmed unreachable), both `useReducer`s
+are gone, `rebindNonce` demoted to a plain ref, and ~6 refs folded onto one
+consumer object. Real simplification and a correct subscribe/unsubscribe
+contract — **not** the tearing fix it was sold as.
+
+**Scorecard: 3 of 5 deletions held.** `force`, `prevBlocRef` and
+`renderStateRef` went — the last only after a mutation proved its branch
+unreachable. Two were load-bearing:
+
+- **`rebindNonce`** — `buildTrackedProxy` binds its target at construction, so
+  when the layout-effect `acquire` returns a different instance than the render
+  captured, the returned proxy still wraps the disposed one. The memo must
+  re-run. Demoted from `useReducer` state to a plain ref (the re-render already
+  arrives via `consumer.bump()`), which is the real win: both `useReducer`s are
+  gone.
+- **`ownedBlocRef`** — the unmount cleanup closure captures the _pre-rebind_
+  `bloc`, so `onUnmount` would fire with a disposed instance without it.
+  Acquire/release are co-located; the closure's captured value is still stale.
+
+**On the "~500 lines" target — the metric was wrong, not the outcome.** Final
+file is 947 lines: **497 code, 390 comment, 60 blank**. The code is at the
+target. The plan compared a post-rewrite figure against a raw line count that is
+41% comments — the same comments this plan explicitly told the implementer to
+preserve, because they encode hard-won constraints. Two rules for next time:
+count code, not lines; and do not set a size target on a file whose comment mass
+is deliberate.
 
 `lastReconcileRef` (`:206`) **survives**, moving onto the consumer object.
 
-Two constraints that are easy to get wrong and that no existing test would
-catch:
+#### Correction: the rebind is load-bearing (2026-09-07)
+
+The table above claimed `rebindNonce`/`bumpRebind` were deletable because "uSES
+
+- commit-time acquire closes the stale-capture window". **That is wrong**, and
+  the first rewrite attempt proved it — deleting the rebind broke 4 tests:
+
+```
+× same-commit handoff of a shared key rebinds B to the LIVE instance
+    AssertionError: expected '0' to be '1'
+× StrictMode remount rebinds a lone consumer to the LIVE instance
+× StrictMode: bloc instance returned after double-invocation is alive
+× should work correctly in React Strict Mode
+```
+
+Component B rendered `'0'` after the live instance incremented — still bound to
+a disposed instance, never woken.
+
+uSES guarantees subscribe/unsubscribe **pairing**. It guarantees nothing about
+the render body having captured the wrong _instance_ for a key that another
+consumer handed over in the same commit. The old code handled this explicitly:
+`acquire` returns the authoritative live instance, and `live !== bloc` bumped a
+nonce to re-run the memo against it.
+
+**What actually changes:** the `useReducer` nonce goes; the rebind _mechanism_
+stays, expressed through `consumer.bump()`. The subtlety is that `subscribe` is
+memoised on `[BlocClass, instanceKey, consumerId, consumer]` and a rebind
+changes none of them — so swapping `consumer.container` does not re-run
+`subscribe`, and the channel subscription must be re-established explicitly.
+
+Generalisation worth keeping: **"uSES makes X unnecessary" needs a test, not an
+argument.** Three of the five deletions in that table were safe; this one was
+asserted on the same reasoning and was not.
 
 1. **The version counter must be incremented inside the channel callback,
    _before_ `onStoreChange`.** uSES requires `getSnapshot()` to already reflect
@@ -242,13 +328,13 @@ Per project convention, minimal and small. The 27 existing `blac-react` test
 files are the real regression net for step 2 — particularly the cross-bloc
 suites that exercise the dep-reconcile paths the rewrite must preserve.
 
-| Test                                                                                              | Why it is needed                                                                                                                                                                      | Step   |
-| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| SSR: `renderToString` under a scoped registry, `clearAll()`, assert no instance survives          | Today's test (`useBloc.test.tsx:173`) asserts only that the HTML contains `0` — it cannot catch the leak                                                                              | 1 or 3 |
-| `onActivate` fires once per ownership span; `AbortSignal` aborts on deactivate **and on dispose** | New public surface. The dispose case matters: if the signal does not abort there, async work started in `onActivate` outlives the instance — the bug class the hook exists to prevent | 1      |
-| A `depend()` handle resolves from the **scoped** registry under a provider                        | The dep lane is where registry scoping is most likely to regress; a primary-bloc test would not catch it                                                                              | 3      |
-| Tearing: two siblings, emit between their renders, assert identical snapshots                     | The 01 §7 finding; nothing covers it today                                                                                                                                            | 2      |
-| StrictMode subscribe/unsubscribe pairing                                                          | The single assumption the deletion of `rebindNonce`/`force` rests on                                                                                                                  | 2      |
+| Test                                                                                                     | Why it is needed                                                                                                                                                                      | Step   |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| SSR: `renderToString` under a scoped registry, `clearAll()`, assert no instance survives                 | Today's test (`useBloc.test.tsx:173`) asserts only that the HTML contains `0` — it cannot catch the leak                                                                              | 1 or 3 |
+| `onActivate` fires once per ownership span; `AbortSignal` aborts on deactivate **and on dispose**        | New public surface. The dispose case matters: if the signal does not abort there, async work started in `onActivate` outlives the instance — the bug class the hook exists to prevent | 1      |
+| A `depend()` handle resolves from the **scoped** registry under a provider                               | The dep lane is where registry scoping is most likely to regress; a primary-bloc test would not catch it                                                                              | 3      |
+| ~~Tearing: two siblings, emit between their renders~~ **Not written — see "01 §7 is not closed" below.** | ~~The 01 §7 finding~~                                                                                                                                                                 | 2      |
+| StrictMode subscribe/unsubscribe pairing                                                                 | The single assumption the deletion of `rebindNonce`/`force` rests on                                                                                                                  | 2      |
 
 Expect churn in tests asserting exact render counts — uSES coalesces.
 
@@ -276,7 +362,13 @@ behavioural deltas:
 The removal of `configureBlacReact` is the only API deletion (decision 3).
 
 Line estimate: the scope doc calls `~942 → ~350` optimistic and lands on
-**~500**, since the ~180-line dep-reconcile survives intact. Agreed.
+**~500**, since the ~180-line dep-reconcile survives intact. **Both estimates
+measured the wrong thing.** Final file is 947 raw lines but **497 code lines**
+(390 comment, 60 blank) — the code estimate was right; the raw-line target was
+never achievable without deleting comments this plan required kept. uSES bought
+subscription correctness and the removal of hand-rolled compensation, **not**
+tearing (see 01 §7 above). Any future estimate for this file should count code
+and start from "same length, better invariants".
 
 ---
 
