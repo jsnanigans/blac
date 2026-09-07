@@ -175,7 +175,7 @@ Two cross-bloc patterns reliably cause bugs. Both are easy to avoid once you kno
 **Mutual `depend()` between two blocs.** `A` depends on `B` and `B` depends on `A`. Declaration alone is safe (resolution is lazy), but if you also wire explicit subscriptions both ways, a change in one re-emits the other forever. The channel's same-tick coalescing limits the blast radius, but a true mutual reactive cycle is a design smell — extract the shared concern into a third bloc that both depend on, with the dependency arrows pointing one way.
 :::
 
-When you find yourself wanting a cycle, it usually signals that two blocs are really one concern, or that a piece of shared state belongs in a third, lower-level bloc. See [Best Practices](/guide/best-practices) for when cross-bloc coupling is a smell versus a sound dependency.
+When you find yourself wanting a cycle, it usually signals that two blocs are really one concern, or that a piece of shared state belongs in a third, lower-level bloc. See [Core Concepts](/guide/concepts/) for when cross-bloc coupling is a smell versus a sound dependency.
 
 ## Calling methods on dependencies
 
@@ -276,7 +276,7 @@ class DashboardCubit extends Cubit<Record<string, never>> {
 ```
 
 :::caution[A coordinating bloc with empty state is a smell]
-`Cubit<{}>` here holds no state of its own — it exists purely to compose other blocs' state. That is fine for a small read-only aggregator, but if it grows methods and starts coordinating writes across many blocs, it tends to become a god-bloc that re-couples everything `depend()` was meant to decouple. Prefer reading derived values directly in the component (or a small focused bloc per view) over one central dashboard bloc. See [Best Practices](/guide/best-practices).
+`Cubit<{}>` here holds no state of its own — it exists purely to compose other blocs' state. That is fine for a small read-only aggregator, but if it grows methods and starts coordinating writes across many blocs, it tends to become a god-bloc that re-couples everything `depend()` was meant to decouple. Prefer reading derived values directly in the component (or a small focused bloc per view) over one central dashboard bloc. See [Core Concepts](/guide/concepts/).
 :::
 
 ## Auto-tracking with `.track()`
@@ -497,5 +497,3 @@ Use `borrowSafe` over `borrow` when the instance may not exist yet. `borrow` thr
 
 - [Instance Management](/core/instance-management) — the registry, ref counting, and `ensure`/`borrow`/`acquire`
 - [Inputs and identity](/guide/inputs) — how `args` and `static key` resolve the instance a `depend()` targets
-- [Best Practices](/guide/best-practices) — when cross-bloc coupling is sound versus a smell
-- [Glossary](/guide/glossary) — definitions for registry, `ensure`, `keepAlive`, and auto-tracking

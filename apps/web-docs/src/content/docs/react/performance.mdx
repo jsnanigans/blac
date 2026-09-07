@@ -99,7 +99,7 @@ function CountButtons() {
 }
 ```
 
-`CountButtons` never re-renders on count changes because it reads nothing from `state`. The recipe form of this pattern lives in [Patterns: action-only components](/guide/patterns); this page owns the _why_.
+`CountButtons` never re-renders on count changes because it reads nothing from `state`.
 
 ## Pattern: `select` for coarse, derived control
 
@@ -296,7 +296,6 @@ This keeps the component body clean and avoids the usual `useEffect` dependency-
 - [Dependency Tracking](/react/dependency-tracking) — the recording rules that drive all of the above
 - [useBloc](/react/use-bloc) — the full options reference (`select`, `args`, `onMount`/`onUnmount`)
 - [DevTools](/plugins/devtools) — inspect live instances and state-change timing
-- [Best Practices](/guide/best-practices) — when to narrow, derive, or split, as principles
 
 ## Troubleshooting
 

@@ -27,7 +27,7 @@ class Cubit<
 
 ## Why a class? (and why "Cubit", not "Bloc")
 
-BlaC has exactly two base types: `StateContainer` (the abstract engine) and `Cubit` (the concrete class you extend). There is **no `Bloc` class** — if you are coming from `flutter_bloc`, the closest equivalent is `Cubit`. We use the name "bloc" colloquially to mean "any state-container instance," but the only thing you ever extend is `Cubit`. See the [glossary](/guide/glossary) for the full StateContainer / Cubit / bloc / instance hierarchy.
+BlaC has exactly two base types: `StateContainer` (the abstract engine) and `Cubit` (the concrete class you extend). There is **no `Bloc` class** — if you are coming from `flutter_bloc`, the closest equivalent is `Cubit`. We use the name "bloc" colloquially to mean "any state-container instance," but the only thing you ever extend is `Cubit`. See [Core Concepts](/guide/concepts/) for the full StateContainer / Cubit / bloc / instance hierarchy.
 
 The state lives in a **class** for three concrete reasons:
 
@@ -487,7 +487,7 @@ class CanvasRendererCubit extends Cubit<
 - **Two consumers writing the same `deps` key.** Deps are merged per consumer into one view. If two `useBloc` call sites both supply `deps.controller`, the bloc sees one of them (last writer for that key) — decide a single owner.
 - **Reading `this.deps.x` without guarding.** A dep may legitimately be `undefined` (no consumer has supplied it yet, or it unmounted). Always use optional chaining, as in `this.deps.inputRef?.current`.
 
-See [Passing Inputs](/guide/inputs) for the full identity/merge model and [Best Practices](/guide/best-practices) for the judgment on which lane to reach for.
+See [Passing Inputs](/guide/inputs) for the full identity/merge model and [Core Concepts](/guide/concepts/) for the judgment on which lane to reach for.
 :::
 
 ## `depend(Type)`
@@ -633,9 +633,7 @@ class FormCubit extends Cubit<{ email: string; password: string }> {
 ## See also
 
 - [Mental Model](/guide/mental-model) — why class-based containers, proxy tracking, and microtask batching
-- [Best Practices](/guide/best-practices) — how to scope blocs, model async, and choose args vs deps
 - [Passing Inputs](/guide/inputs) — the full args / deps identity model
-- [Glossary](/guide/glossary) — StateContainer vs Cubit vs bloc vs instance, and other terms
 
 ## Troubleshooting
 

@@ -1076,3 +1076,40 @@ discards persisted user state for the pattern the docs themselves recommend —
 it is the only finding that loses data. Phases 0–2 are all patch/minor-safe and
 should ship before any architectural work begins; Phase 3 can run in parallel
 with anything. Phase 5 is the only item that needs a coordinated major.
+
+## Docs reduction (2026-09-07)
+
+`apps/web-docs` cut to essentials and re-verified against HEAD.
+59 pages / 17,685 lines → 36 pages / 10,703 lines (−39%).
+
+**Deleted (30 pages):** 3 "Coming from…" ports, comparison, glossary,
+versioning, best-practices, patterns, 7 recipes, 3 integrations
+(nextjs/remix/react-native), showcase, playground, react/preact
+(documented a package that does not exist in the repo), and 9 dirtytalk
+sub-pages collapsed to a single `/dirtytalk/` page. Orphaned demo data
+(`demos/showcase/`, `playground-starter.ts`) removed with them.
+
+**Corrected against HEAD** — these were false after the Phase 5 rewrite:
+
+- `react/use-bloc.mdx`, `guide/async.mdx` asserted `useBloc` does **not**
+  use `useSyncExternalStore`. It does, since this session. Replaced the
+  mechanism prose with the behavioural guarantee.
+- `guide/internals.md` described a `useReducer` tick and `useStructural`;
+  both gone. Rewrote the React subsection.
+
+**Added** — new public API that had no docs:
+
+- `RegistryProvider` in `react/getting-started.mdx`, and `integrations/ssr.md`
+  reworked around it (it replaces the racy global `setRegistry` swap; the
+  AsyncLocalStorage bridge section is deleted).
+- `onActivate`/`onDeactivate` in `core/plugins.md`, incl. the note that
+  disposal aborts the signal without firing `onDeactivate`.
+
+**Verified:** 0 broken internal links, 0 self-links (36 pages, scripted
+check); 38 sidebar links all resolve, no page absent from the sidebar;
+every `@blac/*` symbol imported in docs exists in the api reports or
+package exports; clean `pnpm run build` from scratch, EXIT=0,
+"✓ No snippet errors", 37 pages.
+
+Suggested commit:
+`docs(web-docs)!: cut docs to essentials and sync with HEAD`

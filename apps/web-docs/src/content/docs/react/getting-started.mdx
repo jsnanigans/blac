@@ -118,6 +118,21 @@ By default all components calling `useBloc(SameCubit)` share one instance. You c
 
 See [Passing Inputs](/guide/inputs) for the full identity model and precedence.
 
+## Scoping to a registry
+
+By default every `useBloc` resolves against one module-global registry, which is what makes instances shared with no providers. `RegistryProvider` overrides that for a subtree:
+
+```tsx
+import { StateContainerRegistry } from '@blac/core';
+import { RegistryProvider } from '@blac/react';
+
+<RegistryProvider registry={new StateContainerRegistry()}>
+  <App />
+</RegistryProvider>;
+```
+
+Descendant `useBloc` calls acquire from that registry instead of the global one, so the subtree shares nothing with the rest of the page. Use it for test isolation, per-request isolation on the server, and micro-frontends embedded in a host app. See [SSR & per-request isolation](/integrations/ssr).
+
 ## What's next?
 
 Once the counter works, the natural next steps are reading state efficiently and giving blocs input:

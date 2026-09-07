@@ -73,70 +73,37 @@ A fresh `StateContainerRegistry` starts empty: no registered types, no instances
 A `StateContainerRegistry` has no whole-registry teardown method. To dispose the blocs inside one, call `registry.clearAll()` (disposes and removes every instance it holds, ignoring ref counts and `keepAlive`). If you simply drop all references to a per-request registry instead, it — and the blocs it holds — become eligible for garbage collection along with the request. Verify the surface in [Instance Management](/core/instance-management).
 :::
 
-## The pattern: scope the swap to the request
+## The pattern: scope the render with `RegistryProvider`
 
-`setRegistry` is a single global slot, so the naive "set at the start of the handler, restore at the end" only works if nothing async interleaves between two requests. Under real concurrency — `await`ing a data fetch mid-render while another request runs — a bare set/restore races: request B's `setRegistry` clobbers the slot while request A is suspended.
+`setRegistry` is a single global slot, so "set at the start of the handler, restore at the end" only holds if nothing async interleaves between two requests. Under real concurrency — `await`ing a data fetch mid-render while another request runs — a bare set/restore races: request B's `setRegistry` clobbers the slot while request A is suspended.
 
-Node's [`AsyncLocalStorage`](https://nodejs.org/api/async_context.html) is the standard tool for request-scoped values that survive `await`. BlaC does **not** ship an `AsyncLocalStorage` integration — the exports above are the primitives. The wiring below is an **application-level pattern** you build on top of `setRegistry` / `getRegistry`: keep the per-request registry in `AsyncLocalStorage`, and make a tiny shim so `getRegistry` resolves the registry for the _current async context_ rather than a single shared variable.
+`@blac/react` avoids the slot entirely. `RegistryProvider` scopes every descendant `useBloc` to a registry passed through React context, so concurrent renders cannot interfere:
 
-```ts
-import { AsyncLocalStorage } from 'node:async_hooks';
-import {
-  StateContainerRegistry,
-  setRegistry,
-  globalRegistry,
-} from '@blac/core';
+```tsx
+import { StateContainerRegistry } from '@blac/core';
+import { RegistryProvider } from '@blac/react';
 
-// One ALS for the whole process; each request stores its own registry in it.
-const registryStore = new AsyncLocalStorage<StateContainerRegistry>();
-
-// Resolve the active registry from the current async context, falling back to
-// the process default for any code that runs outside a request scope.
-function activeRegistry(): StateContainerRegistry {
-  return registryStore.getStore() ?? globalRegistry;
-}
-
-// Run `fn` with a fresh, isolated registry that is torn down afterwards.
-async function withRequestRegistry<T>(fn: () => Promise<T>): Promise<T> {
-  const requestRegistry = new StateContainerRegistry();
-  return registryStore.run(requestRegistry, async () => {
-    // Point @blac/core's active slot at this request's registry while the
-    // synchronous render runs. (See the note below on the async caveat.)
-    setRegistry(requestRegistry);
-    try {
-      return await fn();
-    } finally {
-      // Dispose every bloc created during this request, then restore default.
-      requestRegistry.clearAll();
-      setRegistry(globalRegistry);
-    }
-  });
-}
-```
-
-A realistic server handler then wraps the render in `withRequestRegistry` (reusing the helper defined above):
-
-```ts
 async function handleRequest(req: Request): Promise<Response> {
-  const html = await withRequestRegistry(async () => {
-    // Any acquire/ensure/watch reached during this render resolves against
-    // THIS request's registry — never another request's, never the global one.
-    return renderToString(<App url={req.url} />);
-  });
-
-  return new Response(`<!doctype html><div id="root">${html}</div>`, {
-    headers: { 'content-type': 'text/html' },
-  });
+  const registry = new StateContainerRegistry();
+  try {
+    const html = renderToString(
+      <RegistryProvider registry={registry}>
+        <App url={req.url} />
+      </RegistryProvider>,
+    );
+    return new Response(`<!doctype html><div id="root">${html}</div>`, {
+      headers: { 'content-type': 'text/html' },
+    });
+  } finally {
+    registry.clearAll();
+  }
 }
 ```
 
-:::caution[The async caveat with the single global slot]
-`setRegistry` mutates one process-wide variable. `AsyncLocalStorage` makes the registry available per-context, but `getRegistry()` inside `@blac/core` still reads that one variable unless you bridge the two. Two robust ways to do that:
+Because the registry travels through context rather than a module variable, two requests rendering concurrently in the same process each resolve their own instances — no `AsyncLocalStorage` bridge, no restore step, nothing to race.
 
-- **Render synchronously per request.** If the render that touches blocs is synchronous (no `await` between `setRegistry(requestRegistry)` and `setRegistry(globalRegistry)`), no other request can interleave on the slot, and the bare set/restore is safe. This is the simplest correct setup and covers most `renderToString` flows.
-- **Bridge `getRegistry` to your ALS.** If your render `await`s mid-flight, do not rely on the global slot during those awaits. Resolve the registry from `AsyncLocalStorage` (the `activeRegistry()` helper above) at every registry call site so each suspended request keeps reading its own registry. The exported `setRegistry`/`getRegistry` slot remains the fallback for non-request code.
-
-Pick synchronous rendering if you can; reach for the ALS bridge only when concurrent async renders genuinely share the process.
+:::note[Code outside the React tree]
+`RegistryProvider` covers `useBloc`, including the blocs it resolves through `depend()`. Direct `@blac/core` calls (`acquire`, `ensure`, `watch`) still resolve through the module-level slot, so server code that touches blocs _outside_ the render must either take the registry explicitly or scope the slot with `setRegistry` around a synchronous section.
 :::
 
 ## Client hydration uses the global registry

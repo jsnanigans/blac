@@ -223,7 +223,7 @@ A per-mount instance keyed off `useId()` always resolves to its own key, never t
 </details>
 
 :::caution[`args: { _id: useId() }`, not `autoInstance` or `instanceId`]
-You may see `autoInstance` or an `instanceId` option in old notes or stale comments — neither exists in the shipping API. The per-mount mechanism is a synthetic `args` field plus a `static key` that selects it (use `useId()` for a stable-per-mount value). There is no `isolated`, `autoInstance`, or `instanceId` field or hook option. See the [glossary](/guide/glossary).
+You may see `autoInstance` or an `instanceId` option in old notes or stale comments — neither exists in the shipping API. The per-mount mechanism is a synthetic `args` field plus a `static key` that selects it (use `useId()` for a stable-per-mount value). There is no `isolated`, `autoInstance`, or `instanceId` field or hook option.
 :::
 
 ---
@@ -347,11 +347,11 @@ If you want this bloc visible, drop that option. The option is documented in [Co
 
 ### SSR & hydration
 
-| Symptom                                        | Likely cause                                         | Fix                                                                    |
-| ---------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------- |
-| Hydration mismatch warning from React          | Server and client produced different first snapshots | Seed initial state from `args` in `init(args)` so both render the same |
-| Persisted state appears, then vanishes         | State changed _while_ hydrating → discarded          | Hold writes until `$blac.hydration.isHydrated`; observe `hydrationChanged`             |
-| Instance key differs between server and client | Relying on internal auto-ids for stable identity     | Key off stable `args` (or a `BlocProvider`) for SSR-stable identity    |
+| Symptom                                        | Likely cause                                         | Fix                                                                        |
+| ---------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------- |
+| Hydration mismatch warning from React          | Server and client produced different first snapshots | Seed initial state from `args` in `init(args)` so both render the same     |
+| Persisted state appears, then vanishes         | State changed _while_ hydrating → discarded          | Hold writes until `$blac.hydration.isHydrated`; observe `hydrationChanged` |
+| Instance key differs between server and client | Relying on internal auto-ids for stable identity     | Key off stable `args` (or a `BlocProvider`) for SSR-stable identity        |
 
 <details>
 <summary>"SSR / hydration notes"</summary>
@@ -373,7 +373,7 @@ See [Persistence](/plugins/persistence) for the full hydration story and [System
 <details>
 <summary>Is there a `Bloc` class?</summary>
 
-No. The only base classes are `StateContainer` (abstract) and [`Cubit`](/core/cubit) (abstract, extends `StateContainer`). "Bloc" is colloquial shorthand for any container instance — see the [glossary](/guide/glossary).
+No. The only base classes are `StateContainer` (abstract) and [`Cubit`](/core/cubit) (abstract, extends `StateContainer`). "Bloc" is colloquial shorthand for any container instance — see the [Core Concepts](/guide/concepts/).
 
 </details>
 
@@ -432,4 +432,3 @@ You hit `maxInstancesPerType` or `maxRefsPerInstance` from the global config —
 - [Passing inputs](/guide/inputs) — `args` and `deps` in depth
 - [`useBloc`](/react/use-bloc) — the canonical options and precedence reference
 - [Instance management](/core/instance-management) — acquire/release, ref counting, `keepAlive`
-- [Glossary](/guide/glossary) — one-line definitions for every term used here

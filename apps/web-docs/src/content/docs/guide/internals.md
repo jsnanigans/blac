@@ -15,7 +15,7 @@ source: the engine lives in `@dirtytalk/engine`, the path machinery in
 `@dirtytalk/structural`, and BlaC's lifecycle layer in `@blac/core`'s
 `StateContainer`. The companion design narrative is the
 [Mental Model](/guide/mental-model); the distilled standalone version is
-[`@dirtytalk/structural` Concepts](/dirtytalk/structural/concepts).
+[DirtyTalk](/dirtytalk/).
 
 We build in four stages, each strictly on top of the last:
 
@@ -441,18 +441,12 @@ value-diffs the patch shape, so raw `subscribe` callers wake correctly too.
 
 ### How React ties in
 
-`useBloc` (and the standalone `useStructural`) needs **no selector** because the
-JSX _is_ the interest declaration. Per render it:
-
-- derives a stable consumer id from `useId()` and forces re-renders with a
-  `useReducer` tick (no virtual DOM — React reconciles);
-- calls `trackRender(container.state, container.interner)`, renders against the
-  proxy, and stashes the now-populated `paths` in a ref;
-- registers that set in a layout effect **after** render (never in the render
-  body — at that point `paths` is still empty and would freeze an empty
-  skeleton, silently dropping wakeups);
-- subscribes `() => pathRef.current` to the channel, so the channel re-evaluates
-  the live interest on every flush and re-renders only on intersection.
+`useBloc` needs **no selector** because the JSX _is_ the interest declaration.
+Per render it renders against the recording proxy, then registers the resulting
+path set in a layout effect — after render, since during render the set is still
+empty and would freeze an empty skeleton, silently dropping wakeups. The channel
+subscription reads the live interest on every flush, so it re-renders only on
+intersection.
 
 Conditional reads therefore reshape the skeleton automatically, render to
 render. To opt out and gate re-renders by a derived value array instead, pass
@@ -567,5 +561,5 @@ BlaC re-renders the minimum.**
 - [Mental Model](/guide/mental-model) — the design narrative behind these stages.
 - [Tracking](/core/tracked) — the React-time recording rules in reference form.
 - [Dependency Tracking](/react/dependency-tracking) — `select` and what does/doesn't register.
-- [`@dirtytalk/structural` Concepts](/dirtytalk/structural/concepts) — the standalone, engine-backed distillation.
+- [DirtyTalk](/dirtytalk/) — the standalone, engine-backed distillation.
 - [System Events](/core/system-events) — `stateChanged` / `dispose` lifecycle hooks.

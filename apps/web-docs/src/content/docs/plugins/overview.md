@@ -61,4 +61,3 @@ See [Plugin Authoring](/core/plugins) for the full `BlacPlugin` interface, the h
 - [Plugin Authoring](/core/plugins) — the `BlacPlugin` interface and how to write your own
 - [System Events](/core/system-events) — per-instance lifecycle hooks, and when to use them instead of a plugin
 - [Logging Plugin](/plugins/logging) · [DevTools](/plugins/devtools) · [Persistence](/plugins/persistence) — the official plugins in detail
-- [Glossary](/guide/glossary) — definitions for plugin, hydration, and registry

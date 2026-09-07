@@ -39,7 +39,7 @@ import remarkGfm from 'remark-gfm';
 const headPropagationSeedFix = {
   name: 'blac:head-propagation-seed-fix',
   apply: /** @type {const} */ ('build'),
-  transform(_code, id) {
+  transform(/** @type {string} */ _code, /** @type {string} */ id) {
     if (id === '\0astro:content') {
       return {
         meta: {
@@ -86,41 +86,58 @@ function rehypeTableCellLabels() {
       if (node?.type !== 'element' || node.tagName !== 'table') return;
 
       const thead = node.children?.find(
-        (child) => child?.type === 'element' && child.tagName === 'thead'
+        /** @param {any} child */
+        (child) => child?.type === 'element' && child.tagName === 'thead',
       );
       const headerRow = thead?.children?.find(
-        (child) => child?.type === 'element' && child.tagName === 'tr'
+        /** @param {any} child */
+        (child) => child?.type === 'element' && child.tagName === 'tr',
       );
       const headers =
         headerRow?.children
-          ?.filter((child) => child?.type === 'element' && child.tagName === 'th')
-          .map((child) => hastText(child).replace(/\s+/g, ' ').trim())
+          ?.filter(
+            /** @param {any} child */
+            (child) => child?.type === 'element' && child.tagName === 'th',
+          )
+          .map(
+            /** @param {any} child */
+            (child) => hastText(child).replace(/\s+/g, ' ').trim(),
+          )
           .filter(Boolean) ?? [];
 
       if (headers.length === 0) return;
 
       const tbodies =
         node.children?.filter(
-          (child) => child?.type === 'element' && child.tagName === 'tbody'
+          /** @param {any} child */
+          (child) => child?.type === 'element' && child.tagName === 'tbody',
         ) ?? [];
 
       for (const tbody of tbodies) {
         const rows =
           tbody.children?.filter(
-            (child) => child?.type === 'element' && child.tagName === 'tr'
+            /** @param {any} child */
+            (child) => child?.type === 'element' && child.tagName === 'tr',
           ) ?? [];
 
         for (const row of rows) {
           const cells =
             row.children?.filter(
-              (child) => child?.type === 'element' && child.tagName === 'td'
+              /** @param {any} child */
+              (child) => child?.type === 'element' && child.tagName === 'td',
             ) ?? [];
 
-          cells.forEach((cell, index) => {
-            const label = headers[index];
-            if (!label) return;
-            cell.properties = { ...cell.properties, 'data-label': label };
-          });
+          cells.forEach(
+            /**
+             * @param {any} cell
+             * @param {number} index
+             */
+            (cell, index) => {
+              const label = headers[index];
+              if (!label) return;
+              cell.properties = { ...cell.properties, 'data-label': label };
+            },
+          );
         }
       }
     });
@@ -277,8 +294,6 @@ export default defineConfig({
             label: 'blac',
             link: '/guide/introduction/',
             icon: 'open-book',
-            // The umbrella: the learn-it narrative, recipes, reference aids, and
-            // the cross-cutting Testing / Integrations / first-party Plugins.
             items: [
               {
                 label: 'Getting Started',
@@ -295,75 +310,17 @@ export default defineConfig({
                 ],
               },
               {
-                label: 'Examples',
-                items: [
-                  { label: 'Playground', link: '/playground/' },
-                  { label: 'Showcase', link: '/showcase/' },
-                ],
-              },
-              {
                 label: 'Going Deeper',
                 items: [
+                  { label: 'Async', link: '/guide/async/' },
+                  { label: 'TypeScript', link: '/guide/typescript/' },
                   {
                     label: 'How BlaC Works Internally',
                     link: '/guide/internals/',
                   },
-                  { label: 'Async', link: '/guide/async/' },
-                  { label: 'TypeScript', link: '/guide/typescript/' },
-                  { label: 'Patterns & Recipes', link: '/guide/patterns/' },
-                  { label: 'Best Practices', link: '/guide/best-practices/' },
-                ],
-              },
-              {
-                label: 'Recipes',
-                collapsed: true,
-                items: [
-                  { label: 'Debounce', link: '/guide/recipes/debounce/' },
-                  {
-                    label: 'Form Validation',
-                    link: '/guide/recipes/form-validation/',
-                  },
-                  {
-                    label: 'Optimistic Update',
-                    link: '/guide/recipes/optimistic-update/',
-                  },
-                  { label: 'Pagination', link: '/guide/recipes/pagination/' },
-                  {
-                    label: 'Reset to Initial State',
-                    link: '/guide/recipes/reset-to-initial/',
-                  },
-                  { label: 'Undo / Redo', link: '/guide/recipes/undo-redo/' },
-                  {
-                    label: 'WebSocket Subscription',
-                    link: '/guide/recipes/websocket/',
-                  },
-                ],
-              },
-              {
-                label: 'Coming from…',
-                collapsed: true,
-                items: [
-                  {
-                    label: 'Flutter Bloc',
-                    link: '/guide/coming-from-flutter-bloc/',
-                  },
-                  { label: 'Zustand', link: '/guide/coming-from-zustand/' },
-                  { label: 'Redux', link: '/guide/coming-from-redux/' },
-                ],
-              },
-              {
-                label: 'Reference Aids',
-                collapsed: true,
-                items: [
-                  { label: 'Comparison', link: '/guide/comparison/' },
                   {
                     label: 'Troubleshooting & FAQ',
                     link: '/guide/troubleshooting/',
-                  },
-                  { label: 'Glossary', link: '/guide/glossary/' },
-                  {
-                    label: 'Versioning & Stability',
-                    link: '/guide/versioning/',
                   },
                 ],
               },
@@ -384,12 +341,6 @@ export default defineConfig({
                     label: 'SSR & per-request isolation',
                     link: '/integrations/ssr/',
                   },
-                  { label: 'Next.js', link: '/integrations/nextjs/' },
-                  { label: 'Remix', link: '/integrations/remix/' },
-                  {
-                    label: 'React Native',
-                    link: '/integrations/react-native/',
-                  },
                   {
                     label: 'Using BlaC outside React',
                     link: '/integrations/outside-react/',
@@ -399,7 +350,6 @@ export default defineConfig({
               {
                 label: 'Plugins',
                 collapsed: true,
-                // Each plugin can grow into its own multi-page sub-group later.
                 items: [
                   { label: 'Overview', link: '/plugins/overview/' },
                   { label: 'Logging', link: '/plugins/logging/' },
@@ -407,6 +357,11 @@ export default defineConfig({
                   { label: 'Persistence', link: '/plugins/persistence/' },
                   { label: 'Plugin Recipes', link: '/plugins/recipes/' },
                 ],
+              },
+              {
+                label: 'Internals',
+                collapsed: true,
+                items: [{ label: 'DirtyTalk', link: '/dirtytalk/' }],
               },
             ],
           },
@@ -453,61 +408,6 @@ export default defineConfig({
                     link: '/react/dependency-tracking/',
                   },
                   { label: 'Performance', link: '/react/performance/' },
-                  { label: 'Preact', link: '/react/preact/' },
-                ],
-              },
-            ],
-          },
-          {
-            label: 'dirtytalk',
-            link: '/dirtytalk/',
-            icon: 'puzzle',
-            // dirtytalk is itself an umbrella over engine / spatial / structural.
-            items: [
-              { label: 'Overview', link: '/dirtytalk/' },
-              {
-                label: 'Engine',
-                items: [
-                  {
-                    label: 'Getting Started',
-                    link: '/dirtytalk/engine/getting-started/',
-                  },
-                  { label: 'Concepts', link: '/dirtytalk/engine/concepts/' },
-                  {
-                    label: 'API Reference',
-                    link: '/dirtytalk/engine/api-reference/',
-                  },
-                ],
-              },
-              {
-                label: 'Spatial',
-                items: [
-                  {
-                    label: 'Getting Started',
-                    link: '/dirtytalk/spatial/getting-started/',
-                  },
-                  { label: 'Concepts', link: '/dirtytalk/spatial/concepts/' },
-                  {
-                    label: 'API Reference',
-                    link: '/dirtytalk/spatial/api-reference/',
-                  },
-                ],
-              },
-              {
-                label: 'Structural',
-                items: [
-                  {
-                    label: 'Getting Started',
-                    link: '/dirtytalk/structural/getting-started/',
-                  },
-                  {
-                    label: 'Concepts',
-                    link: '/dirtytalk/structural/concepts/',
-                  },
-                  {
-                    label: 'API Reference',
-                    link: '/dirtytalk/structural/api-reference/',
-                  },
                 ],
               },
             ],
