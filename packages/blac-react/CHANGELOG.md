@@ -235,6 +235,12 @@
 
 BlaC React bindings v2 - complete rewrite with improved hooks and performance.
 
+> **Correction (added later):** the `useSyncExternalStore` claim below was not
+> accurate for this release — `useBloc` actually used (and, as of this
+> correction, still uses) a `useReducer`-driven update path. A future release
+> that rewrites `useBloc` on `useSyncExternalStore` will have its own entry
+> here; until then this claim does not hold.
+
 ### Highlights
 
 - **useBloc hook**: Integrates state containers with React using `useSyncExternalStore` for concurrent mode compatibility
