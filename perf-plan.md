@@ -332,6 +332,70 @@ an empty object. Removing it trades a documented invariant for nothing measurabl
 
 ---
 
+## Phase 4 — Constant-factor pass (landed 2026-09-07)
+
+Profiled the report's slow rows in Node (`--cpu-prof` on a vitest bench that mirrors the
+`apps/perf` ops) instead of reading code. The profile disagreed with the report's framing on
+two points: `createMeta` was 44% of `construct + dispose`, and the tracked-consumer patch
+lane was dominated by `_refineAncestorMarks` + ancestor-mark interning, not by `union`.
+On the React side `buildTrackedProxy` (a full prototype walk per mounted component) was the
+single largest library frame, ahead of `useBloc` itself.
+
+### What changed
+
+- **engine** — `DirtyChannel` keeps the first mark of a cycle by reference and only copies
+  on the second (`#owned` flag), so no `empty()` Set per instance or per flush; the
+  multi-subscriber flush iterates the map up to the flush-start id instead of `Array.from`.
+- **structural** — `changedPathsFromPatch` emits no ancestor-watch mark for a
+  primitive→primitive change (nothing can have read below a primitive), which makes
+  `_refineAncestorMarks` exit before allocating on the common scalar patch;
+  `internAncestorOf(id)` and `ancestorWatchIds(id)` memoize per id so the hot paths do no
+  string work; `ancestorIds` marks complete entries final so unrelated interning no longer
+  invalidates them; `_applyRefDelta` touches only the symmetric difference; `deepMerge`
+  iterates with `for...in` and `isPlainPatchObject` drops the redundant `Array.isArray`;
+  `_equalsByPathId` and the tracker's `pinned` set are allocated only when used; with a
+  `ProxyCache` the tracker no longer allocates a per-render `WeakMap` + `Map`, and prune
+  compares sessions instead of copying prefix keys into a Set.
+- **core** — `$blac.hydration` is built on first access (9 closures + a freeze that most
+  containers never used); `_systemEventHandlers`, `_deps`, `_config` start shared/null;
+  `shallowEqualState` uses `for...in` (no key arrays); `patch`/`applyState` read raw state
+  via `super.state` (inside a tracked getter `this.state` is the render proxy); the registry
+  builds the `INIT_CONFIG` object only on create.
+- **react** — prototype getters are collected once per class (`WeakMap`) instead of per
+  mount; getters are passed to `[WITH_TRACKED_STATE]` directly (no thunk per read); the
+  hook's dozen `useRef`s collapsed into the existing `Consumer` object; `ProxyCache` and the
+  dep-wrapper map are allocated lazily; `disarm` runs in the commit layout effect instead
+  of `queueMicrotask` (one microtask per render per hook gone); `expandWithAncestors` uses
+  the memoized ids and returns `paths` itself when nothing expands.
+
+### Measured (Node 24, same harness, before → after; core rows are per 1000 ops)
+
+| op                                      | before       | after        | change |
+| --------------------------------------- | ------------ | ------------ | ------ |
+| patch 1 field, no consumer              | 51.1µs       | 45.0µs       | −12%   |
+| emit + getter                           | 29.9µs       | 25.6µs       | −14%   |
+| same-tick burst 1000 (tracked consumer) | 374µs        | 274µs        | −27%   |
+| construct + dispose                     | 1.45ms       | 0.92ms       | −37%   |
+| redundant patch / multi-store           | 28.7 / 150µs | 27.0 / 149µs | noise  |
+| React: mount 1000 subscribed rows       | 32.6ms       | 26.0ms       | −20%   |
+| React: add 1000 → 2000 rows             | 32.9ms       | 27.1ms       | −17%   |
+| React: select (re-render 1000 rows)     | 11.9ms       | 8.6ms        | −28%   |
+
+A Zustand-like `setState` control ran 18.5 → 17.9µs, so the harness itself did not move.
+The browser report has not been re-run; the ratios there need `apps/perf` in Chrome.
+
+### Not done, on purpose
+
+- `IS_DEV` (`constants.ts`) is `true` whenever `process` is undefined, i.e. in a plain
+  browser production bundle unless the bundler injects `process`. That ships the emit-rate
+  breaker, the `APPLY_DEPS` collision scan and the acquire args-mismatch `structuralKey` into
+  production. Flipping the default is a behaviour change worth its own decision.
+- `createMeta` still allocates seven getter closures per instance; the enumerable-own-getter
+  contract (see 2.4) is the floor without a contract change.
+- Per-row `selected === item.id` reads re-render every row on select because tracking is
+  value-level; `select:` is the tool for derived booleans. Same for Zustand without a
+  selector.
+
 ## Expected outcome
 
 - Phase 0: two bogus "critical" rows (179.7x, 55.7x) removed; React and read-op numbers
