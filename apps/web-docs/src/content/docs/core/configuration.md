@@ -172,6 +172,7 @@ A few details that matter when tuning these:
 - `maxInstancesPerType` throws when the live-instance count for a class **reaches** the limit (`>=`). `maxRefsPerInstance` throws when an instance's distinct-ref count **exceeds** the limit (`>`).
 - `maxEmitsPerSecond` counts only **real** state changes (emits that actually changed state, after equality filtering) in a rolling one-second window, and warns at most once per instance. It is a heuristic — high-frequency state is occasionally legitimate, so it never blocks you.
 - **Disable any breaker** by setting it to `Infinity` or any non-positive value (`0`, `-1`).
+- **"Dev-only" means `process.env.NODE_ENV` is defined and not `'production'`.** A bundle with no `process` shim runs the production path (no per-emit bookkeeping), so if you want the warnings while developing, make sure your bundler defines `NODE_ENV` — Vite, Next and webpack do by default.
 
 :::caution[A thrown breaker is a symptom, not the bug]
 If `acquire` throws an instance- or ref-limit error, raising the limit usually just delays the freeze. The real cause is almost always an unstable key or a missing `release`. Stabilize the `args` / add a `static key` ([Passing Inputs](/guide/inputs)), or fix the missing cleanup ([Instance Management](/core/instance-management)), before reaching for a higher limit.
