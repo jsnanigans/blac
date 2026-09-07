@@ -14,6 +14,7 @@ export default defineConfig({
         __dirname,
         '../dirtytalk-structural/src',
       ),
+      '@dirtytalk/engine': path.resolve(__dirname, '../dirtytalk-engine/src'),
       '@blac/devtools-connect': path.resolve(
         __dirname,
         '../devtools-connect/src',
