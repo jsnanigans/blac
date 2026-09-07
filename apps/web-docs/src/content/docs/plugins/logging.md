@@ -15,7 +15,7 @@ pnpm add @blac/logging-plugin
 
 ```ts
 import { LoggingPlugin } from '@blac/logging-plugin';
-import { getPluginManager } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 
 getPluginManager().install(new LoggingPlugin({ level: 'info' }), {
   environment: 'development',

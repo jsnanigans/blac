@@ -21,7 +21,7 @@ pnpm add @blac/devtools-ui @blac/devtools-connect @blac/react @blac/core
 **1. Register the plugin:**
 
 ```ts
-import { getPluginManager } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 
 getPluginManager().install(

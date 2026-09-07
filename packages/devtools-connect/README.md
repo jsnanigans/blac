@@ -19,7 +19,7 @@ pnpm add @blac/devtools-connect
 ## Setup
 
 ```ts
-import { getPluginManager } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 
 getPluginManager().install(

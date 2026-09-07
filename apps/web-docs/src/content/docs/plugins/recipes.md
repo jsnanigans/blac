@@ -45,8 +45,8 @@ or keep it in a `sessionStorage`-backed variant.
 :::
 
 ```ts twoslash
+import { getPluginManager } from '@blac/core/plugins';
 import {
-  getPluginManager,
   type BlacPlugin,
   type PathSet,
   ALL_PATHS,
@@ -120,12 +120,8 @@ trigger one write per quiet window. Useful when state changes on every
 keystroke and the save target (IndexedDB, a remote API) is slow.
 
 ```ts twoslash
-import {
-  getPluginManager,
-  type BlacPlugin,
-  type PathSet,
-  ALL_PATHS,
-} from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
+import { type BlacPlugin, type PathSet, ALL_PATHS } from '@blac/core';
 
 // --- Recipe: debounced-save wrapper ---
 
@@ -222,8 +218,8 @@ duration of the browser session. Strip or redact any sensitive fields
 :::
 
 ```ts twoslash
+import { getPluginManager } from '@blac/core/plugins';
 import {
-  getPluginManager,
   type BlacPlugin,
   type PathSet,
   ALL_PATHS,
@@ -356,7 +352,7 @@ uses a plain `ts` fence. Copy it into a project where `@sentry/browser` (or
 :::
 
 ```ts
-import { getPluginManager } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 import type { BlacPlugin, PathSet } from '@blac/core';
 import * as Sentry from '@sentry/browser';
 
@@ -429,12 +425,8 @@ state to external endpoints without first sanitizing it.
 :::
 
 ```ts twoslash
-import {
-  getPluginManager,
-  type BlacPlugin,
-  type PathSet,
-  ALL_PATHS,
-} from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
+import { type BlacPlugin, type PathSet, ALL_PATHS } from '@blac/core';
 
 // --- Recipe: structured audit log ---
 

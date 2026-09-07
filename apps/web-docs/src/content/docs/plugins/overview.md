@@ -19,7 +19,7 @@ BlaC has an official set of plugins for these common needs. All plugins implemen
 ## Installing a plugin
 
 ```ts
-import { getPluginManager } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 
 getPluginManager().install(myPlugin, {
   enabled: true,
@@ -38,7 +38,7 @@ Install plugins before any blocs are acquired so the first `onCreated` hooks fir
 Install as many plugins as you need. They all receive the same lifecycle callbacks independently.
 
 ```ts
-import { getPluginManager } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 import { LoggingPlugin } from '@blac/logging-plugin';
 import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 import { createIndexedDbPersistPlugin } from '@blac/plugin-persist';

@@ -19,7 +19,7 @@ pnpm add @blac/plugin-persist
 ## Quick Start
 
 ```ts
-import { getPluginManager } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 import { createIndexedDbPersistPlugin } from '@blac/plugin-persist';
 
 const persist = createIndexedDbPersistPlugin();

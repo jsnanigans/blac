@@ -210,7 +210,8 @@ State tracking (which blocs/state a function accesses) is automatic — see
 ## Plugins
 
 ```ts
-import { getPluginManager, type BlacPlugin } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
+import { type BlacPlugin } from '@blac/core';
 
 const myPlugin: BlacPlugin = {
   name: 'my-plugin',
@@ -228,11 +229,8 @@ getPluginManager().install(myPlugin, { environment: 'development' });
 | Export               | Contents                                      |
 | -------------------- | --------------------------------------------- |
 | `@blac/core`         | All core classes, registry, decorators, watch |
-| `@blac/core/watch`   | `watch`, `instance`                           |
 | `@blac/core/plugins` | Plugin system types and utilities             |
-| `@blac/core/debug`   | Registry introspection helpers                |
 | `@blac/core/testing` | Test utilities                                |
-| `@blac/core/types`   | Type-only exports                             |
 
 ## License
 

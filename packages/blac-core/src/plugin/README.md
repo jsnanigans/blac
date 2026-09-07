@@ -7,7 +7,8 @@ A plugin API for extending BlaC state management with lifecycle hooks.
 ## Quick Start
 
 ```typescript
-import { getPluginManager, type BlacPlugin } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
+import { type BlacPlugin } from '@blac/core';
 import type { PathSet } from '@dirtytalk/structural';
 
 const myPlugin: BlacPlugin = {

@@ -19,7 +19,7 @@ pnpm add @blac/logging-plugin
 ## Usage
 
 ```ts
-import { getPluginManager } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 import { LoggingPlugin } from '@blac/logging-plugin';
 
 getPluginManager().install(new LoggingPlugin(), {

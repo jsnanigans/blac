@@ -15,7 +15,7 @@ pnpm add @blac/plugin-persist
 
 ```ts
 import { createIndexedDbPersistPlugin } from '@blac/plugin-persist';
-import { getPluginManager } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 
 const persist = createIndexedDbPersistPlugin();
 persist.persist(UserSettingsCubit);

@@ -325,7 +325,7 @@ Two independent gates control DevTools visibility:
 **1. The plugin must be installed.** DevTools is a plugin, not built in. Install it through the plugin manager, and respect its `environment` (a plugin configured for `'development'` is skipped in production by a runtime `NODE_ENV` check).
 
 ```ts
-import { getPluginManager } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 // install your devtools plugin instance:
 getPluginManager().install(devtoolsPlugin, { environment: 'development' });
 ```

@@ -88,7 +88,7 @@ The interface also declares `onRefAcquired(ctx, refId)`, `onRefReleased(ctx, ref
 `getPluginManager()` returns the singleton `PluginManager` bound to the global registry. Call it once, near app startup, to install your plugins.
 
 ```ts
-import { getPluginManager } from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
 
 getPluginManager().install(myPlugin, {
   enabled: true,
@@ -188,12 +188,8 @@ const pathLoggingPlugin: BlacPlugin = {
 Here is an end-to-end plugin you can install as-is. It logs creation and disposal, and reports each state change with its changed paths — a self-contained template you can adapt for analytics, audit logs, or telemetry.
 
 ```ts twoslash
-import {
-  getPluginManager,
-  type BlacPlugin,
-  type PathSet,
-  ALL_PATHS,
-} from '@blac/core';
+import { getPluginManager } from '@blac/core/plugins';
+import { type BlacPlugin, type PathSet, ALL_PATHS } from '@blac/core';
 
 const auditPlugin: BlacPlugin = {
   name: 'audit-log',
