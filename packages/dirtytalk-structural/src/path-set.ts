@@ -38,6 +38,22 @@ export const PathSetSpace: Space<PathSet> = {
 
   union: (a: PathSet, b: PathSet): PathSet => pathSetUnion(a, b),
 
+  // In-place accumulate for DirtyChannel's private accumulator. Adding into
+  // `acc` keeps a same-tick burst of N marks at O(N) total work instead of the
+  // O(N²) a copying `union` costs. Never mutates `b`.
+  unionInto: (acc: PathSet, b: PathSet): PathSet => {
+    if (acc === ALL_PATHS || b === ALL_PATHS) return ALL_PATHS;
+    const sb = b as Set<PathId>;
+    if (sb.size === 0) return acc;
+    // `acc` may be a set owned by a previous caller (pathSetUnion returns `b`
+    // by reference when `acc` was empty), so copy on the first real add rather
+    // than mutating it. Every subsequent add lands in our own set.
+    const sacc = acc as Set<PathId>;
+    if (sacc.size === 0) return new Set(sb);
+    for (const id of sb) sacc.add(id);
+    return sacc;
+  },
+
   intersects: (interest: PathSet, dirty: PathSet): boolean => {
     if (interest === ALL_PATHS && dirty === ALL_PATHS) return true;
     if (interest === ALL_PATHS) return !PathSetSpace.isEmpty(dirty);

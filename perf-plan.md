@@ -152,6 +152,40 @@ Preserve the `ALL_PATHS` short-circuit and the `size === 0` fast paths exactly.
 Rejected alternative: a subset pre-check before copying. Measured _worse_ in the common
 1-5 path cases (50µs/61µs vs 47µs/22µs) and inconsistent. Discarded.
 
+### Outcome (landed, measured 2026-09-07)
+
+Implemented as `Space.unionInto?` (opt-in, documented exception to the purity contract),
+resolved once in the `DirtyChannel` constructor, with `PathSetSpace.unionInto` adding in
+place. `ALL_PATHS` absorption and the empty fast paths are preserved; the accumulator is
+copied on first add so it can never alias a caller's set.
+
+Verified on the real code path: per-mark `Set` copying during a 200-mark burst went
+**198 → 0**, and a subscriber still gets one coalesced flush with the full path union.
+
+Controlled A/B (median of 15, 1000 same-tick patches, `unionInto` toggled off/on):
+
+| consumer paths | before  | after   | saved |
+| -------------- | ------- | ------- | ----- |
+| 1              | 506.0µs | 443.6µs | 12%   |
+| 5              | 562.0µs | 490.3µs | 13%   |
+| 20             | 602.5µs | 512.7µs | 15%   |
+
+**Correction to the projection above:** the isolated microbenchmark predicted 1.5-4.1x, but
+the real gain is 12-15%. The isolated test measured `union` in a vacuum; in the real `patch`
+path `union` was only ~13% of the work, with `deepMerge` and `changedPathsFromPatch`
+dominating. The O(n²) is genuinely gone — it just wasn't the majority of the cost. Treat the
+earlier 1.5-4.1x table as an upper bound on the `union` component alone, not on `patch`.
+
+This also means the remaining burst cost is now concentrated in `deepMerge` /
+`changedPathsFromPatch`, which is where further work on this path should go (see Phase 2.5).
+
+### Gotcha found while verifying
+
+`@dirtytalk/engine` resolves to `dist/`, not `src/` — engine source edits do nothing until
+`pnpm --filter @dirtytalk/engine run build` runs. The perf app aliased `structural` to source
+but not `engine`, so it would have benchmarked a stale prebuilt engine and silently shown no
+change. Alias added to `apps/perf/vite.config.ts`.
+
 ### Risk
 
 Medium — touches the shared engine, so it affects every consumer, not just Blac.

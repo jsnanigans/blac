@@ -157,3 +157,36 @@ describe('PathSetSpace', () => {
     expect(PathSetSpace.intersects(new Set([1]), ALL_PATHS)).toBe(true);
   });
 });
+
+describe('PathSetSpace.unionInto', () => {
+  const into = (
+    a: Parameters<typeof PathSetSpace.union>[0],
+    b: Parameters<typeof PathSetSpace.union>[1],
+  ) => PathSetSpace.unionInto!(a, b);
+
+  it('does not mutate the incoming region', () => {
+    const b = new Set([2]);
+    into(new Set([1]), b);
+    expect([...b]).toEqual([2]);
+  });
+
+  it('does not alias b when the accumulator is empty', () => {
+    const b = new Set([7]);
+    const acc = into(into(emptyPathSet(), b), new Set([8]));
+    expect([...b]).toEqual([7]);
+    expect([...(acc as Set<number>)].sort()).toEqual([7, 8]);
+  });
+
+  it('absorbs ALL_PATHS from either side', () => {
+    expect(into(new Set([1]), ALL_PATHS)).toBe(ALL_PATHS);
+    expect(into(ALL_PATHS, new Set([1]))).toBe(ALL_PATHS);
+  });
+
+  it('matches pure union contents', () => {
+    const acc = into(new Set([1, 2]), new Set([2, 3]));
+    const pure = pathSetUnion(new Set([1, 2]), new Set([2, 3]));
+    expect([...(acc as Set<number>)].sort()).toEqual(
+      [...(pure as Set<number>)].sort(),
+    );
+  });
+});

@@ -39,6 +39,10 @@ export class DirtyChannel<Region> {
 
   readonly #onError?: (err: unknown) => void;
 
+  // Resolved once: `mark()` is the hot path and should not re-check for an
+  // optional method on every call.
+  readonly #unionInto?: (acc: Region, b: Region) => Region;
+
   constructor(
     space: Space<Region>,
     scheduler: Scheduler,
@@ -49,6 +53,7 @@ export class DirtyChannel<Region> {
     this.#accumulated = space.empty();
     this.#boundFlush = () => this.#flush();
     this.#onError = options?.onError;
+    this.#unionInto = space.unionInto?.bind(space);
   }
 
   mark(r: Region): void {
@@ -57,7 +62,15 @@ export class DirtyChannel<Region> {
     // Accumulate the dirty region regardless of whether we are flushing.
     // If flushing, the current flush already snapshotted `accumulated` and
     // reset it; so writing here is safe — it queues work for the *next* flush.
-    this.#accumulated = this.#space.union(this.#accumulated, r);
+    //
+    // `unionInto` accumulates in place where the space supports it. A copying
+    // `union` makes a burst of N same-tick marks O(N²) in total copying, since
+    // each call re-copies everything accumulated so far. `#accumulated` is
+    // private and is replaced with a fresh `empty()` before subscribers see the
+    // old value, so mutating it here is unobservable.
+    this.#accumulated = this.#unionInto
+      ? this.#unionInto(this.#accumulated, r)
+      : this.#space.union(this.#accumulated, r);
 
     // Only schedule a new flush when we are not already inside a flush.
     // If we are flushing, the tail of #flush() will detect the non-empty

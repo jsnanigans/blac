@@ -15,6 +15,13 @@ export default defineConfig({
         __dirname,
         '../../packages/dirtytalk-structural/src',
       ),
+      // Same reason: the engine owns DirtyChannel's mark/flush hot path, and
+      // its package entry points at dist/, so without this the benchmark would
+      // measure a stale prebuilt engine and silently miss changes.
+      '@dirtytalk/engine': path.resolve(
+        __dirname,
+        '../../packages/dirtytalk-engine/src',
+      ),
     },
   },
   server: {
