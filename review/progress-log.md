@@ -1376,3 +1376,68 @@ regenerating.
 - `feat(blac-core)!: make extracted state deeply readonly`
 - `refactor(devtools-ui): accept readonly state in components`
 - `docs(blac): import the plugin manager from /plugins`
+
+### R4 review pass (2026-09-07)
+
+Re-read the whole committed diff (`f60ac717..HEAD`, 28 source files) against
+the scope. Four defects found and fixed; everything else was clean.
+
+**Fixed — stale packaging left behind by the subpath drops.** Dropping
+`./debug`, `./watch` and `./types` from `exports` missed three sibling
+declarations of the same entry points:
+
+- `package.json` `typesVersions` still mapped `debug`, `watch` and `types` to
+  `./dist/*.d.ts` files that are no longer built. That is TypeScript's legacy
+  subpath-resolution map, so older-`moduleResolution` consumers were still
+  being advertised dead paths. Now mirrors `exports` exactly (`testing`,
+  `plugins`).
+- `vite.config.ts` still excluded the deleted `src/types.ts` from coverage.
+
+**Fixed — two dead aliases in `apps/examples/vite.config.ts`**, both predating
+this batch and both pointing at things that do not exist: `@blac/core/tracking`
+(a subpath that never existed — Phase 3 removed the doc claim but not this
+alias) and `@blac/adapter` (a package Phase 0 deleted). Phase 0's config-hygiene
+sweep cleaned the other configs and missed this file. The vite alias list and
+the tsconfig `paths` map now mirror each other exactly, 11 entries each, which
+that file's own comment says is required.
+
+**Fixed — `DeepReadonly` did not follow its sibling's conventions.**
+`@dirtytalk/structural` already has `DeepPartial` (`container.ts:23`), the same
+shape of recursive mapped type, and it carves out `Date | Map | Set | RegExp`
+with a comment explaining that mapping over them freezes prototype methods
+instead of internal state. `DeepReadonly` carved out only `Map`/`Set`.
+
+Probed before changing anything: `Date` and `RegExp` actually round-trip exactly
+(`DeepReadonly<Date>` is mutually assignable with `Date`), because their
+properties are all methods and the function branch passes each through — so this
+was **not** a live bug. Aligned anyway, and the docstring now points at
+`DeepPartial` as the mirror, so the two read as one pair rather than two
+unrelated helpers.
+
+**Verified clean, not just assumed:** every `devtools-ui` readonly change is
+pure widening (diff-audited for `as any` / `as T[]` / `@ts-ignore` /
+non-null assertions — none); `getBlacName` is still used after the registry
+re-key so its import is not orphaned; no references remain to the three deleted
+modules; the two surviving subpath docstrings still describe reality; the
+`core/watch` and `core/types` **doc pages** survive and no longer reference the
+dropped subpaths (they are pages, not entry points).
+
+**Pre-existing, NOT introduced today, and still open:** `apps/examples` has 3
+`TS2554` errors (`cubit-stub.test.ts:143`, `integration.test.ts:111,131`) —
+`stub.subscribe(listener)` called with 1 arg where `StructuralContainer.subscribe`
+requires `(interest, cb)`. Confirmed against a `f60ac717` worktree:
+`container.ts` is **byte-identical** and `subscribe` had the same arity there, so
+these predate the batch. They are invisible to `pnpm typecheck` because
+`apps/examples` is not in the typecheck set — the same blind spot that hid four
+`getPluginManager` call sites during the batch. **Worth adding `apps/examples`
+to `pnpm typecheck`**, which would have caught both.
+
+**Verification after the review fixes:** `pnpm test` 9 packages / 1302 tests, 0
+failures · `pnpm typecheck` 0 errors on all 9 · `pnpm lint` 0 errors (6
+pre-existing warnings) · core 8.37/15 kB, react 5.68/5.8 kB.
+
+**Suggested commits:**
+
+- `fix(blac-core): drop stale subpath type mappings`
+- `chore(examples): remove aliases for deleted packages`
+- `refactor(blac-core): align DeepReadonly with DeepPartial`
