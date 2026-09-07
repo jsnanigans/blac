@@ -300,7 +300,11 @@ class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
   // Constructor stays zero-arg. The framework calls init(args) before first snapshot.
   protected init(args: { userId: string }) {
     this.patch({ loading: true });
-    void this.loadUser(args.userId);
+  }
+
+  // Side effects (fetch/subscribe/timer) belong here, not in init — see below.
+  protected onActivate(signal: AbortSignal) {
+    void this.loadUser(this.args!.userId);
   }
 
   private async loadUser(_id: string) {
@@ -308,6 +312,41 @@ class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
   }
 }
 ```
+
+### `onActivate` / `onDeactivate`
+
+```ts
+protected onActivate(signal: AbortSignal): void
+protected onDeactivate(): void
+```
+
+**Behavior.** `onActivate` fires on the instance's 0→1 ownership transition — the moment something first acquires it — and is the recommended place for side effects (fetch, subscribe, start a timer). It hands you an `AbortSignal` that is aborted when `onDeactivate` fires on the matching 1→0 transition, so cleanup is one line:
+
+```ts twoslash
+import { Cubit } from '@blac/core';
+
+interface UserCardState {
+  name: string;
+}
+// ---cut---
+class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
+  constructor() {
+    super({ name: '' });
+  }
+
+  protected onActivate(signal: AbortSignal) {
+    fetch(`/api/users/${this.args!.userId}`, { signal })
+      .then((r) => r.json())
+      .then((user) => this.patch(user));
+  }
+}
+```
+
+`init` is **not** deprecated and keeps working exactly as documented above — it's still the right place to seed synchronous state from `args`. Only the recommendation for side effects moves: `onActivate` fires only when something actually owns the instance, so work started there is never wasted on a discarded or SSR-only render.
+
+:::caution[Ordering with `useBlocDeps`]
+In `@blac/react`, `onActivate` fires in a layout effect, before the first `useBlocDeps` slice is applied (which happens in a passive effect). A bloc reading `this.deps.x` inside `onActivate` sees `undefined` on first activation. Use `onDepsChanged` for deps-driven work instead — see [Passing Inputs](/guide/inputs).
+:::
 
 ### `static key`: explicit identity declaration
 

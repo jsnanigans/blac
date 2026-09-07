@@ -27,11 +27,11 @@ function useBloc<T extends StateContainerConstructor>(
 
 **Returns:** a `[state, bloc, ref]` tuple.
 
-| Index | Name    | Description                                                                                                                                                                                                                                |
-| ----- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0     | `state` | Current state. In auto-tracking mode (the default) this is a tracking proxy that records which paths you read so re-renders stay scoped to them. In `select` mode it's the raw state object.                                               |
+| Index | Name    | Description                                                                                                                                                                                                                  |
+| ----- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | `state` | Current state. In auto-tracking mode (the default) this is a tracking proxy that records which paths you read so re-renders stay scoped to them. In `select` mode it's the raw state object.                                 |
 | 1     | `bloc`  | A per-consumer proxy for the Cubit instance. Call its methods to drive changes (`bloc.increment()`). Getters read during render auto-track because `this.state` inside the getter is routed through the current state proxy. |
-| 2     | `ref`   | An advanced-use ref object for component-bloc binding. You almost never need it; destructure just the first two values.                                                                                                                    |
+| 2     | `ref`   | An advanced-use ref object for component-bloc binding. You almost never need it; destructure just the first two values.                                                                                                      |
 
 Typically you destructure just the first two:
 
@@ -51,12 +51,12 @@ By default, `useBloc` uses auto-tracking to keep re-renders scoped: the hook wra
 
 `useBloc` accepts one optional options object. `UseBlocOptions` has exactly four keys — reach for the one that matches your need:
 
-| Option      | Type                               | Required            | Description                                                                                        |
-| ----------- | ---------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------- |
-| `args`      | the bloc's `Args` type             | when `Args != void` | Typed construction data; derives instance identity. Required when declared, forbidden when `void`. |
+| Option      | Type                                                      | Required            | Description                                                                                        |
+| ----------- | --------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------- |
+| `args`      | the bloc's `Args` type                                    | when `Args != void` | Typed construction data; derives instance identity. Required when declared, forbidden when `void`. |
 | `select`    | `(state: S, bloc: InstanceReadonlyState<T>) => unknown[]` | no                  | Explicit dependency selector; disables auto-tracking.                                              |
-| `onMount`   | `(bloc: InstanceType<T>) => void`  | no                  | Called once when the component mounts with the bloc instance.                                      |
-| `onUnmount` | `(bloc: InstanceType<T>) => void`  | no                  | Called when the component unmounts (bloc still alive at this point).                               |
+| `onMount`   | `(bloc: InstanceType<T>) => void`                         | no                  | Called once when the component mounts with the bloc instance.                                      |
+| `onUnmount` | `(bloc: InstanceType<T>) => void`                         | no                  | Called when the component unmounts (bloc still alive at this point).                               |
 
 :::tip[These four are the entire option surface]
 `UseBlocOptions` has exactly these keys. Two things people expect that are **not** options here:
@@ -82,7 +82,12 @@ args: ExtractArgs<T>;
 ```tsx
 class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
   protected init(args: { userId: string }) {
-    void this.loadUser(args.userId);
+    this.userId = args.userId;
+  }
+
+  // Side effects belong in onActivate, not init — see Lifecycle below.
+  protected onActivate(signal: AbortSignal) {
+    void this.loadUser(this.userId);
   }
 }
 
@@ -239,10 +244,17 @@ See [Passing Inputs](/guide/inputs) for the full decision matrix.
 
 1. **Mount:** `acquire(BlocClass)` creates or retrieves the instance, incrementing the ref count
 2. **`init(args)` called** (once, when the instance is first created) before the first state snapshot
-3. **Subscribe:** the hook subscribes to the bloc's channel using the selected tracking mode (auto-track or `select`)
-4. **`onMount(bloc)` fires** in a mount effect, after the bloc is acquired
-5. **Re-render:** only triggered when a tracked state path or a `select` value changes
-6. **Unmount:** `onUnmount(bloc)` fires (bloc still alive), then `release(BlocClass)` decrements the ref count. At zero, the instance is disposed unless the class is [`keepAlive`](/core/configuration)
+3. **`onActivate(signal)` fires** on the instance's 0→1 ownership transition — i.e. the first time anything acquires it. Fired in a layout effect.
+4. **Subscribe:** the hook subscribes to the bloc's channel using the selected tracking mode (auto-track or `select`)
+5. **`onMount(bloc)` fires** in a mount effect, after the bloc is acquired
+6. **Re-render:** only triggered when a tracked state path or a `select` value changes
+7. **Unmount:** `onUnmount(bloc)` fires (bloc still alive), then `release(BlocClass)` decrements the ref count. At zero, `onDeactivate()` fires (aborting the `onActivate` signal) and the instance is disposed unless the class is [`keepAlive`](/core/configuration)
+
+`init` remains the place to seed synchronous state from `args` — it is not deprecated. `onActivate`/`onDeactivate` are for side effects (fetch, subscribe, timers) tied to whether anything currently owns the instance; see [Cubit](/core/cubit#onactivate--ondeactivate) for the full model.
+
+:::caution[Ordering with `useBlocDeps`]
+`onActivate` fires in a layout effect, before the first `useBlocDeps` slice is applied (which happens in a passive effect). A bloc reading `this.deps.x` inside `onActivate` sees `undefined` on first activation — this matches today's `init()` timing, so it isn't a regression, but `onActivate` is the wrong hook for deps-driven work. Use `onDepsChanged` instead.
+:::
 
 For the registry mechanics behind acquire/release and ref counting, see [Instance Management](/core/instance-management).
 

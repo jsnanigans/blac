@@ -488,8 +488,12 @@ class UserCubit extends Cubit<{ name: string }, { userId: string }> {
   }
 
   protected init(args: { userId: string }) {
-    // `args` here is the non-optional declared shape
-    void this.fetch(args.userId);
+    // `args` here is the non-optional declared shape; init just seeds state
+  }
+
+  // Side effects belong in onActivate, not init.
+  protected onActivate(signal: AbortSignal) {
+    void this.fetch(this.args!.userId);
   }
 
   retry() {

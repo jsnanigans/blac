@@ -198,15 +198,19 @@ class FeedCubit extends Cubit<FeedState> {
 }
 ```
 
-### Don't block in `init`
+### Don't put side effects in `init` — use `onActivate`
 
-`init(args)` runs **once, synchronously, before the first state snapshot** — so consumers get correct initial state with no flash. That makes it the wrong place to `await`. Kick the async work off (fire-and-forget) from `init` and let the loading status carry the rest.
+`init(args)` runs **once, synchronously, before the first state snapshot** — so consumers get correct initial state with no flash. That makes it the right place to seed state and the wrong place to `await` or start async work: `onActivate(signal)` is the dedicated hook for side effects (fetch, subscribe, timers), firing only once something actually owns the instance and handing you an `AbortSignal` for cleanup.
 
 ```ts
-// Good — init seeds sync state and starts the load; it does not await
+// Good — init seeds sync state; onActivate starts the load
 class UserCubit extends Cubit<UserState, { userId: string }> {
   protected init(args: { userId: string }) {
-    void this.load(args.userId); // returns immediately; status shows 'loading'
+    this.patch({ status: 'loading' });
+  }
+
+  protected onActivate(signal: AbortSignal) {
+    void this.load(this.args!.userId);
   }
 }
 ```
@@ -220,6 +224,8 @@ class UserCubit extends Cubit<UserState, { userId: string }> {
   }
 }
 ```
+
+`init` isn't deprecated — putting `void this.load(args.userId)` directly in `init` still works exactly as before. `onActivate` is just the better fit: it's skipped entirely for an instance that's created but never acquired (a discarded or SSR-only render), so no work is wasted.
 
 :::tip[Hydrating from storage]
 If state arrives asynchronously from the persistence plugin, await `this.$blac.hydration.wait()` inside a fire-and-forget `init` before touching the network, so you don't overwrite restored values. See [Persistence](/plugins/persistence) and the [hydration-aware loading recipe](/guide/patterns#hydration-aware-loading).

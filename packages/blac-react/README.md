@@ -122,9 +122,14 @@ import { useBloc } from '@blac/react';
 
 class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
   // Constructor is zero-arg; framework calls init(args) before first snapshot
-  init(args: { userId: string }) {
+  protected init(args: { userId: string }) {
     this.userId = args.userId;
-    void this.loadUser(args.userId);
+  }
+
+  // Side effects (fetch/subscribe/timer) belong in onActivate, not init —
+  // see "Activation: onActivate / onDeactivate" below.
+  protected onActivate(signal: AbortSignal) {
+    void this.loadUser(this.userId);
   }
 }
 
@@ -305,21 +310,32 @@ useBloc(FormCubit, { args: { ...options, _id: id } });
 useBloc(EditorCubit, { args: { _id: 'editor-1' } });
 ```
 
+### Activation: `onActivate` / `onDeactivate`
+
+`init(args)` stays the place to seed synchronous state — it is not deprecated and keeps working exactly as above. For side effects (fetch, subscribe, start a timer), use `onActivate(signal: AbortSignal)` instead: it fires on the instance's 0→1 ownership transition — i.e. only once something actually owns the instance — and gives you an `AbortSignal` that's aborted when the matching `onDeactivate()` fires on the 1→0 transition.
+
+```ts
+class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
+  protected init(args: { userId: string }) {
+    this.userId = args.userId;
+  }
+
+  protected onActivate(signal: AbortSignal) {
+    fetch(`/api/users/${this.userId}`, { signal })
+      .then((r) => r.json())
+      .then((user) => this.patch({ user }));
+  }
+}
+```
+
+> **Ordering with `useBlocDeps`:** `onActivate` fires in a layout effect, before the first `useBlocDeps` slice is applied. A bloc reading `this.deps.x` inside `onActivate` sees `undefined` on first activation — this matches today's `init()` timing, so it isn't a regression, but it means `onActivate` is the wrong hook for deps-driven work. Use `onDepsChanged` for that instead.
+
 ### Breaking Changes (v2)
 
 - **`dependencies` option renamed to `select`** — avoids confusion with the `deps` (non-serializable handles) lane.
 - **`autoTrack`, `autoInstance`, `instanceId`, and `deps` are no longer `useBloc` options** — auto-tracking is always on (opt out per-consumer with `select`); per-mount private instances embed a unique ID in `args`; deps are wired with `useBlocDeps(bloc, slice)`.
 - **Zero-arg constructor + `init(args)` lifecycle** — all blocs now use `new Type()` with no constructor args. Blocs that declare `Args` receive them via `init(args)` called by the framework before the first state snapshot.
 - **`args` is required when declared, forbidden when void** — enforced by the type system; no runtime guard needed.
-
-## Configuration
-
-```tsx
-import { configureBlacReact } from '@blac/react';
-
-// Configuration is currently empty; the tracking model is fixed and not configurable.
-configureBlacReact({});
-```
 
 ## Testing
 

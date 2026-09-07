@@ -8,6 +8,10 @@ offset/page-based — with loading state per page and optional prefetch.
 **Don't use when:** the full list fits in memory comfortably; just load everything
 once and slice client-side.
 
+Both variants below kick off the initial load from `onActivate`, not `init` —
+`init` stays synchronous for seeding state, while `onActivate` is where side
+effects belong; see [Cubit](/core/cubit#onactivate--ondeactivate).
+
 ## Offset / page-based
 
 The most common shape: a `page` number plus a `totalPages` count returned by the
@@ -46,7 +50,7 @@ class ArticleListCubit extends Cubit<PaginationState> {
     super({ items: [], page: 1, totalPages: 1, status: 'idle', error: null });
   }
 
-  protected override async init() {
+  protected override async onActivate(signal: AbortSignal) {
     await this.loadPage(1);
   }
 
@@ -156,7 +160,7 @@ class FeedCubit extends Cubit<FeedState> {
     super({ posts: [], cursor: null, status: 'idle', error: null });
   }
 
-  protected override async init() {
+  protected override async onActivate(signal: AbortSignal) {
     await this.loadMore();
   }
 

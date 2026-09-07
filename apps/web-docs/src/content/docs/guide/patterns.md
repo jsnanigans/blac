@@ -58,7 +58,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     super({ theme: 'light', locale: 'en' });
   }
 
-  protected override async init() {
+  protected async onActivate(signal: AbortSignal) {
     await this.$blac.hydration.wait();
     // Now this.state has restored values from IndexedDB
     await this.refreshFromServer();
@@ -66,7 +66,7 @@ class SettingsCubit extends Cubit<SettingsState> {
 }
 ```
 
-`init` is the framework's once-per-instance setup hook — a protected method called after construction, before the first state snapshot, with the bloc's `args`. `$blac.hydration.wait()` resolves once the persistence plugin finishes restoring (or immediately if nothing is persisted); see [system events](/core/system-events) for the `hydrationChanged` event that drives it.
+`init` is the framework's once-per-instance setup hook — a protected method called after construction, before the first state snapshot, with the bloc's `args`. It stays synchronous; async work like this — waiting on hydration, then refreshing — belongs in `onActivate`, which fires once something actually owns the instance. `$blac.hydration.wait()` resolves once the persistence plugin finishes restoring (or immediately if nothing is persisted); see [system events](/core/system-events) for the `hydrationChanged` event that drives it.
 
 ## Action-only components
 

@@ -52,13 +52,14 @@ class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
   init(args: { userId: string }) {
     // Called by framework once, synchronously at creation, before first snapshot
     this.userId = args.userId;
-    void this.loadUser(args.userId);
   }
 
   // Optional: control how args map to identity (default = structural hash)
   static key = (args) => args.userId;
 }
 ```
+
+`init` is for synchronous state seeding, not side effects. Kick off a fetch, subscription, or timer from `onActivate(signal)` instead — it only fires once something actually owns the instance and hands you an `AbortSignal` for cleanup. See the [`@blac/react` README](../blac-react/README.md#activation-onactivate--ondeactivate) for the full lifecycle.
 
 **Key mechanics:**
 

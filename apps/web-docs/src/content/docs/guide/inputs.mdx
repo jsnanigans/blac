@@ -37,7 +37,13 @@ When a bloc declares an `Args` type, `useBloc` requires you to pass `args`. They
 class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
   protected init(args: { userId: string }) {
     // called once by the framework at creation, before the first snapshot
-    void this.loadUser(args.userId);
+  }
+
+  // Side effects (fetch/subscribe/timer) belong in onActivate, not init —
+  // it only fires once something actually owns the instance. See Cubit's
+  // onActivate / onDeactivate docs.
+  protected onActivate(signal: AbortSignal) {
+    void this.loadUser(this.args!.userId);
   }
 }
 ```
