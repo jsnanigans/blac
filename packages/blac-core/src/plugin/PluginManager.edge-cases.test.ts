@@ -187,9 +187,10 @@ describe('PluginManager edge cases', () => {
 
     manager.destroy();
 
-    // The channel subscription must be gone, not merely inert: with the
-    // bridge still attached the container keeps an ALL_PATHS subscriber (and
-    // its single-consumer-skip penalty) for the rest of the app's life.
+    // Asserted on the private map because the leak has no public observable:
+    // the bridge is a `channel.subscribe` (so it misses `consumerCount`) and
+    // `destroy()` uninstalls the plugins, so nothing reachable would dispatch
+    // whether or not the subscription survived.
     const bridges = (
       manager as unknown as { containerBridges: Map<unknown, unknown> }
     ).containerBridges;

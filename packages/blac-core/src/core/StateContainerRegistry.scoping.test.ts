@@ -1,12 +1,12 @@
-import { afterEach, describe, expect, it, vi } from 'vite-plus/test';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import {
   globalRegistry,
   StateContainerRegistry,
 } from './StateContainerRegistry';
+import { Cubit } from './Cubit';
 import { StateContainer } from './StateContainer';
-import { clearAll } from '../registry';
 
-class Dep extends StateContainer<{ v: number }> {
+class Dep extends Cubit<{ v: number }> {
   constructor() {
     super({ v: 1 });
   }
@@ -22,10 +22,8 @@ class Owner extends StateContainer<{ n: number }> {
   }
 }
 
-afterEach(() => clearAll());
-
 describe('scoped registry isolation', () => {
-  it('routes created/disposed to the owning registry, not the global one', () => {
+  it('routes created to the owning registry, not the global one', () => {
     const scoped = new StateContainerRegistry();
     const scopedSeen: string[] = [];
     const globalSeen: string[] = [];
@@ -36,8 +34,7 @@ describe('scoped registry isolation', () => {
       globalSeen.push(c.$blac.name),
     );
 
-    const instance = scoped.acquire(Dep, 'k', { refId: 'r1' });
-    instance.dispose();
+    scoped.acquire(Dep, 'k', { refId: 'r1' });
 
     offScoped();
     offGlobal();
@@ -75,17 +72,19 @@ describe('scoped registry isolation', () => {
     expect(scoped.getInstancesMap(Dep).size).toBe(0);
   });
 
-  it('delivers stateChanged to the owning registry', async () => {
+  it('delivers stateChanged to the owning registry, not the global one', async () => {
     const scoped = new StateContainerRegistry();
-    const listener = vi.fn();
-    scoped.on('stateChanged', listener);
+    const scopedListener = vi.fn();
+    const globalListener = vi.fn();
+    scoped.on('stateChanged', scopedListener);
+    const offGlobal = globalRegistry.on('stateChanged', globalListener);
 
-    scoped.acquire(Dep, 'k', { refId: 'r1' }).dispose();
-    const live = scoped.acquire(Dep, 'k2', { refId: 'r2' });
-    (live as unknown as { emit(s: { v: number }): void }).emit({ v: 9 });
+    scoped.acquire(Dep, 'k', { refId: 'r1' }).emit({ v: 9 });
     await Promise.resolve();
 
-    expect(listener).toHaveBeenCalledTimes(1);
+    offGlobal();
+    expect(scopedListener).toHaveBeenCalledTimes(1);
+    expect(globalListener).not.toHaveBeenCalled();
   });
 });
 

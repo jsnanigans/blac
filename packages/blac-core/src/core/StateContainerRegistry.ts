@@ -146,14 +146,11 @@ export class StateContainerRegistry {
   >();
 
   /**
-   * Read off the listener Set rather than a parallel counter: `on()` with the
-   * same function twice adds once, so an incrementing counter drifted upward
-   * and left this permanently true, making every emit pay for a notify+flush
-   * that reached nobody.
+   * Derived from the listener Set, never a parallel counter: `on()` with the
+   * same function twice adds once, so a counter cannot stay in step.
    */
   get hasStateChangedListeners(): boolean {
-    const listeners = this.listeners.get('stateChanged');
-    return listeners !== undefined && listeners.size > 0;
+    return (this.listeners.get('stateChanged')?.size ?? 0) > 0;
   }
   private _pendingStateChanges: Array<
     [StateContainer<any, any, any>, any, any]
@@ -353,14 +350,12 @@ export class StateContainerRegistry {
   ): void {
     const instances = this.ensureInstancesMap(Type);
     const existingEntry = instances.get(instanceKey);
-    if (existingEntry && existingEntry.instance !== instance) {
-      // Drop the outgoing entry's own id mapping first. Disposing it below
-      // may prune by id, and ids derive from the key — so the two instances
-      // often share one and the prune would otherwise race the `set` below.
-      this._entryById.delete(existingEntry.instance.$blac.id);
-      if (!existingEntry.instance.$blac.disposed) {
-        existingEntry.instance.dispose();
-      }
+    if (
+      existingEntry &&
+      existingEntry.instance !== instance &&
+      !existingEntry.instance.$blac.disposed
+    ) {
+      existingEntry.instance.dispose();
     }
     const entry: InstanceEntry = { instance, key: instanceKey, refs };
     instances.set(instanceKey, entry);

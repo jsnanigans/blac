@@ -139,9 +139,6 @@ importers:
       '@blac/react':
         specifier: workspace:*
         version: link:../../packages/blac-react
-      '@dirtytalk/spatial':
-        specifier: workspace:*
-        version: link:../../packages/dirtytalk-spatial
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -317,9 +314,6 @@ importers:
       fast-check:
         specifier: ^4.9.0
         version: 4.9.0
-      jsdom:
-        specifier: 'catalog:'
-        version: 30.0.1
       publint:
         specifier: 'catalog:'
         version: 0.3.21

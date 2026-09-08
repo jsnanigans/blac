@@ -7,8 +7,6 @@ import {
 import { generateSimpleId } from '../utils/idGenerator';
 import { IS_DEV } from '../constants';
 import { getRegistry } from '../registry/config';
-// Type-only: erased at compile time, so this does not create an import cycle
-// with StateContainerRegistry (which imports this module at runtime).
 import type { StateContainerRegistry } from './StateContainerRegistry';
 import type {
   ExtractArgs,
@@ -70,10 +68,9 @@ export interface StateContainerConfig {
   /** Args passed at acquire time; forwarded to init(). */
   args?: unknown;
   /**
-   * The registry that owns this instance. Set by whichever registry created
-   * it, so lifecycle events, `notifyStateChanged` and `depend()` resolution
-   * all route to the owner rather than the module-global default — that is
-   * what makes a scoped registry (`RegistryProvider`) actually isolating.
+   * The registry that created this instance. Lifecycle events, deps and
+   * `depend()` route here instead of the module-global, which is what makes a
+   * scoped registry isolating.
    * @internal
    */
   registry?: StateContainerRegistry;
@@ -522,11 +519,9 @@ export abstract class StateContainer<
     this._name = this._config.name || className;
     this._debug = this._config.debug ?? false;
     this._instanceId = generateSimpleId(className, this._config.instanceId);
-    // Bind the owner BEFORE init(): init() may `depend()` or emit, and both
-    // must resolve against the registry that owns this instance.
-    if (this._config.registry !== undefined) {
-      this._registry = this._config.registry;
-    }
+    // Must precede init(): init() may `depend()` or emit, and both have to
+    // resolve against the owning registry.
+    this._registry = this._config.registry ?? this._registry;
     const perClass = getClassEquality(
       this.constructor as StateContainerConstructor,
     );
