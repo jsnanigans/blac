@@ -37,9 +37,9 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'jsdom',
-    maxConcurrency: 2,
-    maxWorkers: 2,
+    // Core is framework-agnostic and touches no DOM API — the globals it does
+    // use (DOMException, AbortController, queueMicrotask) are Node builtins.
+    environment: 'node',
     globals: true,
     include: ['**/*.{test,spec}.?(c|m)[jt]s?(x)', '**/*.bench.[jt]s?(x)'],
     coverage: {
@@ -48,12 +48,6 @@ export default defineConfig({
       reportsDirectory: './coverage',
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/index.ts', 'src/**/*.test.ts', 'src/**/*.spec.ts'],
-    },
-    onConsoleLog(log) {
-      if (log.startsWith('UNIT')) {
-        return true;
-      }
-      return false;
     },
   },
 });
