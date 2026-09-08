@@ -76,10 +76,16 @@ export class PluginManager {
 
   /**
    * Per-container channel-bridge bookkeeping. Subscribed at `created`,
-   * torn down at `disposed`. Holds the rolling `prevState` snapshot the
-   * manager hands plugins on each flush.
+   * torn down at `disposed` and at `destroy()`. Holds the rolling `prevState`
+   * snapshot the manager hands plugins on each flush.
+   *
+   * A strong Map, not a WeakMap: `destroy()` must be able to unsubscribe every
+   * live bridge, which needs the containers to be enumerable. This pins no
+   * container beyond its registry lifetime — the entry is removed on
+   * `disposed`, and the owning registry holds a strong reference for exactly
+   * that same window.
    */
-  private containerBridges = new WeakMap<
+  private containerBridges = new Map<
     StateContainer<any, any, any>,
     ContainerBridge
   >();
@@ -228,6 +234,14 @@ export class PluginManager {
       unsub();
     }
     this.lifecycleUnsubscribers = [];
+    // Detach every per-container channel bridge. These are subscribed at
+    // `created` and would otherwise outlive the manager, leaving each
+    // container with a live ALL_PATHS subscriber (and its
+    // single-consumer-skip penalty) for the rest of the app's life.
+    for (const bridge of this.containerBridges.values()) {
+      bridge.unsub();
+    }
+    this.containerBridges.clear();
   }
 
   /**

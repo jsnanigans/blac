@@ -175,4 +175,24 @@ describe('PluginManager edge cases', () => {
       expect.objectContaining({ container: bloc }),
     );
   });
+
+  it('destroy() detaches the per-container channel bridge', async () => {
+    const onStateChange = vi.fn();
+    manager.install({ name: 'bridge', version: '1.0.0', onStateChange });
+    const bloc = acquire(SimpleBloc, { args: { id: 'default' } });
+
+    bloc.emit({ n: 1 });
+    await Promise.resolve();
+    expect(onStateChange).toHaveBeenCalledTimes(1);
+
+    manager.destroy();
+
+    // The channel subscription must be gone, not merely inert: with the
+    // bridge still attached the container keeps an ALL_PATHS subscriber (and
+    // its single-consumer-skip penalty) for the rest of the app's life.
+    const bridges = (
+      manager as unknown as { containerBridges: Map<unknown, unknown> }
+    ).containerBridges;
+    expect(bridges.size).toBe(0);
+  });
 });
