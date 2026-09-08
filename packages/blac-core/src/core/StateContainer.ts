@@ -7,6 +7,9 @@ import {
 import { generateSimpleId } from '../utils/idGenerator';
 import { IS_DEV } from '../constants';
 import { getRegistry } from '../registry/config';
+// Type-only: erased at compile time, so this does not create an import cycle
+// with StateContainerRegistry (which imports this module at runtime).
+import type { StateContainerRegistry } from './StateContainerRegistry';
 import type {
   ExtractArgs,
   ExtractState,
@@ -66,6 +69,14 @@ export interface StateContainerConfig {
   instanceId?: string;
   /** Args passed at acquire time; forwarded to init(). */
   args?: unknown;
+  /**
+   * The registry that owns this instance. Set by whichever registry created
+   * it, so lifecycle events, `notifyStateChanged` and `depend()` resolution
+   * all route to the owner rather than the module-global default — that is
+   * what makes a scoped registry (`RegistryProvider`) actually isolating.
+   * @internal
+   */
+  registry?: StateContainerRegistry;
 }
 
 export type HydrationStatus = 'idle' | 'hydrating' | 'hydrated' | 'error';
@@ -322,6 +333,8 @@ export abstract class StateContainer<
   // 'stateChanged' system events.
   private _bridgeUnsub: (() => void) | null = null;
 
+  // Falls back to the module-global for a bare `new`'d container; a registry
+  // that creates the instance overwrites this via `[INIT_CONFIG]`.
   private _registry = getRegistry();
   private _equalityFn: EqualityFn = getBlacConfig().equality;
 
@@ -509,6 +522,11 @@ export abstract class StateContainer<
     this._name = this._config.name || className;
     this._debug = this._config.debug ?? false;
     this._instanceId = generateSimpleId(className, this._config.instanceId);
+    // Bind the owner BEFORE init(): init() may `depend()` or emit, and both
+    // must resolve against the registry that owns this instance.
+    if (this._config.registry !== undefined) {
+      this._registry = this._config.registry;
+    }
     const perClass = getClassEquality(
       this.constructor as StateContainerConstructor,
     );

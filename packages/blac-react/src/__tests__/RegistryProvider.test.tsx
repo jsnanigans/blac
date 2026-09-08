@@ -71,4 +71,34 @@ describe('E — RegistryProvider scoping', () => {
     expect(scopedRegistry.getInstancesMap(PriceCubit).size).toBe(1);
     expect(getRegistry().getInstancesMap(PriceCubit).size).toBe(0);
   });
+
+  it('routes lifecycle events to the scoped registry, not the global', async () => {
+    const scopedRegistry = createTestRegistry();
+    const scopedSeen: string[] = [];
+    const globalSeen: string[] = [];
+    const offScoped = scopedRegistry.on('created', (c) =>
+      scopedSeen.push(c.$blac.name),
+    );
+    const offGlobal = getRegistry().on('created', (c) =>
+      globalSeen.push(c.$blac.name),
+    );
+
+    function ScopedProbe() {
+      useBloc(CounterCubit);
+      return null;
+    }
+
+    await act(async () => {
+      render(
+        <RegistryProvider registry={scopedRegistry}>
+          <ScopedProbe />
+        </RegistryProvider>,
+      );
+    });
+
+    offScoped();
+    offGlobal();
+    expect(scopedSeen).toEqual(['CounterCubit']);
+    expect(globalSeen).toEqual([]);
+  });
 });
