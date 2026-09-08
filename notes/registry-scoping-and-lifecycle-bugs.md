@@ -25,8 +25,9 @@ review to be no bug at all and reverted — see Bug 4.
 | 5   | Testing-setup cleanup                                         | —        | [x] done              |
 
 Branch: `fix/registry-scoping-lifecycle`. Suites after the work:
-core 690 pass (was 682), react 192 pass (was 191), workspace 1388 pass with
-one pre-existing unrelated failure (see "Known pre-existing failure" below).
+core 690 pass (was 682), react 192 pass (was 191), **workspace 1389 pass —
+fully green**, including the pre-existing `apps/examples` failure that was
+present at baseline (see the last section).
 
 Every fix was verified to be load-bearing by disabling it and confirming the
 new tests fail — a passing test that does not discriminate the fix is not
@@ -309,11 +310,8 @@ widening scope.
 
 ### Still worth doing (not in this pass)
 
-From `review/07-tests-and-tooling.md`, still open and still valid:
+From `review/07-tests-and-tooling.md`, still open:
 
-- Core and react resolve `@dirtytalk/structural` differently — react aliases it
-  to source, core does not — so the two suites run against different structural
-  code. Should be consistent.
 - Inconsistent test layout: `core/*.test.ts` alongside `core/__tests__/*.test.ts`,
   plus `testing.args-deps.test.ts` at the package root.
 - `fast-check` is a core devDependency that no core test imports; registry
@@ -321,33 +319,43 @@ From `review/07-tests-and-tooling.md`, still open and still valid:
 - `test:performance` / `test:memory` / `test:compiler` are manual-only — either
   schedule them or delete them.
 
+Already resolved, so ignore `review/07` on these: it claims core does not alias
+`@dirtytalk/structural` to source while react does. Both alias structural _and_
+engine to source identically today (core's comment even says "matches
+blac-react/vite.config.ts"), so the two suites do run against the same code.
+
 ---
 
-## Known pre-existing failure (not from this work)
+## Pre-existing failure (fixed)
 
 `apps/examples/src/__tests__/testing-utils/cubit-stub.test.ts` —
 "supports observation/emit like real instances".
 
-The test calls `createCubitStub(CounterCubit)` and then
-`watch(CounterCubit, listener)`, and expects incrementing the stub to wake the
-watcher. Those are **two different instances**: the stub is created bare via
-`new`, while `watch` acquires its own from the registry (verified by direct
-probe — `watched === stub` is `false`, registry size 1). `watch` subscribes to
-its own instance's channel, so the stub's `emit` can never reach it.
+The test called `createCubitStub(CounterCubit)` and then
+`watch(CounterCubit, listener)`, expecting incrementing the stub to wake the
+watcher. Those were **two different instances**: the stub is created bare via
+`new`, while `watch` acquires its own from the registry (verified by probe —
+`watched === stub` was `false`, registry size 1). `watch` subscribes to its own
+instance's channel, so the stub's `emit` could never reach it.
 
-Confirmed pre-existing, not a consequence of the Bug 1 fix: it fails
-identically with the `[INIT_CONFIG]` registry binding disabled. Left alone —
-it is outside `blac-core` / `blac-react`, and the fix is a decision about what
-the test meant to assert (probably `watch(instance)` on the stub itself, or
-`registerOverride` to make the registry hand back the stub).
+Confirmed pre-existing rather than a consequence of the Bug 1 fix — it failed
+identically with the `[INIT_CONFIG]` registry binding disabled.
+
+Fixed with one line: `registerOverride(CounterCubit, stub)` before the
+`watch()` call, so the registry hands `watch` the stub instead of creating its
+own. That helper already exists in `@blac/core/testing` for exactly this, so no
+new mechanism was needed, and the test now asserts what it always meant to.
+Workspace is fully green as a result: **102 files / 1389 tests**, stable over
+three consecutive runs.
 
 ---
 
 ## Verification checklist
 
+- [x] Workspace `vp test run` fully green — 102 files / 1389 tests
+- [x] `vp install --frozen-lockfile` passes (lockfile internally consistent)
 - [x] `blac-core`: `vp test run` green — 40 files / 690 tests
 - [x] `blac-react`: `vp test run` green — 31 files / 192 tests
-- [x] Workspace `vp test run` — 1388 pass, 1 pre-existing failure (above)
 - [x] `tsc --noEmit` clean in both packages
 - [x] `vp lint src` clean in react; core reports one **pre-existing**
       `no-non-null-assertion` warning at `PluginManager.ts:146`
