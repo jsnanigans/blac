@@ -298,8 +298,9 @@ export class PluginManager {
    * previous flush (or at create-time for the first flush) and pass the
    * channel's `paths` argument straight through to plugins.
    *
-   * Per-container bookkeeping is stored in a `WeakMap` keyed by the
-   * container itself, so a disposed/GC'd container drops cleanly.
+   * Per-container bookkeeping is stored in `containerBridges`, a strong `Map`
+   * keyed by the container. Entries are removed explicitly — on the
+   * container's `disposed` event, or for all of them in `destroy()`.
    */
   private attachStateBridge(container: StateContainer<any, any, any>): void {
     // Defensive: if a container is somehow created twice (it shouldn't be),

@@ -179,21 +179,32 @@ describe('PluginManager edge cases', () => {
   it('destroy() detaches the per-container channel bridge', async () => {
     const onStateChange = vi.fn();
     manager.install({ name: 'bridge', version: '1.0.0', onStateChange });
-    const bloc = acquire(SimpleBloc, { args: { id: 'default' } });
+    const bloc = acquire(SimpleBloc, { args: { id: 'a' } });
+    acquire(SimpleBloc, { args: { id: 'b' } });
 
     bloc.emit({ n: 1 });
     await Promise.resolve();
     expect(onStateChange).toHaveBeenCalledTimes(1);
-
-    manager.destroy();
 
     // Asserted on the private map because the leak has no public observable:
     // the bridge is a `channel.subscribe` (so it misses `consumerCount`) and
     // `destroy()` uninstalls the plugins, so nothing reachable would dispatch
     // whether or not the subscription survived.
     const bridges = (
-      manager as unknown as { containerBridges: Map<unknown, unknown> }
+      manager as unknown as {
+        containerBridges: Map<unknown, { unsub: () => void }>;
+      }
     ).containerBridges;
+    const unsubs = [...bridges.values()].map((bridge) =>
+      vi.spyOn(bridge, 'unsub'),
+    );
+    expect(unsubs).toHaveLength(2);
+
+    manager.destroy();
+
+    for (const unsub of unsubs) {
+      expect(unsub).toHaveBeenCalledOnce();
+    }
     expect(bridges.size).toBe(0);
   });
 });
