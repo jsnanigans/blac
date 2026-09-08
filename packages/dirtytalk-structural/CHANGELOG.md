@@ -1,5 +1,15 @@
 # @dirtytalk/structural
 
+## 0.1.2
+
+### Patch Changes
+
+- Trim per-call and per-instance overhead on tracked reads: consumer
+  bookkeeping is deferred, tracked child path ids are cached, and tracked
+  path processing is streamlined.
+- Updated dependencies
+  - @dirtytalk/engine@0.2.1
+
 ## 0.1.1
 
 ### Patch Changes

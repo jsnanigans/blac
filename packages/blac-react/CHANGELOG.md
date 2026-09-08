@@ -1,5 +1,17 @@
 # @blac/react
 
+## 2.0.22
+
+### Patch Changes
+
+- Reduce tracked-consumer overhead in the React bindings and pick up the
+  registry-scoping fix from `@blac/core`, so containers created under a
+  `RegistryProvider` route their lifecycle through the scoped registry.
+- Updated dependencies [1b450b5]
+- Updated dependencies
+  - @blac/core@2.0.22
+  - @dirtytalk/structural@0.1.2
+
 ## 2.0.21
 
 ### Patch Changes

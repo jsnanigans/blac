@@ -1,5 +1,13 @@
 # @dirtytalk/engine
 
+## 0.2.1
+
+### Patch Changes
+
+- Reduce allocations on the channel hot path: subscribers are now allocated
+  lazily, dirty-channel bookkeeping avoids intermediate objects, and dirty
+  marks accumulate in place.
+
 ## 0.2.0
 
 ### Minor Changes
