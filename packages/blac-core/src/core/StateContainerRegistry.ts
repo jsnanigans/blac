@@ -145,9 +145,12 @@ export class StateContainerRegistry {
     Set<(...args: any[]) => void>
   >();
 
-  private _stateChangedListenerCount = 0;
+  /**
+   * Derived from the listener Set, never a parallel counter: `on()` with the
+   * same function twice adds once, so a counter cannot stay in step.
+   */
   get hasStateChangedListeners(): boolean {
-    return this._stateChangedListenerCount > 0;
+    return (this.listeners.get('stateChanged')?.size ?? 0) > 0;
   }
   private _pendingStateChanges: Array<
     [StateContainer<any, any, any>, any, any]
@@ -519,8 +522,13 @@ export class StateContainerRegistry {
     // live instances — a runaway key (unstable/args-derived) never disposing.
     this.assertInstanceLimit(Type, instances.size);
 
-    // Create new shared instance
-    const config: StateContainerConfig = { instanceId: resolvedKey, args };
+    // Create new shared instance. `registry: this` binds the instance to its
+    // owner, so a scoped registry stays isolated (see StateContainerConfig).
+    const config: StateContainerConfig = {
+      instanceId: resolvedKey,
+      args,
+      registry: this,
+    };
     const instance = new Type() as InstanceType<T>;
     instance[INIT_CONFIG](config);
     const initialRefs = new Map<string, number>();
@@ -918,18 +926,9 @@ export class StateContainerRegistry {
 
     instance.add(listener as (...args: any[]) => void);
 
-    if (event === 'stateChanged') {
-      this._stateChangedListenerCount++;
-    }
-
     // Return unsubscribe function
     return () => {
-      const deleted = this.listeners
-        .get(event)
-        ?.delete(listener as (...args: any[]) => void);
-      if (deleted && event === 'stateChanged') {
-        this._stateChangedListenerCount--;
-      }
+      this.listeners.get(event)?.delete(listener as (...args: any[]) => void);
     };
   }
 
@@ -999,7 +998,7 @@ export class StateContainerRegistry {
     previousState: any,
     newState: any,
   ): void {
-    if (this._stateChangedListenerCount === 0) return;
+    if (!this.hasStateChangedListeners) return;
 
     if (!this._pendingStateChanges) {
       this._pendingStateChanges = [];

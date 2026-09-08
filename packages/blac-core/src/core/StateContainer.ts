@@ -7,6 +7,7 @@ import {
 import { generateSimpleId } from '../utils/idGenerator';
 import { IS_DEV } from '../constants';
 import { getRegistry } from '../registry/config';
+import type { StateContainerRegistry } from './StateContainerRegistry';
 import type {
   ExtractArgs,
   ExtractState,
@@ -66,6 +67,13 @@ export interface StateContainerConfig {
   instanceId?: string;
   /** Args passed at acquire time; forwarded to init(). */
   args?: unknown;
+  /**
+   * The registry that created this instance. Lifecycle events, deps and
+   * `depend()` route here instead of the module-global, which is what makes a
+   * scoped registry isolating.
+   * @internal
+   */
+  registry?: StateContainerRegistry;
 }
 
 export type HydrationStatus = 'idle' | 'hydrating' | 'hydrated' | 'error';
@@ -322,6 +330,8 @@ export abstract class StateContainer<
   // 'stateChanged' system events.
   private _bridgeUnsub: (() => void) | null = null;
 
+  // Falls back to the module-global for a bare `new`'d container; a registry
+  // that creates the instance overwrites this via `[INIT_CONFIG]`.
   private _registry = getRegistry();
   private _equalityFn: EqualityFn = getBlacConfig().equality;
 
@@ -509,6 +519,9 @@ export abstract class StateContainer<
     this._name = this._config.name || className;
     this._debug = this._config.debug ?? false;
     this._instanceId = generateSimpleId(className, this._config.instanceId);
+    // Must precede init(): init() may `depend()` or emit, and both have to
+    // resolve against the owning registry.
+    this._registry = this._config.registry ?? this._registry;
     const perClass = getClassEquality(
       this.constructor as StateContainerConstructor,
     );

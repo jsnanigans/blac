@@ -110,7 +110,6 @@
     "@types/node": "catalog:",
     "arktype": "^2.2.3",
     "fast-check": "^4.9.0",
-    "jsdom": "catalog:",
     "publint": "catalog:",
     "size-limit": "^13.0.3",
     "typescript": "catalog:",

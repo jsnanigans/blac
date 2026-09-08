@@ -76,10 +76,14 @@ export class PluginManager {
 
   /**
    * Per-container channel-bridge bookkeeping. Subscribed at `created`,
-   * torn down at `disposed`. Holds the rolling `prevState` snapshot the
-   * manager hands plugins on each flush.
+   * torn down at `disposed` and at `destroy()`. Holds the rolling `prevState`
+   * snapshot the manager hands plugins on each flush.
+   *
+   * Strong, not a WeakMap, because `destroy()` has to enumerate the live
+   * bridges to unsubscribe them. Safe: entries are removed on `disposed`, and
+   * the owning registry holds its own strong reference over that same window.
    */
-  private containerBridges = new WeakMap<
+  private containerBridges = new Map<
     StateContainer<any, any, any>,
     ContainerBridge
   >();
@@ -228,6 +232,12 @@ export class PluginManager {
       unsub();
     }
     this.lifecycleUnsubscribers = [];
+    // Without this each container keeps its ALL_PATHS bridge subscriber — and
+    // the single-consumer-skip penalty that comes with it — forever.
+    for (const bridge of this.containerBridges.values()) {
+      bridge.unsub();
+    }
+    this.containerBridges.clear();
   }
 
   /**
@@ -288,8 +298,9 @@ export class PluginManager {
    * previous flush (or at create-time for the first flush) and pass the
    * channel's `paths` argument straight through to plugins.
    *
-   * Per-container bookkeeping is stored in a `WeakMap` keyed by the
-   * container itself, so a disposed/GC'd container drops cleanly.
+   * Per-container bookkeeping is stored in `containerBridges`, a strong `Map`
+   * keyed by the container. Entries are removed explicitly — on the
+   * container's `disposed` event, or for all of them in `destroy()`.
    */
   private attachStateBridge(container: StateContainer<any, any, any>): void {
     // Defensive: if a container is somehow created twice (it shouldn't be),

@@ -39,8 +39,6 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    maxConcurrency: 2,
-    maxWorkers: 2,
     environment: 'happy-dom',
     setupFiles: './vitest-setup.ts',
     hookTimeout: 30000,
@@ -50,8 +48,5 @@ export default defineConfig({
       '**/__archived__/**',
       '**/.*/**',
     ],
-    onConsoleLog(log) {
-      return true;
-    },
   },
 });
