@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Cubit, watch } from '@blac/core';
-import { blacTestSetup, createCubitStub } from '@blac/core/testing';
+import {
+  blacTestSetup,
+  createCubitStub,
+  registerOverride,
+} from '@blac/core/testing';
 import {
   CounterCubit,
   AuthCubit,
@@ -139,6 +143,10 @@ describe('createCubitStub', () => {
     it('supports observation/emit like real instances', async () => {
       const stub = createCubitStub(CounterCubit);
       const listener = vi.fn();
+
+      // Put the stub in the registry, otherwise watch() acquires its own
+      // separate instance and the stub's emits never reach this listener.
+      registerOverride(CounterCubit, stub);
 
       // watch() fires once immediately with the current state.
       const unwatch = watch(CounterCubit, listener);
