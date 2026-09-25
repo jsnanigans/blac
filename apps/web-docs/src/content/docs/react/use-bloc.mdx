@@ -135,8 +135,8 @@ const [state, cart] = useBloc(CartCubit, {
 });
 ```
 
-:::caution[Keep the selector stable]
-Keep the selector referentially stable across renders — wrap it in `useCallback` or define it at module scope. A new function identity each render re-keys the subscription, which the underlying channel treats as a new consumer.
+:::note[Inline selectors are fine]
+The selector is read on every render and is not part of the subscription, so an inline function that closes over props works. It runs on every state change, so keep it cheap.
 :::
 
 ### `onMount`
@@ -235,7 +235,6 @@ See [Passing Inputs](/guide/inputs) for the full decision matrix.
 
 :::caution[Common mistakes]
 
-- **Passing a fresh `select` each render.** The selector must be referentially stable (wrap it in `useCallback`). A new function identity each render re-keys the subscription, which the underlying channel treats as a new consumer.
 - **Putting non-serializable values in `args`.** Refs, callbacks, and DOM nodes change identity every render, so a fresh `args` object produces a brand-new instance each time (and `args` must be JSON-serializable). Use the bloc's `Deps` for handles — see [Injecting handles (`deps`)](#injecting-handles-deps).
 - **Expecting an `autoTrack`, `autoInstance`, or `instanceId` option.** None of these exist. Opt out of tracking with `select`; get per-mount instances by including a per-mount unique value in `args` with a matching `static key`.
   :::

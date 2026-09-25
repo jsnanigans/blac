@@ -87,7 +87,7 @@ There is no `autoTrack` flag. A consumer is in one of two modes, decided purely 
 | **Auto-track** (default, `select` omitted) | Proxy records the paths you read in render                | A read path's value changes                            |
 | **`select` provided**                      | You return an array; subscription interest is `ALL_PATHS` | The returned array differs per-index (via `Object.is`) |
 
-`select` is the deliberate opt-out: you trade automatic per-path tracking for an explicit array, useful when you want to depend on a computed value or narrow a noisy read. It must be referentially stable (wrap it in `useCallback`) — a fresh function each render re-keys the subscription. See [Dependency Tracking](/react/dependency-tracking) for the decision guide and [useBloc](/react/use-bloc) for the full option list.
+`select` is the deliberate opt-out: you trade automatic per-path tracking for an explicit array, useful when you want to depend on a computed value or narrow a noisy read. See [Dependency Tracking](/react/dependency-tracking) for the decision guide and [useBloc](/react/use-bloc) for the full option list.
 
 ## Why these design choices
 

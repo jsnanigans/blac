@@ -1,22 +1,14 @@
 /**
- * Centralized ID Generation
+ * Build an instance id: `${prefix}:${affix}` when an affix is given (the
+ * registry passes the instance key), otherwise `${prefix}:${timestamp}_${random}`.
  *
- * Provides consistent, collision-resistant ID generation for all BlaC subsystems.
- * Uses timestamp + counter + random suffix for uniqueness.
- */
-
-/**
- * Generate simple ID with timestamp and random (no counter tracking)
- *
- * Format: `${prefix}:${timestamp}_${random}`
- *
- * @param prefix - Prefix for the ID
- * @returns Branded ID string
+ * Ids are not unique: same-named classes share an id for the same affix, and
+ * the lazy `$blac.id` of an unregistered instance is always `${prefix}:main`.
  *
  * @example
  * ```ts
- * const id = generateSimpleId('CounterBloc');
- * // Returns: "CounterBloc:1698765432100_a3k9d7f2q"
+ * generateSimpleId('CounterBloc', 'default'); // "CounterBloc:default"
+ * generateSimpleId('CounterBloc'); // "CounterBloc:1698765432100_a3k9d7f2q"
  * ```
  */
 export function generateSimpleId(prefix: string, affix?: string): string {

@@ -12,8 +12,8 @@ import type { ExtractArgs, StateContainerConstructor } from '@blac/core';
  * Internal context value: a Map from bloc constructor to the args object
  * provided by the nearest BlocProvider for that bloc class.
  *
- * Stored as a WeakMap-keyed record so nested providers for different blocs
- * compose without clobbering each other.
+ * Each provider copies its parent's map and adds its own entry, so nested
+ * providers for different blocs compose without clobbering each other.
  */
 type ProvidedArgsMap = Map<StateContainerConstructor, unknown>;
 

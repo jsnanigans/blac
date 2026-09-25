@@ -69,7 +69,7 @@ const ARGS_UNSET: unique symbol = Symbol('blac.argsKeyUnset');
  * @typeParam T - The state container constructor type (inferred from BlocClass)
  * @param BlocClass - The state container class to connect to
  * @param options - Configuration options
- * @returns Tuple of `[state, bloc, ref]`
+ * @returns Tuple of `[state, bloc]`
  *
  * @example Basic usage
  * ```ts

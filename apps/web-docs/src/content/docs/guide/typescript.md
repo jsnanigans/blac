@@ -395,7 +395,7 @@ function cartTotal(): number {
 }
 ```
 
-`state` is `Readonly`, so `select` can't accidentally mutate it; that's also why reading a getter here (`bloc.total`) is the supported way to make a derived value drive re-renders. Keep the selector referentially stable — a fresh function each render re-keys the subscription. See [useBloc](/react/use-bloc#select).
+`state` is `Readonly`, so `select` can't accidentally mutate it; that's also why reading a getter here (`bloc.total`) is the supported way to make a derived value drive re-renders. See [useBloc](/react/use-bloc#select).
 
 ## Conditional `args`
 
