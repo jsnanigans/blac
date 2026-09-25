@@ -6,7 +6,7 @@ The architecture holds up and the ownership model has clearly been thought throu
 
 Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The first five are small, local changes.
 
-**Progress:** all six confirmed bugs (section 1) are fixed on `fix/review-p0-bugs`, each with a regression test and a changeset. Sections 2–4 are open.
+**Progress:** all six confirmed bugs (section 1) are fixed on `fix/review-p0-bugs`, each with a regression test and a changeset. In section 2, 2.1–2.5 are fixed; the rest of sections 2–4 is open.
 
 ---
 
@@ -108,6 +108,8 @@ Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The fi
 
 **Fix:** reuse `nodeEnv` from `constants.ts`.
 
+**Status: fixed.** Both now use `readNodeEnv()` from `constants.ts`. The plugin check reads it per call rather than using the module-load constant, because the existing tests switch `NODE_ENV` at runtime.
+
 ### 2.2 Cleanup sweep vs. concurrent rendering
 
 `packages/blac-core/src/core/StateContainerRegistry.ts:579`, `packages/blac-react/src/useBloc.ts:297`
@@ -116,12 +118,16 @@ Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The fi
 - With `startTransition`, time-slicing or Suspense, render and commit can land in separate tasks. The new instance can be swept before commit, then recreated in the layout effect.
 - It recovers through the rebind path, but `init()` runs twice and there is an extra render.
 
+**Status: confirmed and fixed.** Reproduced with a time-sliced `startTransition` render: the bloc was constructed twice. A macrotask sweep still failed, so the sweep now uses a grace period (`unownedSweepDelayMs`, default 5000 ms), restarted when a render re-acquires the pending entry. This is the temporary-retain pattern Relay and Apollo use.
+
 ### 2.3 `watch()` leaks on error
 
 `packages/blac-core/src/watch/watch.ts:280`, `:351`
 
 - If the first callback throws, or acquiring a later target throws, the refs and subscriptions taken so far are never released, because `cleanup` is never returned.
 - It releases through the `registry` captured at call time, but `resolveBloc`, `resolveBlocPassive` and `toWatchTarget` each call `getRegistry()` again. If `setRegistry` runs in between, acquire and release hit different registries.
+
+**Status: confirmed and fixed.** Both leaks reproduced. Setup now cleans up and rethrows on error, and every helper uses the captured registry.
 
 ### 2.4 React test helpers leave the global registry swapped
 
@@ -133,6 +139,8 @@ Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The fi
 
 **Fix:** wrap the UI in `<RegistryProvider>` instead of mutating the global registry.
 
+**Status: confirmed and fixed.** After `renderWithBloc`, `getRegistry()` returned the test registry. The helpers now set up under `withTestRegistry` and render inside `<RegistryProvider>`. Core helpers called from the test body now use the global registry, not the test one; the docs say so.
+
 ### 2.5 `structuralKey` edge cases
 
 `packages/blac-core/src/utils/structural-key.ts`
@@ -141,6 +149,8 @@ Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The fi
 - `Map`, `Set` and class instances all serialize to `{}`, so different args silently share a key.
 - `{ a: undefined }` and `{}` produce the same key; `NaN` and `Infinity` both become `null`.
 - The header says it throws on non-plain objects "in dev". It doesn't, and the function check throws in production too.
+
+**Status: fixed.** Non-plain objects now throw in dev (production unchanged). The identity cache is kept and documented, along with the JSON edge cases. The header is corrected.
 
 ### 2.6 Test stubs diverge from real behavior
 
