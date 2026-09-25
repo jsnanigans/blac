@@ -280,7 +280,7 @@ export function useBloc<
     // changing the class or key, so the subscription must be re-established
     // against the live container.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-    [BlocClass, instanceKey, consumerId, rebindNonce],
+    [BlocClass, instanceKey, consumerId, rebindNonce, registry],
   );
 
   useSyncExternalStore(
@@ -349,11 +349,9 @@ export function useBloc<
   let state: ExtractState<T>;
   if (select !== undefined) {
     state = rawState;
-    // Seed the last selection on the first render so we don't fire an
-    // immediate "different from null" wakeup on the first emit.
-    if (consumer.selection === null) {
-      consumer.selection = select(rawState, bloc as InstanceState<T>);
-    }
+    // Recomputed every render: the selector may close over props, and the
+    // instance may have changed since the last render.
+    consumer.selection = select(rawState, bloc as InstanceState<T>);
     // Select-mode wakes on every change and filters in the callback.
     consumer.interest = ALL_PATHS;
   } else {
@@ -807,11 +805,12 @@ function makeDepWrapper(
   const resolve = (options?: DepAccessOptionsLike) => {
     const args = options?.args ?? brand.defaultArgs;
     const key = registry.resolveKey(brand.Type, undefined, args);
-    const dep = registry.ensure(
-      brand.Type,
-      key,
+    const dep = registry.acquire(brand.Type, key, {
+      canCreate: true,
+      countRef: false,
       args,
-    ) as unknown as StateContainer;
+      sweepIfUnowned: consumer.tracked.current != null,
+    }) as unknown as StateContainer;
     return { dep, key, args };
   };
 
@@ -828,11 +827,9 @@ function makeDepWrapper(
       const session = consumer.session;
       const existing = session.get(dep);
 
-      // Render only ENSUREs the dep instance (via `resolve()` above); it does
-      // NOT take a ref. Ownership is claimed by the layout-effect reconcile
-      // pass-2 the first commit it sees this dep, and released on drop/unmount.
-      // This keeps acquire/release paired so an uncommitted render can't leak a
-      // dep ref (R4).
+      // Render only ensures the dep instance (via `resolve()` above) without a
+      // ref, and the registry sweeps it if no commit claims it. Ownership is
+      // claimed by reconcile pass 2 and released on drop/unmount.
 
       const tracked = trackRender(dep.state, dep.interner, proxyCache);
       let cache = perDep.get(dep);

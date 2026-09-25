@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vite-plus/test';
 import { StrictMode } from 'react';
 import { render, act, screen } from '@testing-library/react';
+import { renderToString } from 'react-dom/server';
 import {
   Cubit,
   acquire,
@@ -711,5 +712,19 @@ describe('useBloc — track() in StrictMode', () => {
     });
 
     expect(screen.getByTestId('out').textContent).toBe('20');
+  });
+});
+
+describe('useBloc — track() during SSR', () => {
+  it('sweeps the dep when the render never commits', async () => {
+    function Comp() {
+      const [, bloc] = useBloc(ItemBloc);
+      return <span>{bloc.total}</span>;
+    }
+    renderToString(<Comp />);
+    await Promise.resolve();
+
+    expect(hasInstance(ItemBloc)).toBe(false);
+    expect(hasInstance(ItemPriceBloc)).toBe(false);
   });
 });

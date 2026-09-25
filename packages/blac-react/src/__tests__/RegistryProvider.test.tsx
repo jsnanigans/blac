@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { render, act } from '@testing-library/react';
+import { render, act, screen } from '@testing-library/react';
 import { Cubit, getRegistry } from '@blac/core';
 import { blacTestSetup, createTestRegistry } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
@@ -100,5 +100,27 @@ describe('E — RegistryProvider scoping', () => {
     offGlobal();
     expect(scopedSeen).toEqual(['CounterCubit']);
     expect(globalSeen).toEqual([]);
+  });
+
+  it('re-subscribes to the new registry when the provider swaps it', async () => {
+    const r1 = createTestRegistry();
+    const r2 = createTestRegistry();
+    function Probe() {
+      const [state] = useBloc(CounterCubit);
+      return <span data-testid="n">{state.n}</span>;
+    }
+    const tree = (registry: typeof r1) => (
+      <RegistryProvider registry={registry}>
+        <Probe />
+      </RegistryProvider>
+    );
+    const { rerender } = render(tree(r1));
+    rerender(tree(r2));
+
+    await act(async () => {
+      r2.borrow(CounterCubit).emit({ n: 5 });
+    });
+
+    expect(screen.getByTestId('n').textContent).toBe('5');
   });
 });

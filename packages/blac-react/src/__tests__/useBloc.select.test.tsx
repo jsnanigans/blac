@@ -323,4 +323,23 @@ describe('useBloc with select', () => {
     });
     expect(screen.getByTestId('count').textContent).toBe('1');
   });
+
+  it('compares against the selection of the latest render', async () => {
+    let cubit!: CounterCubit;
+    function TestComponent({ field }: { field: 'count' | 'multiplier' }) {
+      const [state, bloc] = useBloc(CounterCubit, {
+        select: (s) => [s[field]],
+      });
+      cubit = bloc;
+      return <p data-testid="value">{state[field]}</p>;
+    }
+    const { rerender } = render(<TestComponent field="count" />);
+    rerender(<TestComponent field="multiplier" />);
+
+    await act(async () => {
+      cubit.setMultiplier(0);
+    });
+
+    expect(screen.getByTestId('value').textContent).toBe('0');
+  });
 });
