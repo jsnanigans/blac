@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vite-plus/test';
+import { StrictMode } from 'react';
 import { render, act, screen } from '@testing-library/react';
 import {
   Cubit,
@@ -8,6 +9,7 @@ import {
   ensure,
   getRefCount,
   hasInstance,
+  blac,
 } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { blacTestSetup } from '@blac/core/testing';
@@ -687,5 +689,27 @@ describe('useBloc — track() case 9: own-state still reactive alongside track()
     });
     expect(renders).toBeGreaterThan(afterDepChange);
     expect(screen.getByTestId('total').textContent).toBe('20'); // 4 * 5
+  });
+});
+
+describe('useBloc — track() in StrictMode', () => {
+  it('keepAlive primary keeps its dep subscribed after the double-invoke', async () => {
+    const KeptItemBloc = blac({ keepAlive: true })(class extends ItemBloc {});
+
+    function Comp() {
+      const [, bloc] = useBloc(KeptItemBloc);
+      return <span data-testid="out">{bloc.total}</span>;
+    }
+    render(
+      <StrictMode>
+        <Comp />
+      </StrictMode>,
+    );
+
+    await act(async () => {
+      borrow(ItemPriceBloc).setPrice(20);
+    });
+
+    expect(screen.getByTestId('out').textContent).toBe('20');
   });
 });

@@ -489,6 +489,12 @@ export function useBloc<
     // Pass 2: add/refresh containers in the session (skip the primary).
     for (const [depContainer, entry] of session) {
       if (entry.kind === 'primary') continue;
+      // StrictMode's simulated unmount can dispose a dep this render captured;
+      // re-render so the session resolves the live instance.
+      if (depContainer.$blac.disposed) {
+        consumer.bump();
+        continue;
+      }
       const interest = expandWithAncestors(entry.paths, depContainer.interner);
       depContainer.registerConsumerPaths(consumerId, entry.paths);
       const existing = subs.get(depContainer);
@@ -540,11 +546,10 @@ export function useBloc<
     };
   });
 
-  // Unmount: tear down every dep subscription + ref exactly once. Kept in its
-  // own effect (consumerId is stable for the component's lifetime, so this only
-  // runs on final unmount, not on every reconcile). consumer.depSubs is mutated
-  // in place by the reconcile, so the captured Map reference still holds the
-  // live set at unmount.
+  // Unmount: tear down every dep subscription + ref. consumer.depSubs is
+  // mutated in place by the reconcile, so the captured Map still holds the
+  // live set. Resetting lastReconcile forces a full reconcile if StrictMode
+  // remounts the same consumer.
   useEffect(() => {
     const subs = consumer.depSubs;
     return () => {
@@ -554,6 +559,7 @@ export function useBloc<
         registry.release(sub.Type, sub.key, false, sub.refId);
       }
       subs.clear();
+      consumer.lastReconcile = null;
     };
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [consumerId, registry]);
