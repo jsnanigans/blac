@@ -42,19 +42,18 @@ function collectGetters(proto: object): Map<string | symbol, Getter> {
 /**
  * Build a per-consumer proxy for a bloc instance.
  *
- * Getters run with `this` bound to the **real instance**, not a proxy, so ES
+ * Getters run with `this` bound to the real instance, not the proxy, so ES
  * `#private` fields and methods work in user blocs. Path recording is done by
- * `[WITH_TRACKED_STATE]`, which makes the instance's own `state` getter report
- * the render's tracking proxy for the duration of the call; nested getter
- * chains stay tracked because the override is still set.
+ * `[WITH_TRACKED_STATE]`, which makes the instance's own `state` getter
+ * report the render's tracking proxy for the call's duration; nested getter
+ * chains stay tracked because the override remains set.
  *
  * One allocation per bloc acquisition (inside `useMemo`), so the proxy is
  * stable across renders.
  *
- * @param onDepHandle - Optional callback invoked when a read returns a branded
- *   dep handle. Receives the original handle and returns the value to expose in
- *   its place (the session-bound wrapper). The callback is responsible for
- *   caching wrappers per handle to avoid re-allocation.
+ * @param onDepHandle - Invoked when a read returns a branded dep handle;
+ *   returns the value (the session-bound wrapper) to expose in its place.
+ *   Must cache wrappers per handle to avoid re-allocation.
  */
 export function buildTrackedProxy<T extends object>(
   instance: T,

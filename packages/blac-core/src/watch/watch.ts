@@ -69,15 +69,10 @@ type BlocInput = StateContainerConstructor | BlocRef<StateContainerConstructor>;
  */
 export interface WatchOptions {
   /**
-   * When `false`, `watch` observes passively instead of owning the instance:
-   * it does not create a missing instance, and it does not take a real
-   * ownership ref on an existing one (so it never keeps an otherwise-
-   * unreferenced instance alive).
-   *
-   * If the instance does not exist yet when `watch` is called, the callback
-   * simply never fires for it — `watch` does not poll or wait for a later
-   * creation. Call `watch` again once the instance is known to exist (e.g.
-   * after some other owner has acquired it).
+   * When `false`, `watch` observes passively: it neither creates a missing
+   * instance nor takes a real ownership ref on an existing one. If the
+   * instance does not exist yet, the callback simply never fires — `watch`
+   * does not poll; call it again once the instance exists.
    *
    * Defaults to `true`.
    */
@@ -209,10 +204,8 @@ function isArray(input: unknown): input is readonly BlocInput[] {
  * Thin wrapper around `container.channel.subscribe(ALL_PATHS, ...)`. The
  * callback fires once immediately, then on every state change of any of the
  * passed blocs. Returning `watch.STOP` from the callback tears down all
- * subscriptions.
- *
- * Note: subscriptions are microtask-deferred (per the DirtyChannel default
- * scheduler), so callbacks land asynchronously after `emit()`.
+ * subscriptions. Subscriptions are microtask-deferred, so callbacks land
+ * asynchronously after `emit()`.
  *
  * By default `watch` creates the instance if it does not exist and holds a
  * real ownership ref until `unwatch`, matching `acquire`. Pass

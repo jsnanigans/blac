@@ -17,8 +17,6 @@ const TESTING_DEPS_OWNER = 'testing-deps';
 declare const beforeEach: (fn: () => void) => void;
 declare const afterEach: (fn: () => void) => void;
 
-// --- createTestRegistry + withTestRegistry ---
-
 export function createTestRegistry(): StateContainerRegistry {
   return new StateContainerRegistry();
 }
@@ -51,8 +49,6 @@ export function withTestRegistry<T>(
   }
 }
 
-// --- blacTestSetup ---
-
 export function blacTestSetup(): void {
   let savedRegistry: StateContainerRegistry;
   let testRegistry: StateContainerRegistry;
@@ -66,8 +62,6 @@ export function blacTestSetup(): void {
     setRegistry(savedRegistry);
   });
 }
-
-// --- registerOverride + overrideEnsure ---
 
 export function registerOverride<T extends StateContainerConstructor>(
   BlocClass: T,
@@ -95,8 +89,6 @@ export function overrideEnsure<T extends StateContainerConstructor, R>(
     return fn();
   });
 }
-
-// --- createCubitStub ---
 
 type MethodKeys<T> = {
   [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
@@ -144,8 +136,6 @@ export function createCubitStub<T extends StateContainerConstructor>(
   return instance;
 }
 
-// --- withBlocState ---
-
 export function withBlocState<T extends StateContainerConstructor>(
   BlocClass: T,
   state: ExtractState<T> extends Record<string, any>
@@ -173,8 +163,6 @@ function applyState(instance: object, state: unknown): void {
   }
 }
 
-// --- withBlocMethod ---
-
 export function withBlocMethod<T extends StateContainerConstructor>(
   BlocClass: T,
   methodName: keyof InstanceType<T>,
@@ -186,17 +174,11 @@ export function withBlocMethod<T extends StateContainerConstructor>(
   return instance;
 }
 
-// --- flush ---
-
 /**
- * Drain pending microtasks so any channel-flushed effects (channel
- * subscribers, `onSystemEvent('stateChanged')` handlers, plugin hooks) run
- * before the next assertion.
- *
- * The default `MicrotaskScheduler` coalesces emits within a tick; tests
- * that emit and then assert on subscriber side-effects need `await flush()`
- * between the two. A subscriber can emit again, so this keeps draining
- * until a round passes with no new state change.
+ * Drain pending microtasks so channel-flushed effects (subscribers,
+ * `onSystemEvent('stateChanged')` handlers, plugin hooks) run before the
+ * next assertion. A subscriber can emit again, so this keeps draining until
+ * a round passes with no new state change.
  */
 export async function flush(): Promise<void> {
   for (let i = 0; i < MAX_FLUSH_ROUNDS; i++) {

@@ -1,22 +1,9 @@
-/**
- * Default configuration constants for BlaC
- *
- * Centralized location for all magic numbers and default values.
- */
-
-/**
- * Static property names for StateContainer classes
- * Used for feature flags and configuration on bloc classes
- */
+/** Static property names used for feature flags and configuration on bloc classes. */
 export const BLAC_STATIC_PROPS = {
-  /**
-   * Mark a bloc to never be auto-disposed (kept alive permanently)
-   */
+  /** Mark a bloc to never be auto-disposed (kept alive permanently). */
   KEEP_ALIVE: 'keepAlive',
 
-  /**
-   * Exclude a bloc from DevTools reporting (prevents infinite loops)
-   */
+  /** Exclude a bloc from DevTools reporting (prevents infinite loops). */
   EXCLUDE_FROM_DEVTOOLS: '__excludeFromDevTools',
 
   /**
@@ -41,9 +28,6 @@ export const BLAC_STATIC_PROPS = {
   BLAC_NAME: 'blacName',
 } as const;
 
-/**
- * Standard error message prefix
- */
 export const BLAC_ERROR_PREFIX = '[BlaC]' as const;
 
 export function readNodeEnv(): string | undefined {

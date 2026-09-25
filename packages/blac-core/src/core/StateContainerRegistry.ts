@@ -18,28 +18,23 @@ import {
 import { INIT_CONFIG, INSERT_INSTANCE, SET_ACTIVE } from './symbols';
 
 /**
- * Entry in the instance registry, tracking the instance and its named references
+ * Entry in the instance registry.
  * @typeParam T - Instance type
  * @internal
  */
 export interface InstanceEntry<T = any> {
-  /** The state container instance */
   instance: T;
-  /** The key this entry is stored under in its constructor's instances Map. */
   key: string;
-  /** Map of active reference IDs to their acquire count (supports paired acquire/release) */
+  /** refId to acquire count. */
   refs: Map<string, number>;
-  /** The args used when this entry was first created; used for dev-warn on arg mismatch. */
+  /** Args from creation, for the dev arg-mismatch warning. */
   args?: unknown;
-  /** Memoized structuralKey(args) for the dev arg-mismatch warning. */
   argsKey?: string;
-  /** `depend()`-owners currently holding this instance (see `acquire`'s `dependent` option). */
+  /** `depend()`-owners holding this instance. */
   dependents?: Set<StateContainer<any, any, any>>;
-  /** Pending sweep of a speculative create (see `_scheduleSweep`). */
   sweepTimer?: ReturnType<typeof setTimeout>;
 }
 
-/** Shared, read-only Map returned by `getInstancesMap` for unregistered types. */
 const EMPTY_INSTANCES_MAP: ReadonlyMap<string, InstanceEntry> = new Map();
 
 /**
@@ -98,8 +93,8 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
                   : never;
 
 /**
- * Central registry for managing StateContainer instances.
- * Handles instance lifecycle, named ref tracking, and lifecycle event emission.
+ * Owns StateContainer instances: creation, ref tracking, disposal and
+ * lifecycle events.
  *
  * @example
  * ```ts
@@ -111,11 +106,9 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
  * });
  * ```
  *
- * `stateChanged` fires once per emit (microtask-deferred but uncoalesced), so
- * listeners see every intermediate transition. Plugins' `onStateChange` fires
- * once per channel flush with coalesced `prev`/`next` and a `PathSet`. Pick
- * the transition log for devtools/time-travel, the plugin hook for
- * change-driven work.
+ * `stateChanged` fires once per emit (microtask-deferred, not coalesced).
+ * Plugins' `onStateChange` fires once per channel flush with coalesced
+ * `prev`/`next` and a `PathSet`.
  */
 export class StateContainerRegistry {
   private readonly instancesByConstructor = new WeakMap<
@@ -126,9 +119,8 @@ export class StateContainerRegistry {
   private readonly types = new Set<StateContainerConstructor>();
 
   /**
-   * `depend()`-owner to the (Type, key) entries it has resolved. Keyed per
-   * resolved key because one handle resolves a different key per `args`.
-   * Weak so a bare `new`'d owner that is never disposed cannot pin the map.
+   * `depend()`-owner to the (Type, key) entries it resolved, per key because
+   * one handle resolves a different key per `args`.
    */
   private readonly _dependentEdges = new WeakMap<
     StateContainer<any, any, any>,
@@ -141,9 +133,8 @@ export class StateContainerRegistry {
   >();
 
   /**
-   * Reverse lookup from `$blac.id` for `PluginContext.getRefIds`. Ids are
-   * `<name>:<key>` and can collide across same-named classes, so nothing
-   * else may rely on it.
+   * Only for `PluginContext.getRefIds`: ids can collide across same-named
+   * classes, so nothing else may rely on it.
    */
   private readonly _entryById = new Map<string, InstanceEntry>();
 
@@ -152,10 +143,6 @@ export class StateContainerRegistry {
     Set<(...args: any[]) => void>
   >();
 
-  /**
-   * Derived from the listener Set, never a parallel counter: `on()` with the
-   * same function twice adds once, so a counter cannot stay in step.
-   */
   get hasStateChangedListeners(): boolean {
     return (this.listeners.get('stateChanged')?.size ?? 0) > 0;
   }
@@ -166,18 +153,11 @@ export class StateContainerRegistry {
   private _autoRefIdCounter = 0;
 
   constructor() {
-    // Self-prune on direct dispose (bypassing release()) and sweep any
-    // depend()-owner edges this instance held, so orphaned dependencies
-    // (created via `ensure`, which never adds a public ref) don't leak.
+    // Also covers a direct `dispose()` that bypasses `release()`.
     this.on('disposed', (container) => this._handleDisposed(container));
   }
 
-  /**
-   * Registry-internal reaction to any instance's `disposed` lifecycle event.
-   * If the disposing container is itself tracked in this registry (i.e. it
-   * was `acquire()`/`ensure()`'d, not a bare `new`), prune its Map entry and
-   * release its dependent edges on whatever it `depend()`'d on.
-   */
+  /** Prune a tracked instance's entry and release its `depend()` edges. */
   private _handleDisposed(container: StateContainer<any, any, any>): void {
     const Type = container.constructor as StateContainerConstructor;
     const found = this._pruneEntry(Type, container);
@@ -192,11 +172,7 @@ export class StateContainerRegistry {
     }
   }
 
-  /**
-   * An entry may be disposed only when nothing owns it: no public refs, no
-   * `depend()` dependents, and not keepAlive. Every dispose decision goes
-   * through here so `release()` and `_releaseDependent` cannot disagree.
-   */
+  /** The single dispose decision: no refs, no dependents, not keepAlive. */
   private _isUnowned(
     Type: StateContainerConstructor,
     entry: InstanceEntry,
@@ -204,12 +180,7 @@ export class StateContainerRegistry {
     return this._hasNoOwners(entry) && !isKeepAliveClass(Type);
   }
 
-  /**
-   * Pure ownership: refs plus `depend()` dependents, with no keepAlive term.
-   * `_isUnowned` is "may be disposed"; this is "nothing is using it", which is
-   * what the activation lifecycle keys off — a keepAlive instance still
-   * deactivates when its last owner goes.
-   */
+  /** Ignores keepAlive: a keepAlive instance still deactivates. */
   private _hasNoOwners(entry: InstanceEntry): boolean {
     return (
       entry.refs.size === 0 &&
@@ -218,12 +189,8 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Single funnel for the 0↔1 ownership transition. `SET_ACTIVE` is idempotent,
-   * so every acquire/release path can call this unconditionally rather than
-   * each computing the edge itself. Emits `activated`/`deactivated` for
-   * plugins to observe the same transition `onActivate`/`onDeactivate` expose
-   * to bloc authors — after `SET_ACTIVE` has already run the instance's own
-   * hook, so plugins always see a container that has finished reacting.
+   * Idempotent, so every acquire/release path calls it. The events fire after
+   * the instance's own `onActivate`/`onDeactivate`.
    */
   private _syncActivation(entry: InstanceEntry): void {
     const transition = entry.instance[SET_ACTIVE](!this._hasNoOwners(entry));
@@ -235,12 +202,6 @@ export class StateContainerRegistry {
     }
   }
 
-  /**
-   * Record that `dependent` resolved `Type` at `key`, so the edge can be
-   * released on the owner's disposal. Keyed per resolved key, not per type:
-   * one `depend()` handle resolves a distinct key for every `args` it is
-   * called with, and all of them must be swept.
-   */
   private _recordDependentEdge(
     dependent: StateContainer<any, any, any>,
     Type: StateContainerConstructor,
@@ -253,10 +214,7 @@ export class StateContainerRegistry {
     keys.add(key);
   }
 
-  /**
-   * Remove the Map entry for `container`, if this registry is tracking it.
-   * @returns true if an entry was found and removed
-   */
+  /** @returns true if this registry tracked `container`. */
   private _pruneEntry(
     Type: StateContainerConstructor,
     container: StateContainer<any, any, any>,
@@ -276,12 +234,7 @@ export class StateContainerRegistry {
     this._entryById.set(entry.instance.$blac.id, entry);
   }
 
-  /**
-   * Drop `dependent`'s edge on the `Type`/`key` entry (a `depend()`-resolved
-   * instance). When that leaves the entry with no dependents AND no public
-   * refs AND it isn't keepAlive, dispose it — this recurses into the same
-   * `disposed` listener, so dep-of-dep chains unwind naturally.
-   */
+  /** Disposing here recurses through `disposed`, unwinding dep chains. */
   private _releaseDependent(
     Type: StateContainerConstructor,
     key: string,
@@ -333,13 +286,8 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Directly insert an instance entry into the registry without going through
-   * acquire/release. Creates the internal WeakMap bucket for the constructor if
-   * it does not exist yet. Replaces any existing entry for the same key.
-   *
-   * The provided instance is NOT configured or disposed here — callers are
-   * responsible for any initConfig / dispose calls. Intended for testing
-   * helpers that create stubs outside the normal acquisition path.
+   * Insert an entry, replacing the one at `instanceKey`. The instance is not
+   * configured here.
    *
    * @internal Used by testing helpers only.
    */
@@ -365,12 +313,8 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Resolve the storage key for an instance. This is the single source of truth
-   * for keying — `acquire` and `release` MUST agree, otherwise a ref taken under
-   * an args-derived key is never dropped (instance leaks).
-   *
-   * Resolution order (explicit beats derived):
-   * explicit key \> `static key(args)` \> structural hash of args \> default sentinel.
+   * The single source of keying, so `acquire` and `release` agree: explicit
+   * key \> `static key(args)` \> structural hash of args \> default key.
    *
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Explicit key, or undefined to derive from args
@@ -394,12 +338,6 @@ export class StateContainerRegistry {
     return DEFAULT_STRUCTURAL_KEY;
   }
 
-  /**
-   * Circuit breaker for runaway instance creation. Throws when a single
-   * constructor would exceed `maxInstancesPerType` live instances — almost
-   * always an unstable instance key (e.g. a new object/array passed as `args`
-   * every render, or a missing `static key`) leaking an instance per render.
-   */
   private assertInstanceLimit(
     Type: StateContainerConstructor,
     currentCount: number,
@@ -416,11 +354,6 @@ export class StateContainerRegistry {
     }
   }
 
-  /**
-   * Circuit breaker for runaway reference growth. Throws when one instance
-   * accumulates more than `maxRefsPerInstance` distinct live refs — almost
-   * always consumer cleanup (e.g. `useBloc`'s unmount `release`) never firing.
-   */
   private assertRefLimit(
     Type: StateContainerConstructor,
     resolvedKey: string,
@@ -439,22 +372,17 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Acquire an instance with ref tracking (ownership semantics).
-   * Creates a new instance if one doesn't exist, or returns existing and adds a ref.
-   * You must call `release()` with the same refId when done.
+   * Get or create an instance and add a ref; `release()` it with the same
+   * refId.
    *
    * @internal Internal key tier. Public callers use the args-based `acquire`
    *   wrapper; `useBloc` and `watch` address a pre-resolved key here.
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Pre-resolved instance key (defaults to 'default')
-   * @param options - Acquisition options: `canCreate` (create when absent,
-   *   default true), `countRef` (add a reference, default true), `refId`
-   *   (named reference for debugging, auto-generated when omitted),
-   *   `dependent` — the `depend()`-owner resolving this instance, recorded so
-   *   its dependent edge is released on the owner's disposal — and
-   *   `sweepIfUnowned`, for callers that create speculatively and claim
-   *   ownership later (see {@link _scheduleSweep}).
-   * @returns The state container instance
+   * @param options - `canCreate` and `countRef` default to true; `refId` is
+   *   auto-generated when omitted; `dependent` is the `depend()`-owner, whose
+   *   edge is released on its disposal; `sweepIfUnowned` is for speculative
+   *   creates (see {@link _scheduleSweep}).
    */
   acquire<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
@@ -476,14 +404,12 @@ export class StateContainerRegistry {
     const instances = this.ensureInstancesMap(Type);
     let entry = instances.get(resolvedKey);
 
-    // Detect stale disposed entries (disposed directly, not through release)
     if (entry?.instance.$blac.disposed) {
       instances.delete(resolvedKey);
       entry = undefined;
     }
 
     if (entry) {
-      // Dev-warn when the same key is reused with structurally different args.
       if (IS_DEV && args !== undefined && entry.args !== undefined) {
         const incomingKey = structuralKey(args);
         const storedKey = (entry.argsKey ??= structuralKey(entry.args));
@@ -527,12 +453,8 @@ export class StateContainerRegistry {
       );
     }
 
-    // Circuit breaker: refuse to create when this type already holds too many
-    // live instances — a runaway key (unstable/args-derived) never disposing.
     this.assertInstanceLimit(Type, instances.size);
 
-    // Create new shared instance. `registry: this` binds the instance to its
-    // owner, so a scoped registry stays isolated (see StateContainerConfig).
     const config: StateContainerConfig = {
       instanceId: resolvedKey,
       args,
@@ -575,16 +497,10 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Speculative creates (`useBloc`'s render-time create) leak forever when the
-   * render is discarded or never commits — SSR has no commit at all, so nothing
-   * ever claims ownership. Sweep after `unownedSweepDelayMs` unless the entry
-   * gained an owner or is keepAlive. The delay must outlast a time-sliced
-   * render, which can yield between render and commit; another speculative
-   * acquire of the still-pending entry restarts it.
-   *
-   * Opt-in, not automatic: a bare `ensure()` hands the instance to a caller
-   * that legitimately holds it without a ref, and sweeping those would make
-   * `ensure` unusable across an `await`.
+   * Dispose a speculative create (a render that never commits, SSR) that is
+   * still unowned after `unownedSweepDelayMs`. The delay must outlast a
+   * time-sliced render; a repeat speculative acquire restarts it. Opt-in, so a
+   * bare `ensure()` stays usable across an `await`.
    */
   private _scheduleSweep(
     Type: StateContainerConstructor,
@@ -603,8 +519,7 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Borrow an existing instance without adding a ref (borrowing semantics).
-   * Tracks cross-bloc dependency for reactive updates.
+   * Get an existing instance without adding a ref.
    *
    * @internal Internal key tier; public callers use the args-based `borrow`.
    * @param Type - The StateContainer class constructor
@@ -623,8 +538,7 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Safely borrow an existing instance (borrowing semantics with error handling).
-   * Returns discriminated union for type-safe conditional access.
+   * Like `borrow`, but returns the error instead of throwing.
    *
    * @internal Internal key tier; public callers use the args-based `borrowSafe`.
    * @param Type - The StateContainer class constructor
@@ -646,12 +560,7 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Ensure an instance exists without taking ownership (for bloc-to-bloc communication).
-   * Gets existing instance OR creates it if it doesn't exist, without adding a ref.
-   * Tracks cross-bloc dependency for reactive updates.
-   *
-   * Use this in bloc-to-bloc communication when you need to ensure an instance exists
-   * but don't want to claim ownership (no ref added).
+   * Get or create an instance without adding a ref.
    *
    * @internal Internal key tier; public callers use the args-based `ensure`.
    * @param Type - The StateContainer class constructor
@@ -673,9 +582,8 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Release a reference to an instance.
-   * Removes the ref and disposes when refs is empty (unless keepAlive).
-   * Releasing an already-removed refId is a no-op (idempotent).
+   * Remove a ref and dispose the instance once nothing owns it. Releasing a
+   * ref that isn't held is a no-op.
    *
    * @internal Internal key tier; public callers use the args-based `release`.
    * @param Type - The StateContainer class constructor
@@ -693,7 +601,6 @@ export class StateContainerRegistry {
     const entry = instances?.get(instanceKey);
     if (!instances || !entry) return;
 
-    // Force dispose immediately
     if (forceDispose) {
       if (!entry.instance.$blac.disposed) {
         entry.instance.dispose();
@@ -702,8 +609,6 @@ export class StateContainerRegistry {
       return;
     }
 
-    // Without a refId, drop one arbitrary ref. Releasing a ref that isn't
-    // held is a no-op.
     const releasedRefId = refId ?? entry.refs.keys().next().value;
     if (releasedRefId === undefined) return;
     const count = entry.refs.get(releasedRefId) ?? 0;
@@ -715,10 +620,7 @@ export class StateContainerRegistry {
     }
     this.emit('refReleased', entry.instance, releasedRefId);
 
-    // Auto-dispose only when nothing owns the entry. A `depend()`-owner that
-    // is still alive keeps its dependency, even once the last public ref goes.
-    // Dispose is checked first so a disposing entry never also fires
-    // `onDeactivate` — dispose is the single teardown path for that case.
+    // Checked before activation so a disposing entry never also deactivates.
     if (this._isUnowned(Type, entry)) {
       if (!entry.instance.$blac.disposed) {
         entry.instance.dispose();
@@ -730,11 +632,7 @@ export class StateContainerRegistry {
     this._syncActivation(entry);
   }
 
-  /**
-   * Get all instances of a specific type.
-   * @param Type - The StateContainer class constructor
-   * @returns Array of all instances
-   */
+  /** Live instances of `Type`. */
   getAll<T extends StateContainerConstructor>(
     Type: T,
   ): InstanceReadonlyState<T>[] {
@@ -748,12 +646,7 @@ export class StateContainerRegistry {
     return result;
   }
 
-  /**
-   * Safely iterate over all instances of a type.
-   * Skips disposed instances and catches callback errors.
-   * @param Type - The StateContainer class constructor
-   * @param callback - Function to call for each instance
-   */
+  /** Iterate live instances of `Type`; callback errors are logged. */
   forEach<T extends StateContainerConstructor>(
     Type: T,
     callback: (instance: InstanceReadonlyState<T>) => void,
@@ -774,20 +667,15 @@ export class StateContainerRegistry {
     }
   }
 
-  /**
-   * Clear all instances of a specific type (disposes them).
-   * @param Type - The StateContainer class constructor
-   */
+  /** Dispose all instances of `Type`. */
   clear<T extends StateContainerConstructor>(Type: T): void {
     const instances = this.instancesByConstructor.get(Type);
     if (!instances) return;
-    // Dispose all instances
     for (const entry of instances.values()) {
       if (!entry.instance.$blac.disposed) {
         entry.instance.dispose();
       }
     }
-    // Clear the Map
     instances.clear();
   }
 
@@ -822,12 +710,7 @@ export class StateContainerRegistry {
     return entry ? Array.from(entry.refs.keys()) : [];
   }
 
-  /**
-   * Get all active reference IDs for an instance by its `$blac.id`, without
-   * needing the owning Type. Used by `PluginContext.getRefIds`.
-   * @param instanceId - The instance's `$blac.id`
-   * @returns Array of ref ID strings (empty if instance doesn't exist)
-   */
+  /** Ref ids by `$blac.id`, for `PluginContext.getRefIds`. */
   getRefIdsById(instanceId: string): string[] {
     const entry = this._entryById.get(instanceId);
     return entry ? Array.from(entry.refs.keys()) : [];
@@ -849,25 +732,15 @@ export class StateContainerRegistry {
     return entry !== undefined && !entry.instance.$blac.disposed;
   }
 
-  /**
-   * Clear all instances from all types (for testing)
-   *
-   * Iterates all registered types and clears their instances.
-   * Also clears type tracking to reset the registry state.
-   */
+  /** Dispose every instance and forget all types (for testing). */
   clearAll(): void {
-    // Step 1: Clear instances from each type (while we still have the types list)
     for (const Type of this.types) {
       this.clear(Type);
     }
-    // Step 2: Now clear type tracking (resets registry state for tests)
     this.types.clear();
   }
 
-  /**
-   * Get registry statistics for debugging.
-   * @returns Object with registeredTypes, totalInstances, and typeBreakdown
-   */
+  /** Instance counts, for debugging. */
   getStats(): {
     registeredTypes: number;
     totalInstances: number;
@@ -876,7 +749,6 @@ export class StateContainerRegistry {
     const typeBreakdown: Record<string, number> = {};
     let totalInstances = 0;
 
-    // Collect stats from each registered type
     for (const Type of this.types) {
       const typeName = Type.name;
       const instances = this.getInstancesMap(Type);
@@ -893,18 +765,13 @@ export class StateContainerRegistry {
     };
   }
 
-  /**
-   * Get all registered types (for plugin system).
-   * @returns Array of all registered StateContainer class constructors
-   */
+  /** All registered types (for plugins). */
   getTypes(): StateContainerConstructor[] {
     return Array.from(this.types);
   }
 
   /**
-   * Subscribe to lifecycle events
-   * @param event - The lifecycle event to listen for
-   * @param listener - The listener function to call when the event occurs
+   * Subscribe to a lifecycle event.
    * @returns Unsubscribe function
    */
   on<E extends LifecycleEvent>(
@@ -919,7 +786,6 @@ export class StateContainerRegistry {
 
     instance.add(listener as (...args: any[]) => void);
 
-    // Return unsubscribe function
     return () => {
       this.listeners.get(event)?.delete(listener as (...args: any[]) => void);
     };
@@ -967,7 +833,7 @@ export class StateContainerRegistry {
   emit(event: 'deactivated', container: StateContainer<any, any, any>): void;
   emit(event: LifecycleEvent, ...args: any[]): void {
     const listeners = this.listeners.get(event);
-    if (!listeners || listeners.size === 0) return; // Zero overhead when no listeners
+    if (!listeners || listeners.size === 0) return;
 
     for (const listener of listeners) {
       try {
@@ -982,8 +848,7 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Schedule a deferred stateChanged notification via microtask.
-   * Skips entirely when no stateChanged listeners are registered.
+   * Queue a microtask-deferred `stateChanged`.
    * @internal - Called by StateContainer.applyState
    */
   notifyStateChanged(
@@ -1001,13 +866,8 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Deliver one event per emit, in order — deliberately NOT coalesced.
-   *
-   * This is a transition log: devtools, time-travel debugging and perf
-   * monitoring need every intermediate `prev`/`next`, which coalescing would
-   * destroy. The plugin `onStateChange` bridge is the coalesced, `PathSet`-
-   * carrying lane (see `PluginManager.setupLifecycleHooks`); the two differ on
-   * purpose, so a listener picks the lane that matches what it needs.
+   * One event per emit, deliberately not coalesced: devtools and time-travel
+   * need every intermediate transition. Plugins get the coalesced lane.
    */
   private flushStateChanged(): void {
     const pending = this._pendingStateChanges;
@@ -1021,7 +881,7 @@ export class StateContainerRegistry {
 }
 
 /**
- * Global default registry instance
+ * The global default registry.
  * @public
  */
 export const globalRegistry = new StateContainerRegistry();

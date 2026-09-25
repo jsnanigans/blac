@@ -130,25 +130,12 @@ function shallowEqualRecord(
 }
 
 /**
- * BlaC's lifecycle/identity/dependency layer on top of `StructuralContainer`.
- *
- * StructuralContainer provides:
- *   - `state` getter
- *   - `emit` / `patch` / `update` (path-tracked, microtask-flushed)
- *   - `channel` (the underlying `DirtyChannel`)
- *   - `registerConsumerPaths` / `unregisterConsumer` (for fine-grained consumers)
- *   - per-class `PathInterner`
- *
- * StateContainer layers on:
- *   - identity / lifecycle / hydration (exposed via `$blac: BlacMeta`)
- *   - cross-bloc deps (`depend()`, `$blac.dependencies`)
- *   - per-consumer deps slices (`APPLY_DEPS` / `REMOVE_DEPS_OWNER` / `onDepsChanged`)
- *   - registry integration (config-driven equality, emit-rate circuit breaker)
- *
- * Subscribers can attach via:
- *   - `onSystemEvent('stateChanged' | 'dispose' | 'hydrationChanged', cb)` —
- *     coarse lifecycle events.
- *   - `this.channel.subscribe(interest, cb)` — path-scoped.
+ * BlaC's lifecycle/identity/dependency layer on top of `StructuralContainer`
+ * (which provides `state`, `emit`/`patch`/`update`, and `channel`).
+ * StateContainer adds identity/lifecycle/hydration (`$blac: BlacMeta`),
+ * cross-bloc deps (`depend()`), per-consumer deps slices, and registry
+ * integration. Subscribe via `onSystemEvent(...)` for coarse lifecycle
+ * events or `this.channel.subscribe(...)` for path-scoped ones.
  */
 export abstract class StateContainer<
   S extends object = any,
@@ -162,12 +149,8 @@ export abstract class StateContainer<
   /** @internal phantom — the injected deps type */
   declare readonly __deps: Deps;
 
-  // ---------------------------------------------------------------------------
-  // Per-consumer deps slices (APPLY_DEPS / REMOVE_DEPS_OWNER)
-  //
-  // Framework adapters wire these per consumer:
-  // `@blac/react/src/useBloc.ts` reads APPLY_DEPS / REMOVE_DEPS_OWNER.
-  // ---------------------------------------------------------------------------
+  // Per-consumer deps slices (APPLY_DEPS / REMOVE_DEPS_OWNER). Framework
+  // adapters wire these per consumer: `@blac/react/src/useBloc.ts` reads them.
 
   private _depsByOwner: Map<string, Partial<Deps>> | null = null;
   private _deps: Partial<Deps> = EMPTY_RECORD as Partial<Deps>;
@@ -298,10 +281,6 @@ export abstract class StateContainer<
   }
 
   protected onDepsChanged(_next: Readonly<Deps>, _prev: Readonly<Deps>): void {}
-
-  // ---------------------------------------------------------------------------
-  // Identity / lifecycle
-  // ---------------------------------------------------------------------------
 
   private _disposed = false;
   private _hydrationStatus: HydrationStatus = 'idle';
@@ -537,9 +516,9 @@ export abstract class StateContainer<
     // Must precede init(): init() may `depend()` or emit, and both have to
     // resolve against the owning registry.
     this._registry = this._config.registry ?? this._registry;
-    // `created` fires AFTER init() so plugins observe a fully initialised
-    // instance. Emitting it first let a plugin start hydration, which init()'s
-    // seeding emits then cancelled — silently discarding persisted state.
+    // `created` must fire after init(): firing it first lets a plugin start
+    // hydration that init()'s own seeding emit then cancels, silently
+    // discarding persisted state.
     if (!this._initCalled) {
       this._initCalled = true;
       this.init(this._config.args as Args);
@@ -558,10 +537,6 @@ export abstract class StateContainer<
       }
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Lifecycle: dispose
-  // ---------------------------------------------------------------------------
 
   dispose(): void {
     if (this._disposed) return;
@@ -610,36 +585,16 @@ export abstract class StateContainer<
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Mutation: emit / patch / update.
-  //
-  // We override `emit` to layer in:
-  //   - disposed guard
-  //   - equality-fn short-circuit (consults getBlacConfig().equality or the
-  //     per-class override via @blac decorator)
-  //   - emit-rate circuit breaker (dev-only)
-  //   - `_changedWhileHydrating` flag tracking
-  //   - registry-level stateChanged notification (microtask-deferred)
-  //   - pending-change capture so the channel-bridge callback can fire the
-  //     'stateChanged' system event with prev/next.
-  //
-  // The actual change-detection (path diff, channel mark, single-consumer
-  // skip) is delegated to `super.emit`.
-  // ---------------------------------------------------------------------------
+  // emit/patch layer disposed guard, equality short-circuit, emit-rate
+  // breaker, hydration flag tracking, and pending-change capture for the
+  // 'stateChanged' system event on top of `super.emit`/`super.patch`, which
+  // still own the actual change detection.
 
   protected override emit(next: S): void {
     this.applyState(next, 'default');
   }
 
-  /**
-   * Override of `StructuralContainer.patch` that routes through the
-   * StateContainer concerns: disposed guard, dev-only emit-rate check,
-   * `_changedWhileHydrating` flag, pending-change capture (so `stateChanged`
-   * system events see the merged prev/next), and the registry-level
-   * `stateChanged` notification. We still call
-   * `super.patch` so path-marking semantics (the whole point of patch) are
-   * preserved.
-   */
+  /** @see emit for the StateContainer concerns layered onto `super.patch`. */
   protected override patch(partial: DeepPartial<S>): void {
     if (this._disposed) {
       this._warnDisposedMutation('patch');
@@ -717,13 +672,8 @@ export abstract class StateContainer<
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // Hydration
-  // ---------------------------------------------------------------------------
-
-  // The hydration state machine lives in these `_`-private impls. The
-  // `$blac.hydration` surface delegates here, so there is a single source
-  // of truth for the hydration state machine.
+  // Hydration state machine. `$blac.hydration` delegates to these
+  // `_`-private impls, keeping a single source of truth.
 
   private _beginHydration(): void {
     if (this._disposed) {
@@ -859,10 +809,6 @@ export abstract class StateContainer<
     this._rejectHydrationPromise?.(error);
   }
 
-  // ---------------------------------------------------------------------------
-  // System events
-  // ---------------------------------------------------------------------------
-
   protected onSystemEvent<E extends SystemEvent>(
     event: E,
     handler: SystemEventHandler<S, E>,
@@ -914,10 +860,6 @@ export abstract class StateContainer<
       }
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Emit-rate circuit breaker (dev-only)
-  // ---------------------------------------------------------------------------
 
   /**
    * Dev-only soft circuit breaker. Counts real state changes in a rolling 1s

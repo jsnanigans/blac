@@ -1,4 +1,3 @@
-// Global config
 export {
   configureBlac,
   getBlacConfig,
@@ -8,7 +7,6 @@ export {
   type EqualityFn,
 } from './config';
 
-// Core Classes
 export { StateContainer } from './core/StateContainer';
 export type {
   HydrationStatus,
@@ -19,7 +17,6 @@ export type {
 } from './core/StateContainer';
 export { Cubit } from './core/Cubit';
 
-// `$blac` meta namespace (identity / lifecycle / hydration).
 export type { BlacMeta, BlacHydration } from './core/meta';
 
 // Structural primitives — re-exported for plugins that need to compose
@@ -27,7 +24,6 @@ export type { BlacMeta, BlacHydration } from './core/meta';
 export { ALL_PATHS } from '@dirtytalk/structural';
 export type { PathSet } from '@dirtytalk/structural';
 
-// Registry
 export {
   acquire,
   resolveInstanceKey,
@@ -60,7 +56,6 @@ export type {
   InstanceEntry,
 } from './core/StateContainerRegistry';
 
-// Decorator
 export { blac, type BlacOptions } from './decorators';
 
 // Static-property feature flags (read by framework adapters)
@@ -80,7 +75,6 @@ export type {
   InstanceMetadata,
 } from './plugin/BlacPlugin';
 
-// Watch
 export {
   watch,
   instance,
@@ -89,7 +83,6 @@ export {
   type BlocRef,
 } from './watch';
 
-// Types
 export type {
   StateContainerConstructor,
   DeepReadonly,

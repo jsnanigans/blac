@@ -1,7 +1,3 @@
-/**
- * Global configuration for `@blac/core`
- */
-
 export type EqualityFn = <S>(prev: S, next: S) => boolean;
 
 export interface BlacConfig {

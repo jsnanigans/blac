@@ -1,10 +1,3 @@
-/**
- * Deterministic, order-independent hash of serializable args.
- * Sorts object keys so {a,b} === {b,a}.
- * Throws on functions, and in dev on non-plain objects (`Map`, `Set`, class
- * instances without `toJSON`) — those belong in `deps`.
- */
-
 import { IS_DEV } from '../constants';
 
 export const DEFAULT_STRUCTURAL_KEY = 'default';

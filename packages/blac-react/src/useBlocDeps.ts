@@ -6,8 +6,8 @@ import { APPLY_DEPS, REMOVE_DEPS_OWNER } from '@blac/core/internal';
  * Feed live values from the component into a bloc's `deps` lane.
  *
  * Each calling component is one owner: its slice is shallow-merged into the
- * bloc's merged `deps` view, and withdrawn when the component unmounts. The
- * bloc observes changes through `onDepsChanged`.
+ * bloc's merged `deps` view and withdrawn on unmount. The bloc observes
+ * changes through `onDepsChanged`.
  *
  * ```tsx
  * const [state, bloc] = useBloc(CanvasCubit);
