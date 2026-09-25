@@ -11,5 +11,6 @@ export {
 } from './BlocProvider';
 export {
   RegistryProvider,
+  useRegistry,
   type RegistryProviderProps,
 } from './RegistryProvider';

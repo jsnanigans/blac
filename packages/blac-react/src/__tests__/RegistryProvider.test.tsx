@@ -3,7 +3,7 @@ import { render, act, screen } from '@testing-library/react';
 import { Cubit, getRegistry } from '@blac/core';
 import { blacTestSetup, createTestRegistry } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
-import { RegistryProvider } from '../RegistryProvider';
+import { RegistryProvider, useRegistry } from '../RegistryProvider';
 
 class CounterCubit extends Cubit<{ n: number }> {
   constructor() {
@@ -122,5 +122,25 @@ describe('E — RegistryProvider scoping', () => {
     });
 
     expect(screen.getByTestId('n').textContent).toBe('5');
+  });
+
+  it('useRegistry returns the provider registry, else the global one', () => {
+    const scopedRegistry = createTestRegistry();
+    const seen: unknown[] = [];
+    function Probe() {
+      seen.push(useRegistry());
+      return null;
+    }
+
+    render(
+      <>
+        <RegistryProvider registry={scopedRegistry}>
+          <Probe />
+        </RegistryProvider>
+        <Probe />
+      </>,
+    );
+
+    expect(seen).toEqual([scopedRegistry, getRegistry()]);
   });
 });

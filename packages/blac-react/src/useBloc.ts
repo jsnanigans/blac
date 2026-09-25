@@ -1,5 +1,4 @@
 import {
-  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -7,7 +6,6 @@ import {
   useSyncExternalStore,
 } from 'react';
 import {
-  getRegistry,
   type ExtractArgs,
   type ExtractState,
   type InstanceState,
@@ -22,7 +20,7 @@ import {
   type PathSet,
 } from '@dirtytalk/structural';
 import { useProvidedArgs } from './BlocProvider';
-import { RegistryContext } from './RegistryProvider';
+import { useRegistry } from './RegistryProvider';
 import { buildTrackedProxy } from './buildTrackedProxy';
 import { DepSession, makeDepWrapper, type DepHandleLike } from './depSession';
 import { expandWithAncestors } from './expandWithAncestors';
@@ -88,8 +86,7 @@ export function useBloc<
 ): UseBlocReturn<T, ExtractState<T>> {
   type TBloc = InstanceState<T>;
 
-  // The nearest RegistryProvider wins over the global registry.
-  const registry = useContext(RegistryContext) ?? getRegistry();
+  const registry = useRegistry();
 
   const consumerRef = useRef<Consumer | null>(null);
   const consumer = (consumerRef.current ??= createConsumer());

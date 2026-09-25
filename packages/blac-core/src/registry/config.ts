@@ -6,6 +6,9 @@ import {
 let _registry = globalRegistry;
 
 /**
+ * The registry every plain helper (`acquire`, `ensure`, `watch`, …) uses.
+ * `RegistryProvider` from `@blac/react` does not change it; components use
+ * `useRegistry()` for the provider's registry.
  * @public
  */
 export function getRegistry(): StateContainerRegistry {

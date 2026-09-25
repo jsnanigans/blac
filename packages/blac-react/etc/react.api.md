@@ -74,5 +74,8 @@ export function useProvidedArgs<T extends StateContainerConstructor>(
   BlocClass: T,
 ): ExtractArgs<T> | undefined;
 
+// @public
+export function useRegistry(): StateContainerRegistry;
+
 // (No @packageDocumentation comment for this package)
 ```

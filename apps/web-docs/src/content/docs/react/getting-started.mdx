@@ -133,6 +133,17 @@ import { RegistryProvider } from '@blac/react';
 
 Descendant `useBloc` calls acquire from that registry instead of the global one, so the subtree shares nothing with the rest of the page. Use it for test isolation, per-request isolation on the server, and micro-frontends embedded in a host app. See [SSR & per-request isolation](/integrations/ssr).
 
+The plain `@blac/core` helpers (`acquire`, `ensure`, `borrow`, `watch`, …) can't see React context, so they always use the global registry (`getRegistry()`), even inside a `RegistryProvider`. To work with the provider's registry from a component, get it with `useRegistry()` and call its methods:
+
+```tsx
+import { useRegistry } from '@blac/react';
+
+function CountersDebug() {
+  const registry = useRegistry();
+  return <pre>{JSON.stringify(registry.getStats())}</pre>;
+}
+```
+
 ## What's next?
 
 Once the counter works, the natural next steps are reading state efficiently and giving blocs input:
