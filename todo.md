@@ -6,7 +6,7 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 
 - Branch `fix/review-p0-bugs`. P0, P1 and P2 complete.
 - Git commit hooks removed; run `vp check` manually before committing.
-- P3 done except unifying the current registry (blocked, see below).
+- P3 complete.
 
 ## P0 — Confirmed bugs
 
@@ -98,7 +98,7 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 - [x] `PluginManager`: attach the all-paths state bridge only while at least one plugin implements `onStateChange`; detach on `uninstall`. Changeset: `plugin-lazy-state-bridge.md`.
 - [x] `PluginManager.install`: don't run the `onCreated` backfill (or undo it) when `onInstall` throws. The plugin is now registered and backfilled only after `onInstall` succeeds. Test: extended "should rollback if onInstall throws error".
 - [x] Plugin support for scoped registries: `getPluginManager(registry?)` returns a per-registry manager (cached in a `WeakMap`). Documented in `core/plugins.md`. Changeset: `plugins-per-registry.md`.
-- [ ] **Blocked:** unify the "current registry" split between the core helper functions and React context. The core helpers are plain functions with no access to React context; the only way to make them follow `RegistryProvider` is to write the global during render, which breaks nested providers, concurrent rendering and per-request SSR isolation (the reasons `RegistryProvider` exists). Needs a different approach from the user.
+- [x] Unify the "current registry" split between the core helper functions and React context. The plain helpers can't read React context without breaking nested providers, concurrent rendering and per-request SSR isolation, so as decided: `@blac/react` exports `useRegistry()` (the provider's registry, else `getRegistry()`; `useBloc` uses it too), and the docs (`getRegistry` JSDoc, `react/getting-started`, `integrations/ssr`) say the plain helpers always use the global registry. Test in `RegistryProvider.test.tsx`. Changeset: `use-registry-hook.md` (minor).
 - [x] Removed the unused `ExtractConstructorArgs`, `BlocInstanceType`, `BlocConstructor` exports (patch bump, as decided). Docs in `core/types.md` and `etc/core.api.md` updated. Changeset: `remove-unused-types.md`.
 - [x] Remove the unused `defaultValue` parameter from `getStaticProp`.
 - [x] Merged `registerType` into the registry (inlined `this.types.add`); public `register()` stays. `insertInstance` now tracks the type too, so `clearAll()` disposes test overrides. Changeset: added to `registry-read-cleanups.md`.
