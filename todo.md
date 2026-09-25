@@ -2,27 +2,33 @@
 
 Derived from `review.md`. Section numbers in brackets point back to it. Each bug fix needs a small regression test; the repros in `review.md` are the starting point.
 
+## Progress
+
+- Branch `fix/review-p0-bugs`. P0 complete (1.1 committed in `596d44e0`; 1.2–1.6 uncommitted).
+- Git commit hooks removed: `.vite-hooks/pre-commit` in `47d63034`; the `staged` config and `prepare` script removal is uncommitted. Run `vp check` manually before committing.
+- Next: P1, starting with plugin environment detection [2.1].
+
 ## P0 — Confirmed bugs
 
-- [x] **StrictMode drops dep `.track()` subscriptions** [1.1]
-  - `packages/blac-react/src/useBloc.ts:548`: reset `consumer.lastReconcile = null` in the unmount cleanup (or move dep teardown into the reconcile effect's cleanup).
-  - Test: `keepAlive` primary + getter using `this.dep.track()` in `<StrictMode>`; dep emit re-renders and the dep stays alive.
-- [ ] **Instance-id collision breaks dispose cleanup** [1.5]
-  - `packages/blac-core/src/core/StateContainerRegistry.ts:141`, `:262`: prune by instance (`WeakMap<container, entry>`) instead of `$blac.id`.
-  - Keep an id map only for `getRefIdsById`, or make ids unique per instance.
-  - Test: two same-named classes at `default`, releasing one disposes its `depend()` dep.
-- [ ] **Dep instances leak from uncommitted renders / SSR** [1.2]
-  - `packages/blac-react/src/useBloc.ts:804`: resolve deps during render with `countRef: false, sweepIfUnowned: true`.
-  - Test: `renderToString` leaves neither primary nor dep registered.
-- [ ] **Registry swap leaves stale subscription** [1.4]
-  - `packages/blac-react/src/useBloc.ts:283`: add `registry` to the `subscribe` memo deps.
-  - Test: swap `RegistryProvider` registry, emit on the new one, component updates.
-- [ ] **Select mode compares against stale selection** [1.3]
-  - `packages/blac-react/src/useBloc.ts:354`: recompute `consumer.selection` every render.
-  - Test: props-dependent selector keeps updating after the prop changes.
-- [ ] **Disposed owner pins deps via accessors** [1.6]
-  - `packages/blac-core/src/core/StateContainer.ts:438`: when `this._disposed`, don't pass `dependent: this` (and dev-warn).
-  - Test: `untracked()` after dispose leaves `dependents` empty.
+- [x] **StrictMode drops dep `.track()` subscriptions** [1.1] — done in `596d44e0`
+  - Unmount cleanup resets `consumer.lastReconcile = null`.
+  - Reconcile pass 2 skips a disposed dep and bumps, so the re-render resolves the live instance (the StrictMode unmount disposes the dep).
+  - Test: `useBloc.track-lifecycle.test.tsx` › "track() in StrictMode". Changeset: `strictmode-dep-track.md`.
+- [x] **Instance-id collision breaks dispose cleanup** [1.5]
+  - `_pruneEntry` looks entries up in a new `_entryByInstance` `WeakMap`; `_entryById` is kept only for `getRefIdsById` (still ambiguous on collisions).
+  - Test: `StateContainerRegistry.ownership.test.ts` › "owner disposal releases dependents when another class shares its name". Changeset: `registry-prune-by-instance.md`.
+- [x] **Dep instances leak from uncommitted renders / SSR** [1.2]
+  - `makeDepWrapper`'s `resolve` acquires with `countRef: false` and `sweepIfUnowned` while rendering; outside render it keeps plain `ensure` semantics.
+  - Test: `useBloc.track-lifecycle.test.tsx` › "track() during SSR". Changeset: `ssr-dep-sweep.md`.
+- [x] **Registry swap leaves stale subscription** [1.4]
+  - Added `registry` to the `subscribe` memo deps.
+  - Test: `RegistryProvider.test.tsx` › "re-subscribes to the new registry when the provider swaps it". Changeset: `registry-swap-resubscribe.md`.
+- [x] **Select mode compares against stale selection** [1.3]
+  - `consumer.selection` is recomputed every render.
+  - Test: `useBloc.select.test.tsx` › "compares against the selection of the latest render". Changeset: `select-latest-selection.md`.
+- [x] **Disposed owner pins deps via accessors** [1.6]
+  - `depend()`'s `resolve` passes no `dependent` once `this._disposed`, adds `sweepIfUnowned` so a dep it creates isn't leaked, and dev-warns.
+  - Test: `StateContainerRegistry.ownership.test.ts` › "dep accessed through a disposed owner is not pinned". Changeset: `disposed-owner-dep.md`.
 
 ## P1 — Likely bugs
 
@@ -93,5 +99,5 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 
 - [ ] Move the internal symbols (`APPLY_DEPS`, `REMOVE_DEPS_OWNER`, `INIT_CONFIG`, `ON_DISPOSE`, `WITH_TRACKED_STATE`, `DEP_BRAND`) and `insertInstance` to a `@blac/core/internal` subpath.
 - [ ] Trim comments: remove history narration ("the pre-uSES hook…", "R3/R4") and multi-paragraph explanations.
-- [ ] Add changesets for each user-visible fix.
+- [ ] Add changesets for each user-visible fix. (Done for every P0 fix.)
 - [ ] Run `vp check` and `vp test` in both packages after each group of changes.

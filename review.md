@@ -6,6 +6,8 @@ The architecture holds up and the ownership model has clearly been thought throu
 
 Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The first five are small, local changes.
 
+**Progress:** all six confirmed bugs (section 1) are fixed on `fix/review-p0-bugs`, each with a regression test and a changeset. Sections 2–4 are open.
+
 ---
 
 ## 1. Confirmed bugs (reproduced)
@@ -22,6 +24,8 @@ Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The fi
 
 **Fix:** set `consumer.lastReconcile = null` in that cleanup, or move dep teardown into a cleanup on the reconcile effect.
 
+**Status: fixed** (`596d44e0`). Resetting `lastReconcile` alone was not enough: the StrictMode unmount releases the dep's only ref and disposes it, so the remount's `acquire` created a new instance while the session still held the old one. Reconcile pass 2 now skips a disposed dep and re-renders.
+
 ### 1.2 Dep instances leak when a render never commits (SSR or a discarded render)
 
 `packages/blac-react/src/useBloc.ts:804`
@@ -32,6 +36,8 @@ Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The fi
 **Repro:** `renderToString(<Comp />)` where `Comp`'s bloc tracks a dep. After microtasks drain, `hasInstance(Main) === false` but `hasInstance(Dep) === true`, and the dep is never disposed.
 
 **Fix:** acquire deps during render with `countRef: false, sweepIfUnowned: true`, like the primary.
+
+**Status: fixed.** The sweep only applies while rendering (`consumer.tracked.current != null`). Outside render the wrapper keeps `ensure` semantics, which must stay usable across an `await`.
 
 ### 1.3 Select mode compares against a stale selection
 
@@ -44,6 +50,8 @@ Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The fi
 
 **Fix:** recompute `consumer.selection` on every render.
 
+**Status: fixed** as proposed.
+
 ### 1.4 Swapping the registry on `RegistryProvider` leaves the component subscribed to the old instance
 
 `packages/blac-react/src/useBloc.ts:283`
@@ -54,6 +62,8 @@ Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The fi
 **Repro:** render under `<RegistryProvider registry={r1}>`, rerender with `r2`, then emit on `r2.borrow(Counter)`. The component never re-renders.
 
 **Fix:** add `registry` to the dependency list.
+
+**Status: fixed** as proposed.
 
 ### 1.5 Instance-id collisions across classes with the same name
 
@@ -69,6 +79,8 @@ Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The fi
 
 **Fix:** look entries up by instance (a `WeakMap<container, entry>`), and keep an id map only for `getRefIdsById`, or make ids unique.
 
+**Status: fixed.** Pruning now goes through a `WeakMap<container, entry>`. `getRefIdsById` still uses the id map, so it can return the wrong instance's refs on a collision; making ids unique would change the public `$blac.id` format.
+
 ### 1.6 Dep accessors called after the owner is disposed pin the dep forever
 
 `packages/blac-core/src/core/StateContainer.ts:438`, `StateContainerRegistry.ts:505`
@@ -79,6 +91,8 @@ Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The fi
 **Repro:** acquire the owner, release it (disposes), then call `owner.d.untracked()`. `Dep`'s `dependents.size === 1` permanently.
 
 **Fix:** in `resolve`, don't register the owner as a dependent (or warn) when `this._disposed` is true.
+
+**Status: fixed.** The disposed owner records no dependent edge and passes `sweepIfUnowned`, so a dep it newly creates is swept instead of leaking. It also dev-warns.
 
 ---
 
