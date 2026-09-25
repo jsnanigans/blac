@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { blacTestSetup } from '@blac/core/testing';
-import { acquire } from '../registry';
+import { acquire, getRefCount } from '../registry';
 import { configureBlac, resetBlacConfig } from '../config';
 import { Cubit } from './Cubit';
 
@@ -45,6 +45,7 @@ describe('StateContainerRegistry circuit breaker', () => {
     expect(() =>
       acquire(Item, { args: { id: 'shared' }, refId: 'consumer-3' }),
     ).toThrow(/maximum of 2 live references/);
+    expect(getRefCount(Item, { args: { id: 'shared' } })).toBe(2);
   });
 
   it('warns once when emit rate exceeds maxEmitsPerSecond', () => {

@@ -507,8 +507,11 @@ export class StateContainerRegistry {
 
       if (countRef) {
         const refId = options.refId ?? `_auto_${this._autoRefIdCounter++}`;
-        entry.refs.set(refId, (entry.refs.get(refId) ?? 0) + 1);
-        this.assertRefLimit(Type, resolvedKey, entry.refs.size);
+        const count = entry.refs.get(refId) ?? 0;
+        if (count === 0) {
+          this.assertRefLimit(Type, resolvedKey, entry.refs.size + 1);
+        }
+        entry.refs.set(refId, count + 1);
         this.emit('refAcquired', entry.instance, refId);
       }
 
