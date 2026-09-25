@@ -13,21 +13,19 @@ import {
   type InstanceState,
   type StateContainer,
   type StateContainerConstructor,
-  type StateContainerRegistry,
 } from '@blac/core';
-import { DEP_BRAND } from '@blac/core/internal';
 import {
   ALL_PATHS,
   emptyPathSet,
-  pathSetEquals,
   trackRender,
-  PathInterner,
   ProxyCache,
   type PathSet,
 } from '@dirtytalk/structural';
 import { useProvidedArgs } from './BlocProvider';
 import { RegistryContext } from './RegistryProvider';
 import { buildTrackedProxy } from './buildTrackedProxy';
+import { DepSession, makeDepWrapper, type DepHandleLike } from './depSession';
+import { expandWithAncestors } from './expandWithAncestors';
 import type { UseBlocOptions, UseBlocReturn } from './types';
 
 let nextConsumerId = 0;
@@ -167,7 +165,8 @@ export function useBloc<
       const wrapper = makeDepWrapper(
         handle as DepHandleLike,
         registry,
-        consumer,
+        consumer.deps,
+        consumer.tracked,
         onDepHandle,
       );
       cache.set(handle, wrapper);
@@ -342,9 +341,7 @@ export function useBloc<
     // entries are appended during JSX as `this.<handle>.track()` runs. Cleared
     // here (not in the layout effect) so a render that no longer tracks a dep
     // produces a session without it, and the reconcile drops it.
-    const session = consumer.session;
-    session.clear();
-    session.set(container, { kind: 'primary', paths: tracked.paths });
+    consumer.deps.begin(container, tracked.paths);
     // NOTE: registerConsumerPaths is intentionally NOT called here. The
     // proxy hasn't been accessed yet, so `tracked.paths` is an empty Set
     // that the proxy will mutate during JSX evaluation. Registering at
@@ -374,166 +371,25 @@ export function useBloc<
       consumer.disarm = null;
       disarm();
     }
+    const deps = consumer.deps;
     if (consumer.isSelectMode) {
-      // Switching into (or staying in) select-mode: invalidate any prior full
-      // reconcile so a later switch back to auto-track mode never mistakes a
-      // stale signature for "unchanged" and skips a needed reconcile.
-      consumer.lastReconcile = null;
+      // A later switch back to auto-track must reconcile in full.
+      deps.invalidate();
       return;
     }
+    if (deps.isUnchanged()) return;
+
     const primary = consumer.container;
-    const paths = consumer.paths;
-    const session = consumer.session;
-
-    // ---------------------------------------------------------------------
-    // Short-circuit: if the primary path set AND the full dep session are
-    // set-equal (paths + key/refId/args) to the last FULL reconcile, none of
-    // registerConsumerPaths/subscribe/unsubscribe/expandWithAncestors below
-    // can have anything new to do — skip the whole block. Any mismatch, or
-    // `consumer.lastReconcile === null` (first commit, or the immediately
-    // preceding commit was select-mode / uncertain), falls through to the
-    // full reconcile. Never skip on uncertainty — a missed re-subscribe would
-    // leave a stale/dropped subscription.
-    // ---------------------------------------------------------------------
-    const last = consumer.lastReconcile;
-    if (
-      last !== null &&
-      last.primaryContainer === primary &&
-      pathSetEquals(last.primaryPaths, paths)
-    ) {
-      let unchanged = last.deps.size === session.size - 1;
-      if (unchanged) {
-        for (const [depContainer, entry] of session) {
-          if (entry.kind === 'primary') continue;
-          const prevEntry = last.deps.get(depContainer);
-          if (
-            prevEntry === undefined ||
-            prevEntry.key !== entry.key ||
-            prevEntry.refId !== entry.refId ||
-            !Object.is(prevEntry.args, entry.args) ||
-            !pathSetEquals(prevEntry.paths, entry.paths)
-          ) {
-            unchanged = false;
-            break;
-          }
-        }
-      }
-      if (unchanged) return;
-    }
-
-    primary.registerConsumerPaths(consumerId, paths);
-    // Register the *normal* leaf paths above for the source-side skeleton, then
-    // build the channel interest as leaves + ancestor-watch ids so that an
-    // atomic `patch` replacement of a parent (e.g. the array 'items') wakes a
-    // consumer that tracked a child (e.g. 'items.length').
-    consumer.interest = expandWithAncestors(paths, primary.interner);
-
-    // -----------------------------------------------------------------------
-    // Reconcile DEP containers (cross-bloc `.track()` interest).
-    //
-    // The primary bloc keeps its own dedicated subscription above; this block
-    // manages only the *dep* containers recorded in the session this render.
-    // We diff the new dep set vs the previously-subscribed set:
-    //   - new dep      -> acquire was already done in `.track()`; subscribe its
-    //                     channel + registerConsumerPaths + seed interest.
-    //   - surviving    -> refresh its interest ref (subscribe closure reads it).
-    //   - dropped      -> unsubscribe, unregisterConsumer, and release its ref.
-    // -----------------------------------------------------------------------
-    const subs = consumer.depSubs;
-
-    // Pass 1: drop containers no longer in the session.
-    for (const [depContainer, sub] of subs) {
-      if (!session.has(depContainer)) {
-        sub.unsubscribe();
-        depContainer.unregisterConsumer(consumerId);
-        registry.release(sub.Type, sub.key, false, sub.refId);
-        subs.delete(depContainer);
-      }
-    }
-
-    // Pass 2: add/refresh containers in the session (skip the primary).
-    for (const [depContainer, entry] of session) {
-      if (entry.kind === 'primary') continue;
-      // StrictMode's simulated unmount can dispose a dep this render captured;
-      // re-render so the session resolves the live instance.
-      if (depContainer.$blac.disposed) {
-        consumer.bump();
-        continue;
-      }
-      const interest = expandWithAncestors(entry.paths, depContainer.interner);
-      depContainer.registerConsumerPaths(consumerId, entry.paths);
-      const existing = subs.get(depContainer);
-      if (existing) {
-        existing.interestRef.current = interest;
-        continue;
-      }
-      // First commit that sees this dep: take the ownership ref HERE (not in
-      // render/`.track()`), so an uncommitted render can never leak it (R4).
-      const live = registry.acquire(entry.Type, entry.key, {
-        canCreate: true,
-        countRef: true,
-        refId: entry.refId,
-        args: entry.args,
-      });
-      // The key now maps to another instance; re-render against that one.
-      if (live !== depContainer) {
-        registry.release(entry.Type, entry.key, false, entry.refId);
-        consumer.bump();
-        continue;
-      }
-      const interestRef: { current: PathSet } = { current: interest };
-      const unsubscribe = depContainer.channel.subscribe(
-        () => interestRef.current,
-        () => consumer.bump(),
-      );
-      subs.set(depContainer, {
-        unsubscribe,
-        interestRef,
-        Type: entry.Type,
-        key: entry.key,
-        refId: entry.refId,
-        args: entry.args,
-      });
-    }
-
-    // Capture this full reconcile's shape for the NEXT commit's short-circuit
-    // check above. `paths`/`entry.paths` are fresh Sets seeded this render
-    // (trackRender/unionPaths always allocate new Sets, never mutate one from
-    // a prior render) — safe to keep direct references without cloning.
-    const depsSignature = new Map<StateContainer, ReconcileDepSignature>();
-    for (const [depContainer, entry] of session) {
-      if (entry.kind === 'primary') continue;
-      depsSignature.set(depContainer, {
-        paths: entry.paths,
-        key: entry.key,
-        refId: entry.refId,
-        args: entry.args,
-      });
-    }
-    consumer.lastReconcile = {
-      primaryContainer: primary,
-      primaryPaths: paths,
-      deps: depsSignature,
-    };
+    primary.registerConsumerPaths(consumerId, consumer.paths);
+    consumer.interest = expandWithAncestors(consumer.paths, primary.interner);
+    deps.reconcile(registry);
   });
 
-  // Unmount: tear down every dep subscription + ref. consumer.depSubs is
-  // mutated in place by the reconcile, so the captured Map still holds the
-  // live set. Resetting lastReconcile forces a full reconcile if StrictMode
-  // remounts the same consumer.
-  useEffect(() => {
-    const subs = consumer.depSubs;
-    return () => {
-      for (const [depContainer, sub] of subs) {
-        sub.unsubscribe();
-        depContainer.unregisterConsumer(consumerId);
-        registry.release(sub.Type, sub.key, false, sub.refId);
-      }
-      subs.clear();
-      consumer.lastReconcile = null;
-    };
+  useEffect(
+    () => () => consumer.deps.dispose(registry),
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [consumerId, registry]);
+    [consumerId, registry],
+  );
 
   return [state, trackedBloc] as UseBlocReturn<T, ExtractState<T>>;
 }
@@ -556,11 +412,10 @@ const noop = (): void => {};
 interface Consumer {
   /** Stable id for the structural container's consumer registry. */
   id: string;
-  /** Registry refIds for the primary bloc and its tracked deps. Derived once
+  /** Registry refId for the primary bloc. Derived once
    * from `id` so the acquire and release sites can never drift apart — a
    * mismatch would leak the ref and keep the bloc alive past unmount. */
   primaryRefId: string;
-  depRefId: string;
   /** The live container this consumer currently reads and subscribes to.
    * Written by the render memo, which is its single writer. */
   container: StateContainer;
@@ -577,9 +432,7 @@ interface Consumer {
   isSelectMode: boolean;
   /** Last select-mode result, compared before waking. */
   selection: unknown[] | null;
-  session: Map<StateContainer, SessionEntry>;
-  depSubs: Map<StateContainer, DepSub>;
-  lastReconcile: ReconcileSignature | null;
+  deps: DepSession;
   /** Latest option callbacks, refreshed every render. Typed loosely: the
    * hook's `T` is per call site, and the consumer outlives any one call. */
   select: ((state: any, bloc: any) => unknown[]) | undefined;
@@ -607,7 +460,6 @@ function createConsumer(): Consumer {
   const consumer: Consumer = {
     id,
     primaryRefId: `useBloc@${id}`,
-    depRefId: `useBloc@${id}:dep`,
     // Assigned by the render memo before any read; never observed unset.
     container: null as unknown as StateContainer,
     version: 0,
@@ -622,9 +474,7 @@ function createConsumer(): Consumer {
     paths: emptyPathSet(),
     isSelectMode: false,
     selection: null,
-    session: new Map(),
-    depSubs: new Map(),
-    lastReconcile: null,
+    deps: new DepSession(id, () => consumer.bump()),
     select: undefined,
     onMount: undefined,
     onUnmount: undefined,
@@ -648,201 +498,6 @@ function createConsumer(): Consumer {
 const resolveEffectiveArgs = (consumer: Consumer): unknown =>
   consumer.ownArgs !== undefined ? consumer.ownArgs : consumer.providerArgs;
 
-// ---------------------------------------------------------------------------
-// Cross-bloc session types + dep-handle wrapper.
-// ---------------------------------------------------------------------------
-
-/**
- * One entry in a consumer's per-render session map. Discriminated on `kind`:
- * the primary bloc is managed by its own dedicated subscription, while dep
- * entries carry the registry coordinates the reconcile needs to release their
- * ref.
- */
-type SessionEntry =
-  | {
-      kind: 'primary';
-      /** Tracked leaf paths recorded against the primary this render. */
-      paths: PathSet;
-    }
-  | {
-      kind: 'dep';
-      /** Tracked leaf paths recorded against this dep this render. */
-      paths: PathSet;
-      /** Constructor for registry release. */
-      Type: StateContainerConstructor;
-      /** Resolved instance key for registry release. */
-      key: string;
-      /** refId held for this dep (released on drop/unmount). */
-      refId: string;
-      /** Construction args, used by the reconcile pass to acquire the ref. */
-      args: unknown;
-    };
-
-/** A live dep-channel subscription tracked between renders for reconciliation. */
-interface DepSub {
-  unsubscribe: () => void;
-  interestRef: { current: PathSet };
-  Type: StateContainerConstructor;
-  key: string;
-  refId: string;
-  args: unknown;
-}
-
-/**
- * Snapshot of one dep's shape from the last FULL reconcile, compared against
- * the current session entry to decide whether the dep-reconcile layout effect
- * can short-circuit (see `Consumer.lastReconcile`).
- */
-interface ReconcileDepSignature {
-  paths: PathSet;
-  key: string;
-  refId: string;
-  args: unknown;
-}
-
-/** Snapshot of the last FULL dep-reconcile layout effect run. */
-interface ReconcileSignature {
-  /** The primary container this signature was captured against (identity
-   * check — a rebind/re-key swaps this even if the tracked paths happen to
-   * be textually identical, and must never be mistaken for "unchanged"). */
-  primaryContainer: StateContainer;
-  primaryPaths: PathSet;
-  deps: Map<StateContainer, ReconcileDepSignature>;
-}
-
-/** Per-access options shared by both dep accessors. */
-interface DepAccessOptionsLike {
-  args?: unknown;
-}
-
-/** Structural shape of a branded `depend()` handle as seen from React. */
-interface DepHandleLike {
-  track(options?: DepAccessOptionsLike): [unknown, StateContainer];
-  untracked(options?: DepAccessOptionsLike): StateContainer;
-  readonly [DEP_BRAND]: {
-    Type: StateContainerConstructor;
-    defaultArgs?: unknown;
-  };
-}
-
-/**
- * Build the per-consumer wrapper that replaces a branded dep handle inside a
- * tracked getter's `this`. The wrapper exposes the same accessors as the core
- * handle and overrides `.track()`:
- *
- * - **Inside a render** (`consumer.tracked.current != null`): resolve (ENSURE,
- *   no ref) the dep, `trackRender` its state, merge the recorded paths into the
- *   session entry, build/reuse a tracked proxy for the dep so its OWN getters
- *   track too, and return `[trackedValue, depProxy]`. The ownership ref is taken
- *   by the layout-effect reconcile pass, not here.
- * - **Outside a render**: degrade to live `[dep.state, dep]` — matches the core
- *   base impl, safe in event handlers/effects/methods.
- *
- * `.untracked()` always returns the live instance with no subscription.
- *
- * Args resolve at call time (`options.args ?? defaultArgs`), so a single handle
- * can resolve different dep instances across calls; tracked-proxy state is
- * therefore cached per resolved instance, not per handle. Guards against a
- * container re-entering tracking within the same render (mutual A↔B deps): if
- * the dep already has a non-primary session entry this render, reuse its proxy
- * + union its paths instead of re-acquiring.
- */
-function makeDepWrapper(
-  handle: DepHandleLike,
-  registry: StateContainerRegistry,
-  consumer: Consumer,
-  onDepHandle: (handle: object) => unknown,
-): DepHandleLike {
-  const brand = handle[DEP_BRAND];
-  const refId = consumer.depRefId;
-  // Per-resolved-instance tracked-state ref + proxy. Call-time args mean one
-  // handle can resolve several instances, so cache is keyed by the instance.
-  const perDep = new Map<
-    StateContainer,
-    { ref: { current: unknown }; proxy: StateContainer }
-  >();
-  // One ProxyCache shared across every instance this handle resolves to
-  // (call-time args can resolve different dep instances across calls) — safe
-  // because ProxyCache's internal map is keyed by target object identity, so
-  // unrelated instances' objects never collide in it.
-  const proxyCache = new ProxyCache();
-
-  const resolve = (options?: DepAccessOptionsLike) => {
-    const args = options?.args ?? brand.defaultArgs;
-    const key = registry.resolveKey(brand.Type, undefined, args);
-    const dep = registry.acquire(brand.Type, key, {
-      canCreate: true,
-      countRef: false,
-      args,
-      sweepIfUnowned: consumer.tracked.current != null,
-    }) as unknown as StateContainer;
-    return { dep, key, args };
-  };
-
-  const wrapper = {
-    untracked: (options?: DepAccessOptionsLike) => resolve(options).dep,
-    track: (options?: DepAccessOptionsLike) => {
-      const { dep, key, args } = resolve(options);
-
-      // Outside a render: live values, no subscription (core base behavior).
-      if (consumer.tracked.current == null) {
-        return [dep.state, dep];
-      }
-
-      const session = consumer.session;
-      const existing = session.get(dep);
-
-      // Render only ensures the dep instance (via `resolve()` above) without a
-      // ref, and the registry sweeps it if no commit claims it. Ownership is
-      // claimed by reconcile pass 2 and released on drop/unmount.
-
-      const tracked = trackRender(dep.state, dep.interner, proxyCache);
-      let cache = perDep.get(dep);
-      if (cache === undefined) {
-        const ref = { current: tracked.value as unknown };
-        cache = { ref, proxy: buildTrackedProxy(dep, ref, onDepHandle).proxy };
-        perDep.set(dep, cache);
-      } else {
-        cache.ref.current = tracked.value;
-      }
-
-      if (existing !== undefined) {
-        // Re-entry this render (`.track()` twice, or a mutual cycle): union the
-        // new paths into the existing entry rather than re-acquiring.
-        existing.paths = unionPaths(existing.paths, tracked.paths);
-      } else {
-        session.set(dep, {
-          kind: 'dep',
-          paths: tracked.paths,
-          Type: brand.Type,
-          key,
-          refId,
-          args,
-        });
-      }
-
-      return [tracked.value, cache.proxy];
-    },
-  } as DepHandleLike;
-
-  Object.defineProperty(wrapper, DEP_BRAND, {
-    value: brand,
-    enumerable: false,
-    writable: false,
-    configurable: false,
-  });
-
-  return wrapper;
-}
-
-/** Union two PathSets (ALL_PATHS dominates). */
-function unionPaths(a: PathSet, b: PathSet): PathSet {
-  if (a === ALL_PATHS || b === ALL_PATHS) return ALL_PATHS;
-  const out = new Set<number>(a as Set<number>);
-  for (const id of b as Set<number>) out.add(id);
-  return out;
-}
-
 const shallowArrayEqual = (a: unknown[], b: unknown[]): boolean => {
   if (a === b) return true;
   if (a.length !== b.length) return false;
@@ -851,41 +506,3 @@ const shallowArrayEqual = (a: unknown[], b: unknown[]): boolean => {
   }
   return true;
 };
-
-/**
- * Expand a PathSet to include an *ancestor-watch* id for every ancestor of
- * every tracked leaf.
- *
- * The auto-tracker records leaf paths (e.g. `'items.length'`), but
- * `StructuralContainer.patch` can only mark the parent (`'items'`) when it
- * replaces a value atomically (arrays, `null`, primitives — it can't see
- * inside). Without expansion, a subscriber with interest `{'items.length'}`
- * would miss a `patch`-triggered atomic-replacement of `items`.
- *
- * Ancestors are added under the interner's *ancestor-watch* lane
- * (`ancestorWatchIds`), NOT as normal ids. The source emits a matching
- * ancestor-watch mark only for paths it replaces atomically — never for a
- * plain-object structural pulse-up. So `{'items.length'}` wakes when the array
- * `items` is replaced, but `{'user.email'}` does NOT wake when a sibling
- * `user.name` changes and pulses `user` up: pulse-up `user` is a normal id and
- * the ancestor-watch `user` only intersects another ancestor-watch `user`.
- *
- * Example: leaf `'a.b.c'` adds ancestor-watch ids for `'a.b'` and `'a'` (but
- * NOT the `''` root — a root change is covered by `ALL_PATHS` from the source,
- * and `''` would wake this consumer on every field change).
- *
- * Returns `paths` itself when no leaf has an ancestor (top-level fields only);
- * the set is frozen by then (see `Consumer.disarm`), so sharing it is safe.
- */
-function expandWithAncestors(paths: PathSet, interner: PathInterner): PathSet {
-  if (paths === ALL_PATHS) return ALL_PATHS;
-  const leafPaths = paths as Set<number>;
-  let expanded: Set<number> | undefined;
-  for (const id of leafPaths) {
-    const watch = interner.ancestorWatchIds(id);
-    if (watch.length === 0) continue;
-    expanded ??= new Set<number>(leafPaths);
-    for (let i = 0; i < watch.length; i++) expanded.add(watch[i]);
-  }
-  return expanded ?? paths;
-}
