@@ -96,16 +96,20 @@ describe('PluginManager', () => {
     });
 
     it('should rollback if onInstall throws error', () => {
+      acquire(CounterCubit);
+      const onCreated = vi.fn();
       const plugin: BlacPlugin = {
         name: 'test-plugin',
         version: '1.0.0',
         onInstall: () => {
           throw new Error('Install failed');
         },
+        onCreated,
       };
 
       expect(() => manager.install(plugin)).toThrow('Install failed');
       expect(manager.hasPlugin('test-plugin')).toBe(false);
+      expect(onCreated).not.toHaveBeenCalled();
     });
 
     it('should respect enabled flag', () => {

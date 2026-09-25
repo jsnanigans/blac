@@ -6,9 +6,11 @@ import { Cubit } from './core/Cubit';
 import { StateContainer } from './core/StateContainer';
 import { blac } from './decorators';
 import { clearAll } from './registry';
+import { ALL_PATHS } from '@dirtytalk/structural';
 import {
   blacTestSetup,
   createCubitStub,
+  flush,
   registerOverride,
   withTestRegistry,
 } from './testing';
@@ -168,5 +170,34 @@ describe('registerOverride + withTestRegistry with args', () => {
       });
       expect(retrieved.state.id).toBe('test-user');
     });
+  });
+});
+
+describe('flush', () => {
+  it('drains emits made by subscribers', async () => {
+    class N extends Cubit<{ n: number }> {
+      constructor() {
+        super({ n: 0 });
+      }
+    }
+    const [a, b, c] = [new N(), new N(), new N()];
+    a.channel.subscribe(
+      () => ALL_PATHS,
+      () => b.emit({ n: 1 }),
+    );
+    b.channel.subscribe(
+      () => ALL_PATHS,
+      () => c.emit({ n: 1 }),
+    );
+    let seen = 0;
+    c.channel.subscribe(
+      () => ALL_PATHS,
+      () => seen++,
+    );
+
+    a.emit({ n: 1 });
+    await flush();
+
+    expect(seen).toBe(1);
   });
 });

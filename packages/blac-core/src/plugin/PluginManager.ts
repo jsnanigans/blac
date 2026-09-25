@@ -49,9 +49,10 @@ interface ContainerBridge {
  *    `refReleased`, `depsChanged`, `activated`, `deactivated`) — synchronous,
  *    fired by the registry.
  *
- * 2. **Per-container channel flushes** — microtask-coalesced. For each
- *    container, the manager subscribes once at create-time with
- *    `ALL_PATHS` interest and stashes `prevState`. On every flush it
+ * 2. **Per-container channel flushes** — microtask-coalesced. While at
+ *    least one installed plugin implements `onStateChange`, the manager
+ *    subscribes to each container with `ALL_PATHS` interest and stashes
+ *    `prevState`. On every flush it
  *    captures the new state + the changed `PathSet` and dispatches
  *    `onStateChange(ctx, prev, next, paths)` to every enabled plugin.
  *
@@ -135,14 +136,6 @@ export class PluginManager {
 
     const installContext = this.buildContext(undefined);
 
-    this.plugins.set(plugin.name, {
-      plugin,
-      config: effectiveConfig,
-      installContext,
-    });
-
-    this.backfillPlugin(this.plugins.get(plugin.name)!);
-
     if (plugin.onInstall) {
       try {
         plugin.onInstall(installContext);
@@ -151,10 +144,16 @@ export class PluginManager {
           `[BlaC] Error installing plugin "${plugin.name}":`,
           error,
         );
-        this.plugins.delete(plugin.name);
         throw error;
       }
     }
+
+    this.plugins.set(plugin.name, {
+      plugin,
+      config: effectiveConfig,
+      installContext,
+    });
+    this.backfillPlugin(plugin);
 
     if (IS_DEV) {
       console.log(
@@ -186,6 +185,7 @@ export class PluginManager {
     }
 
     this.plugins.delete(pluginName);
+    if (!this.hasStateChangePlugin()) this.detachAllStateBridges();
     if (IS_DEV) {
       console.log(`[BlaC] Plugin "${pluginName}" uninstalled`);
     }
@@ -232,12 +232,6 @@ export class PluginManager {
       unsub();
     }
     this.lifecycleUnsubscribers = [];
-    // Without this each container keeps its ALL_PATHS bridge subscriber — and
-    // the single-consumer-skip penalty that comes with it — forever.
-    for (const bridge of this.containerBridges.values()) {
-      bridge.unsub();
-    }
-    this.containerBridges.clear();
   }
 
   /**
@@ -251,7 +245,7 @@ export class PluginManager {
   private setupLifecycleHooks(): void {
     this.lifecycleUnsubscribers = [
       this.registry.on('created', (instance) => {
-        this.attachStateBridge(instance);
+        if (this.hasStateChangePlugin()) this.attachStateBridge(instance);
         this.notifyPlugins('onCreated', instance);
       }),
       this.registry.on('disposed', (instance) => {
@@ -326,24 +320,40 @@ export class PluginManager {
     this.containerBridges.delete(container);
   }
 
+  // Bridges cost every container its single-consumer skip, so they exist only
+  // while some installed plugin implements `onStateChange`.
+  private hasStateChangePlugin(): boolean {
+    for (const { plugin } of this.plugins.values()) {
+      if (plugin.onStateChange) return true;
+    }
+    return false;
+  }
+
+  private detachAllStateBridges(): void {
+    for (const bridge of this.containerBridges.values()) {
+      bridge.unsub();
+    }
+    this.containerBridges.clear();
+  }
+
   /**
    * Backfill a newly-installed plugin with the app's existing instances.
    *
    * Iterates every registered `Type` and its live instances (`getAll`
-   * already skips disposed), attaching the state bridge (idempotent — see
-   * `attachStateBridge`) and, if the plugin implements `onCreated`, invoking
-   * it directly for each instance. Scoped to this single plugin only — the
-   * broadcast `notifyPlugins` would re-notify *every* plugin of *every*
-   * instance, which is wrong here.
+   * already skips disposed), attaching the state bridge if the plugin
+   * implements `onStateChange` (idempotent — see `attachStateBridge`) and
+   * invoking `onCreated` directly for each instance. Scoped to this single
+   * plugin only — the broadcast `notifyPlugins` would re-notify *every*
+   * plugin of *every* instance, which is wrong here.
    */
-  private backfillPlugin(installed: InstalledPlugin): void {
-    const { plugin } = installed;
+  private backfillPlugin(plugin: BlacPlugin): void {
+    if (!plugin.onStateChange && !plugin.onCreated) return;
     for (const Type of this.registry.getTypes()) {
       for (const instance of this.registry.getAll(Type)) {
         // getAll returns the readonly public view; internal bridging needs the
         // real container (same friction the `as any` in queryInstances handles).
         const container = instance as StateContainer<any, any, any>;
-        this.attachStateBridge(container);
+        if (plugin.onStateChange) this.attachStateBridge(container);
 
         if (!plugin.onCreated) continue;
         try {

@@ -101,6 +101,15 @@ const EMPTY_RECORD: Readonly<Record<string, never>> = Object.freeze({});
 
 let deactivatedReason: DOMException | undefined;
 
+// Counts real state changes across all containers; the `flush()` test helper
+// drains until it stops moving.
+let stateChangeCount = 0;
+
+/** @internal */
+export function getStateChangeCount(): number {
+  return stateChangeCount;
+}
+
 /**
  * Shallow per-key `Object.is` comparison of two plain records. Keys are
  * considered: a key present in one but not the other (regardless of value)
@@ -342,12 +351,9 @@ export abstract class StateContainer<
     this.constructor as StateContainerConstructor,
   );
   private _debug: boolean = false;
-  // Left undefined until first read: generating an id costs a `Date.now()` plus
-  // a random base-36 string, and a container that is never registered or
-  // inspected never needs one. `$blac.id` fills it in on demand (see
-  // `createMeta`), and `[INIT_CONFIG]` overwrites it when the registry supplies
-  // a configured instanceId. Deliberately a plain field, not a getter —
-  // devtools enumerates prototype getters to find user-defined ones, and a
+  // Set by `[INIT_CONFIG]`; for an unconfigured container `$blac.id` fills it
+  // in on first read. Deliberately a plain field, not a getter — devtools
+  // enumerates prototype getters to find user-defined ones, and a
   // `_instanceId` accessor would show up there as bloc state.
   private _instanceId?: string;
   private _createdAt: number = Date.now();
@@ -650,25 +656,7 @@ export abstract class StateContainer<
     const next = super.state;
     if (Object.is(prev, next)) return;
 
-    if (IS_DEV && !this._emitRateWarned) {
-      this._checkEmitRate();
-    }
-
-    if (this._hydrationStatus === 'hydrating') {
-      this._changedWhileHydrating = true;
-    }
-
-    if (this._bridgeUnsub !== null) {
-      if (this._pendingChange) {
-        this._pendingChange.next = next;
-      } else {
-        this._pendingChange = { prev, next };
-      }
-    }
-
-    if (this._registry.hasStateChangedListeners) {
-      this._registry.notifyStateChanged(this, prev, next);
-    }
+    this._recordChange(prev, next, 'default');
   }
 
   private applyState(next: S, source: 'default' | 'hydration'): void {
@@ -681,6 +669,17 @@ export abstract class StateContainer<
     if (prev === next) return;
     if (this._equalityFn(prev, next)) return;
 
+    this._recordChange(prev, next, source);
+    super.emit(next);
+  }
+
+  /** Bookkeeping shared by every real state change (`emit`, `patch`, hydration). */
+  private _recordChange(
+    prev: S,
+    next: S,
+    source: 'default' | 'hydration',
+  ): void {
+    stateChangeCount++;
     if (IS_DEV && !this._emitRateWarned) {
       this._checkEmitRate();
     }
@@ -699,11 +698,8 @@ export abstract class StateContainer<
       }
     }
 
-    super.emit(next);
-
-    if (this._registry.hasStateChangedListeners) {
-      this._registry.notifyStateChanged(this, prev, next);
-    }
+    // Microtask-deferred, so it is safe to queue before `super.emit`.
+    this._registry.notifyStateChanged(this, prev, next);
   }
 
   /**
@@ -715,26 +711,10 @@ export abstract class StateContainer<
     const pending = this._pendingChange;
     if (!pending) return;
     this._pendingChange = null;
-
-    // Iterate against a fixed-size snapshot so a handler that subscribes a
-    // new handler mid-drain does not get the late one called in this flush.
-    const handlers = this._systemEventHandlers?.get('stateChanged');
-    if (handlers && handlers.size > 0) {
-      const payload = { state: pending.next, previousState: pending.prev };
-      let count = 0;
-      const size = handlers.size;
-      for (const handler of handlers) {
-        if (++count > size) break;
-        try {
-          handler(payload);
-        } catch (error) {
-          console.error(
-            `[${this._name}] Error in system event handler:`,
-            error,
-          );
-        }
-      }
-    }
+    this.emitSystemEvent('stateChanged', {
+      state: pending.next,
+      previousState: pending.prev,
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -883,10 +863,11 @@ export abstract class StateContainer<
   // System events
   // ---------------------------------------------------------------------------
 
-  protected onSystemEvent = <E extends SystemEvent>(
+  protected onSystemEvent<E extends SystemEvent>(
     event: E,
     handler: SystemEventHandler<S, E>,
-  ): (() => void) => {
+  ): () => void {
+    if (this._disposed) return () => {};
     const all = (this._systemEventHandlers ??= new Map());
     let handlers = all.get(event);
     if (!handlers) {
@@ -912,7 +893,7 @@ export abstract class StateContainer<
         this._pendingChange = null;
       }
     };
-  };
+  }
 
   private emitSystemEvent<E extends SystemEvent>(
     event: E,
@@ -921,7 +902,11 @@ export abstract class StateContainer<
     const handlers = this._systemEventHandlers?.get(event);
     if (!handlers) return;
 
+    // Stop at the current size so a handler added mid-dispatch is not called
+    // for this event.
+    let remaining = handlers.size;
     for (const handler of handlers) {
+      if (remaining-- === 0) break;
       try {
         handler(payload);
       } catch (error) {

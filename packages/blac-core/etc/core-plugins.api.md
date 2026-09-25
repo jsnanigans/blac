@@ -52,7 +52,9 @@ export interface BlacPluginWithInit extends BlacPlugin {
 }
 
 // @public
-export function getPluginManager(): PluginManager;
+export function getPluginManager(
+  registry?: StateContainerRegistry,
+): PluginManager;
 
 // @public (undocumented)
 export interface InstanceMetadata {

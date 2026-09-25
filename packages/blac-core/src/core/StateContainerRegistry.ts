@@ -299,14 +299,6 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Register a type for lifecycle event tracking
-   * @param constructor - The StateContainer class constructor
-   */
-  registerType<T extends StateContainerConstructor>(constructor: T): void {
-    this.types.add(constructor);
-  }
-
-  /**
    * Register a StateContainer class with configuration
    * @param constructor - The StateContainer class constructor
    * @throws Error if type is already registered
@@ -317,8 +309,7 @@ export class StateContainerRegistry {
         `${BLAC_ERROR_PREFIX} Type "${getBlacName(constructor)}" is already registered`,
       );
     }
-
-    this.registerType(constructor);
+    this.types.add(constructor);
   }
 
   private ensureInstancesMap<T extends StateContainerConstructor>(
@@ -370,6 +361,7 @@ export class StateContainerRegistry {
     const entry: InstanceEntry = { instance, key: instanceKey, refs };
     instances.set(instanceKey, entry);
     this._indexEntry(entry);
+    this.types.add(Type);
   }
 
   /**
@@ -415,7 +407,7 @@ export class StateContainerRegistry {
     const limit = getBlacConfig().maxInstancesPerType;
     if (limit > 0 && currentCount >= limit) {
       throw new Error(
-        `${BLAC_ERROR_PREFIX} ${Type.name} exceeded the maximum of ${limit} live instances. ` +
+        `${BLAC_ERROR_PREFIX} ${getBlacName(Type)} exceeded the maximum of ${limit} live instances. ` +
           `This usually means the instance key is unstable — e.g. \`args\` that ` +
           `change identity every render, or a missing \`static key\` — so a new ` +
           `instance is created and never disposed (memory leak). Stabilize the key, ` +
@@ -437,7 +429,7 @@ export class StateContainerRegistry {
     const limit = getBlacConfig().maxRefsPerInstance;
     if (limit > 0 && refCount > limit) {
       throw new Error(
-        `${BLAC_ERROR_PREFIX} ${Type.name} instance "${resolvedKey}" exceeded the maximum of ${limit} live references. ` +
+        `${BLAC_ERROR_PREFIX} ${getBlacName(Type)} instance "${resolvedKey}" exceeded the maximum of ${limit} live references. ` +
           `This usually means references are acquired without a matching release ` +
           `(e.g. a consumer that never unmounts/cleans up), leaking refs that keep ` +
           `the instance alive forever. Ensure every acquire is paired with a release, ` +
@@ -497,7 +489,7 @@ export class StateContainerRegistry {
         const storedKey = (entry.argsKey ??= structuralKey(entry.args));
         if (incomingKey !== storedKey) {
           console.warn(
-            `${BLAC_ERROR_PREFIX} ${Type.name} instance key "${resolvedKey}" was acquired with different args. ` +
+            `${BLAC_ERROR_PREFIX} ${getBlacName(Type)} instance key "${resolvedKey}" was acquired with different args. ` +
               `Existing args: ${storedKey}, new args: ${incomingKey}. ` +
               `The existing instance will be reused. If distinct args should produce distinct instances, ` +
               `either remove the explicit instanceKey or provide a \`static key\` function that reflects the difference.`,
@@ -531,7 +523,7 @@ export class StateContainerRegistry {
 
     if (!canCreate) {
       throw new Error(
-        `${BLAC_ERROR_PREFIX} ${Type.name} instance "${resolvedKey}" not found and creation is disabled.`,
+        `${BLAC_ERROR_PREFIX} ${getBlacName(Type)} instance "${resolvedKey}" not found and creation is disabled.`,
       );
     }
 
@@ -567,8 +559,7 @@ export class StateContainerRegistry {
     instances.set(resolvedKey, newEntry);
     this._indexEntry(newEntry);
 
-    // Register type for lifecycle coordination
-    this.registerType(Type);
+    this.types.add(Type);
 
     if (initialRefId) {
       this.emit('refAcquired', instance, initialRefId);
@@ -698,10 +689,9 @@ export class StateContainerRegistry {
     forceDispose = false,
     refId?: string,
   ): void {
-    const instances = this.ensureInstancesMap(Type);
-    const entry = instances.get(instanceKey);
-
-    if (!entry) return;
+    const instances = this.instancesByConstructor.get(Type);
+    const entry = instances?.get(instanceKey);
+    if (!instances || !entry) return;
 
     // Force dispose immediately
     if (forceDispose) {
@@ -748,7 +738,7 @@ export class StateContainerRegistry {
   getAll<T extends StateContainerConstructor>(
     Type: T,
   ): InstanceReadonlyState<T>[] {
-    const instances = this.ensureInstancesMap(Type);
+    const instances = this.getInstancesMap(Type);
     const result: InstanceReadonlyState<T>[] = [];
     for (const entry of instances.values()) {
       if (!entry.instance.$blac.disposed) {
@@ -768,7 +758,7 @@ export class StateContainerRegistry {
     Type: T,
     callback: (instance: InstanceReadonlyState<T>) => void,
   ): void {
-    const instances = this.ensureInstancesMap(Type);
+    const instances = this.getInstancesMap(Type);
     for (const entry of instances.values()) {
       const instance = entry.instance;
       if (!instance.$blac.disposed) {
@@ -776,7 +766,7 @@ export class StateContainerRegistry {
           callback(instance);
         } catch (error) {
           console.error(
-            `${BLAC_ERROR_PREFIX} forEach callback error for ${Type.name}:`,
+            `${BLAC_ERROR_PREFIX} forEach callback error for ${getBlacName(Type)}:`,
             error,
           );
         }
@@ -789,7 +779,8 @@ export class StateContainerRegistry {
    * @param Type - The StateContainer class constructor
    */
   clear<T extends StateContainerConstructor>(Type: T): void {
-    const instances = this.ensureInstancesMap(Type);
+    const instances = this.instancesByConstructor.get(Type);
+    if (!instances) return;
     // Dispose all instances
     for (const entry of instances.values()) {
       if (!entry.instance.$blac.disposed) {
@@ -812,9 +803,7 @@ export class StateContainerRegistry {
     Type: T,
     instanceKey: string = DEFAULT_STRUCTURAL_KEY,
   ): number {
-    const instances = this.ensureInstancesMap(Type);
-    const entry = instances.get(instanceKey);
-    return entry?.refs.size ?? 0;
+    return this.getInstancesMap(Type).get(instanceKey)?.refs.size ?? 0;
   }
 
   /**
@@ -829,9 +818,7 @@ export class StateContainerRegistry {
     Type: T,
     instanceKey: string = DEFAULT_STRUCTURAL_KEY,
   ): string[] {
-    const instances = this.instancesByConstructor.get(Type);
-    if (!instances) return [];
-    const entry = instances.get(instanceKey);
+    const entry = this.getInstancesMap(Type).get(instanceKey);
     return entry ? Array.from(entry.refs.keys()) : [];
   }
 
@@ -852,14 +839,14 @@ export class StateContainerRegistry {
    * @internal Internal key tier; public callers use the args-based `hasInstance`.
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Pre-resolved instance key (defaults to 'default')
-   * @returns true if instance exists
+   * @returns true if a live (not disposed) instance exists
    */
   hasInstance<T extends StateContainerConstructor>(
     Type: T,
     instanceKey: string = DEFAULT_STRUCTURAL_KEY,
   ): boolean {
-    const instances = this.ensureInstancesMap(Type);
-    return instances.has(instanceKey);
+    const entry = this.getInstancesMap(Type).get(instanceKey);
+    return entry !== undefined && !entry.instance.$blac.disposed;
   }
 
   /**

@@ -13,14 +13,13 @@ import { StateContainerConstructor } from '../types/utilities';
  *
  * @param Type - The class constructor
  * @param propName - The property name to access
- * @param defaultValue - Optional default value if property is undefined
- * @returns The property value or default
+ * @returns The property value, or `undefined`
  */
 export function getStaticProp<
   V,
   T extends StateContainerConstructor = StateContainerConstructor,
->(Type: T, propName: string, defaultValue?: V): V | undefined {
-  return (Type as any)[propName] ?? defaultValue;
+>(Type: T, propName: string): V | undefined {
+  return (Type as any)[propName];
 }
 
 /**

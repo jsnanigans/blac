@@ -89,7 +89,7 @@ export class BlacMeta<S extends object = any> {
 export interface BlacOptions {
   equality?: EqualityFn;
   excludeFromDevTools?: true;
-  keepAlive?: true;
+  keepAlive?: boolean;
   key?: (args: any) => string;
   name?: string;
 }
@@ -135,20 +135,6 @@ export interface BlacPluginWithInit extends BlacPlugin {
   // (undocumented)
   onInstall(ctx: PluginContext): void;
 }
-
-// @public
-export type BlocConstructor<
-  S extends object = any,
-  T extends new (...args: any[]) => StateContainer<S, any, any> = new (
-    ...args: any[]
-  ) => StateContainer<S, any, any>,
-> = (new (...args: any[]) => InstanceType<T>) & {
-  keepAlive?: boolean;
-};
-
-// @public
-export type BlocInstanceType<T extends abstract new (...args: any) => any> =
-  T extends abstract new (...args: any) => infer R ? R : any;
 
 // @public
 export interface BlocRef<T extends StateContainerConstructor> {
@@ -276,11 +262,6 @@ export type ExtractArgs<T> = T extends new () => StateContainer<
 >
   ? A
   : void;
-
-// @public
-export type ExtractConstructorArgs<T> = T extends new (...args: infer P) => any
-  ? P
-  : never[];
 
 // @public
 export type ExtractDeps<T> = T extends new () => StateContainer<
@@ -634,10 +615,10 @@ export abstract class StateContainer<
   // Warning: (ae-forgotten-export) The symbol "SystemEventHandler" needs to be exported by the entry point index.d.ts
   //
   // (undocumented)
-  protected onSystemEvent: <E extends SystemEvent>(
+  protected onSystemEvent<E extends SystemEvent>(
     event: E,
     handler: SystemEventHandler<S, E>,
-  ) => () => void;
+  ): () => void;
   protected patch(partial: DeepPartial<S>): void;
   // (undocumented)
   get state(): S;
@@ -804,7 +785,6 @@ export class StateContainerRegistry {
     listener: LifecycleListener<E>,
   ): () => void;
   register<T extends StateContainerConstructor>(constructor: T): void;
-  registerType<T extends StateContainerConstructor>(constructor: T): void;
   // @internal
   release<T extends StateContainerConstructor>(
     Type: T,

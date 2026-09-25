@@ -61,6 +61,8 @@ class AuthCubit extends Cubit<AuthState> {
 
 **When to use:** global state that should survive route changes and component churn — authentication, user preferences, app-wide settings, a feature-flag cache.
 
+`keepAlive` is inherited by subclasses. Pass `@blac({ keepAlive: false })` on a subclass to turn it off again.
+
 ### `{ excludeFromDevTools: true }`
 
 Hides every instance of the class from DevTools inspection.

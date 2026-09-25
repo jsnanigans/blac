@@ -1,4 +1,5 @@
 import type { Cubit } from './core/Cubit';
+import { getStateChangeCount } from './core/StateContainer';
 import { StateContainerRegistry } from './core/StateContainerRegistry';
 import { APPLY_DEPS, INIT_CONFIG } from './core/symbols';
 import { ensure, getRegistry, setRegistry } from './registry';
@@ -54,11 +55,14 @@ export function withTestRegistry<T>(
 
 export function blacTestSetup(): void {
   let savedRegistry: StateContainerRegistry;
+  let testRegistry: StateContainerRegistry;
   beforeEach(() => {
     savedRegistry = getRegistry();
-    setRegistry(new StateContainerRegistry());
+    testRegistry = createTestRegistry();
+    setRegistry(testRegistry);
   });
   afterEach(() => {
+    testRegistry.clearAll();
     setRegistry(savedRegistry);
   });
 }
@@ -191,11 +195,21 @@ export function withBlocMethod<T extends StateContainerConstructor>(
  *
  * The default `MicrotaskScheduler` coalesces emits within a tick; tests
  * that emit and then assert on subscriber side-effects need `await flush()`
- * between the two.
+ * between the two. A subscriber can emit again, so this keeps draining
+ * until a round passes with no new state change.
  */
 export async function flush(): Promise<void> {
-  // queueMicrotask wins the race against the channel's own queued flush —
-  // we resolve after the channel has drained its current pending flush.
-  await Promise.resolve();
-  await Promise.resolve();
+  for (let i = 0; i < MAX_FLUSH_ROUNDS; i++) {
+    const before = getStateChangeCount();
+    // The second tick lets microtasks queued by the drain itself (registry
+    // `stateChanged` delivery) run too.
+    await Promise.resolve();
+    await Promise.resolve();
+    if (getStateChangeCount() === before) return;
+  }
+  throw new Error(
+    `[blac] flush(): state was still changing after ${MAX_FLUSH_ROUNDS} rounds`,
+  );
 }
+
+const MAX_FLUSH_ROUNDS = 100;

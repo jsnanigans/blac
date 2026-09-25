@@ -126,8 +126,7 @@ export class BlacMeta<S extends object = any> {
   }
 
   get id(): string {
-    // Generated on first read — the container leaves it undefined so an
-    // instance nobody registers or inspects never pays for one.
+    // Unconfigured containers (a bare `new`) get their id on first read.
     const c = this.#c;
     return (c._instanceId ??= generateSimpleId(
       getBlacName(c.constructor),
