@@ -435,11 +435,19 @@ export abstract class StateContainer<
       // Same no-ref semantics as `ensure()`, but records `this` as a
       // dependent edge on the resolved entry so the registry can sweep it
       // on `this`'s disposal (see StateContainerRegistry._releaseDependent).
+      // A disposed owner can never release that edge, so it records none.
+      if (this._disposed && IS_DEV) {
+        console.warn(
+          `[blac] ${this._name}: dependency accessed after dispose. Guard ` +
+            `with \`if (this.$blac.disposed) return\` after each \`await\`.`,
+        );
+      }
       return this._registry.acquire(Type, key, {
         canCreate: true,
         countRef: false,
         args: effectiveArgs,
-        dependent: this,
+        dependent: this._disposed ? undefined : this,
+        sweepIfUnowned: this._disposed,
       }) as InstanceType<T>;
     };
 

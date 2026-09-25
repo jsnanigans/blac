@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vite-plus/test';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+} from 'vite-plus/test';
 import { StateContainer } from './StateContainer';
 import { Cubit } from './Cubit';
 import { globalRegistry } from './StateContainerRegistry';
@@ -48,6 +55,17 @@ describe('registry ownership', () => {
     expect(a.$blac.disposed).toBe(true);
     expect(b.$blac.disposed).toBe(true);
   });
+
+  it('owner disposal releases dependents when another class shares its name', () => {
+    const SameNamedOwner = { Owner: class extends Owner {} }.Owner;
+    const owner = globalRegistry.acquire(Owner, 'default', { refId: 'r1' });
+    globalRegistry.acquire(SameNamedOwner, 'default', { refId: 'r2' });
+    const dep = owner.read();
+
+    globalRegistry.release(Owner, 'default', false, 'r1');
+
+    expect(dep.$blac.disposed).toBe(true);
+  });
 });
 
 describe('post-dispose mutation', () => {
@@ -63,5 +81,18 @@ describe('post-dispose mutation', () => {
     dep.patch({ n: 2 });
 
     expect(dep.state).toBe(before);
+  });
+
+  it('dep accessed through a disposed owner is not pinned', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const owner = globalRegistry.acquire(Owner, 'o', { refId: 'r1' });
+    globalRegistry.release(Owner, 'o', false, 'r1');
+
+    const dep = owner.read();
+    await Promise.resolve();
+
+    expect(dep.$blac.disposed).toBe(true);
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
   });
 });

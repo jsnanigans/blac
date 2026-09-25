@@ -133,10 +133,15 @@ export class StateContainerRegistry {
     Map<StateContainerConstructor, Set<string>>
   >();
 
+  private readonly _entryByInstance = new WeakMap<
+    StateContainer<any, any, any>,
+    InstanceEntry
+  >();
+
   /**
-   * Reverse lookup from `$blac.id` to its entry, for `PluginContext.getRefIds`
-   * and the O(1) prune on dispose. Ids are `<name>:<key>`, so an entry is
-   * matched by instance identity as well.
+   * Reverse lookup from `$blac.id` for `PluginContext.getRefIds`. Ids are
+   * `<name>:<key>` and can collide across same-named classes, so nothing
+   * else may rely on it.
    */
   private readonly _entryById = new Map<string, InstanceEntry>();
 
@@ -254,16 +259,19 @@ export class StateContainerRegistry {
     Type: StateContainerConstructor,
     container: StateContainer<any, any, any>,
   ): boolean {
-    // Registration always materializes `_instanceId` (the entry is keyed by
-    // `$blac.id`), so a container without one was never registered. Reading
-    // `$blac.id` here instead would allocate an id for every bare instance.
-    const id = (container as unknown as { _instanceId?: string })._instanceId;
-    if (id === undefined) return false;
-    const entry = this._entryById.get(id);
-    if (entry === undefined || entry.instance !== container) return false;
-    this.instancesByConstructor.get(Type)?.delete(entry.key);
-    this._entryById.delete(id);
+    const entry = this._entryByInstance.get(container);
+    if (entry === undefined) return false;
+    this._entryByInstance.delete(container);
+    const instances = this.instancesByConstructor.get(Type);
+    if (instances?.get(entry.key) === entry) instances.delete(entry.key);
+    const id = container.$blac.id;
+    if (this._entryById.get(id) === entry) this._entryById.delete(id);
     return true;
+  }
+
+  private _indexEntry(entry: InstanceEntry): void {
+    this._entryByInstance.set(entry.instance, entry);
+    this._entryById.set(entry.instance.$blac.id, entry);
   }
 
   /**
@@ -359,7 +367,7 @@ export class StateContainerRegistry {
     }
     const entry: InstanceEntry = { instance, key: instanceKey, refs };
     instances.set(instanceKey, entry);
-    this._entryById.set(instance.$blac.id, entry);
+    this._indexEntry(entry);
   }
 
   /**
@@ -548,7 +556,7 @@ export class StateContainerRegistry {
       this._recordDependentEdge(options.dependent, Type, resolvedKey);
     }
     instances.set(resolvedKey, newEntry);
-    this._entryById.set(instance.$blac.id, newEntry);
+    this._indexEntry(newEntry);
 
     // Register type for lifecycle coordination
     this.registerType(Type);
