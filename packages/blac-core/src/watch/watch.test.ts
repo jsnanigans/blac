@@ -415,5 +415,28 @@ describe('watch', () => {
       counter.increment();
       expect(callback).toHaveBeenCalledTimes(1);
     });
+
+    it('releases its refs when the first callback throws', () => {
+      expect(() =>
+        watch(CounterCubit, () => {
+          throw new Error('boom');
+        }),
+      ).toThrow('boom');
+
+      expect(hasInstance(CounterCubit)).toBe(false);
+    });
+
+    it('releases earlier refs when a later target fails to acquire', () => {
+      class Failing extends Cubit<object> {
+        constructor() {
+          super({});
+          throw new Error('boom');
+        }
+      }
+
+      expect(() => watch([CounterCubit, Failing], vi.fn())).toThrow('boom');
+
+      expect(hasInstance(CounterCubit)).toBe(false);
+    });
   });
 });

@@ -2,6 +2,7 @@ import { ALL_PATHS } from '@dirtytalk/structural';
 import { ON_DISPOSE } from '../core/symbols';
 import { getRegistry } from '../registry';
 import { resolveInstanceKey } from '../registry/acquire';
+import type { StateContainerRegistry } from '../core/StateContainerRegistry';
 import type {
   ExtractArgs,
   StateContainerConstructor,
@@ -142,8 +143,10 @@ interface WatchTarget {
   args: unknown;
 }
 
-function toWatchTarget(input: BlocInput): WatchTarget {
-  const registry = getRegistry();
+function toWatchTarget(
+  registry: StateContainerRegistry,
+  input: BlocInput,
+): WatchTarget {
   if (isBlocRef(input)) {
     return {
       blocClass: input.blocClass,
@@ -166,10 +169,10 @@ let watchRefSeq = 0;
  * caller is responsible for releasing `refId` in cleanup.
  */
 function resolveBloc(
+  registry: StateContainerRegistry,
   target: WatchTarget,
   refId: string,
 ): StateContainerInstance {
-  const registry = getRegistry();
   return registry.acquire(target.blocClass, target.key, {
     countRef: true,
     refId,
@@ -182,9 +185,9 @@ function resolveBloc(
  * never takes a ref. Returns `undefined` when no instance currently exists.
  */
 function resolveBlocPassive(
+  registry: StateContainerRegistry,
   target: WatchTarget,
 ): StateContainerInstance | undefined {
-  const registry = getRegistry();
   try {
     return registry.acquire(target.blocClass, target.key, {
       canCreate: false,
@@ -273,14 +276,15 @@ function watchImpl(
   const registry = getRegistry();
   const create = options?.create ?? true;
 
-  const targets = inputs.map(toWatchTarget);
+  const targets = inputs.map((input) => toWatchTarget(registry, input));
   const refIds = targets.map(() => `_watch_${watchRefSeq++}`);
+  const resolveAt = (index: number) =>
+    create
+      ? resolveBloc(registry, targets[index], refIds[index])
+      : resolveBlocPassive(registry, targets[index]);
 
   let disposed = false;
-  const instances: Array<StateContainerInstance | undefined> = targets.map(
-    (target, i) =>
-      create ? resolveBloc(target, refIds[i]) : resolveBlocPassive(target),
-  );
+  const instances: Array<StateContainerInstance | undefined> = [];
   const channelUnsubs: Array<(() => void) | undefined> = [];
   const disposedUnsubs: Array<(() => void) | undefined> = [];
 
@@ -292,7 +296,7 @@ function watchImpl(
     channelUnsubs.length = 0;
     disposedUnsubs.length = 0;
     if (create) {
-      for (let i = 0; i < targets.length; i++) {
+      for (let i = 0; i < instances.length; i++) {
         registry.release(
           targets[i].blocClass,
           targets[i].key,
@@ -323,9 +327,7 @@ function watchImpl(
   // registry that triggered the dispose, e.g. `clearAll()`), then notify.
   const resubscribeAt = (index: number) => {
     if (disposed) return;
-    instances[index] = create
-      ? resolveBloc(targets[index], refIds[index])
-      : resolveBlocPassive(targets[index]);
+    instances[index] = resolveAt(index);
     subscribeAt(index);
     subscribeDisposeAt(index);
     runCallback();
@@ -339,16 +341,16 @@ function watchImpl(
     });
   };
 
-  for (let i = 0; i < instances.length; i++) {
-    subscribeAt(i);
+  try {
+    for (let i = 0; i < targets.length; i++) instances.push(resolveAt(i));
+    for (let i = 0; i < instances.length; i++) subscribeAt(i);
+    for (let i = 0; i < instances.length; i++) subscribeDisposeAt(i);
+    // Fire once immediately so the consumer sees the current state.
+    runCallback();
+  } catch (error) {
+    cleanup();
+    throw error;
   }
-
-  for (let i = 0; i < instances.length; i++) {
-    subscribeDisposeAt(i);
-  }
-
-  // Fire once immediately so the consumer sees the current state.
-  runCallback();
 
   return cleanup;
 }
