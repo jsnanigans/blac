@@ -48,13 +48,8 @@ class EditorBloc extends Cubit<EditorState, void, EditorDeps> {
 }
 
 // React components that consume the blocs.
-// BookDisplay accepts optional args to forward to useBloc for key resolution.
-function BookDisplay({
-  args,
-}: {
-  args?: { title: string };
-}): React.ReactElement {
-  const [state] = useBloc(BookBloc, args ? { args } : undefined);
+function BookDisplay({ args }: { args: BookArgs }): React.ReactElement {
+  const [state] = useBloc(BookBloc, { args });
   return <div data-testid="title">{state.title ?? 'no-title'}</div>;
 }
 
@@ -63,14 +58,14 @@ function EditorDisplay(): React.ReactElement {
   return <div data-testid="bound">{state.bound ? 'yes' : 'no'}</div>;
 }
 
+it('renderWithBloc leaves the global registry untouched', () => {
+  const before = getRegistry();
+  renderWithBloc(<EditorDisplay />, { bloc: EditorBloc });
+
+  expect(getRegistry()).toBe(before);
+});
+
 describe('renderWithBloc — args support', () => {
-  it('leaves the global registry untouched', () => {
-    const before = getRegistry();
-    renderWithBloc(<BookDisplay />, { bloc: BookBloc });
-
-    expect(getRegistry()).toBe(before);
-  });
-
   it('seeds bloc state from args and the rendered component reflects it', () => {
     const testArgs = { title: 'Pragmatic Programmer' };
     const { bloc } = renderWithBloc(<BookDisplay args={testArgs} />, {
@@ -82,11 +77,6 @@ describe('renderWithBloc — args support', () => {
     expect(screen.getByTestId('title').textContent).toBe(
       'Pragmatic Programmer',
     );
-  });
-
-  it('no args leaves bloc at default state', () => {
-    renderWithBloc(<BookDisplay />, { bloc: BookBloc });
-    expect(screen.getByTestId('title').textContent).toBe('no-title');
   });
 });
 

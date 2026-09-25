@@ -333,7 +333,9 @@ export abstract class StateContainer<
   // Falls back to the module-global for a bare `new`'d container; a registry
   // that creates the instance overwrites this via `[INIT_CONFIG]`.
   private _registry = getRegistry();
-  private _equalityFn: EqualityFn = getBlacConfig().equality;
+  private _equalityFn: EqualityFn =
+    getClassEquality(this.constructor as StateContainerConstructor) ??
+    getBlacConfig().equality;
 
   // Identity fields. The `$blac` meta getters close over these.
   private _name: string = getBlacName(
@@ -515,9 +517,8 @@ export abstract class StateContainer<
 
   /**
    * @internal Framework-only configuration entry point (registry + testing
-   * helpers). Writes the `_`-private identity fields directly, resolves
-   * per-class equality, emits the registry `created` event, and runs `init()`
-   * once. See {@link INIT_CONFIG}.
+   * helpers). Writes the `_`-private identity fields directly, emits the
+   * registry `created` event, and runs `init()` once. See {@link INIT_CONFIG}.
    */
   [INIT_CONFIG](config: StateContainerConfig): void {
     this._config = { ...config };
@@ -530,10 +531,6 @@ export abstract class StateContainer<
     // Must precede init(): init() may `depend()` or emit, and both have to
     // resolve against the owning registry.
     this._registry = this._config.registry ?? this._registry;
-    const perClass = getClassEquality(
-      this.constructor as StateContainerConstructor,
-    );
-    this._equalityFn = perClass ?? getBlacConfig().equality;
     // `created` fires AFTER init() so plugins observe a fully initialised
     // instance. Emitting it first let a plugin start hydration, which init()'s
     // seeding emits then cancelled — silently discarding persisted state.

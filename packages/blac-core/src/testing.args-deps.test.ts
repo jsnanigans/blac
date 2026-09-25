@@ -3,6 +3,8 @@
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import { Cubit } from './core/Cubit';
+import { StateContainer } from './core/StateContainer';
+import { blac } from './decorators';
 import { clearAll } from './registry';
 import {
   blacTestSetup,
@@ -79,9 +81,31 @@ describe('createCubitStub — args support', () => {
     expect(stub.state.id).toBe('alice');
   });
 
-  it('does not run init when args are omitted (state stays at default)', () => {
-    const stub = createCubitStub(UserBloc);
-    expect(stub.state.id).toBeNull();
+  it('runs init and applies per-class equality without args', () => {
+    @blac({ equality: () => true })
+    class Frozen extends Cubit<{ n: number }> {
+      inited = false;
+      constructor() {
+        super({ n: 0 });
+      }
+      protected init(): void {
+        this.inited = true;
+      }
+    }
+    const stub = createCubitStub(Frozen);
+    stub.emit({ n: 1 });
+
+    expect(stub.inited).toBe(true);
+    expect(stub.state.n).toBe(0);
+  });
+
+  it('applies state to a non-Cubit container', () => {
+    class Counter extends StateContainer<{ n: number }> {
+      constructor() {
+        super({ n: 0 });
+      }
+    }
+    expect(createCubitStub(Counter, { state: { n: 5 } }).state.n).toBe(5);
   });
 
   it('state override is applied after init', () => {

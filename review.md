@@ -6,7 +6,7 @@ The architecture holds up and the ownership model has clearly been thought throu
 
 Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The first five are small, local changes.
 
-**Progress:** all six confirmed bugs (section 1) are fixed on `fix/review-p0-bugs`, each with a regression test and a changeset. In section 2, 2.1–2.5 are fixed; the rest of sections 2–4 is open.
+**Progress:** all six confirmed bugs (section 1) are fixed on `fix/review-p0-bugs`, each with a regression test and a changeset. In section 2, 2.1–2.6 are fixed; the rest of sections 2–4 is open.
 
 ---
 
@@ -156,6 +156,8 @@ Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The fi
 
 - Per-class `equality` is only applied through `[INIT_CONFIG]` (`StateContainer.ts:525`). A bare `new`, or `createCubitStub` without args, ignores `@blac({ equality })`, and `init()` never runs.
 - `createCubitStub` and `withBlocState` (`packages/blac-core/src/testing.ts`) silently drop the `state` option for classes that aren't `Cubit`.
+
+**Status: fixed.** Per-class equality is resolved in the field initializer, so a bare `new` honors it. `createCubitStub` always runs `[INIT_CONFIG]`, so `init()` runs as it would for a registry-created instance. Both helpers now apply `state` to any `StateContainer`. Behavior change: a stub for a bloc with required `args` must now pass them.
 
 ### 2.7 `release()` with an unknown `refId`
 

@@ -1,4 +1,4 @@
-import { Cubit } from './core/Cubit';
+import type { Cubit } from './core/Cubit';
 import { StateContainerRegistry } from './core/StateContainerRegistry';
 import { APPLY_DEPS, INIT_CONFIG } from './core/symbols';
 import { ensure, getRegistry, setRegistry } from './registry';
@@ -105,10 +105,7 @@ export interface CubitStubOptions<T extends StateContainerConstructor> {
   methods?: Partial<
     Record<MethodKeys<InstanceType<T>>, (...args: any[]) => any>
   >;
-  /**
-   * Args to pass to init(). If the bloc's Args type is not void, supplying
-   * args here causes `initConfig({ args })` to be called so `init()` runs.
-   */
+  /** Args passed to init(). */
   args?: ExtractArgs<T> extends void ? never : ExtractArgs<T>;
   /**
    * Deps slice to pre-wire via the core [APPLY_DEPS] path (synthetic owner
@@ -122,27 +119,10 @@ export function createCubitStub<T extends StateContainerConstructor>(
   options?: CubitStubOptions<T>,
 ): InstanceType<T> {
   const instance = new BlocClass() as InstanceType<T>;
-
-  // Run init() if args are supplied — goes through the same initConfig path
-  // that the registry uses, so lifecycle hooks fire correctly.
-  if (options?.args != null) {
-    instance[INIT_CONFIG]({ args: options.args });
-  }
+  instance[INIT_CONFIG]({ args: options?.args });
 
   if (options?.state != null) {
-    if (instance instanceof Cubit) {
-      const currentState = instance.state;
-      if (
-        typeof currentState === 'object' &&
-        currentState !== null &&
-        typeof options.state === 'object' &&
-        options.state !== null
-      ) {
-        instance.patch(options.state as any);
-      } else {
-        instance.emit(options.state as any);
-      }
-    }
+    applyState(instance, options.state);
   }
   if (options?.methods) {
     for (const [key, impl] of Object.entries(options.methods)) {
@@ -170,20 +150,23 @@ export function withBlocState<T extends StateContainerConstructor>(
   args?: ExtractArgs<T>,
 ): InstanceType<T> {
   const instance = ensure(BlocClass, { args });
-  if (instance instanceof Cubit) {
-    const currentState = instance.state;
-    if (
-      typeof currentState === 'object' &&
-      currentState !== null &&
-      typeof state === 'object' &&
-      state !== null
-    ) {
-      instance.patch(state as any);
-    } else {
-      instance.emit(state as any);
-    }
-  }
+  applyState(instance, state);
   return instance;
+}
+
+// emit/patch are protected on StateContainer; Cubit only makes them public.
+function applyState(instance: object, state: unknown): void {
+  const target = instance as Cubit<any>;
+  if (
+    typeof target.state === 'object' &&
+    target.state !== null &&
+    typeof state === 'object' &&
+    state !== null
+  ) {
+    target.patch(state);
+  } else {
+    target.emit(state as any);
+  }
 }
 
 // --- withBlocMethod ---

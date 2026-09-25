@@ -6,7 +6,7 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 
 - Branch `fix/review-p0-bugs`. P0 complete and committed.
 - Git commit hooks removed; run `vp check` manually before committing.
-- Next: test stubs diverge from real behavior [2.6].
+- Next: `release()` with an unknown `refId` [2.7].
 
 ## P0 — Confirmed bugs
 
@@ -53,9 +53,11 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
   - Throws in dev on non-plain objects (`Map`, `Set`, class instances without `toJSON`; `Date` still works via `toJSON`). Production unchanged; functions still throw everywhere.
   - Kept the identity cache (hot path); documented that mutating args keeps the old key, plus the JSON `undefined`/`NaN` semantics. Header comment fixed.
   - Test: `structural-key.test.ts` › "throws in dev on non-plain objects…". Changeset: `structural-key-non-plain.md`.
-- [ ] **Test stubs diverge from real behavior** [2.6]
-  - Resolve per-class equality at construction (not only in `[INIT_CONFIG]`), or always run `[INIT_CONFIG]` in `createCubitStub`.
-  - `createCubitStub` / `withBlocState`: support non-`Cubit` containers or throw instead of silently ignoring `state`.
+- [x] **Test stubs diverge from real behavior** [2.6]
+  - Did both: per-class equality is resolved in the `_equalityFn` field initializer (removed from `[INIT_CONFIG]`), and `createCubitStub` always runs `[INIT_CONFIG]`.
+  - Both helpers apply `state` to any `StateContainer` through one shared `applyState` helper (`emit`/`patch` are only protected there).
+  - Behavior change: a stub for a bloc with required `args` now calls `init(undefined)` if they're omitted. Replaced the "does not run init when args are omitted" tests (core and React) accordingly.
+  - Tests: `testing.args-deps.test.ts` › "runs init and applies per-class equality without args", "applies state to a non-Cubit container". Docs: `testing/core.md`. Changeset: `test-stubs-match-registry.md` (minor).
 - [ ] **`release()` with an unknown `refId`** [2.7]
   - `StateContainerRegistry.ts:697`: return early (no event, no dispose) when the `refId` isn't held.
 - [ ] **Ref-limit check order** [2.8]
