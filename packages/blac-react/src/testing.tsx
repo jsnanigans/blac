@@ -29,7 +29,6 @@ export function renderWithBloc<T extends StateContainerConstructor>(
   const { bloc: BlocClass, args, ...stubOptions } = options;
 
   const { registry, instance } = withTestRegistry((registry) => {
-    // Pass args explicitly so createCubitStub calls [INIT_CONFIG] → init().
     const instance = createCubitStub(BlocClass, {
       ...stubOptions,
       args,
