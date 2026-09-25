@@ -4,9 +4,9 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 
 ## Progress
 
-- Branch `fix/review-p0-bugs`. P0 complete and committed.
+- Branch `fix/review-p0-bugs`. P0 and P1 complete.
 - Git commit hooks removed; run `vp check` manually before committing.
-- Next: `release()` with an unknown `refId` [2.7].
+- Next: P2 stale docs [3].
 
 ## P0 — Confirmed bugs
 
@@ -58,10 +58,12 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
   - Both helpers apply `state` to any `StateContainer` through one shared `applyState` helper (`emit`/`patch` are only protected there).
   - Behavior change: a stub for a bloc with required `args` now calls `init(undefined)` if they're omitted. Replaced the "does not run init when args are omitted" tests (core and React) accordingly.
   - Tests: `testing.args-deps.test.ts` › "runs init and applies per-class equality without args", "applies state to a non-Cubit container". Docs: `testing/core.md`. Changeset: `test-stubs-match-registry.md` (minor).
-- [ ] **`release()` with an unknown `refId`** [2.7]
-  - `StateContainerRegistry.ts:697`: return early (no event, no dispose) when the `refId` isn't held.
-- [ ] **Ref-limit check order** [2.8]
-  - `StateContainerRegistry.ts:500`: check the limit before adding the ref.
+- [x] **`release()` with an unknown `refId`** [2.7]
+  - Returns early (no event, no dispose) when the ref isn't held, including an unscoped release with no refs. Collapsed the two decrement branches into one.
+  - Test: `StateContainerRegistry.refcount.test.ts` › "release() with a refId that is not held is a no-op". Changeset: `release-unknown-ref.md`.
+- [x] **Ref-limit check order** [2.8]
+  - The limit is checked before adding, and only for a new `refId` (re-acquiring a held one doesn't grow the set).
+  - Test: extended `StateContainerRegistry.circuit-breaker.test.ts` › "throws when refs-per-instance exceeds the cap" to assert the count stays at 2. Changeset: `ref-limit-before-add.md`.
 
 ## P2 — Stale or incorrect docs [3]
 
@@ -107,5 +109,5 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 
 - [ ] Move the internal symbols (`APPLY_DEPS`, `REMOVE_DEPS_OWNER`, `INIT_CONFIG`, `ON_DISPOSE`, `WITH_TRACKED_STATE`, `DEP_BRAND`) and `insertInstance` to a `@blac/core/internal` subpath.
 - [ ] Trim comments: remove history narration ("the pre-uSES hook…", "R3/R4") and multi-paragraph explanations.
-- [ ] Add changesets for each user-visible fix. (Done for every P0 fix.)
+- [ ] Add changesets for each user-visible fix. (Done for every fix so far.)
 - [ ] Run `vp check` and `vp test` in both packages after each group of changes.

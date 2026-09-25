@@ -6,7 +6,7 @@ The architecture holds up and the ownership model has clearly been thought throu
 
 Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The first five are small, local changes.
 
-**Progress:** all six confirmed bugs (section 1) are fixed on `fix/review-p0-bugs`, each with a regression test and a changeset. In section 2, 2.1–2.6 are fixed; the rest of sections 2–4 is open.
+**Progress:** all six confirmed bugs (section 1) are fixed on `fix/review-p0-bugs`, each with a regression test and a changeset. All of section 2 is fixed too; sections 3–4 are open.
 
 ---
 
@@ -166,11 +166,15 @@ Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The fi
 - It still emits `refReleased`, and can dispose an instance created with `ensure()` (no refs, no dependents).
 - The docs say releasing an already-removed ref is an idempotent no-op.
 
+**Status: fixed.** `release()` returns before emitting or disposing when the ref isn't held.
+
 ### 2.8 Ref-limit check order
 
 `StateContainerRegistry.ts:500`
 
 - `assertRefLimit` throws after the ref has already been added, and that ref is never released.
+
+**Status: fixed.** The limit is checked before a new ref is added.
 
 ---
 
