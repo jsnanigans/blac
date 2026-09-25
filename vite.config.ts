@@ -45,9 +45,6 @@ export default defineConfig({
       tasks: true,
     },
   },
-  staged: {
-    '*': 'vp check --fix',
-  },
   lint: {
     plugins: ['oxc', 'typescript', 'unicorn', 'react'],
     categories: {
