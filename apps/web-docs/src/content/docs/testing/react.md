@@ -14,7 +14,7 @@ import { renderWithBloc, renderWithRegistry } from '@blac/react/testing';
 - **One bloc to control?** Reach for `renderWithBloc` — it stubs and registers a single bloc in one call.
 - **Multiple blocs, or fine-grained setup?** Use `renderWithRegistry` and configure the registry yourself in a callback.
 
-Both isolate the registry and restore it on unmount, so they compose freely with `blacTestSetup()`.
+Both render into their own registry through a `RegistryProvider` and never change the global registry, so they compose freely with `blacTestSetup()`.
 :::
 
 :::note[Test globals]
@@ -45,8 +45,7 @@ Renders a React component with a single bloc pre-configured in an isolated regis
 1. Creates a fresh test registry
 2. Creates a cubit stub with the provided options (`state`, `methods`, `args`, `deps`)
 3. Registers it as an override keyed by the resolved `args` value
-4. Renders the component via `@testing-library/react`
-5. Wraps `unmount()` to restore the previous registry
+4. Renders the component via `@testing-library/react`, wrapped in a `RegistryProvider` for that registry
 
 The returned object is the standard `RenderResult` from Testing Library, plus a `bloc` property containing the stub instance.
 
@@ -220,12 +219,9 @@ it('renders notification list', () => {
 
 ## Cleanup
 
-Both `renderWithBloc` and `renderWithRegistry` wrap the Testing Library `unmount()` to restore the original registry. This means cleanup happens automatically when:
+Neither helper changes the global registry: stubs are set up under a temporary registry (like `withTestRegistry`) and the component reads it from a `RegistryProvider`. Nothing needs restoring when Testing Library's `cleanup()` unmounts the tree, even if setup throws.
 
-- You call `unmount()` on the render result
-- Testing Library's `cleanup()` runs (automatic in most setups)
-
-If you're also using `blacTestSetup()` in the same file, that's fine — they don't conflict. The `afterEach` hook from `blacTestSetup` provides an extra safety net.
+Core helpers called from the test body (`acquire`, `borrow`, `watch`) use the global registry, not the one the component renders into. Use the returned `bloc`, or the registry passed to the `renderWithRegistry` callback, to reach the test instances.
 
 ## Common patterns
 

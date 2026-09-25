@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { Cubit } from '@blac/core';
+import { Cubit, getRegistry } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { blacTestSetup } from '@blac/core/testing';
 import { renderWithBloc } from '../testing';
@@ -64,6 +64,13 @@ function EditorDisplay(): React.ReactElement {
 }
 
 describe('renderWithBloc — args support', () => {
+  it('leaves the global registry untouched', () => {
+    const before = getRegistry();
+    renderWithBloc(<BookDisplay />, { bloc: BookBloc });
+
+    expect(getRegistry()).toBe(before);
+  });
+
   it('seeds bloc state from args and the rendered component reflects it', () => {
     const testArgs = { title: 'Pragmatic Programmer' };
     const { bloc } = renderWithBloc(<BookDisplay args={testArgs} />, {
