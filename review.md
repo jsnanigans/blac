@@ -6,7 +6,7 @@ The architecture holds up and the ownership model has clearly been thought throu
 
 Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The first five are small, local changes.
 
-**Progress:** all six confirmed bugs (section 1) are fixed on `fix/review-p0-bugs`, each with a regression test and a changeset. All of section 2 is fixed too; sections 3–4 are open.
+**Progress:** all six confirmed bugs (section 1) are fixed on `fix/review-p0-bugs`, each with a regression test and a changeset. Sections 2 and 3 are fixed too; section 4 (refactoring) is open.
 
 ---
 
@@ -188,6 +188,8 @@ Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The fi
 | `blac-react/src/BlocProvider.tsx`       | map is "WeakMap-keyed"                                                                  | it's a `Map`                                                                           |
 | `blac-core/src/utils/idGenerator.ts`    | "collision-resistant", "timestamp + counter"                                            | no counter; the lazy `$blac.id` is `Name:main` for every unregistered instance         |
 | `blac-core/src/utils/structural-key.ts` | throws on non-plain objects, "(dev)"                                                    | see 2.5                                                                                |
+
+**Status: all fixed.** The `select` re-keying claim was also in seven web-docs pages; those are corrected too.
 
 ---
 

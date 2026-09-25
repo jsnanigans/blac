@@ -4,9 +4,9 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 
 ## Progress
 
-- Branch `fix/review-p0-bugs`. P0 and P1 complete.
+- Branch `fix/review-p0-bugs`. P0, P1 and P2 complete.
 - Git commit hooks removed; run `vp check` manually before committing.
-- Next: P2 stale docs [3].
+- Next: P3 refactors [4].
 
 ## P0 — Confirmed bugs
 
@@ -67,11 +67,11 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 
 ## P2 — Stale or incorrect docs [3]
 
-- [ ] `blac-core/src/config.ts`: correct the default values in the JSDoc (100000 / 100000 / 1000). The defaults table in `apps/web-docs/src/content/docs/core/configuration.md` is stale the same way.
-- [ ] `blac-react/src/types.ts`: remove the claim that a fresh `select` re-keys the subscription.
-- [ ] `blac-react/src/useBloc.ts`: the return value is `[state, bloc]`, not `[state, bloc, ref]`.
-- [ ] `blac-react/src/BlocProvider.tsx`: "WeakMap-keyed" → `Map`.
-- [ ] `blac-core/src/utils/idGenerator.ts`: drop "collision-resistant" / "counter"; document the `Name:main` lazy id.
+- [x] `blac-core/src/config.ts`: correct the default values in the JSDoc (100000 / 100000 / 1000). Also fixed the defaults table in `core/configuration.md`.
+- [x] `blac-react/src/types.ts`: remove the claim that a fresh `select` re-keys the subscription. The same claim was in seven web-docs places (`use-bloc`, `dependency-tracking`, `performance`, `typescript`, `mental-model`, `troubleshooting`); removed, and the two cautions now say inline selectors are fine.
+- [x] `blac-react/src/useBloc.ts`: the return value is `[state, bloc]`, not `[state, bloc, ref]`.
+- [x] `blac-react/src/BlocProvider.tsx`: "WeakMap-keyed" → `Map`.
+- [x] `blac-core/src/utils/idGenerator.ts`: drop "collision-resistant" / "counter"; document the `Name:main` lazy id.
 
 ## P3 — Refactoring
 
