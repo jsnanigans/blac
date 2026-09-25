@@ -709,33 +709,18 @@ export class StateContainerRegistry {
       return;
     }
 
-    // Decrement the named ref's count; when no refId is given, drop one
-    // arbitrary ref so an unscoped release still frees a reference.
-    let releasedRefId: string | undefined;
-    if (refId !== undefined) {
-      const count = entry.refs.get(refId) ?? 0;
-      if (count <= 1) {
-        entry.refs.delete(refId);
-      } else {
-        entry.refs.set(refId, count - 1);
-      }
-      releasedRefId = refId;
+    // Without a refId, drop one arbitrary ref. Releasing a ref that isn't
+    // held is a no-op.
+    const releasedRefId = refId ?? entry.refs.keys().next().value;
+    if (releasedRefId === undefined) return;
+    const count = entry.refs.get(releasedRefId) ?? 0;
+    if (count === 0) return;
+    if (count === 1) {
+      entry.refs.delete(releasedRefId);
     } else {
-      const firstKey = entry.refs.keys().next().value;
-      if (firstKey !== undefined) {
-        const count = entry.refs.get(firstKey) ?? 0;
-        if (count <= 1) {
-          entry.refs.delete(firstKey);
-        } else {
-          entry.refs.set(firstKey, count - 1);
-        }
-        releasedRefId = firstKey;
-      }
+      entry.refs.set(releasedRefId, count - 1);
     }
-
-    if (releasedRefId) {
-      this.emit('refReleased', entry.instance, releasedRefId);
-    }
+    this.emit('refReleased', entry.instance, releasedRefId);
 
     // Auto-dispose only when nothing owns the entry. A `depend()`-owner that
     // is still alive keeps its dependency, even once the last public ref goes.
