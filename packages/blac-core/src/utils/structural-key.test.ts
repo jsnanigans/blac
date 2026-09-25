@@ -49,4 +49,9 @@ describe('structuralKey', () => {
       /key "onClick"/,
     );
   });
+
+  it('throws in dev on non-plain objects instead of collapsing them to {}', () => {
+    expect(() => structuralKey({ ids: new Set([1]) })).toThrow(/key "ids"/);
+    expect(() => structuralKey({ at: new Date(0) })).not.toThrow();
+  });
 });
