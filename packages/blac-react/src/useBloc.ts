@@ -9,7 +9,6 @@ import {
 import {
   DEP_BRAND,
   getRegistry,
-  resolveInstanceKey,
   type ExtractArgs,
   type ExtractState,
   type InstanceState,
@@ -32,11 +31,6 @@ import { buildTrackedProxy } from './buildTrackedProxy';
 import type { UseBlocOptions, UseBlocReturn } from './types';
 
 let nextConsumerId = 0;
-
-// Sentinel that can never `Object.is`-equal a real args value (including
-// `undefined`). Used to lazily seed args-key caches so the structural key is
-// computed only when the guard actually runs, never on every render.
-const ARGS_UNSET: unique symbol = Symbol('blac.argsKeyUnset');
 
 /**
  * React hook that connects a component to a state container with automatic
@@ -119,31 +113,16 @@ export function useBloc<
   //
   // Priority: own args > provider args (for this bloc class) > none.
   //
-  // Args are user-supplied; callers commonly pass a fresh object literal each
-  // render. Memoising on `args` directly would bust every render. We compute a
-  // structural key (JSON.stringify) for the useMemo dep instead — undefined
-  // args (void-args blocs) collapse to an undefined key. The key is only
-  // recomputed when the args REFERENCE changes, so a stable args object costs
-  // nothing per render.
+  // The memo is keyed on the resolved instance key, so a fresh args literal
+  // each render only rebuilds when it maps to a different instance.
+  // `structuralKey` caches by args identity, so stable args cost nothing.
   // ---------------------------------------------------------------------------
-  const ownArgs = (options as { args?: ExtractArgs<T> } | undefined)?.args;
-  consumer.ownArgs = ownArgs;
-  if (!Object.is(consumer.ownArgsKeyFor, ownArgs)) {
-    consumer.ownArgsKeyFor = ownArgs;
-    consumer.ownArgsKey =
-      ownArgs === undefined ? undefined : JSON.stringify(ownArgs);
-  }
-  const ownArgsKey = consumer.ownArgsKey;
-
-  // Read provided args from the nearest BlocProvider for this bloc class.
-  const providerArgs = useProvidedArgs(BlocClass);
-  consumer.providerArgs = providerArgs;
-  if (!Object.is(consumer.providerArgsKeyFor, providerArgs)) {
-    consumer.providerArgsKeyFor = providerArgs;
-    consumer.providerArgsKey =
-      providerArgs === undefined ? undefined : JSON.stringify(providerArgs);
-  }
-  const providerArgsKey = consumer.providerArgsKey;
+  consumer.ownArgs = (options as { args?: ExtractArgs<T> } | undefined)?.args;
+  consumer.providerArgs = useProvidedArgs(BlocClass);
+  const effectiveArgs = resolveEffectiveArgs(consumer) as
+    | ExtractArgs<T>
+    | undefined;
+  const instanceKey = registry.resolveKey(BlocClass, undefined, effectiveArgs);
 
   // Rebind nonce: bumped by the ownership layout-effect when the instance the
   // render captured was disposed + recreated out from under us. This happens on
@@ -159,20 +138,14 @@ export function useBloc<
   // it needs is already delivered by the consumer's version bump through uSES.
   const rebindNonce = consumer.rebindNonce;
 
-  const { bloc, instanceKey, trackedBloc } = useMemo<{
+  const { bloc, trackedBloc } = useMemo<{
     bloc: TBloc;
-    instanceKey: string;
     trackedBloc: TBloc;
   }>(() => {
-    const effectiveArgs = resolveEffectiveArgs(consumer) as
-      | ExtractArgs<T>
-      | undefined;
-
-    const resolvedKey = resolveInstanceKey(BlocClass, effectiveArgs);
     // Render only ENSUREs the instance exists (no ref). Ownership is claimed in
     // the layout effect below, so an abandoned/uncommitted render can never
     // leak a ref and a memo re-run can never double-count one (R3/R4).
-    const instance = registry.acquire(BlocClass, resolvedKey, {
+    const instance = registry.acquire(BlocClass, instanceKey, {
       canCreate: true,
       countRef: false,
       args: effectiveArgs,
@@ -207,13 +180,9 @@ export function useBloc<
       onDepHandle,
     );
 
-    return {
-      bloc: instance,
-      instanceKey: resolvedKey,
-      trackedBloc: proxy as TBloc,
-    };
+    return { bloc: instance, trackedBloc: proxy as TBloc };
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [BlocClass, ownArgsKey, providerArgsKey, rebindNonce, registry]);
+  }, [BlocClass, instanceKey, rebindNonce, registry]);
 
   // The memo is the single writer of the container the consumer reads and
   // subscribes to; a re-key or rebind retargets it here, before any effect runs.
@@ -500,12 +469,18 @@ export function useBloc<
       }
       // First commit that sees this dep: take the ownership ref HERE (not in
       // render/`.track()`), so an uncommitted render can never leak it (R4).
-      registry.acquire(entry.Type, entry.key, {
+      const live = registry.acquire(entry.Type, entry.key, {
         canCreate: true,
         countRef: true,
         refId: entry.refId,
         args: entry.args,
       });
+      // The key now maps to another instance; re-render against that one.
+      if (live !== depContainer) {
+        registry.release(entry.Type, entry.key, false, entry.refId);
+        consumer.bump();
+        continue;
+      }
       const interestRef: { current: PathSet } = { current: interest };
       const unsubscribe = depContainer.channel.subscribe(
         () => interestRef.current,
@@ -610,13 +585,9 @@ interface Consumer {
   select: ((state: any, bloc: any) => unknown[]) | undefined;
   onMount: ((bloc: any) => void) | undefined;
   onUnmount: ((bloc: any) => void) | undefined;
-  /** Latest args plus the structural key cached against their identity. */
+  /** Latest args, refreshed every render. */
   ownArgs: unknown;
-  ownArgsKeyFor: unknown;
-  ownArgsKey: string | undefined;
   providerArgs: unknown;
-  providerArgsKeyFor: unknown;
-  providerArgsKey: string | undefined;
   /** Current render's tracking proxy; `null` outside a tracked render. Shared
    * with the bloc's tracked proxy and dep wrappers, which read `.current`. */
   tracked: { current: unknown };
@@ -658,11 +629,7 @@ function createConsumer(): Consumer {
     onMount: undefined,
     onUnmount: undefined,
     ownArgs: undefined,
-    ownArgsKeyFor: ARGS_UNSET,
-    ownArgsKey: undefined,
     providerArgs: undefined,
-    providerArgsKeyFor: ARGS_UNSET,
-    providerArgsKey: undefined,
     tracked: { current: null },
     disarm: null,
     proxyCache: null,

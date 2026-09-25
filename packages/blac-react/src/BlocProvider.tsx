@@ -5,7 +5,6 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { resolveInstanceKey } from '@blac/core';
 import type { ExtractArgs, StateContainerConstructor } from '@blac/core';
 
 /**
@@ -70,10 +69,11 @@ export function BlocProvider<T extends StateContainerConstructor>({
 }: BlocProviderProps<T>): ReactElement {
   const parentMap = useContext(ProvidedArgsContext);
 
-  // Keyed on the resolved instance key, not `args` identity, so an inline
-  // `args={{ ... }}` literal does not rebuild the map on every render and
-  // re-render every consumer below.
-  const argsKey = resolveInstanceKey(bloc, args);
+  // Keyed on the args content, not identity, so an inline `args={{ ... }}`
+  // literal does not rebuild the map on every render and re-render every
+  // consumer below, while a change to any field (even one `static key`
+  // ignores) still reaches `useProvidedArgs`.
+  const argsKey = JSON.stringify(args);
 
   // Merge our entry into a new Map so sibling/parent providers for other blocs
   // are preserved.

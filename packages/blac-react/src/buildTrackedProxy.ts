@@ -15,6 +15,7 @@ function supportsTrackedState(value: object): value is TrackedStateTarget {
 }
 
 type Getter = (this: object) => unknown;
+type Method = (...args: unknown[]) => unknown;
 
 // Prototype getters per class prototype. The chain is static, so walking it
 // once per class (not once per mounted component) keeps the get trap O(1).
@@ -67,8 +68,12 @@ export function buildTrackedProxy<T extends object>(
   const tracksState = supportsTrackedState(instance as object);
 
   // Bound methods are cached so `bloc.method` keeps a stable identity across
-  // reads — an unstable one would defeat memoisation in consumers.
-  const boundMethods = new Map<string | symbol, unknown>();
+  // reads — an unstable one would defeat memoisation in consumers. Keyed by
+  // the underlying function too, so a reassigned method is re-bound.
+  const boundMethods = new Map<
+    string | symbol,
+    { fn: Method; bound: Method }
+  >();
 
   const wrapDepHandle = (value: unknown): unknown => {
     if (
@@ -105,14 +110,18 @@ export function buildTrackedProxy<T extends object>(
       // call with `this` = proxy and fail the same brand check.
       const value = Reflect.get(target, key, target);
       if (typeof value === 'function') {
-        let bound = boundMethods.get(key);
-        if (bound === undefined) {
-          bound = (value as (...a: unknown[]) => unknown).bind(target);
-          boundMethods.set(key, bound);
+        const fn = value as Method;
+        let cached = boundMethods.get(key);
+        if (cached === undefined || cached.fn !== fn) {
+          cached = { fn, bound: fn.bind(target) };
+          boundMethods.set(key, cached);
         }
-        return wrapDepHandle(bound);
+        return wrapDepHandle(cached.bound);
       }
       return wrapDepHandle(value);
+    },
+    set(target, key, value) {
+      return Reflect.set(target, key, value, target);
     },
   }) as T;
 
