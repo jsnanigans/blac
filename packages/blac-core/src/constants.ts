@@ -46,6 +46,16 @@ export const BLAC_STATIC_PROPS = {
  */
 export const BLAC_ERROR_PREFIX = '[BlaC]' as const;
 
+export function readNodeEnv(): string | undefined {
+  try {
+    return process.env.NODE_ENV;
+  } catch {
+    return undefined;
+  }
+}
+
+const nodeEnv = readNodeEnv();
+
 /**
  * True only when `process.env.NODE_ENV` is defined and not `'production'`.
  *
@@ -55,13 +65,5 @@ export const BLAC_ERROR_PREFIX = '[BlaC]' as const;
  * shim — is treated as production. Bundlers that define `process.env.NODE_ENV`
  * still constant-fold the read.
  */
-const nodeEnv: string | undefined = (() => {
-  try {
-    return process.env.NODE_ENV;
-  } catch {
-    return undefined;
-  }
-})();
-
 export const IS_DEV: boolean =
   nodeEnv !== undefined && nodeEnv !== 'production';

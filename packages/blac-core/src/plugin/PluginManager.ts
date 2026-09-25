@@ -1,6 +1,6 @@
 import { ALL_PATHS, type PathSet } from '@dirtytalk/structural';
 import type { StateContainer } from '../core/StateContainer';
-import { IS_DEV } from '../constants';
+import { IS_DEV, readNodeEnv } from '../constants';
 import { getBlacName } from '../utils/static-props';
 import type { StateContainerConstructor } from '../types/utilities';
 import type { StateContainerRegistry } from '../core/StateContainerRegistry';
@@ -540,15 +540,12 @@ export class PluginManager {
   }
 
   /**
-   * Get current environment
+   * Same rule as `IS_DEV`: an unknown environment counts as production.
    */
   private getCurrentEnvironment(): 'development' | 'production' | 'test' {
-    if (typeof process !== 'undefined') {
-      if (process.env.NODE_ENV === 'test') return 'test';
-      if (process.env.NODE_ENV === 'production') return 'production';
-      return 'development';
-    }
-    return 'development';
+    const env = readNodeEnv();
+    if (env === undefined || env === 'production') return 'production';
+    return env === 'test' ? 'test' : 'development';
   }
 }
 

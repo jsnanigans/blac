@@ -819,6 +819,20 @@ describe('PluginManager', () => {
       process.env.NODE_ENV = originalEnv;
     });
 
+    it('treats an unset NODE_ENV as production', () => {
+      const originalEnv = process.env.NODE_ENV;
+      delete process.env.NODE_ENV;
+
+      manager.install(
+        { name: 'test-plugin', version: '1.0.0' },
+        { environment: 'development' },
+      );
+
+      expect(manager.hasPlugin('test-plugin')).toBe(false);
+
+      process.env.NODE_ENV = originalEnv;
+    });
+
     it('should install plugin when environment is "all"', () => {
       const plugin: BlacPlugin = {
         name: 'test-plugin',
