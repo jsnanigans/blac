@@ -17,6 +17,7 @@
     "jsx": "react-jsx",
     "paths": {
       "@blac/core": ["../../packages/blac-core/src/index.ts"],
+      "@blac/core/internal": ["../../packages/blac-core/src/internal.ts"],
       "@blac/react": ["../../packages/blac-react/src/index.ts"]
     },
     "types": ["vite/client"]

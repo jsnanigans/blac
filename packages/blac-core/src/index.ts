@@ -9,7 +9,7 @@ export {
 } from './config';
 
 // Core Classes
-export { StateContainer, DEP_BRAND } from './core/StateContainer';
+export { StateContainer } from './core/StateContainer';
 export type {
   HydrationStatus,
   StateContainerConfig,
@@ -18,17 +18,6 @@ export type {
   DepHandle,
 } from './core/StateContainer';
 export { Cubit } from './core/Cubit';
-/**
- * @internal symbols — read by `@blac/react` (APPLY_DEPS / REMOVE_DEPS_OWNER),
- * in-package tests (INIT_CONFIG), and `watch()` (ON_DISPOSE).
- */
-export {
-  APPLY_DEPS,
-  REMOVE_DEPS_OWNER,
-  INIT_CONFIG,
-  ON_DISPOSE,
-  WITH_TRACKED_STATE,
-} from './core/symbols';
 
 // `$blac` meta namespace (identity / lifecycle / hydration).
 export type { BlacMeta, BlacHydration } from './core/meta';

@@ -1,7 +1,7 @@
 import type { Cubit } from './core/Cubit';
 import { getStateChangeCount } from './core/StateContainer';
 import { StateContainerRegistry } from './core/StateContainerRegistry';
-import { APPLY_DEPS, INIT_CONFIG } from './core/symbols';
+import { APPLY_DEPS, INIT_CONFIG, INSERT_INSTANCE } from './core/symbols';
 import { ensure, getRegistry, setRegistry } from './registry';
 import { resolveInstanceKey } from './registry/acquire';
 import type {
@@ -76,7 +76,7 @@ export function registerOverride<T extends StateContainerConstructor>(
 ): void {
   const registry = getRegistry();
   const key = resolveInstanceKey(BlocClass, args);
-  registry.insertInstance(
+  registry[INSERT_INSTANCE](
     BlocClass,
     key,
     instance,

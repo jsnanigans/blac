@@ -30,7 +30,7 @@ import { BlacMeta, META_BRAND } from './meta';
  * `depend()`. Framework adapters (`@blac/react`) use this to detect handles
  * inside a tracked-proxy and swap in a session-bound wrapper.
  *
- * @internal — exported for `@blac/react`; not part of the public API.
+ * @internal — exported from `@blac/core/internal` for `@blac/react`.
  */
 export const DEP_BRAND = Symbol('blac.depHandle');
 

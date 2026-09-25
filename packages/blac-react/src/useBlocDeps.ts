@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
-import { APPLY_DEPS, REMOVE_DEPS_OWNER, type StateContainer } from '@blac/core';
+import type { StateContainer } from '@blac/core';
+import { APPLY_DEPS, REMOVE_DEPS_OWNER } from '@blac/core/internal';
 
 /**
  * Feed live values from the component into a bloc's `deps` lane.

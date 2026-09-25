@@ -46,3 +46,9 @@ export const WITH_TRACKED_STATE = Symbol('blac.withTrackedState');
  * Framework-only — `StateContainerRegistry` is the sole caller.
  */
 export const SET_ACTIVE = Symbol('blac.setActive');
+
+/**
+ * @internal Insert an instance entry directly, bypassing acquire/release.
+ * Called by the testing helpers — not public API.
+ */
+export const INSERT_INSTANCE = Symbol('blac.insertInstance');

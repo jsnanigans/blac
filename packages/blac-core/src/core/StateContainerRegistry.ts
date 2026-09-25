@@ -15,7 +15,7 @@ import {
   InstanceReadonlyState,
   StateContainerConstructor,
 } from '../types/utilities';
-import { INIT_CONFIG, SET_ACTIVE } from './symbols';
+import { INIT_CONFIG, INSERT_INSTANCE, SET_ACTIVE } from './symbols';
 
 /**
  * Entry in the instance registry, tracking the instance and its named references
@@ -343,7 +343,7 @@ export class StateContainerRegistry {
    *
    * @internal Used by testing helpers only.
    */
-  insertInstance<T extends StateContainerConstructor>(
+  [INSERT_INSTANCE]<T extends StateContainerConstructor>(
     Type: T,
     instanceKey: string,
     instance: InstanceType<T>,

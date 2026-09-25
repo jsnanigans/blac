@@ -1,4 +1,4 @@
-import { DEP_BRAND, WITH_TRACKED_STATE } from '@blac/core';
+import { DEP_BRAND, WITH_TRACKED_STATE } from '@blac/core/internal';
 
 interface TrackedStateTarget {
   [WITH_TRACKED_STATE]<R>(

@@ -20,6 +20,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@blac/core": ["../../packages/blac-core/src/index.ts"],
+      "@blac/core/internal": ["../../packages/blac-core/src/internal.ts"],
       "@blac/react": ["../../packages/blac-react/src/index.ts"],
       "@blac/devtools-connect": [
         "../../packages/devtools-connect/src/index.ts"

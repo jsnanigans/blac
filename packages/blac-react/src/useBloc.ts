@@ -7,7 +7,6 @@ import {
   useSyncExternalStore,
 } from 'react';
 import {
-  DEP_BRAND,
   getRegistry,
   type ExtractArgs,
   type ExtractState,
@@ -16,6 +15,7 @@ import {
   type StateContainerConstructor,
   type StateContainerRegistry,
 } from '@blac/core';
+import { DEP_BRAND } from '@blac/core/internal';
 import {
   ALL_PATHS,
   emptyPathSet,

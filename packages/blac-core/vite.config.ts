@@ -25,6 +25,7 @@ export default defineConfig({
       index: 'src/index.ts',
       plugins: 'src/plugins.ts',
       testing: 'src/testing.ts',
+      internal: 'src/internal.ts',
     },
     format: ['esm', 'cjs'],
     clean: false,

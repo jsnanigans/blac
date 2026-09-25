@@ -500,8 +500,8 @@ Two design points fall out of the source:
   explicitly, which in React means a component `useBloc`s both blocs and the
   Stage-3 tracker handles each independently.
 - **Per-consumer deps are a separate, owner-keyed mechanism.** The
-  `APPLY_DEPS` / `REMOVE_DEPS_OWNER` symbols (internal, used by the React
-  adapter) let each _consumer_ inject a slice of deps keyed by an owner id;
+  `APPLY_DEPS` / `REMOVE_DEPS_OWNER` symbols (from `@blac/core/internal`,
+  used by the React adapter) let each _consumer_ inject a slice of deps keyed by an owner id;
   `StateContainer` shallow-merges all live owners' slices, dev-warns on
   cross-owner key collisions (last write wins), and fires `onDepsChanged` only
   when the merged view actually changes. This is distinct from `depend`'s
