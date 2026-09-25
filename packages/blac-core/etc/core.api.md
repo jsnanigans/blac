@@ -39,6 +39,7 @@ export interface BlacConfig {
   maxEmitsPerSecond: number;
   maxInstancesPerType: number;
   maxRefsPerInstance: number;
+  unownedSweepDelayMs: number;
 }
 
 // @public

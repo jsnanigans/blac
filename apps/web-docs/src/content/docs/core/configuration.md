@@ -191,12 +191,13 @@ configureBlac({ equality: (a, b) => Object.is(a, b) });
 
 ### Defaults
 
-| Option                | Type         | Default             | What it does                                                                      |
-| --------------------- | ------------ | ------------------- | --------------------------------------------------------------------------------- |
-| `equality`            | `EqualityFn` | `shallowEqualState` | App-wide default equality for `emit`/`update`; return `true` to skip the emit     |
-| `maxInstancesPerType` | `number`     | `1000`              | Max live instances per class before `acquire` throws                              |
-| `maxRefsPerInstance`  | `number`     | `1000`              | Max distinct refs per instance before `acquire` throws                            |
-| `maxEmitsPerSecond`   | `number`     | `100`               | Dev-only soft limit; real emits/sec per instance before a one-time `console.warn` |
+| Option                | Type         | Default             | What it does                                                                                                                      |
+| --------------------- | ------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `equality`            | `EqualityFn` | `shallowEqualState` | App-wide default equality for `emit`/`update`; return `true` to skip the emit                                                     |
+| `maxInstancesPerType` | `number`     | `1000`              | Max live instances per class before `acquire` throws                                                                              |
+| `maxRefsPerInstance`  | `number`     | `1000`              | Max distinct refs per instance before `acquire` throws                                                                            |
+| `maxEmitsPerSecond`   | `number`     | `100`               | Dev-only soft limit; real emits/sec per instance before a one-time `console.warn`                                                 |
+| `unownedSweepDelayMs` | `number`     | `5000`              | How long an instance created during a render may stay unowned (SSR, discarded or not-yet-committed renders) before it is disposed |
 
 <details>
 <summary>Reading the current config (advanced)</summary>

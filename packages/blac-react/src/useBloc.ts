@@ -294,12 +294,10 @@ export function useBloc<
   //
   // The ownership ref is claimed HERE (a layout effect), not in the render/memo,
   // so acquire and release are perfectly paired: a memo re-run can no longer
-  // double-count (R3) and an uncommitted render can no longer leak (R4). It
-  // MUST stay a *layout* effect: the render-time `acquire` above schedules a
-  // microtask sweep that disposes entries still unowned when it runs. Layout
-  // effects flush before that microtask drains; passive effects do not, so
-  // moving this acquire to a passive effect would let the sweep dispose live
-  // mounts.
+  // double-count (R3) and an uncommitted render can no longer leak (R4). The
+  // render-time `acquire` above schedules a sweep that disposes the entry if
+  // it is still unowned after `unownedSweepDelayMs`; a layout effect claims
+  // ownership as early as possible within that window.
   //
   // Keyed on [BlocClass, instanceKey, consumerId] for the same reason the
   // subscription is — see the `BlocClass`-in-deps hazard documented above.

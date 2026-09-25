@@ -35,6 +35,8 @@ export interface InstanceEntry<T = any> {
   argsKey?: string;
   /** `depend()`-owners currently holding this instance (see `acquire`'s `dependent` option). */
   dependents?: Set<StateContainer<any, any, any>>;
+  /** Pending sweep of a speculative create (see `_scheduleSweep`). */
+  sweepTimer?: ReturnType<typeof setTimeout>;
 }
 
 /** Shared, read-only Map returned by `getInstancesMap` for unregistered types. */
@@ -517,6 +519,10 @@ export class StateContainerRegistry {
 
       this._syncActivation(entry);
 
+      if (options.sweepIfUnowned && entry.sweepTimer !== undefined) {
+        this._scheduleSweep(Type, entry);
+      }
+
       return entry.instance;
     }
 
@@ -577,8 +583,10 @@ export class StateContainerRegistry {
   /**
    * Speculative creates (`useBloc`'s render-time create) leak forever when the
    * render is discarded or never commits — SSR has no commit at all, so nothing
-   * ever claims ownership. Sweep at the end of the microtask unless the entry
-   * gained an owner or is keepAlive.
+   * ever claims ownership. Sweep after `unownedSweepDelayMs` unless the entry
+   * gained an owner or is keepAlive. The delay must outlast a time-sliced
+   * render, which can yield between render and commit; another speculative
+   * acquire of the still-pending entry restarts it.
    *
    * Opt-in, not automatic: a bare `ensure()` hands the instance to a caller
    * that legitimately holds it without a ref, and sweeping those would make
@@ -588,14 +596,16 @@ export class StateContainerRegistry {
     Type: StateContainerConstructor,
     entry: InstanceEntry,
   ): void {
-    queueMicrotask(() => {
+    clearTimeout(entry.sweepTimer);
+    entry.sweepTimer = setTimeout(() => {
+      entry.sweepTimer = undefined;
       const instances = this.instancesByConstructor.get(Type);
       if (instances?.get(entry.key) !== entry) return;
       if (entry.instance.$blac.disposed) return;
       if (!this._isUnowned(Type, entry)) return;
       entry.instance.dispose();
       instances.delete(entry.key);
-    });
+    }, getBlacConfig().unownedSweepDelayMs);
   }
 
   /**

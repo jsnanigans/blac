@@ -83,16 +83,18 @@ describe('post-dispose mutation', () => {
     expect(dep.state).toBe(before);
   });
 
-  it('dep accessed through a disposed owner is not pinned', async () => {
+  it('dep accessed through a disposed owner is not pinned', () => {
+    vi.useFakeTimers();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const owner = globalRegistry.acquire(Owner, 'o', { refId: 'r1' });
     globalRegistry.release(Owner, 'o', false, 'r1');
 
     const dep = owner.read();
-    await Promise.resolve();
+    vi.runAllTimers();
 
     expect(dep.$blac.disposed).toBe(true);
     expect(warn).toHaveBeenCalledOnce();
     warn.mockRestore();
+    vi.useRealTimers();
   });
 });

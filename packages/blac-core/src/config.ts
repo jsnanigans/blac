@@ -46,6 +46,14 @@ export interface BlacConfig {
    * `Infinity` (or any non-positive value) to disable.
    */
   maxEmitsPerSecond: number;
+
+  /**
+   * How long an instance created speculatively during a render stays alive
+   * without an owner before it is disposed. Covers renders that never commit
+   * (SSR, discarded or suspended renders) while giving a time-sliced render
+   * time to commit. Default: `5000`.
+   */
+  unownedSweepDelayMs: number;
 }
 
 /**
@@ -77,6 +85,7 @@ const defaultConfig: BlacConfig = {
   maxInstancesPerType: 100000,
   maxRefsPerInstance: 100000,
   maxEmitsPerSecond: 1000,
+  unownedSweepDelayMs: 5000,
 };
 
 let globalConfig: BlacConfig = { ...defaultConfig };

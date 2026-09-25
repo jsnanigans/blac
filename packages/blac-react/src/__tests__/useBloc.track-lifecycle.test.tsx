@@ -716,15 +716,17 @@ describe('useBloc — track() in StrictMode', () => {
 });
 
 describe('useBloc — track() during SSR', () => {
-  it('sweeps the dep when the render never commits', async () => {
+  it('sweeps the dep when the render never commits', () => {
+    vi.useFakeTimers();
     function Comp() {
       const [, bloc] = useBloc(ItemBloc);
       return <span>{bloc.total}</span>;
     }
     renderToString(<Comp />);
-    await Promise.resolve();
+    vi.runAllTimers();
 
     expect(hasInstance(ItemBloc)).toBe(false);
     expect(hasInstance(ItemPriceBloc)).toBe(false);
+    vi.useRealTimers();
   });
 });
