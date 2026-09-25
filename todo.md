@@ -6,7 +6,7 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 
 - Branch `fix/review-p0-bugs`. P0, P1 and P2 complete.
 - Git commit hooks removed; run `vp check` manually before committing.
-- P3 in progress: the small items and the decided items are done. Left: the `useBloc.ts` split, the `@blac/core/internal` subpath, comment trimming, and unifying the current registry (blocked, see below).
+- P3 done except unifying the current registry (blocked, see below).
 
 ## P0 — Confirmed bugs
 
@@ -77,7 +77,9 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 
 ### `@blac/react`
 
-- [ ] Split `useBloc.ts`: extract the dep-session reconcile into a unit that owns its own cleanup.
+- [x] Split `useBloc.ts`: extract the dep-session reconcile into a unit that owns its own cleanup.
+  - `depSession.ts`: a `DepSession` class (render `begin`/`record`, commit `isUnchanged`/`reconcile`, unmount `dispose`) plus `makeDepWrapper`. `expandWithAncestors` moved to its own module.
+  - The short-circuit signature is now a snapshot of the session entries; the constant dep `refId` lives on the session instead of every entry.
 - [x] Share one dependency tuple `[registry, BlocClass, instanceKey, rebindNonce]` across the instance memo, `subscribe` and the ownership effect. Not done as written: the ownership effect deliberately omits `rebindNonce` (a rebind must not release and re-acquire the ref). The memo and `subscribe` now share `[BlocClass, instanceKey, rebindNonce, registry]` (plus the constant `consumerId`).
 - [x] Key the memo on `resolveInstanceKey(...)`; remove `ownArgsKey`, `ownArgsKeyFor`, `providerArgsKey`, `providerArgsKeyFor`. Uses `registry.resolveKey` (the context registry, not the global one); `ARGS_UNSET` removed too.
 - [x] Reconcile pass 2 (`useBloc.ts:501`): check the instance returned by `acquire` matches the subscribed dep container. On mismatch it releases the ref and re-renders.
@@ -108,7 +110,9 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 
 ### Both packages
 
-- [ ] Move the internal symbols (`APPLY_DEPS`, `REMOVE_DEPS_OWNER`, `INIT_CONFIG`, `ON_DISPOSE`, `WITH_TRACKED_STATE`, `DEP_BRAND`) and `insertInstance` to a `@blac/core/internal` subpath.
-- [ ] Trim comments: remove history narration ("the pre-uSES hook…", "R3/R4") and multi-paragraph explanations.
-- [ ] Add changesets for each user-visible fix. (Done for every fix so far.)
-- [ ] Run `vp check` and `vp test` in both packages after each group of changes.
+- [x] Move the internal symbols (`APPLY_DEPS`, `REMOVE_DEPS_OWNER`, `INIT_CONFIG`, `ON_DISPOSE`, `WITH_TRACKED_STATE`, `DEP_BRAND`) and `insertInstance` to a `@blac/core/internal` subpath.
+  - `insertInstance` became the symbol-keyed `[INSERT_INSTANCE]` method, exported from `internal`.
+  - Subpath added to `package.json` exports/typesVersions, the pack entries, and the tsconfig paths / examples alias that map `@blac/core` to source. `etc/core.api.md` hand-edited (needs a build to regenerate). Changeset: `core-internal-subpath.md`.
+- [x] Trim comments: remove history narration ("the pre-uSES hook…", "R3/R4") and multi-paragraph explanations. Source only; tests untouched.
+- [x] Add changesets for each user-visible fix.
+- [x] Run `vp check` and `vp test` in both packages after each group of changes.
