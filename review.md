@@ -6,7 +6,7 @@ The architecture holds up and the ownership model has clearly been thought throu
 
 Suggested fix order: 1, 5, 2, 4, 3, 6, then the plugin environment check. The first five are small, local changes.
 
-**Progress:** all six confirmed bugs (section 1) are fixed on `fix/review-p0-bugs`, each with a regression test and a changeset. Sections 2 and 3 are fixed too; section 4 (refactoring) is open.
+**Progress:** all six confirmed bugs (section 1) are fixed on `fix/review-p0-bugs`, each with a regression test and a changeset. Sections 2 and 3 are fixed too. In section 4, the small refactors are done; see `todo.md` P3 for what is left.
 
 ---
 

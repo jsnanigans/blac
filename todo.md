@@ -6,7 +6,7 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 
 - Branch `fix/review-p0-bugs`. P0, P1 and P2 complete.
 - Git commit hooks removed; run `vp check` manually before committing.
-- Next: P3 refactors [4].
+- P3 in progress: the small items and the decided items are done. Left: the `useBloc.ts` split, the `@blac/core/internal` subpath, comment trimming, and unifying the current registry (blocked, see below).
 
 ## P0 — Confirmed bugs
 
@@ -78,32 +78,33 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 ### `@blac/react`
 
 - [ ] Split `useBloc.ts`: extract the dep-session reconcile into a unit that owns its own cleanup.
-- [ ] Share one dependency tuple `[registry, BlocClass, instanceKey, rebindNonce]` across the instance memo, `subscribe` and the ownership effect.
-- [ ] Key the memo on `resolveInstanceKey(...)`; remove `ownArgsKey`, `ownArgsKeyFor`, `providerArgsKey`, `providerArgsKeyFor`.
-- [ ] Reconcile pass 2 (`useBloc.ts:501`): check the instance returned by `acquire` matches the subscribed dep container.
-- [ ] `buildTrackedProxy`: invalidate the bound-method cache when the underlying function changes; add a `set` trap with the real instance as receiver.
-- [ ] `BlocProvider`: decide whether `useProvidedArgs` should return the latest args object when only non-identity fields change.
+- [x] Share one dependency tuple `[registry, BlocClass, instanceKey, rebindNonce]` across the instance memo, `subscribe` and the ownership effect. Not done as written: the ownership effect deliberately omits `rebindNonce` (a rebind must not release and re-acquire the ref). The memo and `subscribe` now share `[BlocClass, instanceKey, rebindNonce, registry]` (plus the constant `consumerId`).
+- [x] Key the memo on `resolveInstanceKey(...)`; remove `ownArgsKey`, `ownArgsKeyFor`, `providerArgsKey`, `providerArgsKeyFor`. Uses `registry.resolveKey` (the context registry, not the global one); `ARGS_UNSET` removed too.
+- [x] Reconcile pass 2 (`useBloc.ts:501`): check the instance returned by `acquire` matches the subscribed dep container. On mismatch it releases the ref and re-renders.
+- [x] `buildTrackedProxy`: invalidate the bound-method cache when the underlying function changes; add a `set` trap with the real instance as receiver. Tests in `buildTrackedProxy.test.ts`. Changeset: `react-proxy-and-memo-key.md`.
+- [x] `BlocProvider`: `useProvidedArgs` returns the latest args when only non-identity fields change. The provider memo is keyed on `JSON.stringify(args)` instead of the resolved key. Test in `BlocProvider.test.tsx`. Changeset: `bloc-provider-latest-args.md`.
 
 ### `@blac/core`
 
-- [ ] Registry read methods (`hasInstance`, `getRefCount`, `getAll`, `forEach`, `clear`, `release`): use `getInstancesMap` instead of `ensureInstancesMap`.
-- [ ] `hasInstance`: return `false` for stale disposed entries.
-- [ ] `StateContainer`: extract the shared `patch` / `applyState` post-change logic into `_afterChange(prev, next, source)`.
-- [ ] Make `_drainPending` and `emitSystemEvent` iterate handlers the same way.
-- [ ] Convert `onSystemEvent` from an arrow class field to a method; guard it after dispose.
-- [ ] Make `_createdAt` lazy or accept it as eager and drop the perf rationale on `_instanceId`.
-- [ ] Remove the redundant `hasStateChangedListeners` check in `notifyStateChanged` or at its call sites.
-- [ ] `PluginManager`: attach the all-paths state bridge only while at least one plugin implements `onStateChange`; detach on `uninstall`.
-- [ ] `PluginManager.install`: don't run the `onCreated` backfill (or undo it) when `onInstall` throws.
-- [ ] Decide on plugin support for scoped registries (per-registry plugin manager, or document the limitation).
-- [ ] Unify or document the "current registry" split between the core helper functions and React context.
-- [ ] Remove the unused `ExtractConstructorArgs`, `BlocInstanceType`, `BlocConstructor` exports.
-- [ ] Remove the unused `defaultValue` parameter from `getStaticProp`.
-- [ ] Merge or justify the `register` / `registerType` split.
-- [ ] Use `getBlacName(Type)` instead of `Type.name` in registry error messages.
-- [ ] Decorator: drop the redundant `'x' in options` checks; decide whether `keepAlive: false` should override an inherited value.
-- [ ] `flush()` test helper: drain until the channel is idle instead of a fixed two microtasks.
-- [ ] `blacTestSetup`: `clearAll()` the test registry in `afterEach`.
+- [x] Registry read methods (`hasInstance`, `getRefCount`, `getAll`, `forEach`, `clear`, `release`): use `getInstancesMap` instead of `ensureInstancesMap`. `getRefIds` too; `release`/`clear` read the raw map and return early.
+- [x] `hasInstance`: return `false` for stale disposed entries. Changeset: `registry-read-cleanups.md`.
+- [x] `StateContainer`: extract the shared `patch` / `applyState` post-change logic. Named `_recordChange`; `applyState` calls it before `super.emit` (the registry notification is microtask-deferred, so order doesn't matter).
+- [x] Make `_drainPending` and `emitSystemEvent` iterate handlers the same way. `_drainPending` now calls `emitSystemEvent`, which snapshots the handler count.
+- [x] Convert `onSystemEvent` from an arrow class field to a method; guard it after dispose (returns a no-op unsubscribe). `etc/core.api.md` updated.
+- [x] Make `_createdAt` lazy or accept it as eager and drop the perf rationale on `_instanceId`. Kept eager (a lazy creation time would be wrong); the rationale was also false since the lazy id is just `Name:main`.
+- [x] Remove the redundant `hasStateChangedListeners` check in `notifyStateChanged` or at its call sites. Removed at the call sites.
+- [x] `PluginManager`: attach the all-paths state bridge only while at least one plugin implements `onStateChange`; detach on `uninstall`. Changeset: `plugin-lazy-state-bridge.md`.
+- [x] `PluginManager.install`: don't run the `onCreated` backfill (or undo it) when `onInstall` throws. The plugin is now registered and backfilled only after `onInstall` succeeds. Test: extended "should rollback if onInstall throws error".
+- [x] Plugin support for scoped registries: `getPluginManager(registry?)` returns a per-registry manager (cached in a `WeakMap`). Documented in `core/plugins.md`. Changeset: `plugins-per-registry.md`.
+- [ ] **Blocked:** unify the "current registry" split between the core helper functions and React context. The core helpers are plain functions with no access to React context; the only way to make them follow `RegistryProvider` is to write the global during render, which breaks nested providers, concurrent rendering and per-request SSR isolation (the reasons `RegistryProvider` exists). Needs a different approach from the user.
+- [x] Removed the unused `ExtractConstructorArgs`, `BlocInstanceType`, `BlocConstructor` exports (patch bump, as decided). Docs in `core/types.md` and `etc/core.api.md` updated. Changeset: `remove-unused-types.md`.
+- [x] Remove the unused `defaultValue` parameter from `getStaticProp`.
+- [x] Merged `registerType` into the registry (inlined `this.types.add`); public `register()` stays. `insertInstance` now tracks the type too, so `clearAll()` disposes test overrides. Changeset: added to `registry-read-cleanups.md`.
+- [x] Use `getBlacName(Type)` instead of `Type.name` in registry error messages.
+- [x] Decorator: drop the redundant `'x' in options` checks.
+- [x] `keepAlive: false` overrides an inherited value (`BlacOptions.keepAlive` is now `boolean`). Test in `blac.test.ts`; documented in `core/configuration.md`. Changeset: `decorator-keepalive-false.md`.
+- [x] `flush()` drains until a round passes with no new state change, using a module-level change counter in `StateContainer` (`getStateChangeCount`). A scheduler idle API in `@dirtytalk/structural` would have needed a build, since tests resolve that package from `dist`. Test in `testing.args-deps.test.ts`. Changeset: `flush-until-idle.md`.
+- [x] `blacTestSetup`: `clearAll()` the test registry in `afterEach`. Changeset: `test-setup-clear-registry.md`.
 
 ### Both packages
 
