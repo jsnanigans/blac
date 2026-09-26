@@ -42,7 +42,7 @@ interface DepSub {
  * never leaks one.
  */
 export class DepSession {
-  readonly entries = new Map<StateContainer, SessionEntry>();
+  private readonly entries = new Map<StateContainer, SessionEntry>();
   private readonly subs = new Map<StateContainer, DepSub>();
   private lastReconciled: Map<StateContainer, SessionEntry> | null = null;
   private readonly refId: string;
