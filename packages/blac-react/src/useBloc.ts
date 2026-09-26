@@ -125,9 +125,9 @@ export function useBloc<
 
     // Dep proxies get `onDepHandle` too, so nested `.track()` calls (A→B→C)
     // record into this consumer's session.
+    const depWrappers = new Map<object, unknown>();
     const onDepHandle = (handle: object): unknown => {
-      const cache = (consumer.depWrappers ??= new Map());
-      const cached = cache.get(handle);
+      const cached = depWrappers.get(handle);
       if (cached !== undefined) return cached;
       const wrapper = makeDepWrapper(
         handle as DepHandleLike,
@@ -136,7 +136,7 @@ export function useBloc<
         consumer.tracked,
         onDepHandle,
       );
-      cache.set(handle, wrapper);
+      depWrappers.set(handle, wrapper);
       return wrapper;
     };
 
@@ -270,11 +270,8 @@ export function useBloc<
     deps.reconcile(registry);
   });
 
-  useEffect(
-    () => () => consumer.deps.dispose(registry),
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-    [consumerId, registry],
-  );
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => consumer.deps.dispose(), [consumerId]);
 
   return [state, trackedBloc] as UseBlocReturn<T, ExtractState<T>>;
 }
@@ -314,7 +311,6 @@ interface Consumer {
   tracked: { current: unknown };
   disarm: (() => void) | null;
   proxyCache: ProxyCache | null;
-  depWrappers: Map<object, unknown> | null;
   rebindNonce: number;
   /** The instance the ownership effect holds a ref on. */
   ownedBloc: unknown;
@@ -347,7 +343,6 @@ function createConsumer(): Consumer {
     tracked: { current: null },
     disarm: null,
     proxyCache: null,
-    depWrappers: null,
     rebindNonce: 0,
     ownedBloc: null,
   };

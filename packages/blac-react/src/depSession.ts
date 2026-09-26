@@ -27,6 +27,7 @@ type SessionEntry =
 interface DepSub {
   unsubscribe: () => void;
   interestRef: { current: PathSet };
+  registry: StateContainerRegistry;
   Type: StateContainerConstructor;
   key: string;
 }
@@ -93,7 +94,7 @@ export class DepSession {
 
     for (const [dep, sub] of subs) {
       if (!entries.has(dep)) {
-        this.drop(registry, dep, sub);
+        this.drop(dep, sub);
         subs.delete(dep);
       }
     }
@@ -133,6 +134,7 @@ export class DepSession {
       subs.set(dep, {
         unsubscribe,
         interestRef,
+        registry,
         Type: entry.Type,
         key: entry.key,
       });
@@ -141,20 +143,16 @@ export class DepSession {
     this.lastReconciled = new Map(entries);
   }
 
-  dispose(registry: StateContainerRegistry): void {
-    for (const [dep, sub] of this.subs) this.drop(registry, dep, sub);
+  dispose(): void {
+    for (const [dep, sub] of this.subs) this.drop(dep, sub);
     this.subs.clear();
     this.lastReconciled = null;
   }
 
-  private drop(
-    registry: StateContainerRegistry,
-    dep: StateContainer,
-    sub: DepSub,
-  ): void {
+  private drop(dep: StateContainer, sub: DepSub): void {
     sub.unsubscribe();
     dep.unregisterConsumer(this.consumerId);
-    registry.release(sub.Type, sub.key, false, this.refId);
+    sub.registry.release(sub.Type, sub.key, false, this.refId);
   }
 }
 

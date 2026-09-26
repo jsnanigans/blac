@@ -23,6 +23,7 @@ Derived from `review.md`. Section numbers in brackets point back to it. Each bug
 - [x] **Registry swap leaves stale subscription** [1.4]
   - Added `registry` to the `subscribe` memo deps.
   - Test: `RegistryProvider.test.tsx` › "re-subscribes to the new registry when the provider swaps it". Changeset: `registry-swap-resubscribe.md`.
+  - Tracked deps had the same bug: the dep-wrapper cache outlived the swap, and deps were released against the wrong registry. Wrappers are now per memo, each dep sub keeps its own registry, and `dispose` runs only on unmount. Test: "moves tracked deps to the new registry when the provider swaps it". Changeset: `registry-swap-deps.md`.
 - [x] **Select mode compares against stale selection** [1.3]
   - `consumer.selection` is recomputed every render.
   - Test: `useBloc.select.test.tsx` › "compares against the selection of the latest render". Changeset: `select-latest-selection.md`.
