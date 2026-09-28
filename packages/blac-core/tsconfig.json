@@ -15,6 +15,7 @@
     "resolveJsonModule": true,
     "paths": {
       "@blac/core/testing": ["./src/testing.ts"],
+      "@blac/core/internal": ["./src/internal.ts"],
       "@blac/core": ["./src/index.ts"]
     }
   },

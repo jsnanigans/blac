@@ -1,4 +1,11 @@
-import { describe, it, expect } from 'vite-plus/test';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+} from 'vite-plus/test';
 import { StateContainerRegistry } from './StateContainerRegistry';
 import { Cubit } from './Cubit';
 
@@ -19,11 +26,14 @@ const create = (registry: StateContainerRegistry, Type: typeof Speculative) =>
   });
 
 describe('zero-ref sweep', () => {
-  it('disposes a create that never took a ref', async () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('disposes a create that never took a ref', () => {
     const registry = new StateContainerRegistry();
     const bloc = create(registry, Speculative);
 
-    await Promise.resolve();
+    vi.runAllTimers();
 
     expect(bloc.$blac.disposed).toBe(true);
     expect(registry.getInstancesMap(Speculative).size).toBe(0);
@@ -31,25 +41,37 @@ describe('zero-ref sweep', () => {
 
   // SSR shape: a render pass creates the instance but there is no commit to
   // claim ownership, so nothing would ever release it.
-  it('leaves no instance behind for a render that never commits', async () => {
+  it('leaves no instance behind for a render that never commits', () => {
     const registry = new StateContainerRegistry();
     create(registry, Speculative);
 
-    await Promise.resolve();
+    vi.runAllTimers();
 
     expect(registry.getAll(Speculative)).toEqual([]);
     expect(registry.getInstancesMap(Speculative).size).toBe(0);
   });
 
-  it('spares an instance that gained a ref, and any keepAlive', async () => {
+  it('spares an instance that gained a ref, and any keepAlive', () => {
     const registry = new StateContainerRegistry();
     const owned = create(registry, Speculative);
     registry.acquire(Speculative, 'k', { refId: 'r' });
     const kept = create(registry, KeptAlive);
 
-    await Promise.resolve();
+    vi.runAllTimers();
 
     expect(owned.$blac.disposed).toBe(false);
     expect(kept.$blac.disposed).toBe(false);
+  });
+
+  it('restarts the delay when a render re-acquires the pending entry', () => {
+    const registry = new StateContainerRegistry();
+    const bloc = create(registry, Speculative);
+    vi.advanceTimersByTime(4000);
+    create(registry, Speculative);
+    vi.advanceTimersByTime(4000);
+
+    expect(bloc.$blac.disposed).toBe(false);
+    vi.advanceTimersByTime(1000);
+    expect(bloc.$blac.disposed).toBe(true);
   });
 });

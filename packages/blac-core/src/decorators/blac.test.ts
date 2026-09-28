@@ -61,6 +61,19 @@ describe('blac decorator', () => {
       expect(isKeepAliveClass(DecoratedAuthBloc)).toBe(true);
       expect(DecoratedAuthBloc.name).toBe('AuthBloc');
     });
+
+    it('keepAlive: false overrides an inherited keepAlive', () => {
+      const Base = blac({ keepAlive: true })(
+        class extends Cubit<object> {
+          constructor() {
+            super({});
+          }
+        },
+      );
+      const Child = blac({ keepAlive: false })(class extends Base {});
+
+      expect(isKeepAliveClass(Child)).toBe(false);
+    });
   });
 
   describe('excludeFromDevTools option', () => {

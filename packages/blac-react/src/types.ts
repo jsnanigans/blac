@@ -38,10 +38,8 @@ export type UseBlocOptions<TBloc extends StateContainerConstructor> =
      * render is observed, and the hook re-renders when any of those paths
      * change.
      *
-     * Keep the selector referentially stable across renders (e.g. via
-     * `useCallback`) — passing a fresh function each render forces the
-     * subscription to re-key, which the underlying channel treats as a new
-     * consumer.
+     * Re-run on every render, so it may close over props; an inline function
+     * is fine.
      */
     select?: (
       state: ExtractState<TBloc>,

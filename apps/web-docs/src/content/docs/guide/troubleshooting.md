@@ -274,11 +274,10 @@ release(JobCubit, { refId });
 
 ### Type errors
 
-| Symptom                                      | Likely cause                            | Fix                                                                              |
-| -------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
-| `args` is **forbidden** (`never`)            | The bloc's `Args` is the default `void` | Remove `args` from the `useBloc` call                                            |
-| Wrong `args` shape causes a type error       | Passed `args` don't match the bloc type | Match the bloc's declared `Args` shape; `args` is optional but typed when passed |
-| `select` "must be stable" re-keys constantly | A fresh selector function each render   | Wrap the selector in `useCallback`                                               |
+| Symptom                                | Likely cause                            | Fix                                                                              |
+| -------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| `args` is **forbidden** (`never`)      | The bloc's `Args` is the default `void` | Remove `args` from the `useBloc` call                                            |
+| Wrong `args` shape causes a type error | Passed `args` don't match the bloc type | Match the bloc's declared `Args` shape; `args` is optional but typed when passed |
 
 <details>
 <summary>"'args' does not exist / wrong args shape"</summary>
@@ -388,13 +387,6 @@ There is no `@tracked` decorator and no `autoTrack` option. Tracking is **automa
 <summary>`emit` vs `update` vs `patch`?</summary>
 
 `emit(next)` replaces the whole state; `update(fn)` is `emit(fn(state))`; `patch(partial)` deep-merges a `DeepPartial<S>`. Note the equality check applies to `emit`/`update` only — `patch` filters per-key with its own `Object.is` comparison. A common mistake is calling `emit` with a partial object, which silently drops the missing fields. See [Cubit](/core/cubit).
-
-</details>
-
-<details>
-<summary>Why did my `select` start re-keying / re-subscribing each render?</summary>
-
-`select` must be **referentially stable**. A fresh function each render is treated as a new consumer and forces the subscription to re-key. Wrap it in `useCallback`. See [`useBloc`](/react/use-bloc).
 
 </details>
 

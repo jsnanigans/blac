@@ -30,7 +30,7 @@ import { BlacMeta, META_BRAND } from './meta';
  * `depend()`. Framework adapters (`@blac/react`) use this to detect handles
  * inside a tracked-proxy and swap in a session-bound wrapper.
  *
- * @internal — exported for `@blac/react`; not part of the public API.
+ * @internal — exported from `@blac/core/internal` for `@blac/react`.
  */
 export const DEP_BRAND = Symbol('blac.depHandle');
 
@@ -101,6 +101,15 @@ const EMPTY_RECORD: Readonly<Record<string, never>> = Object.freeze({});
 
 let deactivatedReason: DOMException | undefined;
 
+// Counts real state changes across all containers; the `flush()` test helper
+// drains until it stops moving.
+let stateChangeCount = 0;
+
+/** @internal */
+export function getStateChangeCount(): number {
+  return stateChangeCount;
+}
+
 /**
  * Shallow per-key `Object.is` comparison of two plain records. Keys are
  * considered: a key present in one but not the other (regardless of value)
@@ -121,25 +130,12 @@ function shallowEqualRecord(
 }
 
 /**
- * BlaC's lifecycle/identity/dependency layer on top of `StructuralContainer`.
- *
- * StructuralContainer provides:
- *   - `state` getter
- *   - `emit` / `patch` / `update` (path-tracked, microtask-flushed)
- *   - `channel` (the underlying `DirtyChannel`)
- *   - `registerConsumerPaths` / `unregisterConsumer` (for fine-grained consumers)
- *   - per-class `PathInterner`
- *
- * StateContainer layers on:
- *   - identity / lifecycle / hydration (exposed via `$blac: BlacMeta`)
- *   - cross-bloc deps (`depend()`, `$blac.dependencies`)
- *   - per-consumer deps slices (`APPLY_DEPS` / `REMOVE_DEPS_OWNER` / `onDepsChanged`)
- *   - registry integration (config-driven equality, emit-rate circuit breaker)
- *
- * Subscribers can attach via:
- *   - `onSystemEvent('stateChanged' | 'dispose' | 'hydrationChanged', cb)` —
- *     coarse lifecycle events.
- *   - `this.channel.subscribe(interest, cb)` — path-scoped.
+ * BlaC's lifecycle/identity/dependency layer on top of `StructuralContainer`
+ * (which provides `state`, `emit`/`patch`/`update`, and `channel`).
+ * StateContainer adds identity/lifecycle/hydration (`$blac: BlacMeta`),
+ * cross-bloc deps (`depend()`), per-consumer deps slices, and registry
+ * integration. Subscribe via `onSystemEvent(...)` for coarse lifecycle
+ * events or `this.channel.subscribe(...)` for path-scoped ones.
  */
 export abstract class StateContainer<
   S extends object = any,
@@ -153,12 +149,8 @@ export abstract class StateContainer<
   /** @internal phantom — the injected deps type */
   declare readonly __deps: Deps;
 
-  // ---------------------------------------------------------------------------
-  // Per-consumer deps slices (APPLY_DEPS / REMOVE_DEPS_OWNER)
-  //
-  // Framework adapters wire these per consumer:
-  // `@blac/react/src/useBloc.ts` reads APPLY_DEPS / REMOVE_DEPS_OWNER.
-  // ---------------------------------------------------------------------------
+  // Per-consumer deps slices (APPLY_DEPS / REMOVE_DEPS_OWNER). Framework
+  // adapters wire these per consumer: `@blac/react/src/useBloc.ts` reads them.
 
   private _depsByOwner: Map<string, Partial<Deps>> | null = null;
   private _deps: Partial<Deps> = EMPTY_RECORD as Partial<Deps>;
@@ -290,10 +282,6 @@ export abstract class StateContainer<
 
   protected onDepsChanged(_next: Readonly<Deps>, _prev: Readonly<Deps>): void {}
 
-  // ---------------------------------------------------------------------------
-  // Identity / lifecycle
-  // ---------------------------------------------------------------------------
-
   private _disposed = false;
   private _hydrationStatus: HydrationStatus = 'idle';
   private _hydrationError?: Error;
@@ -333,19 +321,18 @@ export abstract class StateContainer<
   // Falls back to the module-global for a bare `new`'d container; a registry
   // that creates the instance overwrites this via `[INIT_CONFIG]`.
   private _registry = getRegistry();
-  private _equalityFn: EqualityFn = getBlacConfig().equality;
+  private _equalityFn: EqualityFn =
+    getClassEquality(this.constructor as StateContainerConstructor) ??
+    getBlacConfig().equality;
 
   // Identity fields. The `$blac` meta getters close over these.
   private _name: string = getBlacName(
     this.constructor as StateContainerConstructor,
   );
   private _debug: boolean = false;
-  // Left undefined until first read: generating an id costs a `Date.now()` plus
-  // a random base-36 string, and a container that is never registered or
-  // inspected never needs one. `$blac.id` fills it in on demand (see
-  // `createMeta`), and `[INIT_CONFIG]` overwrites it when the registry supplies
-  // a configured instanceId. Deliberately a plain field, not a getter —
-  // devtools enumerates prototype getters to find user-defined ones, and a
+  // Set by `[INIT_CONFIG]`; for an unconfigured container `$blac.id` fills it
+  // in on first read. Deliberately a plain field, not a getter — devtools
+  // enumerates prototype getters to find user-defined ones, and a
   // `_instanceId` accessor would show up there as bloc state.
   private _instanceId?: string;
   private _createdAt: number = Date.now();
@@ -435,11 +422,19 @@ export abstract class StateContainer<
       // Same no-ref semantics as `ensure()`, but records `this` as a
       // dependent edge on the resolved entry so the registry can sweep it
       // on `this`'s disposal (see StateContainerRegistry._releaseDependent).
+      // A disposed owner can never release that edge, so it records none.
+      if (this._disposed && IS_DEV) {
+        console.warn(
+          `[blac] ${this._name}: dependency accessed after dispose. Guard ` +
+            `with \`if (this.$blac.disposed) return\` after each \`await\`.`,
+        );
+      }
       return this._registry.acquire(Type, key, {
         canCreate: true,
         countRef: false,
         args: effectiveArgs,
-        dependent: this,
+        dependent: this._disposed ? undefined : this,
+        sweepIfUnowned: this._disposed,
       }) as InstanceType<T>;
     };
 
@@ -507,9 +502,8 @@ export abstract class StateContainer<
 
   /**
    * @internal Framework-only configuration entry point (registry + testing
-   * helpers). Writes the `_`-private identity fields directly, resolves
-   * per-class equality, emits the registry `created` event, and runs `init()`
-   * once. See {@link INIT_CONFIG}.
+   * helpers). Writes the `_`-private identity fields directly, emits the
+   * registry `created` event, and runs `init()` once. See {@link INIT_CONFIG}.
    */
   [INIT_CONFIG](config: StateContainerConfig): void {
     this._config = { ...config };
@@ -522,13 +516,9 @@ export abstract class StateContainer<
     // Must precede init(): init() may `depend()` or emit, and both have to
     // resolve against the owning registry.
     this._registry = this._config.registry ?? this._registry;
-    const perClass = getClassEquality(
-      this.constructor as StateContainerConstructor,
-    );
-    this._equalityFn = perClass ?? getBlacConfig().equality;
-    // `created` fires AFTER init() so plugins observe a fully initialised
-    // instance. Emitting it first let a plugin start hydration, which init()'s
-    // seeding emits then cancelled — silently discarding persisted state.
+    // `created` must fire after init(): firing it first lets a plugin start
+    // hydration that init()'s own seeding emit then cancels, silently
+    // discarding persisted state.
     if (!this._initCalled) {
       this._initCalled = true;
       this.init(this._config.args as Args);
@@ -547,10 +537,6 @@ export abstract class StateContainer<
       }
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Lifecycle: dispose
-  // ---------------------------------------------------------------------------
 
   dispose(): void {
     if (this._disposed) return;
@@ -599,36 +585,16 @@ export abstract class StateContainer<
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Mutation: emit / patch / update.
-  //
-  // We override `emit` to layer in:
-  //   - disposed guard
-  //   - equality-fn short-circuit (consults getBlacConfig().equality or the
-  //     per-class override via @blac decorator)
-  //   - emit-rate circuit breaker (dev-only)
-  //   - `_changedWhileHydrating` flag tracking
-  //   - registry-level stateChanged notification (microtask-deferred)
-  //   - pending-change capture so the channel-bridge callback can fire the
-  //     'stateChanged' system event with prev/next.
-  //
-  // The actual change-detection (path diff, channel mark, single-consumer
-  // skip) is delegated to `super.emit`.
-  // ---------------------------------------------------------------------------
+  // emit/patch layer disposed guard, equality short-circuit, emit-rate
+  // breaker, hydration flag tracking, and pending-change capture for the
+  // 'stateChanged' system event on top of `super.emit`/`super.patch`, which
+  // still own the actual change detection.
 
   protected override emit(next: S): void {
     this.applyState(next, 'default');
   }
 
-  /**
-   * Override of `StructuralContainer.patch` that routes through the
-   * StateContainer concerns: disposed guard, dev-only emit-rate check,
-   * `_changedWhileHydrating` flag, pending-change capture (so `stateChanged`
-   * system events see the merged prev/next), and the registry-level
-   * `stateChanged` notification. We still call
-   * `super.patch` so path-marking semantics (the whole point of patch) are
-   * preserved.
-   */
+  /** @see emit for the StateContainer concerns layered onto `super.patch`. */
   protected override patch(partial: DeepPartial<S>): void {
     if (this._disposed) {
       this._warnDisposedMutation('patch');
@@ -645,25 +611,7 @@ export abstract class StateContainer<
     const next = super.state;
     if (Object.is(prev, next)) return;
 
-    if (IS_DEV && !this._emitRateWarned) {
-      this._checkEmitRate();
-    }
-
-    if (this._hydrationStatus === 'hydrating') {
-      this._changedWhileHydrating = true;
-    }
-
-    if (this._bridgeUnsub !== null) {
-      if (this._pendingChange) {
-        this._pendingChange.next = next;
-      } else {
-        this._pendingChange = { prev, next };
-      }
-    }
-
-    if (this._registry.hasStateChangedListeners) {
-      this._registry.notifyStateChanged(this, prev, next);
-    }
+    this._recordChange(prev, next, 'default');
   }
 
   private applyState(next: S, source: 'default' | 'hydration'): void {
@@ -676,6 +624,17 @@ export abstract class StateContainer<
     if (prev === next) return;
     if (this._equalityFn(prev, next)) return;
 
+    this._recordChange(prev, next, source);
+    super.emit(next);
+  }
+
+  /** Bookkeeping shared by every real state change (`emit`, `patch`, hydration). */
+  private _recordChange(
+    prev: S,
+    next: S,
+    source: 'default' | 'hydration',
+  ): void {
+    stateChangeCount++;
     if (IS_DEV && !this._emitRateWarned) {
       this._checkEmitRate();
     }
@@ -694,11 +653,8 @@ export abstract class StateContainer<
       }
     }
 
-    super.emit(next);
-
-    if (this._registry.hasStateChangedListeners) {
-      this._registry.notifyStateChanged(this, prev, next);
-    }
+    // Microtask-deferred, so it is safe to queue before `super.emit`.
+    this._registry.notifyStateChanged(this, prev, next);
   }
 
   /**
@@ -710,35 +666,14 @@ export abstract class StateContainer<
     const pending = this._pendingChange;
     if (!pending) return;
     this._pendingChange = null;
-
-    // Iterate against a fixed-size snapshot so a handler that subscribes a
-    // new handler mid-drain does not get the late one called in this flush.
-    const handlers = this._systemEventHandlers?.get('stateChanged');
-    if (handlers && handlers.size > 0) {
-      const payload = { state: pending.next, previousState: pending.prev };
-      let count = 0;
-      const size = handlers.size;
-      for (const handler of handlers) {
-        if (++count > size) break;
-        try {
-          handler(payload);
-        } catch (error) {
-          console.error(
-            `[${this._name}] Error in system event handler:`,
-            error,
-          );
-        }
-      }
-    }
+    this.emitSystemEvent('stateChanged', {
+      state: pending.next,
+      previousState: pending.prev,
+    });
   }
 
-  // ---------------------------------------------------------------------------
-  // Hydration
-  // ---------------------------------------------------------------------------
-
-  // The hydration state machine lives in these `_`-private impls. The
-  // `$blac.hydration` surface delegates here, so there is a single source
-  // of truth for the hydration state machine.
+  // Hydration state machine. `$blac.hydration` delegates to these
+  // `_`-private impls, keeping a single source of truth.
 
   private _beginHydration(): void {
     if (this._disposed) {
@@ -874,14 +809,11 @@ export abstract class StateContainer<
     this._rejectHydrationPromise?.(error);
   }
 
-  // ---------------------------------------------------------------------------
-  // System events
-  // ---------------------------------------------------------------------------
-
-  protected onSystemEvent = <E extends SystemEvent>(
+  protected onSystemEvent<E extends SystemEvent>(
     event: E,
     handler: SystemEventHandler<S, E>,
-  ): (() => void) => {
+  ): () => void {
+    if (this._disposed) return () => {};
     const all = (this._systemEventHandlers ??= new Map());
     let handlers = all.get(event);
     if (!handlers) {
@@ -907,7 +839,7 @@ export abstract class StateContainer<
         this._pendingChange = null;
       }
     };
-  };
+  }
 
   private emitSystemEvent<E extends SystemEvent>(
     event: E,
@@ -916,7 +848,11 @@ export abstract class StateContainer<
     const handlers = this._systemEventHandlers?.get(event);
     if (!handlers) return;
 
+    // Stop at the current size so a handler added mid-dispatch is not called
+    // for this event.
+    let remaining = handlers.size;
     for (const handler of handlers) {
+      if (remaining-- === 0) break;
       try {
         handler(payload);
       } catch (error) {
@@ -924,10 +860,6 @@ export abstract class StateContainer<
       }
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Emit-rate circuit breaker (dev-only)
-  // ---------------------------------------------------------------------------
 
   /**
    * Dev-only soft circuit breaker. Counts real state changes in a rolling 1s

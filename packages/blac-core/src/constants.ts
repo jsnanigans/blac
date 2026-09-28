@@ -1,22 +1,9 @@
-/**
- * Default configuration constants for BlaC
- *
- * Centralized location for all magic numbers and default values.
- */
-
-/**
- * Static property names for StateContainer classes
- * Used for feature flags and configuration on bloc classes
- */
+/** Static property names used for feature flags and configuration on bloc classes. */
 export const BLAC_STATIC_PROPS = {
-  /**
-   * Mark a bloc to never be auto-disposed (kept alive permanently)
-   */
+  /** Mark a bloc to never be auto-disposed (kept alive permanently). */
   KEEP_ALIVE: 'keepAlive',
 
-  /**
-   * Exclude a bloc from DevTools reporting (prevents infinite loops)
-   */
+  /** Exclude a bloc from DevTools reporting (prevents infinite loops). */
   EXCLUDE_FROM_DEVTOOLS: '__excludeFromDevTools',
 
   /**
@@ -41,10 +28,17 @@ export const BLAC_STATIC_PROPS = {
   BLAC_NAME: 'blacName',
 } as const;
 
-/**
- * Standard error message prefix
- */
 export const BLAC_ERROR_PREFIX = '[BlaC]' as const;
+
+export function readNodeEnv(): string | undefined {
+  try {
+    return process.env.NODE_ENV;
+  } catch {
+    return undefined;
+  }
+}
+
+const nodeEnv = readNodeEnv();
 
 /**
  * True only when `process.env.NODE_ENV` is defined and not `'production'`.
@@ -55,13 +49,5 @@ export const BLAC_ERROR_PREFIX = '[BlaC]' as const;
  * shim — is treated as production. Bundlers that define `process.env.NODE_ENV`
  * still constant-fold the read.
  */
-const nodeEnv: string | undefined = (() => {
-  try {
-    return process.env.NODE_ENV;
-  } catch {
-    return undefined;
-  }
-})();
-
 export const IS_DEV: boolean =
   nodeEnv !== undefined && nodeEnv !== 'production';

@@ -6,6 +6,9 @@ class WithPrivateField {
   get value() {
     return this.#secret;
   }
+  set value(v: number) {
+    this.#secret = v;
+  }
   read() {
     return this.#secret;
   }
@@ -29,5 +32,23 @@ describe('buildTrackedProxy', () => {
     const first = proxy.read;
     // oxlint-disable-next-line typescript/unbound-method
     expect(first).toBe(proxy.read);
+  });
+
+  it('re-binds a method that was reassigned on the instance', () => {
+    const instance = new WithPrivateField();
+    const { proxy } = buildTrackedProxy(instance, { current: null });
+    proxy.read();
+    instance.read = () => 2;
+
+    expect(proxy.read()).toBe(2);
+  });
+
+  it('runs setters against the real instance', () => {
+    const { proxy } = buildTrackedProxy(new WithPrivateField(), {
+      current: null,
+    });
+    proxy.value = 3;
+
+    expect(proxy.value).toBe(3);
   });
 });

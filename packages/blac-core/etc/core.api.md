@@ -20,11 +20,6 @@ export function acquire<T extends StateContainerConstructor>(
 
 export { ALL_PATHS };
 
-// Warning: (ae-internal-missing-underscore) The name "APPLY_DEPS" should be prefixed with an underscore because the declaration is marked as @internal
-//
-// @internal
-export const APPLY_DEPS: unique symbol;
-
 // @public
 export function blac(
   options: BlacOptions,
@@ -39,6 +34,7 @@ export interface BlacConfig {
   maxEmitsPerSecond: number;
   maxInstancesPerType: number;
   maxRefsPerInstance: number;
+  unownedSweepDelayMs: number;
 }
 
 // @public
@@ -88,7 +84,7 @@ export class BlacMeta<S extends object = any> {
 export interface BlacOptions {
   equality?: EqualityFn;
   excludeFromDevTools?: true;
-  keepAlive?: true;
+  keepAlive?: boolean;
   key?: (args: any) => string;
   name?: string;
 }
@@ -134,20 +130,6 @@ export interface BlacPluginWithInit extends BlacPlugin {
   // (undocumented)
   onInstall(ctx: PluginContext): void;
 }
-
-// @public
-export type BlocConstructor<
-  S extends object = any,
-  T extends new (...args: any[]) => StateContainer<S, any, any> = new (
-    ...args: any[]
-  ) => StateContainer<S, any, any>,
-> = (new (...args: any[]) => InstanceType<T>) & {
-  keepAlive?: boolean;
-};
-
-// @public
-export type BlocInstanceType<T extends abstract new (...args: any) => any> =
-  T extends abstract new (...args: any) => infer R ? R : any;
 
 // @public
 export interface BlocRef<T extends StateContainerConstructor> {
@@ -234,11 +216,6 @@ export type DeepReadonly<T> = T extends (...args: any[]) => any
               }
             : T;
 
-// Warning: (ae-internal-missing-underscore) The name "DEP_BRAND" should be prefixed with an underscore because the declaration is marked as @internal
-//
-// @internal
-export const DEP_BRAND: unique symbol;
-
 // @public
 export interface DepHandle<T extends StateContainerConstructor> {
   // Warning: (ae-incompatible-release-tags) The symbol "[DEP_BRAND]" is marked as @public, but its signature references "DEP_BRAND" which is marked as @internal
@@ -275,11 +252,6 @@ export type ExtractArgs<T> = T extends new () => StateContainer<
 >
   ? A
   : void;
-
-// @public
-export type ExtractConstructorArgs<T> = T extends new (...args: infer P) => any
-  ? P
-  : never[];
 
 // @public
 export type ExtractDeps<T> = T extends new () => StateContainer<
@@ -358,11 +330,6 @@ export function hasInstance<T extends StateContainerConstructor>(
 
 // @public (undocumented)
 export type HydrationStatus = 'idle' | 'hydrating' | 'hydrated' | 'error';
-
-// Warning: (ae-internal-missing-underscore) The name "INIT_CONFIG" should be prefixed with an underscore because the declaration is marked as @internal
-//
-// @internal
-export const INIT_CONFIG: unique symbol;
 
 // @public
 export function instance<T extends StateContainerConstructor>(
@@ -485,11 +452,6 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
                   ? (container: StateContainer<any, any, any>) => void
                   : never;
 
-// Warning: (ae-internal-missing-underscore) The name "ON_DISPOSE" should be prefixed with an underscore because the declaration is marked as @internal
-//
-// @internal
-export const ON_DISPOSE: unique symbol;
-
 export { PathSet };
 
 // @public (undocumented)
@@ -554,11 +516,6 @@ export function release<T extends StateContainerConstructor>(
     forceDispose?: boolean;
   },
 ): void;
-
-// Warning: (ae-internal-missing-underscore) The name "REMOVE_DEPS_OWNER" should be prefixed with an underscore because the declaration is marked as @internal
-//
-// @internal
-export const REMOVE_DEPS_OWNER: unique symbol;
 
 // Warning: (ae-internal-missing-underscore) The name "resetBlacConfig" should be prefixed with an underscore because the declaration is marked as @internal
 //
@@ -633,10 +590,10 @@ export abstract class StateContainer<
   // Warning: (ae-forgotten-export) The symbol "SystemEventHandler" needs to be exported by the entry point index.d.ts
   //
   // (undocumented)
-  protected onSystemEvent: <E extends SystemEvent>(
+  protected onSystemEvent<E extends SystemEvent>(
     event: E,
     handler: SystemEventHandler<S, E>,
-  ) => () => void;
+  ): () => void;
   protected patch(partial: DeepPartial<S>): void;
   // (undocumented)
   get state(): S;
@@ -666,6 +623,13 @@ export type StateContainerInstance<S extends object = any> = WithState<
 // @public
 export class StateContainerRegistry {
   constructor();
+  // @internal
+  [INSERT_INSTANCE]<T extends StateContainerConstructor>(
+    Type: T,
+    instanceKey: string,
+    instance: InstanceType<T>,
+    refs?: Map<string, number>,
+  ): void;
   // @internal
   acquire<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
@@ -786,13 +750,6 @@ export class StateContainerRegistry {
   // (undocumented)
   get hasStateChangedListeners(): boolean;
   // @internal
-  insertInstance<T extends StateContainerConstructor>(
-    Type: T,
-    instanceKey: string,
-    instance: InstanceType<T>,
-    refs?: Map<string, number>,
-  ): void;
-  // @internal
   notifyStateChanged(
     container: StateContainer<any, any, any>,
     previousState: any,
@@ -803,7 +760,6 @@ export class StateContainerRegistry {
     listener: LifecycleListener<E>,
   ): () => void;
   register<T extends StateContainerConstructor>(constructor: T): void;
-  registerType<T extends StateContainerConstructor>(constructor: T): void;
   // @internal
   release<T extends StateContainerConstructor>(
     Type: T,
@@ -862,11 +818,6 @@ export interface WatchFn extends WatchSingleFn {
 export interface WatchOptions {
   create?: boolean;
 }
-
-// Warning: (ae-internal-missing-underscore) The name "WITH_TRACKED_STATE" should be prefixed with an underscore because the declaration is marked as @internal
-//
-// @internal
-export const WITH_TRACKED_STATE: unique symbol;
 
 // @public
 export type WithState<I, S> = I & {

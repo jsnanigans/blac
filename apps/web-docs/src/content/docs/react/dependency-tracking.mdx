@@ -165,8 +165,8 @@ const [state, cart] = useBloc(CartCubit, {
 });
 ```
 
-:::caution[Keep `select` referentially stable]
-`select` must be stable across renders — wrap it in `useCallback` or define it at module scope. A fresh function each render re-keys the subscription, which the underlying channel treats as a brand-new consumer (and defeats the optimization you reached for `select` to get).
+:::note[Inline selectors are fine]
+The selector is read on every render and is not part of the subscription, so an inline function that closes over props works. It runs on every state change, so keep it cheap.
 :::
 
 ### When to reach for `select`

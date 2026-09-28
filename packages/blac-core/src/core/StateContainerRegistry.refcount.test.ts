@@ -58,6 +58,12 @@ describe('StateContainerRegistry ref counting', () => {
     expect(() => release(RefCountBloc)).not.toThrow();
   });
 
+  it('release() with a refId that is not held is a no-op', () => {
+    const instance = ensure(RefCountBloc);
+    release(RefCountBloc, { refId: 'unknown' });
+    expect(instance.$blac.disposed).toBe(false);
+  });
+
   it('keepAlive class: refCount 0 does NOT dispose', () => {
     const instance = acquire(KeepAliveBloc);
     release(KeepAliveBloc);

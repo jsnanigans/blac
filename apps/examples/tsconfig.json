@@ -18,6 +18,7 @@
     "types": ["vite/client"],
     "paths": {
       "@blac/core": ["../../packages/blac-core/src/index.ts"],
+      "@blac/core/internal": ["../../packages/blac-core/src/internal.ts"],
       "@blac/core/testing": ["../../packages/blac-core/src/testing.ts"],
       "@blac/core/plugins": ["../../packages/blac-core/src/plugins.ts"],
       "@blac/react": ["../../packages/blac-react/src/index.ts"],

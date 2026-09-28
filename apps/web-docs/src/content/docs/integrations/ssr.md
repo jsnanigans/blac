@@ -103,7 +103,7 @@ async function handleRequest(req: Request): Promise<Response> {
 Because the registry travels through context rather than a module variable, two requests rendering concurrently in the same process each resolve their own instances — no `AsyncLocalStorage` bridge, no restore step, nothing to race.
 
 :::note[Code outside the React tree]
-`RegistryProvider` covers `useBloc`, including the blocs it resolves through `depend()`. Direct `@blac/core` calls (`acquire`, `ensure`, `watch`) still resolve through the module-level slot, so server code that touches blocs _outside_ the render must either take the registry explicitly or scope the slot with `setRegistry` around a synchronous section.
+`RegistryProvider` covers `useBloc`, including the blocs it resolves through `depend()`. Direct `@blac/core` calls (`acquire`, `ensure`, `watch`) always resolve through the module-level slot, never the provider; inside a component, `useRegistry()` returns the provider's registry. Server code that touches blocs _outside_ the render must either take the registry explicitly or scope the slot with `setRegistry` around a synchronous section.
 :::
 
 ## Client hydration uses the global registry
