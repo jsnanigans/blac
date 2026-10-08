@@ -1,5 +1,81 @@
 # @blac/react
 
+## 2.1.1
+
+### Minor Changes
+
+- 7a43433: Add `useRegistry()`, which returns the registry `useBloc` uses: the nearest
+  `RegistryProvider`'s, else the global one. The plain `@blac/core` helpers
+  always use the global registry (`getRegistry()`).
+
+### Patch Changes
+
+- cec7c48: `BlocProvider` passes on new `args` when a field that `static key` ignores
+  changes; `useProvidedArgs` used to keep returning the old object.
+- e31ee51: Move the internal framework symbols (`APPLY_DEPS`, `REMOVE_DEPS_OWNER`,
+  `INIT_CONFIG`, `ON_DISPOSE`, `WITH_TRACKED_STATE`, `DEP_BRAND`) from the
+  main `@blac/core` entry to `@blac/core/internal`, and replace the registry's
+  `insertInstance` method with the internal `INSERT_INSTANCE` symbol. These
+  were never public API.
+- cec7c48: - The bloc proxy re-binds a method that was reassigned on the instance
+  (e.g. by `withBlocMethod`) instead of returning the stale bound copy, and
+  setters run against the real instance.
+  - `useBloc` keys its instance memo on the resolved instance key, so args
+    that map to the same instance no longer rebuild the proxy.
+  - The first commit that sees a tracked dep re-renders if the dep's key now
+    maps to a different instance.
+- 0a76d8b: `renderWithBloc` and `renderWithRegistry` no longer swap the global registry.
+  They restored it only in an overridden `unmount()`, which Testing Library's
+  automatic `cleanup()` bypasses, so the swap leaked into later tests. Setup now
+  runs under a temporary registry and the UI renders inside a
+  `RegistryProvider`.
+- f0987e4: `useBloc` now moves tracked deps to the new registry when a `RegistryProvider` swaps its registry, and releases them from the old one.
+- d479173: Re-subscribe `useBloc` when `RegistryProvider` swaps its registry. The
+  component previously stayed subscribed to the instance in the old registry
+  and ignored emits on the new one.
+- d479173: Compare `select` results against the latest render. The selection was only
+  computed on the first render, so a selector depending on props could skip a
+  needed re-render after the props changed.
+- d479173: Dispose cross-bloc `.track()` deps created by a render that never commits
+  (SSR or a discarded render). Previously only the primary bloc was swept, and
+  the dep stayed registered forever.
+- 596d44e: Keep cross-bloc `.track()` subscriptions alive under `<StrictMode>`.
+
+  StrictMode's simulated unmount released the dep, and the remount skipped the
+  reconcile, so a `keepAlive` consumer lost its dep subscription and the dep
+  could be disposed while still on screen.
+
+- 86c37df: Sweep instances created during a render after a grace period instead of at the
+  end of the microtask.
+
+  A time-sliced render (`startTransition`) can yield between render and commit,
+  so the microtask sweep disposed the new instance before the commit claimed it.
+  `useBloc` then recreated it: the constructor and `init()` ran twice and the
+  component rendered an extra time. The delay is configurable with
+  `configureBlac({ unownedSweepDelayMs })` (default `5000`); another render that
+  reuses the still-unclaimed instance restarts it.
+
+- Updated dependencies [e31ee51]
+- Updated dependencies [5a23fc0]
+- Updated dependencies [bef2f5b]
+- Updated dependencies [5a23fc0]
+- Updated dependencies [d0ede99]
+- Updated dependencies [5a23fc0]
+- Updated dependencies
+- Updated dependencies [5a23fc0]
+- Updated dependencies [370c225]
+- Updated dependencies [bef2f5b]
+- Updated dependencies [5a23fc0]
+- Updated dependencies [c46ad21]
+- Updated dependencies [5a23fc0]
+- Updated dependencies [91cae43]
+- Updated dependencies [86c37df]
+- Updated dependencies [5a23fc0]
+- Updated dependencies [24f0293]
+- Updated dependencies [697c0e7]
+  - @blac/core@2.1.1
+  - @dirtytalk/structural@0.1.3
+
 ## 2.0.22
 
 ### Patch Changes

@@ -1,5 +1,39 @@
 # @blac/devtools-ui
 
+## 2.0.22
+
+### Patch Changes
+
+- Rebuild against the new `@blac/core` and `@blac/react` releases.
+- Updated dependencies [cec7c48]
+- Updated dependencies [e31ee51]
+- Updated dependencies [5a23fc0]
+- Updated dependencies [bef2f5b]
+- Updated dependencies [5a23fc0]
+- Updated dependencies [d0ede99]
+- Updated dependencies [5a23fc0]
+- Updated dependencies [5a23fc0]
+- Updated dependencies [cec7c48]
+- Updated dependencies [0a76d8b]
+- Updated dependencies [370c225]
+- Updated dependencies [bef2f5b]
+- Updated dependencies [5a23fc0]
+- Updated dependencies [f0987e4]
+- Updated dependencies [d479173]
+- Updated dependencies [c46ad21]
+- Updated dependencies [5a23fc0]
+- Updated dependencies [d479173]
+- Updated dependencies [d479173]
+- Updated dependencies [596d44e]
+- Updated dependencies [91cae43]
+- Updated dependencies [86c37df]
+- Updated dependencies [5a23fc0]
+- Updated dependencies [24f0293]
+- Updated dependencies [7a43433]
+- Updated dependencies [697c0e7]
+  - @blac/react@2.1.1
+  - @blac/core@2.1.1
+
 ## 2.0.21
 
 ### Patch Changes
