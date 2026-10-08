@@ -85,7 +85,9 @@ The interface also declares `onRefAcquired(ctx, refId)`, `onRefReleased(ctx, ref
 
 ## Installing a plugin
 
-`getPluginManager()` returns the singleton `PluginManager` bound to the global registry. Call it once, near app startup, to install your plugins.
+`getPluginManager()` returns the `PluginManager` bound to the global registry. Call it once, near app startup, to install your plugins.
+
+Plugins only observe the registry they are installed on. For a scoped registry (for example one passed to `RegistryProvider`), install them on that registry's manager with `getPluginManager(registry)`.
 
 ```ts
 import { getPluginManager } from '@blac/core/plugins';

@@ -1,8 +1,6 @@
 /**
- * Plugins Subpath Export
- *
  * Plugin system utilities for extending BlaC functionality.
- * Import from `@blac/core/plugins`
+ * Import from `@blac/core/plugins`.
  *
  * @example
  * ```typescript
@@ -15,14 +13,17 @@
  *   },
  * };
  *
- * getPluginManager().register(myPlugin);
+ * getPluginManager().install(myPlugin);
  * ```
  *
  * @packageDocumentation
  */
 
 import { createPluginManager, PluginManager } from './plugin/PluginManager';
-import { globalRegistry } from './core/StateContainerRegistry';
+import {
+  globalRegistry,
+  type StateContainerRegistry,
+} from './core/StateContainerRegistry';
 
 export { PluginManager } from './plugin/PluginManager';
 export type {
@@ -33,17 +34,20 @@ export type {
   InstanceMetadata,
 } from './plugin/BlacPlugin';
 
-/**
- * Global plugin manager (initialized lazily)
- */
-let _globalPluginManager: PluginManager | null = null;
+const pluginManagers = new WeakMap<StateContainerRegistry, PluginManager>();
 
 /**
- * Get the global plugin manager
+ * Get the plugin manager for a registry (the global one by default). Plugins
+ * only observe the registry they are installed on, so install them again on
+ * a scoped registry (e.g. one passed to `RegistryProvider`).
  */
-export function getPluginManager(): PluginManager {
-  if (!_globalPluginManager) {
-    _globalPluginManager = createPluginManager(globalRegistry);
+export function getPluginManager(
+  registry: StateContainerRegistry = globalRegistry,
+): PluginManager {
+  let manager = pluginManagers.get(registry);
+  if (!manager) {
+    manager = createPluginManager(registry);
+    pluginManagers.set(registry, manager);
   }
-  return _globalPluginManager;
+  return manager;
 }

@@ -1,8 +1,8 @@
 declare const brand: unique symbol;
 
 /**
- * Utility type for creating branded/nominal types.
- * Prevents accidental type confusion between similar primitive types.
+ * Nominal type helper, preventing accidental confusion between similar
+ * primitive types.
  * @typeParam T - The base type
  * @typeParam B - The brand identifier
  */
@@ -14,16 +14,9 @@ export type Brand<T, B> = T & { [brand]: B };
  */
 export type BrandedId<B> = Brand<string, B>;
 
-/**
- * Branded string type for state container instance IDs
- */
+/** Branded string type for state container instance IDs. */
 export type InstanceId = Brand<string, 'InstanceId'>;
 
-/**
- * Create a branded InstanceId from a string
- * @param id - The string ID to brand
- * @returns Branded InstanceId
- */
 export function instanceId(id: string): InstanceId {
   return id as InstanceId;
 }

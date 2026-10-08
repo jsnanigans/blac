@@ -96,16 +96,20 @@ describe('PluginManager', () => {
     });
 
     it('should rollback if onInstall throws error', () => {
+      acquire(CounterCubit);
+      const onCreated = vi.fn();
       const plugin: BlacPlugin = {
         name: 'test-plugin',
         version: '1.0.0',
         onInstall: () => {
           throw new Error('Install failed');
         },
+        onCreated,
       };
 
       expect(() => manager.install(plugin)).toThrow('Install failed');
       expect(manager.hasPlugin('test-plugin')).toBe(false);
+      expect(onCreated).not.toHaveBeenCalled();
     });
 
     it('should respect enabled flag', () => {
@@ -815,6 +819,20 @@ describe('PluginManager', () => {
       manager.install(plugin, { environment: 'development' });
 
       expect(manager.hasPlugin('test-plugin')).toBe(true);
+
+      process.env.NODE_ENV = originalEnv;
+    });
+
+    it('treats an unset NODE_ENV as production', () => {
+      const originalEnv = process.env.NODE_ENV;
+      delete process.env.NODE_ENV;
+
+      manager.install(
+        { name: 'test-plugin', version: '1.0.0' },
+        { environment: 'development' },
+      );
+
+      expect(manager.hasPlugin('test-plugin')).toBe(false);
 
       process.env.NODE_ENV = originalEnv;
     });

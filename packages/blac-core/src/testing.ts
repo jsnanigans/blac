@@ -1,6 +1,7 @@
-import { Cubit } from './core/Cubit';
+import type { Cubit } from './core/Cubit';
+import { getStateChangeCount } from './core/StateContainer';
 import { StateContainerRegistry } from './core/StateContainerRegistry';
-import { APPLY_DEPS, INIT_CONFIG } from './core/symbols';
+import { APPLY_DEPS, INIT_CONFIG, INSERT_INSTANCE } from './core/symbols';
 import { ensure, getRegistry, setRegistry } from './registry';
 import { resolveInstanceKey } from './registry/acquire';
 import type {
@@ -15,8 +16,6 @@ const TESTING_DEPS_OWNER = 'testing-deps';
 
 declare const beforeEach: (fn: () => void) => void;
 declare const afterEach: (fn: () => void) => void;
-
-// --- createTestRegistry + withTestRegistry ---
 
 export function createTestRegistry(): StateContainerRegistry {
   return new StateContainerRegistry();
@@ -50,20 +49,19 @@ export function withTestRegistry<T>(
   }
 }
 
-// --- blacTestSetup ---
-
 export function blacTestSetup(): void {
   let savedRegistry: StateContainerRegistry;
+  let testRegistry: StateContainerRegistry;
   beforeEach(() => {
     savedRegistry = getRegistry();
-    setRegistry(new StateContainerRegistry());
+    testRegistry = createTestRegistry();
+    setRegistry(testRegistry);
   });
   afterEach(() => {
+    testRegistry.clearAll();
     setRegistry(savedRegistry);
   });
 }
-
-// --- registerOverride + overrideEnsure ---
 
 export function registerOverride<T extends StateContainerConstructor>(
   BlocClass: T,
@@ -72,7 +70,7 @@ export function registerOverride<T extends StateContainerConstructor>(
 ): void {
   const registry = getRegistry();
   const key = resolveInstanceKey(BlocClass, args);
-  registry.insertInstance(
+  registry[INSERT_INSTANCE](
     BlocClass,
     key,
     instance,
@@ -92,8 +90,6 @@ export function overrideEnsure<T extends StateContainerConstructor, R>(
   });
 }
 
-// --- createCubitStub ---
-
 type MethodKeys<T> = {
   [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
 }[keyof T];
@@ -105,10 +101,7 @@ export interface CubitStubOptions<T extends StateContainerConstructor> {
   methods?: Partial<
     Record<MethodKeys<InstanceType<T>>, (...args: any[]) => any>
   >;
-  /**
-   * Args to pass to init(). If the bloc's Args type is not void, supplying
-   * args here causes `initConfig({ args })` to be called so `init()` runs.
-   */
+  /** Args passed to init(). */
   args?: ExtractArgs<T> extends void ? never : ExtractArgs<T>;
   /**
    * Deps slice to pre-wire via the core [APPLY_DEPS] path (synthetic owner
@@ -122,27 +115,10 @@ export function createCubitStub<T extends StateContainerConstructor>(
   options?: CubitStubOptions<T>,
 ): InstanceType<T> {
   const instance = new BlocClass() as InstanceType<T>;
-
-  // Run init() if args are supplied — goes through the same initConfig path
-  // that the registry uses, so lifecycle hooks fire correctly.
-  if (options?.args != null) {
-    instance[INIT_CONFIG]({ args: options.args });
-  }
+  instance[INIT_CONFIG]({ args: options?.args });
 
   if (options?.state != null) {
-    if (instance instanceof Cubit) {
-      const currentState = instance.state;
-      if (
-        typeof currentState === 'object' &&
-        currentState !== null &&
-        typeof options.state === 'object' &&
-        options.state !== null
-      ) {
-        instance.patch(options.state as any);
-      } else {
-        instance.emit(options.state as any);
-      }
-    }
+    applyState(instance, options.state);
   }
   if (options?.methods) {
     for (const [key, impl] of Object.entries(options.methods)) {
@@ -160,8 +136,6 @@ export function createCubitStub<T extends StateContainerConstructor>(
   return instance;
 }
 
-// --- withBlocState ---
-
 export function withBlocState<T extends StateContainerConstructor>(
   BlocClass: T,
   state: ExtractState<T> extends Record<string, any>
@@ -170,23 +144,24 @@ export function withBlocState<T extends StateContainerConstructor>(
   args?: ExtractArgs<T>,
 ): InstanceType<T> {
   const instance = ensure(BlocClass, { args });
-  if (instance instanceof Cubit) {
-    const currentState = instance.state;
-    if (
-      typeof currentState === 'object' &&
-      currentState !== null &&
-      typeof state === 'object' &&
-      state !== null
-    ) {
-      instance.patch(state as any);
-    } else {
-      instance.emit(state as any);
-    }
-  }
+  applyState(instance, state);
   return instance;
 }
 
-// --- withBlocMethod ---
+// emit/patch are protected on StateContainer; Cubit only makes them public.
+function applyState(instance: object, state: unknown): void {
+  const target = instance as Cubit<any>;
+  if (
+    typeof target.state === 'object' &&
+    target.state !== null &&
+    typeof state === 'object' &&
+    state !== null
+  ) {
+    target.patch(state);
+  } else {
+    target.emit(state as any);
+  }
+}
 
 export function withBlocMethod<T extends StateContainerConstructor>(
   BlocClass: T,
@@ -199,20 +174,24 @@ export function withBlocMethod<T extends StateContainerConstructor>(
   return instance;
 }
 
-// --- flush ---
-
 /**
- * Drain pending microtasks so any channel-flushed effects (channel
- * subscribers, `onSystemEvent('stateChanged')` handlers, plugin hooks) run
- * before the next assertion.
- *
- * The default `MicrotaskScheduler` coalesces emits within a tick; tests
- * that emit and then assert on subscriber side-effects need `await flush()`
- * between the two.
+ * Drain pending microtasks so channel-flushed effects (subscribers,
+ * `onSystemEvent('stateChanged')` handlers, plugin hooks) run before the
+ * next assertion. A subscriber can emit again, so this keeps draining until
+ * a round passes with no new state change.
  */
 export async function flush(): Promise<void> {
-  // queueMicrotask wins the race against the channel's own queued flush —
-  // we resolve after the channel has drained its current pending flush.
-  await Promise.resolve();
-  await Promise.resolve();
+  for (let i = 0; i < MAX_FLUSH_ROUNDS; i++) {
+    const before = getStateChangeCount();
+    // The second tick lets microtasks queued by the drain itself (registry
+    // `stateChanged` delivery) run too.
+    await Promise.resolve();
+    await Promise.resolve();
+    if (getStateChangeCount() === before) return;
+  }
+  throw new Error(
+    `[blac] flush(): state was still changing after ${MAX_FLUSH_ROUNDS} rounds`,
+  );
 }
+
+const MAX_FLUSH_ROUNDS = 100;

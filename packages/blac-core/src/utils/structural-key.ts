@@ -1,8 +1,4 @@
-/**
- * Deterministic, order-independent hash of serializable args.
- * Sorts object keys so {a,b} === {b,a}.
- * Throws (dev) if it encounters a function or non-plain object — those belong in `deps`.
- */
+import { IS_DEV } from '../constants';
 
 export const DEFAULT_STRUCTURAL_KEY = 'default';
 
@@ -12,8 +8,11 @@ export const DEFAULT_STRUCTURAL_KEY = 'default';
  * - Object keys are sorted for order-independence.
  * - Arrays keep their insertion order.
  * - Functions throw — they must be passed via `deps`, not `args`.
+ * - JSON semantics otherwise: `{ a: undefined }` equals `{}`, and `NaN` and
+ *   `Infinity` serialize as `null`.
  * - Object args are memoized by identity; callers on hot paths (`resolveKey`,
- *   `depend`) re-resolve the same args object on every call.
+ *   `depend`) re-resolve the same args object on every call. Mutating an args
+ *   object after first use therefore keeps its old key.
  */
 const keyCache = new WeakMap<object, string>();
 
@@ -42,6 +41,12 @@ function serialize(args: unknown): string {
       );
     }
     if (v && typeof v === 'object' && !Array.isArray(v)) {
+      if (IS_DEV && !isPlainObject(v)) {
+        throw new Error(
+          `[blac] args must be plain data; put refs/instances in \`deps\` ` +
+            `(found a ${v.constructor?.name ?? 'non-plain object'} at key "${_k || '(root)'}")`,
+        );
+      }
       return Object.keys(v)
         .sort()
         .reduce(
@@ -54,4 +59,9 @@ function serialize(args: unknown): string {
     }
     return v;
   });
+}
+
+function isPlainObject(value: object): boolean {
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
 }

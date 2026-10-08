@@ -154,109 +154,9 @@ type D = ExtractDeps<typeof FeedCubit>;
 //   ^?
 ```
 
-### `ExtractConstructorArgs`
-
-**Signature**
-
-```ts
-export type ExtractConstructorArgs<T> = T extends new (...args: infer P) => any
-  ? P
-  : never[];
-```
-
-Extracts the _runtime_ constructor parameter tuple from any class — this is plain TypeScript constructor inference, not BlaC's `Args`. Use it when you need the literal `constructor(...)` parameters of a class. Resolves to `never[]` for non-constructors.
-
-```ts twoslash
-import type { ExtractConstructorArgs } from '@blac/core';
-// ---cut---
-class Point {
-  constructor(
-    public x: number,
-    public y: number,
-  ) {}
-}
-
-type P = ExtractConstructorArgs<typeof Point>;
-//   ^?
-```
-
 ## Instance and constructor types
 
-These describe the _instance_ a container class produces, and the _constructor_ shape (including the static registry methods like `acquire` and `release`) that `@blac/core` and `@blac/react` use to type their entry points.
-
-### `BlocInstanceType`
-
-**Signature**
-
-```ts
-export type BlocInstanceType<T extends abstract new (...args: any) => any> =
-  T extends abstract new (...args: any) => infer R ? R : any;
-```
-
-Resolves a constructor type to its instance type, including abstract classes. It is the abstract-aware sibling of TypeScript's built-in `InstanceType<T>` (which rejects abstract constructors). Because `Cubit` and `StateContainer` are abstract, this is the safe choice for "the instance of this class."
-
-```ts twoslash
-import { Cubit } from '@blac/core';
-import type { BlocInstanceType } from '@blac/core';
-interface CounterState {
-  count: number;
-  label: string;
-}
-class CounterCubit extends Cubit<CounterState> {
-  constructor() {
-    super({ count: 0, label: 'idle' });
-  }
-}
-// ---cut---
-type Instance = BlocInstanceType<typeof CounterCubit>;
-```
-
-### `BlocConstructor`
-
-**Signature**
-
-```ts
-export type BlocConstructor<
-  S extends object = any,
-  T extends new (...args: any[]) => StateContainer<S, any, any> = new (
-    ...args: any[]
-  ) => StateContainer<S, any, any>,
-> = (new (...args: any[]) => InstanceType<T>) & {
-  keepAlive?: boolean;
-};
-```
-
-A constructor type for a `StateContainer` subclass, with an optional `keepAlive` static flag. Any ordinary `Cubit` / `Bloc` subclass satisfies `BlocConstructor` directly. There is no static registry surface on the type itself — `acquire`, `borrow`, `borrowSafe`, `ensure`, and `release` are **standalone functions** imported from `@blac/core`, not static methods on the class. Their parameter type is the lighter [`StateContainerConstructor`](#statecontainerconstructor). See [Instance Management](/core/instance-management) for what those functions do.
-
-```ts twoslash
-import { acquire, release } from '@blac/core';
-import type { BlocConstructor, StateContainerConstructor } from '@blac/core';
-import { Cubit } from '@blac/core';
-interface CounterState {
-  count: number;
-  label: string;
-}
-class CounterCubit extends Cubit<CounterState> {
-  constructor() {
-    super({ count: 0, label: 'idle' });
-  }
-}
-// ---cut---
-// A helper that only needs "some container class" uses StateContainerConstructor.
-// A plain Cubit/Bloc subclass satisfies this directly.
-function describe(Bloc: StateContainerConstructor) {
-  const inst = acquire(Bloc);
-  release(Bloc);
-  return inst;
-}
-
-describe(CounterCubit);
-
-// BlocConstructor is an alias for a constructable StateContainer with an
-// optional keepAlive flag — any Cubit/Bloc subclass satisfies it directly.
-type CounterCtor = BlocConstructor<CounterState>;
-//   ^?
-```
+These describe the _instance_ a container class produces, and the _constructor_ shape that `@blac/core` and `@blac/react` use to type their entry points.
 
 ### `InstanceReadonlyState`
 
@@ -352,7 +252,7 @@ export type StateContainerConstructor<S extends object = any> = new (
 ) => StateContainer<S, any, any>;
 ```
 
-The minimal constructor type for a container class, parameterized by state `S`. It is the constraint the extraction utilities (`ExtractState`, `ExtractStateMutable`, `InstanceReadonlyState`, `InstanceState`) match against. Unlike [`BlocConstructor`](#blocconstructor) it carries no static registry methods — use it where you only care that something is a container class.
+The minimal constructor type for a container class, parameterized by state `S`. It is the constraint the extraction utilities (`ExtractState`, `ExtractStateMutable`, `InstanceReadonlyState`, `InstanceState`) match against. Use it where you only care that something is a container class.
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -455,6 +355,6 @@ const id: InstanceId = instanceId('user-42');
 
 - [TypeScript](/guide/typescript) — typing blocs end to end: generics, inference, and pitfalls
 - [Cubit](/core/cubit) — the class these utilities extract types from
-- [Instance Management](/core/instance-management) — `acquire` / `borrow` / `release` and the registry surface that `BlocConstructor` describes
+- [Instance Management](/core/instance-management) — `acquire` / `borrow` / `release` and the registry surface
 - [Passing Inputs](/guide/inputs) — the args / deps identity model that `ExtractArgs` and `ExtractDeps` read
 - [useBloc](/react/use-bloc) — where `ExtractState` shows up as the hook's return type

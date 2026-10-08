@@ -341,14 +341,14 @@ export const trackRender = <S>(
           existing.interner = interner;
           existing.wrap = wrap;
         }
-        if (entries.size > 1) touched!.add(entries);
+        if (entries.size > 1) touched?.add(entries);
         return existing.proxy;
       }
     } else {
-      byPrefix = proxyByTarget!.get(target);
+      byPrefix = proxyByTarget?.get(target);
       if (byPrefix === undefined) {
         byPrefix = new Map<PathId, unknown>();
-        proxyByTarget!.set(target, byPrefix);
+        proxyByTarget?.set(target, byPrefix);
       }
       const cached = byPrefix.get(prefixId);
       if (cached !== undefined) return cached;
@@ -608,9 +608,9 @@ export const trackRender = <S>(
     proxyToTarget.set(proxy, target);
     if (entries !== undefined) {
       entries.set(prefixId, entry);
-      if (entries.size > 1) touched!.add(entries);
+      if (entries.size > 1) touched?.add(entries);
     } else {
-      byPrefix!.set(prefixId, proxy);
+      byPrefix?.set(prefixId, proxy);
     }
     return proxy;
   };

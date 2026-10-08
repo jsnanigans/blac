@@ -116,7 +116,7 @@ select?: (state: S, bloc: T) => unknown[]
 
 **Returns:** `unknown[]` — compared per-index via `Object.is`. The component re-renders only when an element changes.
 
-**Behavior.** Disables auto-tracking for that `useBloc` call. The selector runs on every state change and the component re-renders only when the returned array changes. Keep it referentially stable (module-scope or `useCallback`).
+**Behavior.** Disables auto-tracking for that `useBloc` call. The selector runs on every state change and the component re-renders only when the returned array changes.
 
 ```tsx
 function CartBadge() {
@@ -127,7 +127,7 @@ function CartBadge() {
 }
 ```
 
-This re-renders only when `isEmpty` flips, not on every item added. Keep `select` referentially stable (`useCallback` or module scope) — see [Dependency Tracking: the `select` escape hatch](/react/dependency-tracking#the-select-escape-hatch).
+This re-renders only when `isEmpty` flips, not on every item added. See [Dependency Tracking: the `select` escape hatch](/react/dependency-tracking#the-select-escape-hatch).
 
 :::tip[Auto-track vs `select`: when to narrow vs derive]
 Reach for `select` to depend on a **derived/computed** value or to pin an explicit dependency set. To make a component _not_ re-render, don't pass an option — just don't read state. There is no `autoTrack` flag; the mode is chosen by the presence or absence of `select`.
@@ -319,22 +319,3 @@ function CartTotal() {
 ```
 
 Auto-tracking is still correct for the default case: `const [, cart] = useBloc(CartCubit); return <span>{cart.total}</span>;`. See [Getters as computed properties](#pattern-getters-as-computed-properties) above.
-
-### `select` re-keys / re-subscribes every render
-
-**Symptom:** The component re-renders on every state change regardless of what `select` returns, or you see unexpected subscription churn in DevTools.
-
-**Cause:** A fresh selector function is passed each render. The hook treats a new function identity as a new consumer, re-keying the subscription.
-
-**Fix:** Wrap the selector in `useCallback` or define it at module scope so the reference is stable:
-
-```tsx
-const selectTotal = (state: CartState, bloc: CartCubit) => [bloc.total];
-
-function CartBadge() {
-  const [, cart] = useBloc(CartCubit, { select: selectTotal });
-  return cart.isEmpty ? null : <Badge />;
-}
-```
-
-See [Troubleshooting: `select` re-keying](/guide/troubleshooting#stale-values-in-callbacks) and [`useBloc`: `select`](/react/use-bloc#select).

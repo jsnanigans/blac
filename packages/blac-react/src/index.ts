@@ -1,10 +1,4 @@
-/**
- * React Integration
- *
- * Clean integration between React and StateContainer architecture.
- * Constructor-based API with automatic type inference.
- * Re-renders are driven by per-consumer, path-scoped channel subscriptions.
- */
+// Re-renders are driven by per-consumer, path-scoped channel subscriptions.
 
 export { useBloc } from './useBloc';
 export { useBlocDeps } from './useBlocDeps';
@@ -17,5 +11,6 @@ export {
 } from './BlocProvider';
 export {
   RegistryProvider,
+  useRegistry,
   type RegistryProviderProps,
 } from './RegistryProvider';

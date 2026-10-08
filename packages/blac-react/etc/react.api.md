@@ -8,9 +8,9 @@ import { ExtractState } from '@blac/core';
 import type { InstanceReadonlyState } from '@blac/core';
 import { ReactElement } from 'react';
 import { ReactNode } from 'react';
-import { StateContainer } from '@blac/core';
+import type { StateContainer } from '@blac/core';
 import { StateContainerConstructor } from '@blac/core';
-import type { StateContainerRegistry } from '@blac/core';
+import { StateContainerRegistry } from '@blac/core';
 import { untracked } from '@dirtytalk/structural';
 
 // @public
@@ -73,6 +73,9 @@ export type UseBlocReturn<
 export function useProvidedArgs<T extends StateContainerConstructor>(
   BlocClass: T,
 ): ExtractArgs<T> | undefined;
+
+// @public
+export function useRegistry(): StateContainerRegistry;
 
 // (No @packageDocumentation comment for this package)
 ```

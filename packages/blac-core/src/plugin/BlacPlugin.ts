@@ -19,15 +19,10 @@ export interface InstanceMetadata {
 }
 
 /**
- * Per-event context delivered to plugin hooks.
- *
- * `PluginContext` is per-container — it identifies the bloc, not the event.
- * Per-event data (e.g. the changed `PathSet`) is passed via dedicated method
- * arguments, never via the context object.
- *
- * The `container` field is the focal bloc for the event. For `onInstall`
- * (which fires once at install time, not bound to any container) the
- * `container` field is `undefined`.
+ * Per-event context delivered to plugin hooks. Identifies the focal
+ * container for the event (`undefined` only for `onInstall`, which fires
+ * once at install time before any container is known); per-event data (e.g.
+ * the changed `PathSet`) is passed via method arguments, not this object.
  */
 export interface PluginContext {
   /**
@@ -75,21 +70,10 @@ export interface PluginContext {
 /**
  * BlaC plugin hook surface.
  *
- * State-change events carry the `PathSet` of paths that changed in the flush.
- * Lifecycle events (`onCreated`, `onDestroyed`) are not tied to a state change
- * and so do not carry `paths`.
- *
- * Hook firing model:
- * - `onCreated` fires synchronously when a container is first acquired.
- * - `onStateChange` fires once per channel flush (microtask-coalesced).
- *   `prev` is the state before the first emit of the flush; `next` is the
- *   state at flush time; `paths` is the set of paths marked during the flush.
- * - `onDestroyed` fires synchronously when a container is disposed (after
- *   its system 'dispose' event).
- *
- * The ref/deps hooks (`onRefAcquired`, `onRefReleased`, `onDepsChanged`) are
- * devtools-only — they drive devtools-connect and are orthogonal to the
- * state-change event payload.
+ * `onStateChange` fires once per channel flush (microtask-coalesced) with
+ * the changed `PathSet`; lifecycle hooks (`onCreated`, `onDestroyed`) fire
+ * synchronously and carry no `paths`. The ref/deps hooks (`onRefAcquired`,
+ * `onRefReleased`, `onDepsChanged`) are devtools-only.
  */
 export interface BlacPlugin {
   readonly name: string;

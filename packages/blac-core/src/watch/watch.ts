@@ -2,6 +2,7 @@ import { ALL_PATHS } from '@dirtytalk/structural';
 import { ON_DISPOSE } from '../core/symbols';
 import { getRegistry } from '../registry';
 import { resolveInstanceKey } from '../registry/acquire';
+import type { StateContainerRegistry } from '../core/StateContainerRegistry';
 import type {
   ExtractArgs,
   StateContainerConstructor,
@@ -68,15 +69,10 @@ type BlocInput = StateContainerConstructor | BlocRef<StateContainerConstructor>;
  */
 export interface WatchOptions {
   /**
-   * When `false`, `watch` observes passively instead of owning the instance:
-   * it does not create a missing instance, and it does not take a real
-   * ownership ref on an existing one (so it never keeps an otherwise-
-   * unreferenced instance alive).
-   *
-   * If the instance does not exist yet when `watch` is called, the callback
-   * simply never fires for it — `watch` does not poll or wait for a later
-   * creation. Call `watch` again once the instance is known to exist (e.g.
-   * after some other owner has acquired it).
+   * When `false`, `watch` observes passively: it neither creates a missing
+   * instance nor takes a real ownership ref on an existing one. If the
+   * instance does not exist yet, the callback simply never fires — `watch`
+   * does not poll; call it again once the instance exists.
    *
    * Defaults to `true`.
    */
@@ -142,8 +138,10 @@ interface WatchTarget {
   args: unknown;
 }
 
-function toWatchTarget(input: BlocInput): WatchTarget {
-  const registry = getRegistry();
+function toWatchTarget(
+  registry: StateContainerRegistry,
+  input: BlocInput,
+): WatchTarget {
   if (isBlocRef(input)) {
     return {
       blocClass: input.blocClass,
@@ -166,10 +164,10 @@ let watchRefSeq = 0;
  * caller is responsible for releasing `refId` in cleanup.
  */
 function resolveBloc(
+  registry: StateContainerRegistry,
   target: WatchTarget,
   refId: string,
 ): StateContainerInstance {
-  const registry = getRegistry();
   return registry.acquire(target.blocClass, target.key, {
     countRef: true,
     refId,
@@ -182,9 +180,9 @@ function resolveBloc(
  * never takes a ref. Returns `undefined` when no instance currently exists.
  */
 function resolveBlocPassive(
+  registry: StateContainerRegistry,
   target: WatchTarget,
 ): StateContainerInstance | undefined {
-  const registry = getRegistry();
   try {
     return registry.acquire(target.blocClass, target.key, {
       canCreate: false,
@@ -206,10 +204,8 @@ function isArray(input: unknown): input is readonly BlocInput[] {
  * Thin wrapper around `container.channel.subscribe(ALL_PATHS, ...)`. The
  * callback fires once immediately, then on every state change of any of the
  * passed blocs. Returning `watch.STOP` from the callback tears down all
- * subscriptions.
- *
- * Note: subscriptions are microtask-deferred (per the DirtyChannel default
- * scheduler), so callbacks land asynchronously after `emit()`.
+ * subscriptions. Subscriptions are microtask-deferred, so callbacks land
+ * asynchronously after `emit()`.
  *
  * By default `watch` creates the instance if it does not exist and holds a
  * real ownership ref until `unwatch`, matching `acquire`. Pass
@@ -273,14 +269,15 @@ function watchImpl(
   const registry = getRegistry();
   const create = options?.create ?? true;
 
-  const targets = inputs.map(toWatchTarget);
+  const targets = inputs.map((input) => toWatchTarget(registry, input));
   const refIds = targets.map(() => `_watch_${watchRefSeq++}`);
+  const resolveAt = (index: number) =>
+    create
+      ? resolveBloc(registry, targets[index], refIds[index])
+      : resolveBlocPassive(registry, targets[index]);
 
   let disposed = false;
-  const instances: Array<StateContainerInstance | undefined> = targets.map(
-    (target, i) =>
-      create ? resolveBloc(target, refIds[i]) : resolveBlocPassive(target),
-  );
+  const instances: Array<StateContainerInstance | undefined> = [];
   const channelUnsubs: Array<(() => void) | undefined> = [];
   const disposedUnsubs: Array<(() => void) | undefined> = [];
 
@@ -292,7 +289,7 @@ function watchImpl(
     channelUnsubs.length = 0;
     disposedUnsubs.length = 0;
     if (create) {
-      for (let i = 0; i < targets.length; i++) {
+      for (let i = 0; i < instances.length; i++) {
         registry.release(
           targets[i].blocClass,
           targets[i].key,
@@ -323,9 +320,7 @@ function watchImpl(
   // registry that triggered the dispose, e.g. `clearAll()`), then notify.
   const resubscribeAt = (index: number) => {
     if (disposed) return;
-    instances[index] = create
-      ? resolveBloc(targets[index], refIds[index])
-      : resolveBlocPassive(targets[index]);
+    instances[index] = resolveAt(index);
     subscribeAt(index);
     subscribeDisposeAt(index);
     runCallback();
@@ -339,16 +334,16 @@ function watchImpl(
     });
   };
 
-  for (let i = 0; i < instances.length; i++) {
-    subscribeAt(i);
+  try {
+    for (let i = 0; i < targets.length; i++) instances.push(resolveAt(i));
+    for (let i = 0; i < instances.length; i++) subscribeAt(i);
+    for (let i = 0; i < instances.length; i++) subscribeDisposeAt(i);
+    // Fire once immediately so the consumer sees the current state.
+    runCallback();
+  } catch (error) {
+    cleanup();
+    throw error;
   }
-
-  for (let i = 0; i < instances.length; i++) {
-    subscribeDisposeAt(i);
-  }
-
-  // Fire once immediately so the consumer sees the current state.
-  runCallback();
 
   return cleanup;
 }

@@ -1,0 +1,119 @@
+# TODO: `@blac/core` and `@blac/react` fixes
+
+Derived from `review.md`. Section numbers in brackets point back to it. Each bug fix needs a small regression test; the repros in `review.md` are the starting point.
+
+## Progress
+
+- Branch `fix/review-p0-bugs`. P0, P1 and P2 complete.
+- Git commit hooks removed; run `vp check` manually before committing.
+- P3 complete.
+
+## P0 — Confirmed bugs
+
+- [x] **StrictMode drops dep `.track()` subscriptions** [1.1] — done in `596d44e0`
+  - Unmount cleanup resets `consumer.lastReconcile = null`.
+  - Reconcile pass 2 skips a disposed dep and bumps, so the re-render resolves the live instance (the StrictMode unmount disposes the dep).
+  - Test: `useBloc.track-lifecycle.test.tsx` › "track() in StrictMode". Changeset: `strictmode-dep-track.md`.
+- [x] **Instance-id collision breaks dispose cleanup** [1.5]
+  - `_pruneEntry` looks entries up in a new `_entryByInstance` `WeakMap`; `_entryById` is kept only for `getRefIdsById` (still ambiguous on collisions).
+  - Test: `StateContainerRegistry.ownership.test.ts` › "owner disposal releases dependents when another class shares its name". Changeset: `registry-prune-by-instance.md`.
+- [x] **Dep instances leak from uncommitted renders / SSR** [1.2]
+  - `makeDepWrapper`'s `resolve` acquires with `countRef: false` and `sweepIfUnowned` while rendering; outside render it keeps plain `ensure` semantics.
+  - Test: `useBloc.track-lifecycle.test.tsx` › "track() during SSR". Changeset: `ssr-dep-sweep.md`.
+- [x] **Registry swap leaves stale subscription** [1.4]
+  - Added `registry` to the `subscribe` memo deps.
+  - Test: `RegistryProvider.test.tsx` › "re-subscribes to the new registry when the provider swaps it". Changeset: `registry-swap-resubscribe.md`.
+  - Tracked deps had the same bug: the dep-wrapper cache outlived the swap, and deps were released against the wrong registry. Wrappers are now per memo, each dep sub keeps its own registry, and `dispose` runs only on unmount. Test: "moves tracked deps to the new registry when the provider swaps it". Changeset: `registry-swap-deps.md`.
+- [x] **Select mode compares against stale selection** [1.3]
+  - `consumer.selection` is recomputed every render.
+  - Test: `useBloc.select.test.tsx` › "compares against the selection of the latest render". Changeset: `select-latest-selection.md`.
+- [x] **Disposed owner pins deps via accessors** [1.6]
+  - `depend()`'s `resolve` passes no `dependent` once `this._disposed`, adds `sweepIfUnowned` so a dep it creates isn't leaked, and dev-warns.
+  - Test: `StateContainerRegistry.ownership.test.ts` › "dep accessed through a disposed owner is not pinned". Changeset: `disposed-owner-dep.md`.
+
+## P1 — Likely bugs
+
+- [x] **Plugin environment detection** [2.1]
+  - `constants.ts` exports `readNodeEnv()`, used by both `IS_DEV` and `PluginManager.getCurrentEnvironment()` (read per call, so tests can still switch `NODE_ENV`). Unknown counts as production.
+  - Test: `PluginManager.test.ts` › "treats an unset NODE_ENV as production". Changeset: `plugin-env-detection.md`.
+- [x] **Sweep vs. concurrent rendering** [2.2]
+  - Confirmed: a time-sliced transition constructed the bloc twice. A macrotask sweep did not help (time slicing yields between macrotasks).
+  - The sweep now runs after `configureBlac({ unownedSweepDelayMs })` (default 5000) on a per-entry timer; a speculative re-acquire of a still-pending entry restarts it. A bare `ensure()` is still never swept.
+  - Corrected the ownership-effect comment in `useBloc.ts`; added the option to `etc/core.api.md` and the docs defaults table.
+  - Tests: `useBloc.concurrent.test.tsx`, `StateContainerRegistry.sweep.test.ts` (fake timers, restart case). Changeset: `sweep-grace-period.md`.
+- [x] **`watch()` leaks on error** [2.3]
+  - Setup (acquire, subscribe, first callback) runs in a `try`; on error it calls `cleanup()` and rethrows. `cleanup` releases only the targets actually acquired.
+  - `toWatchTarget`, `resolveBloc` and `resolveBlocPassive` take the captured `registry`.
+  - Tests: `watch.test.ts` › "releases its refs when the first callback throws", "releases earlier refs when a later target fails to acquire". Changeset: `watch-error-cleanup.md`.
+- [x] **React test helpers leak the global registry** [2.4]
+  - Setup runs in `withTestRegistry` (restores even on throw, and stubs bind to the test registry at construction); the UI renders via a `RegistryProvider` wrapper. The `unmount` override is gone.
+  - Renamed `testing.ts` → `testing.tsx` for the JSX wrapper (build entry in `packages/blac-react/vite.config.ts` and the `apps/examples` alias updated).
+  - Behavior change: core helpers called from the test body no longer see the test registry. Docs updated in `apps/web-docs/.../testing/react.md`.
+  - Test: `renderWithBloc.testing.test.tsx` › "leaves the global registry untouched". Changeset: `react-test-helpers-provider.md`.
+- [x] **`structuralKey` edge cases** [2.5]
+  - Throws in dev on non-plain objects (`Map`, `Set`, class instances without `toJSON`; `Date` still works via `toJSON`). Production unchanged; functions still throw everywhere.
+  - Kept the identity cache (hot path); documented that mutating args keeps the old key, plus the JSON `undefined`/`NaN` semantics. Header comment fixed.
+  - Test: `structural-key.test.ts` › "throws in dev on non-plain objects…". Changeset: `structural-key-non-plain.md`.
+- [x] **Test stubs diverge from real behavior** [2.6]
+  - Did both: per-class equality is resolved in the `_equalityFn` field initializer (removed from `[INIT_CONFIG]`), and `createCubitStub` always runs `[INIT_CONFIG]`.
+  - Both helpers apply `state` to any `StateContainer` through one shared `applyState` helper (`emit`/`patch` are only protected there).
+  - Behavior change: a stub for a bloc with required `args` now calls `init(undefined)` if they're omitted. Replaced the "does not run init when args are omitted" tests (core and React) accordingly.
+  - Tests: `testing.args-deps.test.ts` › "runs init and applies per-class equality without args", "applies state to a non-Cubit container". Docs: `testing/core.md`. Changeset: `test-stubs-match-registry.md` (minor).
+- [x] **`release()` with an unknown `refId`** [2.7]
+  - Returns early (no event, no dispose) when the ref isn't held, including an unscoped release with no refs. Collapsed the two decrement branches into one.
+  - Test: `StateContainerRegistry.refcount.test.ts` › "release() with a refId that is not held is a no-op". Changeset: `release-unknown-ref.md`.
+- [x] **Ref-limit check order** [2.8]
+  - The limit is checked before adding, and only for a new `refId` (re-acquiring a held one doesn't grow the set).
+  - Test: extended `StateContainerRegistry.circuit-breaker.test.ts` › "throws when refs-per-instance exceeds the cap" to assert the count stays at 2. Changeset: `ref-limit-before-add.md`.
+
+## P2 — Stale or incorrect docs [3]
+
+- [x] `blac-core/src/config.ts`: correct the default values in the JSDoc (100000 / 100000 / 1000). Also fixed the defaults table in `core/configuration.md`.
+- [x] `blac-react/src/types.ts`: remove the claim that a fresh `select` re-keys the subscription. The same claim was in seven web-docs places (`use-bloc`, `dependency-tracking`, `performance`, `typescript`, `mental-model`, `troubleshooting`); removed, and the two cautions now say inline selectors are fine.
+- [x] `blac-react/src/useBloc.ts`: the return value is `[state, bloc]`, not `[state, bloc, ref]`.
+- [x] `blac-react/src/BlocProvider.tsx`: "WeakMap-keyed" → `Map`.
+- [x] `blac-core/src/utils/idGenerator.ts`: drop "collision-resistant" / "counter"; document the `Name:main` lazy id.
+
+## P3 — Refactoring
+
+### `@blac/react`
+
+- [x] Split `useBloc.ts`: extract the dep-session reconcile into a unit that owns its own cleanup.
+  - `depSession.ts`: a `DepSession` class (render `begin`/`record`, commit `isUnchanged`/`reconcile`, unmount `dispose`) plus `makeDepWrapper`. `expandWithAncestors` moved to its own module.
+  - The short-circuit signature is now a snapshot of the session entries; the constant dep `refId` lives on the session instead of every entry.
+- [x] Share one dependency tuple `[registry, BlocClass, instanceKey, rebindNonce]` across the instance memo, `subscribe` and the ownership effect. Not done as written: the ownership effect deliberately omits `rebindNonce` (a rebind must not release and re-acquire the ref). The memo and `subscribe` now share `[BlocClass, instanceKey, rebindNonce, registry]` (plus the constant `consumerId`).
+- [x] Key the memo on `resolveInstanceKey(...)`; remove `ownArgsKey`, `ownArgsKeyFor`, `providerArgsKey`, `providerArgsKeyFor`. Uses `registry.resolveKey` (the context registry, not the global one); `ARGS_UNSET` removed too.
+- [x] Reconcile pass 2 (`useBloc.ts:501`): check the instance returned by `acquire` matches the subscribed dep container. On mismatch it releases the ref and re-renders.
+- [x] `buildTrackedProxy`: invalidate the bound-method cache when the underlying function changes; add a `set` trap with the real instance as receiver. Tests in `buildTrackedProxy.test.ts`. Changeset: `react-proxy-and-memo-key.md`.
+- [x] `BlocProvider`: `useProvidedArgs` returns the latest args when only non-identity fields change. The provider memo is keyed on `JSON.stringify(args)` instead of the resolved key. Test in `BlocProvider.test.tsx`. Changeset: `bloc-provider-latest-args.md`.
+
+### `@blac/core`
+
+- [x] Registry read methods (`hasInstance`, `getRefCount`, `getAll`, `forEach`, `clear`, `release`): use `getInstancesMap` instead of `ensureInstancesMap`. `getRefIds` too; `release`/`clear` read the raw map and return early.
+- [x] `hasInstance`: return `false` for stale disposed entries. Changeset: `registry-read-cleanups.md`.
+- [x] `StateContainer`: extract the shared `patch` / `applyState` post-change logic. Named `_recordChange`; `applyState` calls it before `super.emit` (the registry notification is microtask-deferred, so order doesn't matter).
+- [x] Make `_drainPending` and `emitSystemEvent` iterate handlers the same way. `_drainPending` now calls `emitSystemEvent`, which snapshots the handler count.
+- [x] Convert `onSystemEvent` from an arrow class field to a method; guard it after dispose (returns a no-op unsubscribe). `etc/core.api.md` updated.
+- [x] Make `_createdAt` lazy or accept it as eager and drop the perf rationale on `_instanceId`. Kept eager (a lazy creation time would be wrong); the rationale was also false since the lazy id is just `Name:main`.
+- [x] Remove the redundant `hasStateChangedListeners` check in `notifyStateChanged` or at its call sites. Removed at the call sites.
+- [x] `PluginManager`: attach the all-paths state bridge only while at least one plugin implements `onStateChange`; detach on `uninstall`. Changeset: `plugin-lazy-state-bridge.md`.
+- [x] `PluginManager.install`: don't run the `onCreated` backfill (or undo it) when `onInstall` throws. The plugin is now registered and backfilled only after `onInstall` succeeds. Test: extended "should rollback if onInstall throws error".
+- [x] Plugin support for scoped registries: `getPluginManager(registry?)` returns a per-registry manager (cached in a `WeakMap`). Documented in `core/plugins.md`. Changeset: `plugins-per-registry.md`.
+- [x] Unify the "current registry" split between the core helper functions and React context. The plain helpers can't read React context without breaking nested providers, concurrent rendering and per-request SSR isolation, so as decided: `@blac/react` exports `useRegistry()` (the provider's registry, else `getRegistry()`; `useBloc` uses it too), and the docs (`getRegistry` JSDoc, `react/getting-started`, `integrations/ssr`) say the plain helpers always use the global registry. Test in `RegistryProvider.test.tsx`. Changeset: `use-registry-hook.md` (minor).
+- [x] Removed the unused `ExtractConstructorArgs`, `BlocInstanceType`, `BlocConstructor` exports (patch bump, as decided). Docs in `core/types.md` and `etc/core.api.md` updated. Changeset: `remove-unused-types.md`.
+- [x] Remove the unused `defaultValue` parameter from `getStaticProp`.
+- [x] Merged `registerType` into the registry (inlined `this.types.add`); public `register()` stays. `insertInstance` now tracks the type too, so `clearAll()` disposes test overrides. Changeset: added to `registry-read-cleanups.md`.
+- [x] Use `getBlacName(Type)` instead of `Type.name` in registry error messages.
+- [x] Decorator: drop the redundant `'x' in options` checks.
+- [x] `keepAlive: false` overrides an inherited value (`BlacOptions.keepAlive` is now `boolean`). Test in `blac.test.ts`; documented in `core/configuration.md`. Changeset: `decorator-keepalive-false.md`.
+- [x] `flush()` drains until a round passes with no new state change, using a module-level change counter in `StateContainer` (`getStateChangeCount`). A scheduler idle API in `@dirtytalk/structural` would have needed a build, since tests resolve that package from `dist`. Test in `testing.args-deps.test.ts`. Changeset: `flush-until-idle.md`.
+- [x] `blacTestSetup`: `clearAll()` the test registry in `afterEach`. Changeset: `test-setup-clear-registry.md`.
+
+### Both packages
+
+- [x] Move the internal symbols (`APPLY_DEPS`, `REMOVE_DEPS_OWNER`, `INIT_CONFIG`, `ON_DISPOSE`, `WITH_TRACKED_STATE`, `DEP_BRAND`) and `insertInstance` to a `@blac/core/internal` subpath.
+  - `insertInstance` became the symbol-keyed `[INSERT_INSTANCE]` method, exported from `internal`.
+  - Subpath added to `package.json` exports/typesVersions, the pack entries, and the tsconfig paths / examples alias that map `@blac/core` to source. `etc/core.api.md` hand-edited (needs a build to regenerate). Changeset: `core-internal-subpath.md`.
+- [x] Trim comments: remove history narration ("the pre-uSES hook…", "R3/R4") and multi-paragraph explanations. Source only; tests untouched.
+- [x] Add changesets for each user-visible fix.
+- [x] Run `vp check` and `vp test` in both packages after each group of changes.

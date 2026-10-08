@@ -275,4 +275,24 @@ describe('E1 — BlocProvider args-based scoping', () => {
 
     expect(seen.length).toBe(1);
   });
+
+  it('passes on a change to a field the static key ignores', () => {
+    let provided: unknown;
+    function Probe() {
+      provided = useProvidedArgs(CounterCubit);
+      return null;
+    }
+    const tree = (label: string) => (
+      <BlocProvider
+        bloc={CounterCubit}
+        args={{ _id: 'a', label } as { _id: string }}
+      >
+        <Probe />
+      </BlocProvider>
+    );
+    const { rerender } = render(tree('one'));
+    rerender(tree('two'));
+
+    expect(provided).toEqual({ _id: 'a', label: 'two' });
+  });
 });

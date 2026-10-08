@@ -1,4 +1,3 @@
-// Global config
 export {
   configureBlac,
   getBlacConfig,
@@ -8,8 +7,7 @@ export {
   type EqualityFn,
 } from './config';
 
-// Core Classes
-export { StateContainer, DEP_BRAND } from './core/StateContainer';
+export { StateContainer } from './core/StateContainer';
 export type {
   HydrationStatus,
   StateContainerConfig,
@@ -18,19 +16,7 @@ export type {
   DepHandle,
 } from './core/StateContainer';
 export { Cubit } from './core/Cubit';
-/**
- * @internal symbols — read by `@blac/react` (APPLY_DEPS / REMOVE_DEPS_OWNER),
- * in-package tests (INIT_CONFIG), and `watch()` (ON_DISPOSE).
- */
-export {
-  APPLY_DEPS,
-  REMOVE_DEPS_OWNER,
-  INIT_CONFIG,
-  ON_DISPOSE,
-  WITH_TRACKED_STATE,
-} from './core/symbols';
 
-// `$blac` meta namespace (identity / lifecycle / hydration).
 export type { BlacMeta, BlacHydration } from './core/meta';
 
 // Structural primitives — re-exported for plugins that need to compose
@@ -38,7 +24,6 @@ export type { BlacMeta, BlacHydration } from './core/meta';
 export { ALL_PATHS } from '@dirtytalk/structural';
 export type { PathSet } from '@dirtytalk/structural';
 
-// Registry
 export {
   acquire,
   resolveInstanceKey,
@@ -71,7 +56,6 @@ export type {
   InstanceEntry,
 } from './core/StateContainerRegistry';
 
-// Decorator
 export { blac, type BlacOptions } from './decorators';
 
 // Static-property feature flags (read by framework adapters)
@@ -91,7 +75,6 @@ export type {
   InstanceMetadata,
 } from './plugin/BlacPlugin';
 
-// Watch
 export {
   watch,
   instance,
@@ -100,17 +83,13 @@ export {
   type BlocRef,
 } from './watch';
 
-// Types
 export type {
   StateContainerConstructor,
   DeepReadonly,
   ExtractState,
   ExtractStateMutable,
-  ExtractConstructorArgs,
   ExtractArgs,
   ExtractDeps,
-  BlocInstanceType,
-  BlocConstructor,
   InstanceReadonlyState,
   WithState,
   InstanceState,

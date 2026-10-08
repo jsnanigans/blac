@@ -1,5 +1,92 @@
 # @blac/core
 
+## 2.1.1
+
+### Minor Changes
+
+- 86c37df: Sweep instances created during a render after a grace period instead of at the
+  end of the microtask.
+
+  A time-sliced render (`startTransition`) can yield between render and commit,
+  so the microtask sweep disposed the new instance before the commit claimed it.
+  `useBloc` then recreated it: the constructor and `init()` ran twice and the
+  component rendered an extra time. The delay is configurable with
+  `configureBlac({ unownedSweepDelayMs })` (default `5000`); another render that
+  reuses the still-unclaimed instance restarts it.
+
+- 24f0293: Test stubs now initialize like registry-created instances.
+  - Per-class `equality` is resolved at construction, so it also applies to a
+    bare `new`.
+  - `createCubitStub` always runs `init()`. A stub for a bloc with required
+    `args` must now pass them, or its `init()` receives `undefined`.
+  - `createCubitStub` and `withBlocState` apply `state` to any
+    `StateContainer`, not only `Cubit`; it was silently dropped before.
+
+### Patch Changes
+
+- e31ee51: Move the internal framework symbols (`APPLY_DEPS`, `REMOVE_DEPS_OWNER`,
+  `INIT_CONFIG`, `ON_DISPOSE`, `WITH_TRACKED_STATE`, `DEP_BRAND`) from the
+  main `@blac/core` entry to `@blac/core/internal`, and replace the registry's
+  `insertInstance` method with the internal `INSERT_INSTANCE` symbol. These
+  were never public API.
+- 5a23fc0: `@blac({ keepAlive: false })` now turns off a `keepAlive` inherited from a
+  base class.
+- bef2f5b: Stop a disposed bloc from pinning its dependencies. Calling `track()` or
+  `untracked()` on a dep handle after the owner was disposed (for example, an
+  async method resolving after unmount) registered the dead owner as a
+  dependent, so the dep was never disposed. It now records no edge, sweeps a
+  dep that nothing else owns, and warns in development.
+- 5a23fc0: The `flush()` test helper keeps draining until a round passes with no new
+  state change, so emits made by subscribers are flushed too.
+- d0ede99: Treat an unknown environment as production when filtering plugins, matching
+  the rest of the library. A browser bundle without `process` (or an unset
+  `NODE_ENV`) previously installed plugins marked `environment: 'development'`.
+- 5a23fc0: The plugin manager subscribes to container state only while an installed
+  plugin implements `onStateChange`, so plugins without it no longer disable
+  the single-consumer fast path. A plugin whose `onInstall` throws no longer
+  receives `onCreated` for existing instances.
+- 5a23fc0: `getPluginManager(registry?)` returns a plugin manager for any registry, so
+  plugins can observe scoped registries (e.g. one passed to
+  `RegistryProvider`). Without an argument it still returns the global one.
+- 370c225: The `maxRefsPerInstance` check now runs before the ref is added, so a
+  rejected `acquire()` no longer leaves a ref behind.
+- bef2f5b: Release `depend()` dependencies when a disposed bloc shares its name with
+  another class.
+
+  The registry pruned disposed entries by `$blac.id` (`<name>:<key>`), which
+  collides for same-named classes, including minified builds. The prune then
+  failed, so the disposed bloc's dependencies were never released. Entries are
+  now pruned by instance.
+
+- 5a23fc0: - `hasInstance()` returns `false` for a disposed entry that is still in the
+  registry.
+  - Registry read methods no longer allocate an empty map for unknown types.
+  - Registry errors name classes by `getBlacName`, so they survive
+    minification.
+  - `onSystemEvent` after dispose is a no-op.
+  - Merge `StateContainerRegistry.registerType` into the registry internals;
+    use `register()` to register a class explicitly. Instances added with
+    `insertInstance` (test overrides) are now tracked, so `clearAll()` disposes
+    them.
+- c46ad21: `release()` with a ref that isn't held is now a no-op, as documented. It
+  used to emit `refReleased` and could dispose an instance created with
+  `ensure()`.
+- 5a23fc0: Remove the unused `ExtractConstructorArgs`, `BlocInstanceType` and
+  `BlocConstructor` type exports. Use TypeScript's `ConstructorParameters` /
+  `InstanceType` or `StateContainerConstructor` instead.
+- 91cae43: Throw in development when `args` contain a `Map`, `Set` or class instance
+  without `toJSON`. They all serialized to `{}`, so different args silently
+  shared one instance key. Production behavior is unchanged.
+- 5a23fc0: `blacTestSetup()` disposes every instance in the test registry after each
+  test, so `onDispose` and plugin teardown run between tests.
+- 697c0e7: `watch()` releases what it acquired when setup fails. If acquiring a target or
+  the first callback threw, earlier refs and subscriptions were never released.
+  All acquires and releases now also use the registry captured when `watch()`
+  was called, so a `setRegistry` in between can no longer split them across
+  registries.
+- Updated dependencies
+  - @dirtytalk/structural@0.1.3
+
 ## 2.0.22
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @dirtytalk/structural
 
+## 0.1.3
+
+### Patch Changes
+
+- Rebuild against the new `@blac/core` and `@blac/react` releases.
+
 ## 0.1.2
 
 ### Patch Changes

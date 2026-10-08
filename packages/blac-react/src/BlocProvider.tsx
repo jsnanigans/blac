@@ -5,15 +5,14 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { resolveInstanceKey } from '@blac/core';
 import type { ExtractArgs, StateContainerConstructor } from '@blac/core';
 
 /**
  * Internal context value: a Map from bloc constructor to the args object
  * provided by the nearest BlocProvider for that bloc class.
  *
- * Stored as a WeakMap-keyed record so nested providers for different blocs
- * compose without clobbering each other.
+ * Each provider copies its parent's map and adds its own entry, so nested
+ * providers for different blocs compose without clobbering each other.
  */
 type ProvidedArgsMap = Map<StateContainerConstructor, unknown>;
 
@@ -38,14 +37,11 @@ export interface BlocProviderProps<T extends StateContainerConstructor> {
 
 /**
  * Provides args to descendant `useBloc` calls for a specific bloc class via
- * React context.
- *
- * Descendants calling `useBloc(Bloc)` without their own `args` resolve to the
- * args supplied here. Own `args` on the `useBloc` call always win.
+ * React context. Own `args` on the `useBloc` call always win.
  *
  * Multiple `BlocProvider` wrappers for different bloc classes compose: each
- * provider merges its entry into the inherited map, so nested providers for
- * different blocs do not interfere.
+ * merges its entry into the inherited map, so nested providers for different
+ * blocs do not interfere.
  *
  * @example
  * ```tsx
@@ -70,10 +66,10 @@ export function BlocProvider<T extends StateContainerConstructor>({
 }: BlocProviderProps<T>): ReactElement {
   const parentMap = useContext(ProvidedArgsContext);
 
-  // Keyed on the resolved instance key, not `args` identity, so an inline
-  // `args={{ ... }}` literal does not rebuild the map on every render and
-  // re-render every consumer below.
-  const argsKey = resolveInstanceKey(bloc, args);
+  // Keyed on the args content, not identity, so an inline `args={{ ... }}`
+  // literal does not rebuild the map (and re-render every consumer) on
+  // every render, while a real field change still reaches `useProvidedArgs`.
+  const argsKey = JSON.stringify(args);
 
   // Merge our entry into a new Map so sibling/parent providers for other blocs
   // are preserved.

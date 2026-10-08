@@ -1,13 +1,12 @@
-import { createContext, type ReactElement, type ReactNode } from 'react';
-import type { StateContainerRegistry } from '@blac/core';
+import {
+  createContext,
+  useContext,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
+import { getRegistry, type StateContainerRegistry } from '@blac/core';
 
-/**
- * Internal context value: a registry to use in place of the module-global
- * default (`getRegistry()`), or `null` when no provider is present.
- */
-export const RegistryContext = createContext<StateContainerRegistry | null>(
-  null,
-);
+const RegistryContext = createContext<StateContainerRegistry | null>(null);
 
 /**
  * Props for {@link RegistryProvider}.
@@ -42,4 +41,15 @@ export function RegistryProvider({
       {children}
     </RegistryContext.Provider>
   );
+}
+
+/**
+ * The registry `useBloc` uses here: the nearest {@link RegistryProvider}'s,
+ * else `getRegistry()`. The plain `@blac/core` helpers (`acquire`, `ensure`,
+ * `watch`, …) can't read React context and always use `getRegistry()`; call
+ * this registry's methods directly to stay inside a provider's scope.
+ * @public
+ */
+export function useRegistry(): StateContainerRegistry {
+  return useContext(RegistryContext) ?? getRegistry();
 }

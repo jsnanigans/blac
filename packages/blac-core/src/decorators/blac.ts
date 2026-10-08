@@ -6,8 +6,11 @@ import type { EqualityFn } from '../config';
  * given at once.
  */
 export interface BlacOptions {
-  /** Mark bloc to never be auto-disposed when ref count reaches 0 */
-  keepAlive?: true;
+  /**
+   * Keep the bloc alive when its ref count reaches 0. `false` turns off a
+   * `keepAlive` inherited from a base class.
+   */
+  keepAlive?: boolean;
   /** Exclude bloc from DevTools tracking (prevents infinite loops) */
   excludeFromDevTools?: true;
   /**
@@ -57,19 +60,19 @@ export function blac(options: BlacOptions) {
     target: T,
     _context?: ClassDecoratorContext,
   ): T {
-    if ('keepAlive' in options && options.keepAlive) {
-      (target as any)[BLAC_STATIC_PROPS.KEEP_ALIVE] = true;
+    if (options.keepAlive !== undefined) {
+      (target as any)[BLAC_STATIC_PROPS.KEEP_ALIVE] = options.keepAlive;
     }
-    if ('excludeFromDevTools' in options && options.excludeFromDevTools) {
+    if (options.excludeFromDevTools) {
       (target as any)[BLAC_STATIC_PROPS.EXCLUDE_FROM_DEVTOOLS] = true;
     }
-    if ('equality' in options && typeof options.equality === 'function') {
+    if (typeof options.equality === 'function') {
       (target as any)[BLAC_STATIC_PROPS.EQUALITY] = options.equality;
     }
-    if ('key' in options && typeof options.key === 'function') {
+    if (typeof options.key === 'function') {
       (target as any)[BLAC_STATIC_PROPS.KEY] = options.key;
     }
-    if ('name' in options && typeof options.name === 'string') {
+    if (typeof options.name === 'string') {
       (target as any)[BLAC_STATIC_PROPS.BLAC_NAME] = options.name;
     }
     return target;

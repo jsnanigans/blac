@@ -1,7 +1,3 @@
-/**
- * Global configuration for `@blac/core`
- */
-
 export type EqualityFn = <S>(prev: S, next: S) => boolean;
 
 export interface BlacConfig {
@@ -19,7 +15,7 @@ export interface BlacConfig {
    * creation — typically an unstable/args-derived key churning out instances
    * that are never disposed (a memory leak that eventually freezes the app).
    *
-   * Default: `1000`. Set to `Infinity` (or any non-positive value) to disable.
+   * Default: `100000`. Set to `Infinity` (or any non-positive value) to disable.
    */
   maxInstancesPerType: number;
 
@@ -29,7 +25,7 @@ export interface BlacConfig {
    * other leak shape — consumer cleanup (e.g. `useBloc` unmount `release`)
    * never firing, so refs accumulate without bound on one instance.
    *
-   * Default: `1000`. Set to `Infinity` (or any non-positive value) to disable.
+   * Default: `100000`. Set to `Infinity` (or any non-positive value) to disable.
    */
   maxRefsPerInstance: number;
 
@@ -42,10 +38,18 @@ export interface BlacConfig {
    * plugins (logging/devtools), and the main thread.
    *
    * Heuristic by nature — warns, never throws, since high-frequency state can
-   * occasionally be legitimate. No-op in production. Default: `100`. Set to
+   * occasionally be legitimate. No-op in production. Default: `1000`. Set to
    * `Infinity` (or any non-positive value) to disable.
    */
   maxEmitsPerSecond: number;
+
+  /**
+   * How long an instance created speculatively during a render stays alive
+   * without an owner before it is disposed. Covers renders that never commit
+   * (SSR, discarded or suspended renders) while giving a time-sliced render
+   * time to commit. Default: `5000`.
+   */
+  unownedSweepDelayMs: number;
 }
 
 /**
@@ -77,6 +81,7 @@ const defaultConfig: BlacConfig = {
   maxInstancesPerType: 100000,
   maxRefsPerInstance: 100000,
   maxEmitsPerSecond: 1000,
+  unownedSweepDelayMs: 5000,
 };
 
 let globalConfig: BlacConfig = { ...defaultConfig };

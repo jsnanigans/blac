@@ -51,8 +51,12 @@ export interface BlacPluginWithInit extends BlacPlugin {
   onInstall(ctx: PluginContext): void;
 }
 
+// Warning: (ae-forgotten-export) The symbol "StateContainerRegistry" needs to be exported by the entry point plugins.d.ts
+//
 // @public
-export function getPluginManager(): PluginManager;
+export function getPluginManager(
+  registry?: StateContainerRegistry,
+): PluginManager;
 
 // @public (undocumented)
 export interface InstanceMetadata {
@@ -134,7 +138,6 @@ export interface PluginContext {
 
 // @public
 export class PluginManager {
-  // Warning: (ae-forgotten-export) The symbol "StateContainerRegistry" needs to be exported by the entry point plugins.d.ts
   constructor(registry: StateContainerRegistry);
   clear(): void;
   // (undocumented)

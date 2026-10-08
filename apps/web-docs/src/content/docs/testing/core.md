@@ -130,7 +130,7 @@ function withBlocState<T extends StateContainerConstructor>(
 ): InstanceType<T>;
 ```
 
-Ensures an instance exists in the registry and seeds its state. For object-state cubits, the state is merged via `patch()` so you only need to provide the fields you care about. Returns the instance.
+Ensures an instance exists in the registry and seeds its state. Works for any `StateContainer`. For object state, the state is merged via `patch()` so you only need to provide the fields you care about. Returns the instance.
 
 ```ts
 blacTestSetup();
@@ -200,14 +200,14 @@ function createCubitStub<T extends StateContainerConstructor>(
 ): InstanceType<T>;
 ```
 
-Creates a real instance of the cubit with optional pre-set state and method overrides. The stub is a fully functional instance — subscriptions, `emit`, `patch`, and `dispose` all work normally. Only the explicitly overridden methods are replaced.
+Creates a real instance with optional pre-set state and method overrides. Works for any `StateContainer`, not only `Cubit`. The stub is initialized the same way the registry initializes an instance: `init()` runs and per-class `equality` applies. Subscriptions, `emit`, `patch`, and `dispose` all work normally. Only the explicitly overridden methods are replaced.
 
-| Option    | Effect                                                                                                                                                                       |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `state`   | Seeds starting state. Merged via `patch()` for object state (provide only the fields you care about); replaced via `emit()` for non-object state.                            |
-| `methods` | Replaces specific methods on the instance. Everything else stays real.                                                                                                       |
-| `args`    | Runs the bloc's `init(args)` once via the same internal path the registry uses, so `init` and lifecycle hooks fire. Only allowed when the bloc declares a non-`void` `Args`. |
-| `deps`    | Pre-wires a [`deps`](/guide/inputs) slice so `onDepsChanged` fires during the test.                                                                                          |
+| Option    | Effect                                                                                                                                            |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `state`   | Seeds starting state. Merged via `patch()` for object state (provide only the fields you care about); replaced via `emit()` for non-object state. |
+| `methods` | Replaces specific methods on the instance. Everything else stays real.                                                                            |
+| `args`    | Passed to `init(args)`. Only allowed when the bloc declares a non-`void` `Args`; omitting it calls `init(undefined)`, as the registry would.      |
+| `deps`    | Pre-wires a [`deps`](/guide/inputs) slice so `onDepsChanged` fires during the test.                                                               |
 
 The options apply in source order: `args` runs `init` first, then `state` overrides on top, then `methods` are swapped, then `deps` are wired (which may itself emit via `onDepsChanged`).
 
@@ -237,7 +237,7 @@ it('creates a stub with mocked methods', () => {
 
 #### Stubbing blocs that take `args` or `deps`
 
-If a bloc derives its initial state from `args` in `init()`, pass `args` so `init` actually runs:
+If a bloc derives its initial state from `args` in `init()`, pass `args`:
 
 ```ts
 it('seeds state from args via init()', () => {
