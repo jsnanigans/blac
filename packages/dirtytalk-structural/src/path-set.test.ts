@@ -162,7 +162,12 @@ describe('PathSetSpace.unionInto', () => {
   const into = (
     a: Parameters<typeof PathSetSpace.union>[0],
     b: Parameters<typeof PathSetSpace.union>[1],
-  ) => PathSetSpace.unionInto!(a, b);
+  ) => {
+    if (PathSetSpace.unionInto === undefined) {
+      throw new Error('unionInto is required');
+    }
+    return PathSetSpace.unionInto(a, b);
+  };
 
   it('does not mutate the incoming region', () => {
     const b = new Set([2]);
@@ -174,7 +179,7 @@ describe('PathSetSpace.unionInto', () => {
     const b = new Set([7]);
     const acc = into(into(emptyPathSet(), b), new Set([8]));
     expect([...b]).toEqual([7]);
-    expect([...(acc as Set<number>)].sort()).toEqual([7, 8]);
+    expect([...(acc as Set<number>)].sort((x, y) => x - y)).toEqual([7, 8]);
   });
 
   it('absorbs ALL_PATHS from either side', () => {
@@ -185,8 +190,8 @@ describe('PathSetSpace.unionInto', () => {
   it('matches pure union contents', () => {
     const acc = into(new Set([1, 2]), new Set([2, 3]));
     const pure = pathSetUnion(new Set([1, 2]), new Set([2, 3]));
-    expect([...(acc as Set<number>)].sort()).toEqual(
-      [...(pure as Set<number>)].sort(),
+    expect([...(acc as Set<number>)].sort((x, y) => x - y)).toEqual(
+      [...(pure as Set<number>)].sort((x, y) => x - y),
     );
   });
 });

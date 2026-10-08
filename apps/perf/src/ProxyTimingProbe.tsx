@@ -126,8 +126,8 @@ const Scenario = memo(function Scenario() {
       phase = 'macro';
       rec('=== setTimeout(0) macrotask ===');
       rec('post-commit read of captured proxy state.data[0].label:');
-      void capturedState!.data[0].label;
-      rec(`  (= ${capturedState!.data[0].label})`);
+      void capturedState?.data[0].label;
+      rec(`  (= ${capturedState?.data[0].label})`);
     }, 0);
   }, [state]);
   rec(`RENDER Parent: mapping ${state.data.length} rows`);

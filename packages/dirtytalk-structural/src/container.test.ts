@@ -770,7 +770,7 @@ describe('StructuralContainer — patch ancestor-mark refinement (P4b)', () => {
   // (PN2) Lock the exact refined dirty set (the marks _refineAncestorMarks
   // produces) for array-replace and mixed patches — the folded single-pass +
   // inner-loop rewrite must be byte-identical to the prior two-pass version.
-  const dirtyStrings = (c: ListBox, dirty: PathSet): string[] => {
+  const dirtyStrings = (c: ListBox, dirty: PathSet | undefined): string[] => {
     if (dirty === ALL_PATHS || !(dirty instanceof Set)) {
       throw new Error('expected Set<PathId>');
     }
@@ -795,7 +795,7 @@ describe('StructuralContainer — patch ancestor-mark refinement (P4b)', () => {
         { id: 2, name: 'b' },
       ],
     });
-    expect(dirtyStrings(c1, dirty1!)).toEqual(['items']);
+    expect(dirtyStrings(c1, dirty1)).toEqual(['items']);
 
     // Changed element.
     const c2 = makeList();
@@ -814,7 +814,7 @@ describe('StructuralContainer — patch ancestor-mark refinement (P4b)', () => {
         { id: 2, name: 'b' },
       ],
     });
-    expect(dirtyStrings(c2, dirty2!)).toEqual(['items', 'items.0.name']);
+    expect(dirtyStrings(c2, dirty2)).toEqual(['items', 'items.0.name']);
   });
 
   it('(PN2) mixed patch refined marks: array unchanged + label changed yields exactly {items, label}', () => {
@@ -835,7 +835,7 @@ describe('StructuralContainer — patch ancestor-mark refinement (P4b)', () => {
       ],
       label: 'NEW',
     });
-    expect(dirtyStrings(c, dirty!)).toEqual(['items', 'label']);
+    expect(dirtyStrings(c, dirty)).toEqual(['items', 'label']);
   });
 });
 
@@ -907,7 +907,7 @@ describe('StructuralContainer — incremental skeleton refcounting (P5)', () => 
     };
 
     for (let i = 0; i < 300; i++) {
-      const id = consumers[Math.floor(Math.random() * consumers.length)]!;
+      const id = consumers[Math.floor(Math.random() * consumers.length)];
       // Bias toward register (including re-register with changed paths); still
       // exercise unregister frequently.
       if (Math.random() < 0.65) {
