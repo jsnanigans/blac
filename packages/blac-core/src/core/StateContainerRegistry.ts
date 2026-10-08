@@ -440,7 +440,10 @@ export class StateContainerRegistry {
 
       this._syncActivation(entry);
 
-      if (options.sweepIfUnowned && entry.sweepTimer !== undefined) {
+      if (!options.sweepIfUnowned) {
+        clearTimeout(entry.sweepTimer);
+        entry.sweepTimer = undefined;
+      } else if (entry.sweepTimer !== undefined) {
         this._scheduleSweep(Type, entry);
       }
 
@@ -516,6 +519,7 @@ export class StateContainerRegistry {
       entry.instance.dispose();
       instances.delete(entry.key);
     }, getBlacConfig().unownedSweepDelayMs);
+    (entry.sweepTimer as { unref?: () => void }).unref?.();
   }
 
   /**

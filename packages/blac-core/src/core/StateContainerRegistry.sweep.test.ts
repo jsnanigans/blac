@@ -63,6 +63,16 @@ describe('zero-ref sweep', () => {
     expect(kept.$blac.disposed).toBe(false);
   });
 
+  it('cancels the sweep when a non-speculative caller reuses the entry', () => {
+    const registry = new StateContainerRegistry();
+    const bloc = create(registry, Speculative);
+    registry.ensure(Speculative, 'k');
+
+    vi.runAllTimers();
+
+    expect(bloc.$blac.disposed).toBe(false);
+  });
+
   it('restarts the delay when a render re-acquires the pending entry', () => {
     const registry = new StateContainerRegistry();
     const bloc = create(registry, Speculative);
