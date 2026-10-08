@@ -485,7 +485,7 @@ export abstract class StateContainer<
    * `depend()` dependent). Override to start work that should only run while
    * something is actually using the instance — fetches, timers, listeners.
    *
-   * `signal` aborts on the matching {@link onDeactivate} and on dispose, so
+   * `signal` aborts on the matching `onDeactivate` and on dispose, so
    * async work started here can be cancelled without extra bookkeeping.
    *
    * Runs before the first `useBlocDeps` slice is applied, so `this.deps` is
@@ -503,7 +503,7 @@ export abstract class StateContainer<
   /**
    * @internal Framework-only configuration entry point (registry + testing
    * helpers). Writes the `_`-private identity fields directly, emits the
-   * registry `created` event, and runs `init()` once. See {@link INIT_CONFIG}.
+   * registry `created` event, and runs `init()` once. See `INIT_CONFIG`.
    */
   [INIT_CONFIG](config: StateContainerConfig): void {
     this._config = { ...config };

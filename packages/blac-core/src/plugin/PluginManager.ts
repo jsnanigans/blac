@@ -46,8 +46,8 @@ interface ContainerBridge {
  * Hooks into registry lifecycle events (synchronous) and per-container
  * channel flushes (microtask-coalesced): while at least one installed
  * plugin implements `onStateChange`, the manager subscribes each container
- * with `ALL_PATHS` interest and dispatches `onStateChange(ctx, prev, next,
- * paths)` on every flush.
+ * with `ALL_PATHS` interest and dispatches
+ * `onStateChange(ctx, prev, next, paths)` on every flush.
  *
  * `ALL_PATHS` interest defeats the single-consumer-skip optimization in
  * `StructuralContainer` — an intended trade-off for plugins that genuinely

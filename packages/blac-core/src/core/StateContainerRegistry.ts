@@ -382,7 +382,7 @@ export class StateContainerRegistry {
    * @param options - `canCreate` and `countRef` default to true; `refId` is
    *   auto-generated when omitted; `dependent` is the `depend()`-owner, whose
    *   edge is released on its disposal; `sweepIfUnowned` is for speculative
-   *   creates (see {@link _scheduleSweep}).
+   *   creates (see `_scheduleSweep`).
    */
   acquire<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
