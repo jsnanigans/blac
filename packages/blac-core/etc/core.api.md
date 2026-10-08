@@ -218,8 +218,6 @@ export type DeepReadonly<T> = T extends (...args: any[]) => any
 
 // @public
 export interface DepHandle<T extends StateContainerConstructor> {
-  // Warning: (ae-incompatible-release-tags) The symbol "[DEP_BRAND]" is marked as @public, but its signature references "DEP_BRAND" which is marked as @internal
-  //
   // (undocumented)
   readonly [DEP_BRAND]: {
     Type: T;
@@ -241,7 +239,7 @@ export function ensure<T extends StateContainerConstructor>(
   },
 ): InstanceType<T>;
 
-// @public
+// @public (undocumented)
 export type EqualityFn = <S>(prev: S, next: S) => boolean;
 
 // @public
@@ -307,7 +305,7 @@ export function getRefIds<T extends StateContainerConstructor>(
   },
 ): string[];
 
-// @public (undocumented)
+// @public
 export function getRegistry(): StateContainerRegistry;
 
 // @public (undocumented)
@@ -342,17 +340,22 @@ export function instance<T extends StateContainerConstructor>(
 // @internal
 export interface InstanceEntry<T = any> {
   args?: unknown;
+  // (undocumented)
   argsKey?: string;
   dependents?: Set<StateContainer<any, any, any>>;
+  // (undocumented)
   instance: T;
+  // (undocumented)
   key: string;
   refs: Map<string, number>;
+  // (undocumented)
+  sweepTimer?: ReturnType<typeof setTimeout>;
 }
 
 // @public
 export type InstanceId = Brand<string, 'InstanceId'>;
 
-// @public
+// @public (undocumented)
 export function instanceId(id: string): InstanceId;
 
 // @public (undocumented)
@@ -594,6 +597,7 @@ export abstract class StateContainer<
     event: E,
     handler: SystemEventHandler<S, E>,
   ): () => void;
+  // (undocumented)
   protected patch(partial: DeepPartial<S>): void;
   // (undocumented)
   get state(): S;
@@ -608,6 +612,8 @@ export interface StateContainerConfig {
   instanceId?: string;
   // (undocumented)
   name?: string;
+  // @internal
+  registry?: StateContainerRegistry;
 }
 
 // @public
@@ -622,7 +628,6 @@ export type StateContainerInstance<S extends object = any> = WithState<
 
 // @public
 export class StateContainerRegistry {
-  constructor();
   // @internal
   [INSERT_INSTANCE]<T extends StateContainerConstructor>(
     Type: T,
@@ -630,6 +635,7 @@ export class StateContainerRegistry {
     instance: InstanceType<T>,
     refs?: Map<string, number>,
   ): void;
+  constructor();
   // @internal
   acquire<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,

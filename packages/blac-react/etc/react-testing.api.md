@@ -8,7 +8,7 @@ import type { ExtractArgs } from '@blac/core';
 import type { ReactElement } from 'react';
 import type { RenderResult } from '@testing-library/react';
 import type { StateContainerConstructor } from '@blac/core';
-import { StateContainerRegistry } from '@blac/core';
+import type { StateContainerRegistry } from '@blac/core';
 
 // Warning: (ae-forgotten-export) The symbol "RenderWithBlocOptions" needs to be exported by the entry point testing.d.ts
 //
