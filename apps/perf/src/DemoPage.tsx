@@ -1,158 +1,106 @@
-import React, { useRef, useState } from 'react';
-import { BlacFrameworkBenchmark } from './libraries/blac/FrameworkBenchmark';
-import {
-  ProfilerWrapper,
-  type ProfilerHandle,
-} from './harness/ProfilerWrapper';
-import { measureEndToEnd } from './harness/timing';
-import {
-  OPERATION_LABELS,
-  type BenchmarkAPI,
-  type OperationName,
-} from './shared/types';
+import React, { useEffect, useRef, useState } from 'react';
+import { measure } from './harness/measure';
+import { mount, type Mounted } from './harness/mount';
+import { listLibraries } from './libraries/registry';
+import { LIST_OPS } from './shared/list';
+import { formatMs } from './shared/stats';
+import type { ListAPI } from './shared/types';
 import './demo.css';
 
 const MAX_LOG_ENTRIES = 8;
 
 interface TimingEntry {
   label: string;
-  endToEnd: number;
-  renderActual: number;
-  renderBase: number;
+  time: number;
+  render: number;
 }
 
 /**
- * Interactive manual demo of the Blac js-framework-benchmark harness, served
- * at `/demo`. Lets you trigger each operation by hand and watch the full
- * table render, separate from the automated Dashboard benchmark suite.
+ * Manual list demo, served at `/demo`: trigger each list op by hand on any
+ * library and watch the table render. Not part of the benchmark suite.
  */
-export const DemoPage: React.FC = () => {
-  const apiRef = useRef<BenchmarkAPI | null>(null);
-  const profilerRef = useRef<ProfilerHandle | null>(null);
-  const [selectId, setSelectId] = useState('');
-  const [removeId, setRemoveId] = useState('');
+export function DemoPage() {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const [libName, setLibName] = useState(listLibraries[0].name);
+  const [bench, setBench] = useState<Mounted<ListAPI> | null>(null);
   const [log, setLog] = useState<TimingEntry[]>([]);
 
-  const handleReady = (api: BenchmarkAPI) => {
-    apiRef.current = api;
-  };
+  useEffect(() => {
+    const host = hostRef.current;
+    const lib = listLibraries.find((l) => l.name === libName);
+    if (!host || !lib) return;
+    let mounted: Mounted<ListAPI> | null = null;
+    let cancelled = false;
+    void mount<ListAPI>(host, (onReady) => (
+      <lib.Component onReady={onReady} />
+    )).then((m) => {
+      if (cancelled) void m.unmount();
+      else setBench((mounted = m));
+    });
+    return () => {
+      cancelled = true;
+      setBench(null);
+      void mounted?.unmount();
+    };
+  }, [libName]);
 
-  const runTimed = async (label: string, fn: () => void) => {
-    profilerRef.current?.reset();
-    const endToEnd = await measureEndToEnd(fn);
-    const metrics = profilerRef.current?.getMetrics() ?? [];
-    const renderMetrics = metrics.filter(
-      (m) => m.phase === 'update' || m.phase === 'mount',
-    );
-    const last = renderMetrics[renderMetrics.length - 1];
-    setLog((prev) =>
-      [
-        {
-          label,
-          endToEnd,
-          renderActual: last?.actualDuration ?? 0,
-          renderBase: last?.baseDuration ?? 0,
-        },
-        ...prev,
-      ].slice(0, MAX_LOG_ENTRIES),
-    );
+  const runTimed = async (label: string, fn: (api: ListAPI) => void) => {
+    if (!bench) return;
+    bench.timer.reset();
+    try {
+      const time = await measure(() => fn(bench.api));
+      const entry = { label, time, render: bench.timer.total };
+      setLog((prev) => [entry, ...prev].slice(0, MAX_LOG_ENTRIES));
+    } catch (err) {
+      // e.g. "Select row" on an empty table.
+      console.error(err);
+    }
   };
-
-  const operations: OperationName[] = [
-    'run',
-    'runLots',
-    'add',
-    'update',
-    'clear',
-    'swapRows',
-  ];
 
   return (
     <div className="demo-page">
-      <h1>Blac Framework Benchmark Demo</h1>
-      <p style={{ maxWidth: 720 }}>
-        Manually trigger the same operations the automated benchmark measures
-        and see the full table render. Not part of the benchmark suite.
+      <h1>List demo</h1>
+      <p>
+        Trigger the list operations by hand. Each runs from the current table,
+        without the benchmark&apos;s setup step.
       </p>
 
       <div className="demo-controls">
-        {operations.map((op) => (
+        <select value={libName} onChange={(e) => setLibName(e.target.value)}>
+          {listLibraries.map((l) => (
+            <option key={l.name}>{l.name}</option>
+          ))}
+        </select>
+        {Object.values(LIST_OPS).map((op) => (
           <button
-            key={op}
+            key={op.label}
             type="button"
-            onClick={() => {
-              const api = apiRef.current;
-              if (api) void runTimed(OPERATION_LABELS[op], () => api[op]());
-            }}
+            disabled={!bench}
+            onClick={() => void runTimed(op.label, op.run)}
           >
-            {OPERATION_LABELS[op]}
+            {op.label}
           </button>
         ))}
       </div>
 
-      <div className="demo-forms">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const id = Number(selectId);
-            const api = apiRef.current;
-            if (!Number.isNaN(id) && api) {
-              void runTimed('Select row', () => api.select(id));
-            }
-          }}
-        >
-          <input
-            type="number"
-            placeholder="row id"
-            value={selectId}
-            onChange={(e) => setSelectId(e.target.value)}
-          />
-          <button type="submit">Select row</button>
-        </form>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const id = Number(removeId);
-            const api = apiRef.current;
-            if (!Number.isNaN(id) && api) {
-              void runTimed('Remove row', () => api.remove(id));
-            }
-          }}
-        >
-          <input
-            type="number"
-            placeholder="row id"
-            value={removeId}
-            onChange={(e) => setRemoveId(e.target.value)}
-          />
-          <button type="submit">Remove row</button>
-        </form>
-      </div>
-
       <div className="demo-stats">
-        <h3>Operation timing</h3>
         {log.length === 0 ? (
-          <p className="stat-detail">
-            Trigger an operation above to see timing.
-          </p>
+          <p className="stat-detail">Trigger an operation to see timing.</p>
         ) : (
           <table className="results-table">
             <thead>
               <tr>
                 <th>Operation</th>
-                <th>End-to-end (ms)</th>
-                <th>Render actual (ms)</th>
-                <th>Render base (ms)</th>
+                <th>Trigger to committed DOM</th>
+                <th>React render</th>
               </tr>
             </thead>
             <tbody>
               {log.map((entry, i) => (
                 <tr key={i}>
                   <td>{entry.label}</td>
-                  <td>{entry.endToEnd.toFixed(2)}</td>
-                  <td>{entry.renderActual.toFixed(2)}</td>
-                  <td>{entry.renderBase.toFixed(2)}</td>
+                  <td>{formatMs(entry.time)}</td>
+                  <td>{formatMs(entry.render)}</td>
                 </tr>
               ))}
             </tbody>
@@ -160,9 +108,7 @@ export const DemoPage: React.FC = () => {
         )}
       </div>
 
-      <ProfilerWrapper id="demo" ref={profilerRef}>
-        <BlacFrameworkBenchmark onReady={handleReady} />
-      </ProfilerWrapper>
+      <div ref={hostRef} />
     </div>
   );
-};
+}

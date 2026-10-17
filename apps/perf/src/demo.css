@@ -22,7 +22,7 @@
 }
 
 .demo-controls button,
-.demo-forms button {
+.demo-controls select {
   padding: 8px 16px;
   background: var(--color-surface);
   color: var(--color-text);
@@ -32,41 +32,9 @@
   cursor: pointer;
 }
 
-.demo-controls button:hover,
-.demo-forms button:hover {
+.demo-controls button:hover:not(:disabled) {
   border-color: var(--color-accent);
   color: var(--color-accent);
-}
-
-.demo-forms {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin: 16px 0;
-}
-
-.demo-forms form {
-  display: flex;
-  gap: 8px;
-}
-
-.demo-forms input[type='number'] {
-  width: 100px;
-  padding: 8px;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  color: var(--color-text);
-  font-size: 14px;
-}
-
-/* TEMP diagnostic: default table-layout:auto forces the browser to rescan
-   every row's content to recompute column widths on any row content/order
-   change, a cost proportional to total rows regardless of how many actually
-   changed. Testing whether this (not JS/React work) dominates "Swap rows"
-   end-to-end time — revert if it doesn't help or the layout looks wrong. */
-.demo-page .table {
-  table-layout: fixed;
 }
 
 /* Override bootstrap's light-theme table to match the app's dark theme. */

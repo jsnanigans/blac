@@ -1,644 +1,265 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+import { ComparisonTable } from './ComparisonTable';
 import {
-  DEFAULT_CONFIG,
-  DEFAULT_PURE_CONFIG,
-  measureRetainedMemory,
-  runPureStateBenchmark,
-  runReactBenchmark,
-  type ProgressCallback,
-  type PureStateRunConfig,
-  type RunConfig,
-} from '../harness/BenchmarkRunner';
+  NO_RESULTS,
+  SUITES,
+  SUITE_KEYS,
+  runSuite,
+  type Results,
+  type Selection,
+  type SuiteKey,
+} from './suites';
 import {
-  ProfilerWrapper,
-  type ProfilerHandle,
-} from '../harness/ProfilerWrapper';
-import {
-  DEFAULT_RERENDER_CONFIG,
-  runRerenderBenchmark,
-  type RerenderRunConfig,
-} from '../harness/RerenderRunner';
-import { libraries } from '../libraries/registry';
-import { rerenderLibraries } from '../libraries/rerender-registry';
-import { ALL_RERENDER_SCENARIOS } from '../shared/rerender-scenarios';
-import type {
-  BenchmarkAPI,
-  LibraryResults,
-  OperationName,
-  PureStateResult,
-  RerenderBenchmarkAPI,
-  RerenderLibraryResults,
-  RerenderOperationResult,
-  RerenderScenario,
-  RetainedMemoryResult,
-} from '../shared/types';
-import { OPERATION_LABELS, RERENDER_SCENARIO_LABELS } from '../shared/types';
-import { BenchmarkReport } from './BenchmarkReport';
-import { PureStateResults } from './PureStateResults';
-import { RerenderResultsTable } from './RerenderResultsTable';
-import { ResultsTable } from './ResultsTable';
+  currentEnvironment,
+  listTables,
+  pureTables,
+  rerenderTables,
+  toMarkdown,
+  type Table,
+} from './tables';
 
-type Tab = 'react' | 'rerender' | 'pure-state' | 'report';
+type Tab = SuiteKey | 'report';
 
-export const Dashboard: React.FC = () => {
-  const [tab, setTab] = useState<Tab>('react');
-  const [selectedLibs, setSelectedLibs] = useState<Set<string>>(
-    () => new Set(libraries.map((l) => l.name)),
+const initialSelection = (): Record<SuiteKey, Selection> => {
+  const out = {} as Record<SuiteKey, Selection>;
+  for (const key of SUITE_KEYS) {
+    const s = SUITES[key];
+    out[key] = {
+      libs: new Set(s.libraries),
+      items: new Set(s.items.map((i) => i.key)),
+      config: s.defaults,
+    };
+  }
+  return out;
+};
+
+const tablesFor = (r: Results): Record<SuiteKey, Table[]> => ({
+  list: listTables(r.list),
+  rerender: rerenderTables(r.rerender),
+  pure: pureTables(r.pure, r.memory),
+});
+
+const toggled = (set: Set<string>, key: string): Set<string> => {
+  const next = new Set(set);
+  if (!next.delete(key)) next.add(key);
+  return next;
+};
+
+function download(name: string, text: string, type: string): void {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function Checklist(props: {
+  legend: string;
+  options: { key: string; label: string }[];
+  selected: Set<string>;
+  disabled: boolean;
+  onChange: (next: Set<string>) => void;
+}) {
+  return (
+    <fieldset>
+      <legend>{props.legend}</legend>
+      {props.options.map((o) => (
+        <label key={o.key} className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={props.selected.has(o.key)}
+            disabled={props.disabled}
+            onChange={() => props.onChange(toggled(props.selected, o.key))}
+          />
+          {o.label}
+        </label>
+      ))}
+    </fieldset>
   );
-  const [selectedOps, setSelectedOps] = useState<Set<OperationName>>(
-    () => new Set(DEFAULT_CONFIG.operations),
+}
+
+function NumberInput(props: {
+  label: string;
+  value: number;
+  min: number;
+  disabled: boolean;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <label className="config-label">
+      {props.label}
+      <input
+        type="number"
+        min={props.min}
+        value={props.value}
+        disabled={props.disabled}
+        onChange={(e) =>
+          props.onChange(Math.max(props.min, Number(e.target.value) || 0))
+        }
+      />
+    </label>
   );
-  const [config, setConfig] = useState<RunConfig>(DEFAULT_CONFIG);
-  const [pureConfig, setPureConfig] =
-    useState<PureStateRunConfig>(DEFAULT_PURE_CONFIG);
+}
 
-  const allPureOps = useMemo(() => {
-    const ops = new Set<string>();
-    for (const lib of libraries) {
-      if (!lib.pureState) continue;
-      for (const opName of Object.keys(lib.pureState.operations)) {
-        ops.add(opName);
-      }
-    }
-    return [...ops];
-  }, []);
-
-  const [selectedPureOps, setSelectedPureOps] = useState<Set<string>>(
-    () => new Set(allPureOps),
-  );
-
+export function Dashboard() {
+  const [tab, setTab] = useState<Tab>('list');
+  const [selection, setSelection] = useState(initialSelection);
+  const [results, setResults] = useState<Results>(NO_RESULTS);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState('');
-  const [reactResults, setReactResults] = useState<LibraryResults[]>([]);
-  const [pureResults, setPureResults] = useState<PureStateResult[]>([]);
-  const [memoryResults, setMemoryResults] = useState<RetainedMemoryResult[]>(
-    [],
-  );
-  const [rerenderResults, setRerenderResults] = useState<
-    RerenderLibraryResults[]
-  >([]);
-  const [selectedRerenderLibs, setSelectedRerenderLibs] = useState<Set<string>>(
-    () => new Set(rerenderLibraries.map((l) => l.name)),
-  );
-  const [selectedScenarios, setSelectedScenarios] = useState<
-    Set<RerenderScenario>
-  >(() => new Set(ALL_RERENDER_SCENARIOS));
-  const [rerenderConfig, setRerenderConfig] = useState<RerenderRunConfig>(
-    DEFAULT_RERENDER_CONFIG,
+  const hostRef = useRef<HTMLDivElement>(null);
+
+  const tables = useMemo(() => tablesFor(results), [results]);
+  const report = useMemo(
+    () =>
+      toMarkdown(
+        currentEnvironment(),
+        SUITE_KEYS.flatMap((k) => tables[k]),
+      ),
+    [tables],
   );
 
-  const rerenderApiRef = useRef<RerenderBenchmarkAPI | null>(null);
-  const [mountedRerender, setMountedRerender] = useState<{
-    lib: string;
-    scenario: RerenderScenario;
-  } | null>(null);
-  const mountedRerenderRef = useRef<{
-    lib: string;
-    scenario: RerenderScenario;
-  } | null>(null);
+  const update = (key: SuiteKey, patch: Partial<Selection>) =>
+    setSelection((s) => ({ ...s, [key]: { ...s[key], ...patch } }));
 
-  // refs for the currently mounted benchmark
-  const apiRef = useRef<BenchmarkAPI | null>(null);
-  const profilerRef = useRef<ProfilerHandle>(null);
-  const [mountedLib, setMountedLib] = useState<string | null>(null);
-  const mountedLibRef = useRef<string | null>(null);
-
-  const toggleLib = (name: string) => {
-    setSelectedLibs((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
-  };
-
-  const toggleOp = (op: OperationName) => {
-    setSelectedOps((prev) => {
-      const next = new Set(prev);
-      if (next.has(op)) next.delete(op);
-      else next.add(op);
-      return next;
-    });
-  };
-
-  const togglePureOp = (op: string) => {
-    setSelectedPureOps((prev) => {
-      const next = new Set(prev);
-      if (next.has(op)) next.delete(op);
-      else next.add(op);
-      return next;
-    });
-  };
-
-  const toggleRerenderLib = (name: string) => {
-    setSelectedRerenderLibs((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
-  };
-
-  const toggleScenario = (scenario: RerenderScenario) => {
-    setSelectedScenarios((prev) => {
-      const next = new Set(prev);
-      if (next.has(scenario)) next.delete(scenario);
-      else next.add(scenario);
-      return next;
-    });
-  };
-
-  const onReady = useCallback((api: BenchmarkAPI) => {
-    apiRef.current = api;
-  }, []);
-
-  const onProgress: ProgressCallback = (op, phase, current, total) => {
-    setProgress(
-      `${mountedLibRef.current}: ${OPERATION_LABELS[op]} — ${phase} ${current}/${total}`,
-    );
-  };
-
-  const runReactBenchmarks = async () => {
+  const run = async (keys: SuiteKey[]) => {
+    const host = hostRef.current;
+    if (!host) return;
     setRunning(true);
-    setReactResults([]);
-    const results: LibraryResults[] = [];
-
-    const activeLibs = libraries.filter((l) => selectedLibs.has(l.name));
-    const runConfig: RunConfig = {
-      ...config,
-      operations: [...selectedOps],
-    };
-
-    for (const lib of activeLibs) {
-      mountedLibRef.current = lib.name;
-      setMountedLib(lib.name);
-      apiRef.current = null;
-
-      // wait for component to mount and call onReady
-      await new Promise<void>((resolve) => {
-        const check = setInterval(() => {
-          if (apiRef.current) {
-            clearInterval(check);
-            resolve();
-          }
-        }, 50);
-      });
-
-      if (!apiRef.current || !profilerRef.current) continue;
-
-      setProgress(`Running ${lib.name}...`);
-      const result = await runReactBenchmark(
-        lib.name,
-        apiRef.current,
-        profilerRef.current,
-        runConfig,
-        onProgress,
-      );
-      results.push(result);
-    }
-
-    setMountedLib(null);
-    setReactResults(results);
-    setProgress('');
-    setRunning(false);
-  };
-
-  const runRerenderBenchmarks = async () => {
-    setRunning(true);
-    setRerenderResults([]);
-    const results: RerenderLibraryResults[] = [];
-
-    const activeLibs = rerenderLibraries.filter((l) =>
-      selectedRerenderLibs.has(l.name),
-    );
-    const activeScenarios = [...selectedScenarios];
-    const runConfig: RerenderRunConfig = {
-      ...rerenderConfig,
-      scenarios: activeScenarios,
-    };
-
-    for (const lib of activeLibs) {
-      const scenarioResults: RerenderOperationResult[] = [];
-
-      for (const scenario of activeScenarios) {
-        mountedRerenderRef.current = { lib: lib.name, scenario };
-        setMountedRerender({ lib: lib.name, scenario });
-        rerenderApiRef.current = null;
-
-        await new Promise<void>((resolve) => {
-          const check = setInterval(() => {
-            if (rerenderApiRef.current) {
-              clearInterval(check);
-              resolve();
-            }
-          }, 50);
-        });
-
-        if (!rerenderApiRef.current || !profilerRef.current) continue;
-
-        setProgress(`${lib.name}: ${RERENDER_SCENARIO_LABELS[scenario]}...`);
-        const result = await runRerenderBenchmark(
-          rerenderApiRef.current,
-          profilerRef.current,
-          scenario,
-          runConfig,
-          (s, phase, current, total) => {
-            setProgress(
-              `${lib.name}: ${RERENDER_SCENARIO_LABELS[s]} — ${phase} ${current}/${total}`,
-            );
-          },
-        );
-        scenarioResults.push(result);
+    try {
+      for (const key of keys) {
+        const out = await runSuite(key, selection[key], host, setProgress);
+        setResults((r) => ({ ...r, ...out }));
       }
-
-      results.push({
-        library: lib.name,
-        scenarios: scenarioResults,
-        timestamp: Date.now(),
-      });
+      setProgress('');
+      if (keys.length > 1) setTab('report');
+    } catch (err) {
+      console.error(err);
+      setProgress(`Failed: ${String(err)}`);
+    } finally {
+      setRunning(false);
     }
-
-    setMountedRerender(null);
-    setRerenderResults(results);
-    setProgress('');
-    setRunning(false);
   };
 
-  const runPureBenchmarks = async () => {
-    setRunning(true);
-    setPureResults([]);
-    setMemoryResults([]);
-    const allResults: PureStateResult[] = [];
-    const allMemory: RetainedMemoryResult[] = [];
-
-    const activeLibs = libraries.filter((l) => selectedLibs.has(l.name));
-
-    const runConfig: PureStateRunConfig = {
-      ...pureConfig,
-      operations: selectedPureOps,
-    };
-
-    for (const lib of activeLibs) {
-      if (!lib.pureState) continue; // "(prop rows)" variants are React-only — see registry.ts.
-      const results = await runPureStateBenchmark(
-        lib.pureState,
-        runConfig,
-        (op, phase, current, total) => {
-          setProgress(`${lib.name}: ${op} — ${phase} ${current}/${total}`);
-        },
-      );
-      allResults.push(...results);
-
-      setProgress(`${lib.name}: retained memory`);
-      const memory = await measureRetainedMemory(lib.pureState);
-      if (memory) allMemory.push(memory);
-    }
-
-    setPureResults(allResults);
-    setMemoryResults(allMemory);
-    setProgress('');
-    setRunning(false);
-  };
-
-  const exportResults = () => {
-    const data = {
-      react: reactResults,
-      rerender: rerenderResults,
-      pureState: pureResults,
-      memory: memoryResults,
-      config,
-      timestamp: Date.now(),
-      userAgent: navigator.userAgent,
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `benchmark-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const MountedComponent = mountedLib
-    ? libraries.find((l) => l.name === mountedLib)?.Component
-    : null;
+  const suite = tab === 'report' ? null : SUITES[tab];
+  const sel = tab === 'report' ? null : selection[tab];
 
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h1>React State Management Benchmarks</h1>
+        <h1>State management benchmarks</h1>
+        {import.meta.env.DEV && (
+          <p className="warning">
+            Development build: React and Blac run their dev-only checks, which
+            skews ratios. Use <code>pnpm --filter perf bench</code> for numbers.
+          </p>
+        )}
         <div className="tabs">
-          <button
-            className={`tab ${tab === 'react' ? 'active' : ''}`}
-            onClick={() => setTab('react')}
-          >
-            React Benchmarks
-          </button>
-          <button
-            className={`tab ${tab === 'rerender' ? 'active' : ''}`}
-            onClick={() => setTab('rerender')}
-          >
-            Re-render Benchmarks
-          </button>
-          <button
-            className={`tab ${tab === 'pure-state' ? 'active' : ''}`}
-            onClick={() => setTab('pure-state')}
-          >
-            Pure State
-          </button>
-          <button
-            className={`tab ${tab === 'report' ? 'active' : ''}`}
-            onClick={() => setTab('report')}
-          >
-            Detailed Report
-          </button>
+          {[...SUITE_KEYS, 'report' as const].map((t) => (
+            <button
+              key={t}
+              className={`tab ${tab === t ? 'active' : ''}`}
+              onClick={() => setTab(t)}
+            >
+              {t === 'report' ? 'Report' : SUITES[t].label}
+            </button>
+          ))}
         </div>
       </header>
 
-      {tab !== 'report' && (
-        <div className="controls">
-          {(tab === 'react' || tab === 'pure-state') && (
+      <div className="controls">
+        {suite && sel && tab !== 'report' && (
+          <>
+            <Checklist
+              legend="Libraries"
+              options={suite.libraries.map((l) => ({ key: l, label: l }))}
+              selected={sel.libs}
+              disabled={running}
+              onChange={(libs) => update(tab, { libs })}
+            />
+            <Checklist
+              legend={suite.itemsLabel}
+              options={suite.items}
+              selected={sel.items}
+              disabled={running}
+              onChange={(items) => update(tab, { items })}
+            />
             <fieldset>
-              <legend>Libraries</legend>
-              {libraries.map((lib) => (
-                <label key={lib.name} className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={selectedLibs.has(lib.name)}
-                    onChange={() => toggleLib(lib.name)}
-                    disabled={running}
-                  />
-                  {lib.name}
-                </label>
-              ))}
+              <legend>Samples</legend>
+              <NumberInput
+                label="Warmup"
+                min={0}
+                value={sel.config.warmup}
+                disabled={running}
+                onChange={(warmup) =>
+                  update(tab, { config: { ...sel.config, warmup } })
+                }
+              />
+              <NumberInput
+                label="Measured"
+                min={1}
+                value={sel.config.samples}
+                disabled={running}
+                onChange={(samples) =>
+                  update(tab, { config: { ...sel.config, samples } })
+                }
+              />
             </fieldset>
-          )}
-
-          {tab === 'react' && (
-            <>
-              <fieldset>
-                <legend>Operations</legend>
-                {DEFAULT_CONFIG.operations.map((op) => (
-                  <label key={op} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={selectedOps.has(op)}
-                      onChange={() => toggleOp(op)}
-                      disabled={running}
-                    />
-                    {OPERATION_LABELS[op]}
-                  </label>
-                ))}
-              </fieldset>
-
-              <fieldset>
-                <legend>Config</legend>
-                <label className="config-label">
-                  Warmup runs:
-                  <input
-                    type="number"
-                    min={0}
-                    max={50}
-                    value={config.warmupRuns}
-                    onChange={(e) =>
-                      setConfig((c) => ({
-                        ...c,
-                        warmupRuns: parseInt(e.target.value) || 0,
-                      }))
-                    }
-                    disabled={running}
-                  />
-                </label>
-                <label className="config-label">
-                  Measured runs:
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={config.measuredRuns}
-                    onChange={(e) =>
-                      setConfig((c) => ({
-                        ...c,
-                        measuredRuns: parseInt(e.target.value) || 1,
-                      }))
-                    }
-                    disabled={running}
-                  />
-                </label>
-              </fieldset>
-            </>
-          )}
-
-          {tab === 'rerender' && (
-            <>
-              <fieldset>
-                <legend>Libraries</legend>
-                {rerenderLibraries.map((lib) => (
-                  <label key={lib.name} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={selectedRerenderLibs.has(lib.name)}
-                      onChange={() => toggleRerenderLib(lib.name)}
-                      disabled={running}
-                    />
-                    {lib.name}
-                  </label>
-                ))}
-              </fieldset>
-
-              <fieldset>
-                <legend>Scenarios</legend>
-                {ALL_RERENDER_SCENARIOS.map((scenario) => (
-                  <label key={scenario} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={selectedScenarios.has(scenario)}
-                      onChange={() => toggleScenario(scenario)}
-                      disabled={running}
-                    />
-                    {RERENDER_SCENARIO_LABELS[scenario]}
-                  </label>
-                ))}
-              </fieldset>
-
-              <fieldset>
-                <legend>Config</legend>
-                <label className="config-label">
-                  Warmup runs:
-                  <input
-                    type="number"
-                    min={0}
-                    max={50}
-                    value={rerenderConfig.warmupRuns}
-                    onChange={(e) =>
-                      setRerenderConfig((c) => ({
-                        ...c,
-                        warmupRuns: parseInt(e.target.value) || 0,
-                      }))
-                    }
-                    disabled={running}
-                  />
-                </label>
-                <label className="config-label">
-                  Measured runs:
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={rerenderConfig.measuredRuns}
-                    onChange={(e) =>
-                      setRerenderConfig((c) => ({
-                        ...c,
-                        measuredRuns: parseInt(e.target.value) || 1,
-                      }))
-                    }
-                    disabled={running}
-                  />
-                </label>
-              </fieldset>
-            </>
-          )}
-
-          {tab === 'pure-state' && (
-            <>
-              <fieldset>
-                <legend>Operations</legend>
-                {allPureOps.map((op) => (
-                  <label key={op} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={selectedPureOps.has(op)}
-                      onChange={() => togglePureOp(op)}
-                      disabled={running}
-                    />
-                    {op}
-                  </label>
-                ))}
-              </fieldset>
-
-              <fieldset>
-                <legend>Config</legend>
-                <label className="config-label">
-                  Warmup iterations:
-                  <input
-                    type="number"
-                    min={0}
-                    max={500}
-                    value={pureConfig.warmup}
-                    onChange={(e) =>
-                      setPureConfig((c) => ({
-                        ...c,
-                        warmup: parseInt(e.target.value) || 0,
-                      }))
-                    }
-                    disabled={running}
-                  />
-                </label>
-                <label className="config-label">
-                  Measured iterations:
-                  <input
-                    type="number"
-                    min={1}
-                    max={10000}
-                    value={pureConfig.iterations}
-                    onChange={(e) =>
-                      setPureConfig((c) => ({
-                        ...c,
-                        iterations: parseInt(e.target.value) || 1,
-                      }))
-                    }
-                    disabled={running}
-                  />
-                </label>
-              </fieldset>
-            </>
-          )}
-
-          <div className="actions">
+          </>
+        )}
+        <div className="actions">
+          {tab !== 'report' && (
             <button
               className="btn-run"
-              onClick={
-                tab === 'react'
-                  ? runReactBenchmarks
-                  : tab === 'rerender'
-                    ? runRerenderBenchmarks
-                    : runPureBenchmarks
-              }
-              disabled={
-                running ||
-                (tab === 'rerender'
-                  ? selectedRerenderLibs.size === 0
-                  : selectedLibs.size === 0)
-              }
+              disabled={running || sel?.libs.size === 0}
+              onClick={() => void run([tab])}
             >
-              {running ? 'Running...' : 'Run Benchmarks'}
+              {running ? 'Running…' : `Run ${SUITES[tab].label}`}
             </button>
-            {(reactResults.length > 0 ||
-              rerenderResults.length > 0 ||
-              pureResults.length > 0) && (
-              <button className="btn-export" onClick={exportResults}>
-                Export JSON
-              </button>
-            )}
-          </div>
-
-          {progress && <div className="progress-text">{progress}</div>}
-        </div>
-      )}
-
-      {tab === 'react' && (
-        <>
-          <ResultsTable results={reactResults} />
-          {mountedLib && MountedComponent && (
-            <div className="benchmark-viewport">
-              <ProfilerWrapper id={mountedLib} ref={profilerRef}>
-                <MountedComponent onReady={onReady} />
-              </ProfilerWrapper>
-            </div>
           )}
-        </>
+          <button
+            className="btn-run"
+            disabled={running}
+            onClick={() => void run(SUITE_KEYS)}
+          >
+            Run all
+          </button>
+          <button
+            className="btn-export"
+            onClick={() =>
+              download(
+                `benchmark-${Date.now()}.json`,
+                JSON.stringify(
+                  { env: currentEnvironment(), ...results },
+                  null,
+                  2,
+                ),
+                'application/json',
+              )
+            }
+          >
+            Export JSON
+          </button>
+        </div>
+        {progress && <div className="progress-text">{progress}</div>}
+      </div>
+
+      {tab === 'report' ? (
+        <div className="results-section">
+          <button
+            className="btn-export"
+            onClick={() => void navigator.clipboard.writeText(report)}
+          >
+            Copy Markdown
+          </button>
+          <pre className="report">{report}</pre>
+        </div>
+      ) : (
+        tables[tab].map((t) => <ComparisonTable key={t.title} table={t} />)
       )}
 
-      {tab === 'rerender' && (
-        <>
-          <RerenderResultsTable results={rerenderResults} />
-          {mountedRerender &&
-            (() => {
-              const RerenderComponent = rerenderLibraries.find(
-                (l) => l.name === mountedRerender.lib,
-              )?.Component;
-              return RerenderComponent ? (
-                <div className="benchmark-viewport">
-                  <ProfilerWrapper
-                    id={`${mountedRerender.lib}-${mountedRerender.scenario}`}
-                    ref={profilerRef}
-                  >
-                    <RerenderComponent
-                      scenario={mountedRerender.scenario}
-                      onReady={(api) => {
-                        rerenderApiRef.current = api;
-                      }}
-                    />
-                  </ProfilerWrapper>
-                </div>
-              ) : null;
-            })()}
-        </>
-      )}
-
-      {tab === 'pure-state' && (
-        <PureStateResults results={pureResults} memory={memoryResults} />
-      )}
-
-      {tab === 'report' && (
-        <BenchmarkReport
-          pureResults={pureResults}
-          memoryResults={memoryResults}
-          reactResults={reactResults}
-        />
-      )}
+      <div ref={hostRef} className="bench-host" />
     </div>
   );
-};
+}

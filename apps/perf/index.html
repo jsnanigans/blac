@@ -3,8 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>React State Management Benchmarks</title>
+    <title>State management benchmarks</title>
     <link rel="stylesheet" href="/bootstrap.css" />
+    <script>
+      // The React DevTools extension measures every committed host node,
+      // forcing a synchronous layout per commit. Opt out unless ?devtools.
+      if (
+        window.__REACT_DEVTOOLS_GLOBAL_HOOK__ &&
+        !location.search.includes('devtools')
+      ) {
+        window.__REACT_DEVTOOLS_GLOBAL_HOOK__.isDisabled = true;
+      }
+    </script>
   </head>
   <body>
     <div id="main"></div>
