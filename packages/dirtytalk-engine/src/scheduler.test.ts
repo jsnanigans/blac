@@ -93,6 +93,15 @@ describe('ManualScheduler', () => {
     expect(channelBFlush).toHaveBeenCalledTimes(1);
   });
 
+  it('cancel() removes a pending flush', () => {
+    const s = new ManualScheduler();
+    const fn = vi.fn();
+    s.request(fn);
+    s.cancel(fn);
+    s.pump();
+    expect(fn).not.toHaveBeenCalled();
+  });
+
   it('pump → pump: second pump runs nothing', () => {
     const s = new ManualScheduler();
     const fn = vi.fn();

@@ -2,6 +2,7 @@ import type { Space } from './space';
 import type { Scheduler } from './scheduler';
 
 interface SubscriberEntry<Region> {
+  readonly id: number;
   interest: () => Region;
   cb: (dirty: Region) => void;
   alive: boolean;
@@ -98,7 +99,7 @@ export class DirtyChannel<Region> {
     if (this.#disposed) return () => {};
 
     const id = this.#nextId++;
-    const entry: SubscriberEntry<Region> = { interest, cb, alive: true };
+    const entry: SubscriberEntry<Region> = { id, interest, cb, alive: true };
     const subscribers = (this.#subscribers ??= new Map());
     subscribers.set(id, entry);
 
@@ -114,104 +115,48 @@ export class DirtyChannel<Region> {
   #flush(): void {
     if (this.#disposed) return;
 
-    // Step 1 — snapshot the dirty region and reset state.
+    // Snapshot the dirty region and reset, so marks raised by callbacks
+    // accumulate for the next flush.
     const dirty = this.#accumulated;
     this.#accumulated = undefined;
     this.#scheduled = false;
 
-    // Step 2 — empty fast-path: no work to do, skip the subscriber loop
-    // entirely. Consumers may rely on "no callback fires for no-op flushes."
+    // Empty fast-path: consumers may rely on "no callback fires for no-op
+    // flushes."
     if (dirty === undefined || this.#space.isEmpty(dirty)) return;
     const subscribers = this.#subscribers;
     if (subscribers === null) return;
 
-    // Step 3 — enter flushing mode.
     this.#flushing = true;
-
     let errors: unknown[] | undefined;
-
-    // Step 4/5 — for 0 or 1 subscribers, skip the array snapshot entirely and
-    // run the per-entry logic directly on the sole captured entry.
-    if (subscribers.size <= 1) {
-      const entry = subscribers.values().next().value;
-      if (entry?.alive) {
-        // Evaluate the interest thunk lazily, once per flush per subscriber.
-        let interest: Region | undefined;
-        let interestOk = true;
-        try {
-          interest = entry.interest();
-        } catch (err) {
-          // Treat a throwing thunk as "no interest this flush" and record it.
-          if (this.#onError) {
-            this.#onError(err);
-          } else {
-            (errors ??= []).push(err);
-          }
-          interestOk = false;
-        }
-
-        if (interestOk && this.#space.intersects(interest as Region, dirty)) {
-          try {
-            entry.cb(dirty);
-          } catch (err) {
-            if (this.#onError) {
-              this.#onError(err);
-            } else {
-              (errors ??= []).push(err);
-            }
-          }
-        }
-      }
-    } else {
+    try {
       // Ids are monotonic and the map is insertion-ordered, so every entry at
       // or past `firstNewId` was subscribed during this flush: stop there
       // instead of snapshotting the list. New subscribers will NOT run this
       // cycle; unsubscribed ones are skipped by the map itself or `alive`.
       const firstNewId = this.#nextId;
-      for (const [id, entry] of subscribers) {
-        if (id >= firstNewId) break;
-        // Check the alive flag on the entry, not the map — the map may have been
-        // mutated by an earlier callback (subscribe or unsubscribe).
+      for (const entry of subscribers.values()) {
+        if (entry.id >= firstNewId || this.#disposed) break;
+        // The map may have been mutated by an earlier callback.
         if (!entry.alive) continue;
-
-        // Evaluate the interest thunk lazily, once per flush per subscriber.
-        let interest: Region;
         try {
-          interest = entry.interest();
-        } catch (err) {
-          // Treat a throwing thunk as "no interest this flush" and record it.
-          if (this.#onError) {
-            this.#onError(err);
-          } else {
-            (errors ??= []).push(err);
+          // Evaluated lazily, once per flush per subscriber. A thunk that
+          // returns nothing has no interest this flush.
+          const interest = entry.interest();
+          if (interest != null && this.#space.intersects(interest, dirty)) {
+            entry.cb(dirty);
           }
-          continue;
-        }
-
-        // A thunk that returns nothing has no interest this flush; passing it
-        // to the space would fault inside intersects, far from the caller.
-        if (interest == null) continue;
-
-        if (!this.#space.intersects(interest, dirty)) continue;
-
-        try {
-          entry.cb(dirty);
         } catch (err) {
-          if (this.#onError) {
-            this.#onError(err);
-          } else {
-            (errors ??= []).push(err);
-          }
+          if (this.#onError) this.#onError(err);
+          else (errors ??= []).push(err);
         }
       }
+    } finally {
+      this.#flushing = false;
     }
 
-    // Step 6 — exit flushing mode.
-    this.#flushing = false;
-
-    // Step 9 — if re-entrant marks arrived during the flush they are sitting in
-    // `accumulated` (non-empty). Schedule the next flush now that flushing is
-    // cleared so mark()'s guard won't double-schedule.
+    // Re-entrant marks arrived during the flush: schedule the next one now
+    // that flushing is cleared, so mark()'s guard won't double-schedule.
     if (
       this.#accumulated !== undefined &&
       !this.#space.isEmpty(this.#accumulated)
@@ -220,7 +165,7 @@ export class DirtyChannel<Region> {
       this.#scheduler.request(this.#boundFlush);
     }
 
-    // Step 8 — surface errors after all callbacks have run and state is clean.
+    // Surface errors after all callbacks have run and state is clean.
     if (errors) {
       if (errors.length === 1) throw errors[0];
       throw new AggregateError(

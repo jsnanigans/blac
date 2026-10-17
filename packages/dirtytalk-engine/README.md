@@ -81,6 +81,7 @@ interface Space<Region> {
   isEmpty(r: Region): boolean;
   union(a: Region, b: Region): Region; // accumulate dirty marks
   intersects(interest: Region, dirty: Region): boolean; // delivery predicate
+  unionInto?(acc: Region, b: Region): Region; // optional in-place accumulate
 }
 ```
 
@@ -98,7 +99,7 @@ libraries. Insomni's `RectSpace` and blac's `PathSetSpace` are the motivating ex
 ```ts
 interface Scheduler {
   request(flush: () => void): void; // call flush at most once per scheduling window
-  cancel?(): void; // optional teardown
+  cancel?(flush: () => void): void; // drop a pending request
 }
 ```
 
@@ -116,9 +117,14 @@ one flush, not ten.
 
 ```ts
 class DirtyChannel<Region> {
-  constructor(space: Space<Region>, scheduler: Scheduler);
+  constructor(
+    space: Space<Region>,
+    scheduler: Scheduler,
+    options?: { onError?: (err: unknown) => void },
+  );
   mark(r: Region): void;
   subscribe(interest: () => Region, cb: (dirty: Region) => void): () => void;
+  dispose(): void;
 }
 ```
 
@@ -143,9 +149,12 @@ Returns an unsubscribe function. Safe to call at any time, including from inside
   reconfigure freely between flushes. If you snapshot at subscribe time, you miss updates.
 - **Re-entrant marks defer.** Calling `mark` from inside a subscriber callback accumulates
   into the _next_ flush. No infinite loops; bounded work per flush tick.
-- **Error isolation.** If a subscriber callback throws, the error is collected and the flush
-  continues to completion. A single error is re-thrown as-is; multiple errors are wrapped in
-  an `AggregateError`.
+- **Error isolation.** If a subscriber's interest thunk, callback, or the space's `intersects`
+  throws, the error is collected and the flush continues to completion. A single error is
+  re-thrown as-is; multiple errors are wrapped in an `AggregateError`. Pass `onError` to
+  handle them instead. The channel keeps working afterwards.
+- **Dispose is final.** `dispose()` cancels a pending flush, and called from a callback it
+  stops the rest of the current flush.
 - **Subscribe/unsubscribe during flush is safe.** New subscribers see the next flush, not
   the current one. Unsubscribed callbacks are skipped immediately, even mid-flush.
 

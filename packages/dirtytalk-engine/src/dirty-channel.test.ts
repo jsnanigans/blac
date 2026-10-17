@@ -526,3 +526,40 @@ describe('DirtyChannel — dispose', () => {
     expect(cancelSpy).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('DirtyChannel — stability', () => {
+  it('a throwing intersects does not wedge the channel', () => {
+    const sched = new TestScheduler();
+    let boom = true;
+    const space: Space<number> = {
+      ...NumberBitsetSpace,
+      intersects: (i, d) => {
+        if (boom) throw new Error('boom');
+        return (i & d) !== 0;
+      },
+    };
+    const ch = new DirtyChannel(space, sched);
+    const cb = vi.fn();
+    ch.subscribe(() => 1, cb);
+    ch.mark(1);
+    expect(() => sched.pump()).toThrow('boom');
+    boom = false;
+    ch.mark(1);
+    expect(sched.isPending).toBe(true);
+    sched.pump();
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  it('dispose inside a callback stops the remaining callbacks', () => {
+    const { sched, ch } = make();
+    const second = vi.fn();
+    ch.subscribe(
+      () => 1,
+      () => ch.dispose(),
+    );
+    ch.subscribe(() => 1, second);
+    ch.mark(1);
+    sched.pump();
+    expect(second).not.toHaveBeenCalled();
+  });
+});
