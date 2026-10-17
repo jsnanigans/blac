@@ -21,7 +21,7 @@ Single-dirty-bit invalidation is the root of the problem. Once you record only w
 changed, you've lost the information you need to do less work. This package replaces the dirty bit
 with a damage list: each entry carries a `Rect` and a `DamageKind`. `kind` tells the render pipeline
 which stages to run (`data → layout → paint`); `rect` tells the renderer exactly what area to
-rasterise. In v1 the renderer repaints the bounding rect of all damage entries — the same work as
+rasterise. A v1 renderer may repaint the bounding rect of all damage entries — the same work as
 before. In v2 a scissor/tile partial-redraw path uses the individual entries. No API change to scene
 nodes or callers either way.
 
@@ -55,8 +55,8 @@ import { SyncScheduler } from '@dirtytalk/engine';
 
 // --- Stub renderer (logs the paint region instead of rasterising) ---
 const stubRenderer: Renderer2D = {
-  beginFrame(paintRegion: Rect): void {
-    console.log('beginFrame', paintRegion);
+  beginFrame(regions: readonly Rect[]): void {
+    console.log('beginFrame', regions);
   },
   endFrame(): void {
     console.log('endFrame');
@@ -92,7 +92,7 @@ root.adoptChild(btn);
 
 // Mutate — damage flows to the renderer automatically.
 btn.setValue('Click me');
-// => beginFrame { x: 10, y: 10, w: 120, h: 40 }
+// => beginFrame [ { x: 10, y: 10, w: 120, h: 40 } ]
 // => endFrame
 ```
 
@@ -160,25 +160,34 @@ in their `onPointerMove` if they change appearance on hover.
 
 The `SceneRoot` processes a flush in three ordered stages:
 
-**Stage 1 — data.** For each damage entry with `kind === 'data'`, call `node.rebuildData()` if
-defined. This is where expensive operations like re-binning or recomputing mark geometry live.
+**Stage 1 — data.** For each node with `data` damage, call `node.rebuildData()` if defined. This
+is where expensive operations like re-binning or recomputing mark geometry live.
 
-**Stage 2 — layout.** For each damage entry with `kind !== 'paint'`, call `node.doLayout()` if
+**Stage 2 — layout.** For each node with `data` or `layout` damage, call `node.doLayout()` if
 defined. A `data` change always implies a layout pass for that node.
 
-**Stage 3 — paint.** Compute `paintRegion = unionRects(dirty.map(d => d.rect))`. Call
-`renderer.beginFrame(paintRegion)`, walk the scene tree and call each node's `paint` method, then
-call `renderer.endFrame()`.
+Each node runs each of these stages at most once per frame, however often it was marked. `data`
+and `layout` damage is not filtered by area, so a zero-size or off-screen node still gets its
+passes.
+
+**Stage 3 — paint.** The frame's damage rects are clamped to the root bounds. Empty rects and
+rects inside another region are dropped, and more than 16 regions collapse to their bounding rect.
+`renderer.beginFrame(regions)` receives the result (never empty; a frame with nothing to repaint
+skips stage 3). Top-level children overlapping a region are painted in adoption order, then
+`renderer.endFrame()` is called. Subclasses can override `protected paintFrame(regions)` (returns
+the painted-node count) to replace this stage, e.g. with a deeper cull or their own renderer.
+
+`SceneRoot.dispose()` cancels a pending frame and ignores later damage.
 
 A single state change — for example, `button.setValue('Save')` — emits one `paint` damage entry,
 skips stages 1 and 2, and goes directly to stage 3.
 
 ## What it is not
 
-- **No GPU renderer included.** `SceneRoot` calls `renderer.beginFrame(paintRegion)` and
+- **No GPU renderer included.** `SceneRoot` calls `renderer.beginFrame(regions)` and
   `renderer.endFrame()` as abstract hooks; the real rasterisation lives in the renderer you provide.
-- **No spatial index.** v1 uses a plain array for the damage list; union concatenates, intersection
-  is O(N×M). A coarse occupancy-grid spatial index is planned for v2 when tile-based partial redraw
+- **No spatial index.** v1 uses a plain array for the damage list; marks append in place,
+  intersection is O(N×M). A coarse occupancy-grid spatial index is planned for v2 when tile-based partial redraw
   lands.
 - **No auto-tracked reads.** `paint()` is invoked because _the node was damaged_, not because its
   fields were read. There is no hidden dependency graph. This is a different model from React or

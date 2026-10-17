@@ -2,7 +2,7 @@ import { DirtyChannel, RAFScheduler } from '@dirtytalk/engine';
 import type { Scheduler } from '@dirtytalk/engine';
 import { SceneNode } from './scene-node';
 import { RectSpace } from './rect-space';
-import { pointInRect, rectOverlaps } from './rect';
+import { pointInRect, rectClamp, rectOverlaps, unionRects } from './rect';
 import type { Damage, DirtyRegion, Rect } from './types';
 
 /**
@@ -53,6 +53,37 @@ export interface SceneRootOptions {
   onFrameTiming?: (timing: FrameTiming) => void;
 }
 
+/**
+ * Past this many distinct damage rects a frame collapses to their bounding
+ * rect: per-rect scissoring and the culled paint walk (children × regions)
+ * stop paying off.
+ */
+const MAX_REGIONS = 16;
+
+// The frame's damage rects clamped to `bounds`, with empty rects and rects
+// inside an earlier one dropped, collapsed to one bounding rect past
+// MAX_REGIONS.
+const frameRegions = (dirty: DirtyRegion, bounds: Rect): Rect[] => {
+  const regions: Rect[] = [];
+  outer: for (const d of dirty) {
+    const r = rectClamp(d.rect, bounds);
+    if (r.w <= 0 || r.h <= 0) continue;
+    for (const k of regions) {
+      if (
+        r.x >= k.x &&
+        r.y >= k.y &&
+        r.x + r.w <= k.x + k.w &&
+        r.y + r.h <= k.y + k.h
+      ) {
+        continue outer;
+      }
+    }
+    regions.push(r);
+    if (regions.length > MAX_REGIONS) return [unionRects(regions)];
+  }
+  return regions;
+};
+
 export class SceneRoot extends SceneNode {
   readonly channel: DirtyChannel<DirtyRegion>;
   readonly renderer: Renderer2D;
@@ -74,12 +105,22 @@ export class SceneRoot extends SceneNode {
       options.scheduler ?? new RAFScheduler(),
     );
 
-    // Subscribe with "interest = whole root bounds" so any damage triggers a flush callback.
-    // We use a thunk that re-evaluates bounds in case the root is resized.
+    // Interest = whole root bounds, re-read each flush in case the root is
+    // resized. The entry is reused, not reallocated per flush.
+    const interest: Damage = { rect: this.bounds, kind: 'paint' };
+    const interestRegion: DirtyRegion = [interest];
     this.channel.subscribe(
-      () => [{ rect: this.bounds, kind: 'paint' as const }],
+      () => {
+        interest.rect = this.bounds;
+        return interestRegion;
+      },
       (dirty) => this._renderFrame(dirty),
     );
+  }
+
+  /** Cancels any pending frame; later damage is ignored. */
+  dispose(): void {
+    this.channel.dispose();
   }
 
   paint(_layer: unknown): void {
@@ -110,6 +151,18 @@ export class SceneRoot extends SceneNode {
     return painted;
   }
 
+  /**
+   * Stage 3: paint `regions` (never empty) and return the number of nodes
+   * painted. Override to drive a different renderer or paint walk; stages 1–2,
+   * region clamping and timing stay with the base pipeline.
+   */
+  protected paintFrame(regions: readonly Rect[]): number {
+    this.renderer.beginFrame(regions);
+    const painted = this._paintCulled(regions);
+    this.renderer.endFrame();
+    return painted;
+  }
+
   /** Package-private — called by SceneNode.markDamaged via the structural-type contract. */
   _emitDamage(damage: Damage): void {
     this.channel.mark([damage]);
@@ -122,25 +175,35 @@ export class SceneRoot extends SceneNode {
   private _renderFrame(dirty: DirtyRegion): void {
     const timing = this.onFrameTiming;
     const t0 = timing ? performance.now() : 0;
-    // Stage 1 — data
+    // Stage 1 — data, then stage 2 — layout ('data' implies layout). Each
+    // node runs each stage at most once per frame however often it was marked.
+    let rebuilt: Set<SceneNode> | undefined;
     for (const d of dirty) {
       const node = d.node as SceneNode | undefined;
-      if (d.kind === 'data' && node?.rebuildData) node.rebuildData();
+      if (d.kind !== 'data' || !node?.rebuildData) continue;
+      if ((rebuilt ??= new Set()).has(node)) continue;
+      rebuilt.add(node);
+      node.rebuildData();
     }
-    // Stage 2 — layout (also runs for 'data' since data implies layout)
+    let laidOut: Set<SceneNode> | undefined;
     for (const d of dirty) {
       const node = d.node as SceneNode | undefined;
-      if (d.kind !== 'paint' && node?.doLayout) node.doLayout();
+      if (d.kind === 'paint' || !node?.doLayout) continue;
+      if ((laidOut ??= new Set()).has(node)) continue;
+      laidOut.add(node);
+      node.doLayout();
     }
     // Stage 3 — paint. In full-frame mode, damage is ignored: repaint the whole
     // bounds and visit every child. Otherwise hand the renderer the individual
     // damage rects (disjoint, so a multi-rect scissor skips the dead gap between
     // a move's old/new footprints) and cull the walk to nodes touching them.
-    const regions = this.fullFrame ? [this.bounds] : dirty.map((d) => d.rect);
+    const regions = this.fullFrame
+      ? [this.bounds]
+      : frameRegions(dirty, this.bounds);
     const t1 = timing ? performance.now() : 0;
-    this.renderer.beginFrame(regions);
-    const paintedNodes = this._paintCulled(regions);
-    this.renderer.endFrame();
+    // Pipeline-only damage (data/layout) with nothing on screen to repaint.
+    if (regions.length === 0) return;
+    const paintedNodes = this.paintFrame(regions);
     if (timing) {
       timing({
         layoutMs: t1 - t0,

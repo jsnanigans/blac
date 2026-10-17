@@ -45,17 +45,14 @@ export abstract class SceneNode {
   // ---- damage ----
 
   protected markDamaged(kind: DamageKind, rect?: Rect): void {
-    const clipped = this._clipRect(rect ?? this.bounds);
-    const damage: Damage = { rect: clipped, kind, node: this };
-    if (this._batchBuffer !== null) {
-      this._batchBuffer.push(damage);
-      return;
-    }
-    const root = this._root();
-    if (!root) return;
-    root._emitDamage(damage);
+    this._damage(kind, rect ?? this.bounds, this);
   }
 
+  /**
+   * Run `fn` with this node's damage buffered, then emit one entry per kind
+   * with the union rect. Damage is emitted even when `fn` throws, so the
+   * mutations it made before throwing still repaint.
+   */
   protected batch(fn: () => void): void {
     if (this._batchBuffer !== null) {
       fn(); // nested batch — outer batch absorbs everything
@@ -67,23 +64,20 @@ export abstract class SceneNode {
       fn();
     } finally {
       this._batchBuffer = null;
+      if (buffer.length > 0) this._emitBatchedDamage(buffer);
     }
-    if (buffer.length === 0) return;
-    this._emitBatchedDamage(buffer);
   }
 
   private _emitBatchedDamage(buffer: Damage[]): void {
     const root = this._root();
     if (!root) return;
-    const byKind = new Map<DamageKind, Damage[]>();
-    for (const d of buffer) {
-      const arr = byKind.get(d.kind) ?? [];
-      arr.push(d);
-      byKind.set(d.kind, arr);
-    }
-    for (const [kind, arr] of byKind) {
-      const rect =
-        arr.length === 1 ? arr[0].rect : unionRects(arr.map((d) => d.rect));
+    // One entry per kind, in order of first appearance.
+    const kinds: DamageKind[] = [];
+    for (const d of buffer) if (!kinds.includes(d.kind)) kinds.push(d.kind);
+    for (const kind of kinds) {
+      const rects: Rect[] = [];
+      for (const d of buffer) if (d.kind === kind) rects.push(d.rect);
+      const rect = rects.length === 1 ? rects[0] : unionRects(rects);
       root._emitDamage({ rect, kind, node: this });
     }
   }
@@ -96,16 +90,23 @@ export abstract class SceneNode {
     this.markDamaged('paint', prev); // erase old footprint
     this.bounds = next;
     this.markDamaged('paint', next); // fill new footprint
-    if (this.parent) this.markDamaged('layout'); // re-layout parent
+    if (this.parent) this._damage('layout', next, this.parent); // re-layout parent
   }
 
   adoptChild(child: SceneNode): void {
+    let n = this.parent;
+    while (n !== null && n !== child) n = n.parent;
+    if (child === this || n === child) {
+      throw new Error(
+        'SceneNode.adoptChild: a node cannot adopt itself or an ancestor',
+      );
+    }
     if (child.parent) child.parent.removeChild(child);
     child.parent = this;
     this.children.push(child);
     // Per spec § Decision 6: on attach, emit a single full-bounds 'paint' so the
     // newly-visible region is painted.
-    if (this._root()) child.markDamaged('paint', child.bounds);
+    child.markDamaged('paint', child.bounds);
   }
 
   removeChild(child: SceneNode): void {
@@ -119,26 +120,31 @@ export abstract class SceneNode {
 
   // ---- internals ----
 
+  // One walk up the parent chain both clips `rect` by every clipping ancestor
+  // and finds the root.
+  private _damage(kind: DamageKind, rect: Rect, node: SceneNode): void {
+    let clipped = rect;
+    let root: SceneRootLike | null = isSceneRoot(this) ? this : null;
+    for (let n = this.parent; n !== null && root === null; n = n.parent) {
+      if (n.clipsOverflow) clipped = rectClamp(clipped, n.bounds);
+      if (isSceneRoot(n)) root = n;
+    }
+    const damage: Damage = { rect: clipped, kind, node };
+    if (this._batchBuffer !== null) {
+      this._batchBuffer.push(damage);
+      return;
+    }
+    root?._emitDamage(damage);
+  }
+
   private _root(): SceneRootLike | null {
     // Start at `this`, not `this.parent` — a node that is itself a root must
     // resolve to itself, otherwise SceneRoot.adoptChild can't emit the
     // adopt-time paint for its own direct children.
     if (isSceneRoot(this)) return this;
-    let n: SceneNode | null = this.parent;
-    while (n) {
+    for (let n = this.parent; n; n = n.parent) {
       if (isSceneRoot(n)) return n;
-      n = n.parent;
     }
     return null;
-  }
-
-  private _clipRect(r: Rect): Rect {
-    let clipped = r;
-    let n: SceneNode | null = this.parent;
-    while (n) {
-      if (n.clipsOverflow) clipped = rectClamp(clipped, n.bounds);
-      n = n.parent;
-    }
-    return clipped;
   }
 }

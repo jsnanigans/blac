@@ -204,3 +204,19 @@ describe('SceneNode', () => {
     expect(root.damages).toHaveLength(0);
   });
 });
+
+describe('SceneNode — batch stability', () => {
+  it('batch still emits the damage buffered before fn throws', () => {
+    const root = new StubRoot();
+    const child = new TestNode({ bounds: { x: 0, y: 0, w: 10, h: 10 } });
+    root.adoptChild(child);
+    root.damages.length = 0;
+    expect(() =>
+      child.pubBatch(() => {
+        child.pubMark('paint');
+        throw new Error('boom');
+      }),
+    ).toThrow('boom');
+    expect(root.damages).toHaveLength(1);
+  });
+});

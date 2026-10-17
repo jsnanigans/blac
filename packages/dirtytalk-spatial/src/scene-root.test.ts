@@ -410,3 +410,107 @@ describe('SceneRoot', () => {
     expect(root.hitTest(40, 40)).toBe(child);
   });
 });
+
+describe('SceneRoot — pipeline stability', () => {
+  const setup = () => {
+    const renderer = makeRenderer();
+    const scheduler = new ManualScheduler();
+    const root = new SceneRoot(renderer, {
+      scheduler,
+      bounds: { x: 0, y: 0, w: 100, h: 100 },
+    });
+    return { renderer, scheduler, root };
+  };
+
+  it('data damage on a zero-size node still runs rebuildData', () => {
+    const { scheduler, root } = setup();
+    const node = new PipelineNode();
+    root.adoptChild(node);
+    scheduler.pump();
+    node.order.length = 0;
+    node.pubMark('data');
+    scheduler.pump();
+    expect(node.order).toEqual(['rebuildData', 'doLayout']);
+  });
+
+  it('a node marked repeatedly runs each stage once per frame', () => {
+    const { scheduler, root } = setup();
+    const node = new PipelineNode({ bounds: { x: 0, y: 0, w: 10, h: 10 } });
+    root.adoptChild(node);
+    scheduler.pump();
+    node.order.length = 0;
+    node.pubMark('data');
+    node.pubMark('data');
+    node.pubMark('layout');
+    scheduler.pump();
+    expect(node.order).toEqual(['rebuildData', 'doLayout', 'paint']);
+  });
+
+  it('setBounds re-lays-out the parent', () => {
+    const { scheduler, root } = setup();
+    const parent = new PipelineNode({ bounds: { x: 0, y: 0, w: 50, h: 50 } });
+    const child = new TestNode({ bounds: { x: 0, y: 0, w: 10, h: 10 } });
+    root.adoptChild(parent);
+    parent.adoptChild(child);
+    scheduler.pump();
+    parent.order.length = 0;
+    child.setBounds({ x: 5, y: 5, w: 10, h: 10 });
+    scheduler.pump();
+    expect(parent.order).toContain('doLayout');
+  });
+
+  it('regions are clamped to the root and contained rects dropped', () => {
+    const { renderer, scheduler, root } = setup();
+    root.channel.mark([
+      { rect: { x: 80, y: 80, w: 50, h: 50 }, kind: 'paint' },
+      { rect: { x: 85, y: 85, w: 5, h: 5 }, kind: 'paint' },
+    ]);
+    scheduler.pump();
+    expect(renderer.calls[0]).toEqual([
+      'begin',
+      [{ x: 80, y: 80, w: 20, h: 20 }],
+    ]);
+  });
+
+  it('adopting an ancestor throws instead of creating a cycle', () => {
+    const { root } = setup();
+    const a = new TestNode();
+    const b = new TestNode();
+    root.adoptChild(a);
+    a.adoptChild(b);
+    expect(() => b.adoptChild(a)).toThrow(/ancestor/);
+  });
+
+  it('dispose cancels the pending frame', () => {
+    const { renderer, scheduler, root } = setup();
+    root.channel.mark([{ rect: { x: 0, y: 0, w: 5, h: 5 }, kind: 'paint' }]);
+    root.dispose();
+    scheduler.pump();
+    expect(renderer.calls).toHaveLength(0);
+  });
+
+  it('paintFrame can be overridden to replace the paint stage', () => {
+    const seen: Rect[][] = [];
+    class CustomRoot extends SceneRoot {
+      protected override paintFrame(regions: readonly Rect[]): number {
+        seen.push([...regions]);
+        return 7;
+      }
+    }
+    const renderer = makeRenderer();
+    const scheduler = new ManualScheduler();
+    const timings: number[] = [];
+    const root = new CustomRoot(renderer, {
+      scheduler,
+      bounds: { x: 0, y: 0, w: 100, h: 100 },
+      onFrameTiming: (t) => timings.push(t.paintedNodes),
+    });
+    root.channel.mark([
+      { rect: { x: 90, y: 90, w: 50, h: 50 }, kind: 'paint' },
+    ]);
+    scheduler.pump();
+    expect(seen).toEqual([[{ x: 90, y: 90, w: 10, h: 10 }]]);
+    expect(timings).toEqual([7]);
+    expect(renderer.calls).toHaveLength(0);
+  });
+});
