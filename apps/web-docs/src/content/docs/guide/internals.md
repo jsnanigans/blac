@@ -360,22 +360,24 @@ The recording rules are deliberate, and each one earns its keep:
 - **Iteration is per item.** `.map` / `.find` / `for..of` run against the
   proxy, so they record `items.length` and each field the callback reads
   (`items.0.title`, …). `includes` / `indexOf` / `lastIndexOf` run on the raw
-  array and record `items`. Arrays longer than 256 are returned raw and
-  recorded as `items`, so interning and diffing stay bounded on huge lists.
+  array and record `items`.
 - **Leaf collection types are not recursed.** `Map`, `Set`, `Date`, and class
   instances are returned raw (wrapping them would rebind receiver-checked
   built-ins like `Map.prototype.get`). A reference change to the whole value
   still wakes you, but an in-place `.set()` does not.
 
 Now the payoff. With `N` consumers sharing a container, the naive way to find
-who to wake is per-consumer diffing: `N` tree walks. BlaC does **one walk plus N
-intersections** instead.
+who to wake is per-consumer diffing: `N` tree walks. BlaC does **one walk plus
+one lookup per changed path** instead.
 
 The trick is the **observed skeleton**: the union of every registered consumer's
 path set. On a mutation, `emit` diffs `prev` vs `next` **only along the
 skeleton** — it reads each skeleton path in both states and includes it iff the
-value moved (`diffAlongSkeleton`, default `Object.is`). That one walk produces
-the dirty set; then each consumer wakes via a cheap set intersection (Stage 2).
+value moved (`diffAlongSkeleton`, default `Object.is`). The container keeps the
+skeleton as a path trie, so the walk stops at every unchanged reference:
+replacing one item of a 1,000-item list compares 1,000 item references and
+descends into one. That one walk produces the dirty set; then each changed path
+is looked up in an index of the consumers watching it (Stage 2).
 Again the helpers are internal — this is the mechanism `emit` runs for you:
 
 ```ts
@@ -431,12 +433,10 @@ Stage 3: one walk, then N cheap intersections
           asleep                     WAKE
 ```
 
-:::note[The single-consumer skip]
-The skeleton diff only pays off with 2+ consumers to share the walk across. With
-0 or 1 registered consumers, `emit`/`update` skip the diff entirely and mark
-`ALL_PATHS` — the sole consumer (if any) wakes regardless. Fine-grained
-isolation begins at two consumers. `patch` never takes this shortcut; it always
-value-diffs the patch shape, so raw `subscribe` callers wake correctly too.
+:::note[The zero-consumer skip]
+With no registered consumers, `emit`/`update`/`patch` skip the diff and mark
+`ALL_PATHS`, since only `ALL_PATHS` subscribers (plugins, `watch`) can be
+listening. From one consumer on, every change is diffed.
 :::
 
 ### How React ties in
@@ -546,9 +546,11 @@ A single `emit` flows through all four stages:
    `changedPathsFromPatch` for `patch` — then `channel.mark(dirty)`.
    (Stage 2 + 3.)
 3. The `DirtyChannel` coalesces marks and schedules one flush per tick. (Stage 1.)
-4. On flush, each subscriber's interest thunk is evaluated and intersected with
-   the dirty set; only consumers with a non-empty intersection have their
-   callback fired (React re-render, `watch` callback, plugin sink). (Stage 1 + 2.)
+4. On flush, `useBloc` consumers are found by looking up each dirty path in the
+   container's path index (`subscribePaths`); every other subscriber's interest
+   thunk is evaluated and intersected with the dirty set. Only consumers with a
+   non-empty intersection have their callback fired (React re-render, `watch`
+   callback, plugin sink). (Stage 1 + 2.)
 5. On the next render, the proxy re-records each consumer's interest from
    scratch, so conditional reads reshape the skeleton automatically. (Stage 3.)
 

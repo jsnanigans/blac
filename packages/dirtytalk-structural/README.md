@@ -32,9 +32,9 @@ proportional to N.
 - `PathInterner` — per-class string-to-ID interning. Stable across all instances of the same
   container class.
 - `PathSet` — a compact set of `PathId` numbers with `ALL_PATHS` sentinel and `PathSetSpace` — the
-  `Space<PathSet>` implementation consumed by the engine. `ALL_PATHS` is used when the
-  single-consumer-skip fires (or for opt-in blanket interest), making `intersects` unconditionally
-  true without enumerating paths.
+  `Space<PathSet>` implementation consumed by the engine. `ALL_PATHS` is used when no consumer
+  is registered (or for opt-in blanket interest), making `intersects` unconditionally true without
+  enumerating paths.
 - `trackRender` — Proxy-based per-consumer path recorder. Wraps state, records every field access
   as an interned `PathId`, and returns the access set alongside the proxied value. Optionally
   accepts a `ProxyCache` to reuse proxies across renders — see
@@ -99,8 +99,12 @@ unsub();
 ```
 
 `patch` produces a `PathSet` directly from the keys of the partial object — no diff needed.
-`emit` and `update` walk `diffAlongSkeleton` against the observed skeleton so only paths that
-actually changed are marked.
+`emit` and `update` diff along the observed skeleton (kept as a path trie, so unchanged subtrees
+are skipped by reference) so only paths that actually changed are marked.
+
+`subscribePaths(cb)` returns a subscription whose interest is set with `setInterest(paths)`. A
+flush looks up each dirty path instead of checking every subscriber, so it costs the consumers it
+wakes. `useStructural` and `useBloc` use it.
 
 ## Quick example — React
 
