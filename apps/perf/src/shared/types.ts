@@ -15,6 +15,8 @@ export interface StatResult {
 export interface DataItem {
   id: number;
   label: string;
+  /** Used only by implementations that keep the selection on the row. */
+  selected?: boolean;
 }
 
 /** Actions every list implementation exposes to the runner. */

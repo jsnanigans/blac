@@ -126,18 +126,18 @@ export const listOps = {
   updateEvery10th(data: readonly DataItem[]): DataItem[] {
     const next = data.slice();
     for (let i = 0; i < next.length; i += 10) {
-      next[i] = { id: next[i].id, label: next[i].label + ' !!!' };
+      next[i] = { ...next[i], label: next[i].label + ' !!!' };
     }
     return next;
   },
   updateRow(data: readonly DataItem[], id: number): DataItem[] {
     return data.map((d) =>
-      d.id === id ? { id: d.id, label: d.label + ' !!!' } : d,
+      d.id === id ? { ...d, label: d.label + ' !!!' } : d,
     );
   },
   relabel(data: readonly DataItem[], index: number): DataItem[] {
     const next = data.slice();
-    next[index] = { id: next[index].id, label: next[index].label + ' !!!' };
+    next[index] = { ...next[index], label: next[index].label + ' !!!' };
     return next;
   },
   swap(data: readonly DataItem[]): DataItem[] {

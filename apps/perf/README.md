@@ -22,7 +22,9 @@ replace, update every 10th row, update 1 row, select, swap, remove, create
 10,000, append 1,000, clear. Each library runs twice:
 
 - **sub rows**: each row reads its item (`data[i]`) and the selection from the
-  store itself.
+  store itself. Blac keeps the selection as a flag on each item, so tracking
+  wakes only the two rows whose flag flips. Zustand and Redux keep a selected id
+  and compare it in a per-row selector.
 - **prop rows**: the parent reads everything and passes primitives to memoised
   rows.
 
