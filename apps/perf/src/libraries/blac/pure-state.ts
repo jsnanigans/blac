@@ -1,410 +1,312 @@
 import { ALL_PATHS, Cubit, acquire, configureBlac, release } from '@blac/core';
-import { buildData, resetId } from '../../shared/data';
-
-// Lift the dev-only emit-rate circuit breaker. Several ops intentionally emit
-// 1000× in a tight loop; the breaker is a soft warn-once runaway-loop guard,
-// not a measurement gate, and its per-emit bookkeeping would only add noise.
-configureBlac({ maxEmitsPerSecond: Number.POSITIVE_INFINITY });
-import type {
-  CounterState,
-  DataItem,
-  NestedState,
-  PureStateBenchmark,
-  WideState,
+import { ManualScheduler } from '@dirtytalk/engine';
+import { expandWithAncestors } from '@dirtytalk/structural';
+import { buildData } from '../../shared/data';
+import { listOps } from '../../shared/list';
+import { ROWS, ROW_UPDATES, op } from '../../shared/pure';
+import {
+  WIDE_FIELDS,
+  createNestedState,
+  createWideState,
+  fieldKey,
+  type DataItem,
+  type NestedState,
+  type PureStateLibrary,
+  type WideState,
 } from '../../shared/types';
-import { createNestedState, createWideState } from '../../shared/types';
 
-interface DemoState {
+// Several ops emit 1000× in a tight loop; the dev-only runaway-emit guard is a
+// soft warning, not something to measure.
+configureBlac({ maxEmitsPerSecond: Number.POSITIVE_INFINITY });
+
+// `pump()` runs the same flush the default microtask scheduler would, but
+// synchronously, so notification cost lands inside the timed loop without an
+// `await` per update.
+const scheduler = new ManualScheduler();
+const flush = (): void => scheduler.pump();
+
+const live: Cubit[] = [];
+const track = <C extends Cubit>(c: C): C => {
+  live.push(c);
+  return c;
+};
+const teardown = (): void => {
+  flush();
+  for (const c of live.splice(0)) c.dispose();
+};
+
+interface ListState {
   data: DataItem[];
   selected: number | null;
 }
 
-class DemoBloc extends Cubit<DemoState> {
-  constructor() {
-    super({ data: [], selected: null });
+class ListStore extends Cubit<ListState> {
+  constructor(data: DataItem[] = [], selected: number | null = null) {
+    super({ data, selected }, { scheduler });
   }
 }
 
-class WideBloc extends Cubit<WideState> {
+class WideStore extends Cubit<WideState> {
   constructor() {
-    super(createWideState());
-  }
-}
-
-class NestedBloc extends Cubit<NestedState> {
-  constructor() {
-    super(createNestedState());
-  }
-}
-
-interface CounterArgs {
-  id: string;
-}
-
-class CounterBloc extends Cubit<CounterState, CounterArgs> {
-  static key = (a: CounterArgs) => a.id;
-
-  constructor() {
-    super({ count: 0 });
-  }
-}
-
-class SourceBloc extends Cubit<{ value: number }> {
-  constructor() {
-    super({ value: 0 });
-  }
-}
-
-class CounterABloc extends Cubit<CounterState> {
-  constructor() {
-    super({ count: 0 });
-  }
-}
-
-class CounterBBloc extends Cubit<CounterState> {
-  constructor() {
-    super({ count: 0 });
-  }
-}
-
-class CounterCBloc extends Cubit<CounterState> {
-  constructor() {
-    super({ count: 0 });
-  }
-}
-
-class GetterBloc extends Cubit<{ count: number }> {
-  constructor() {
-    super({ count: 0 });
-  }
-  get doubled(): number {
-    return this.state.count * 2;
-  }
-  get squared(): number {
-    return this.state.count ** 2;
-  }
-}
-
-class WideGettersBloc extends Cubit<WideState> {
-  constructor() {
-    super(createWideState());
+    super(createWideState(), { scheduler });
   }
   get sum(): number {
     let s = 0;
-    for (let i = 0; i < 20; i++) {
-      s += this.state[`field${i}` as keyof WideState] as number;
-    }
+    for (let i = 0; i < WIDE_FIELDS; i++) s += this.state[fieldKey(i)];
     return s;
   }
 }
 
-interface BlacHandle {
-  demo: DemoBloc;
-  wide: WideBloc;
-  nested: NestedBloc;
-  counter: CounterBloc;
-  source: SourceBloc;
-  counterA: CounterABloc;
-  counterB: CounterBBloc;
-  counterC: CounterCBloc;
-  getter: GetterBloc;
-  wideGetters: WideGettersBloc;
+class NestedStore extends Cubit<NestedState> {
+  constructor() {
+    super(createNestedState(), { scheduler });
+  }
 }
 
-export const blacPureState: PureStateBenchmark = {
+class CounterStore extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 }, { scheduler });
+  }
+  get doubled(): number {
+    return this.state.count * 2;
+  }
+}
+
+// Registry ops use the defaults a real app gets.
+class KeyedCounter extends Cubit<{ count: number }, { id: string }> {
+  static key = (a: { id: string }) => a.id;
+  constructor() {
+    super({ count: 0 });
+  }
+}
+
+class PlainCounter extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+}
+
+const onAll = (c: Cubit, cb: () => void): void => {
+  c.subscribe(() => ALL_PATHS, cb);
+};
+
+/** A consumer watching `path`, registered the way `useBloc` does it. */
+const watchPath = (c: Cubit, id: string, path: string, cb: () => void) => {
+  const paths = new Set([c.interner.intern(path)]);
+  c.registerConsumerPaths(id, paths);
+  c.subscribePaths(cb).setInterest(expandWithAncestors(paths, c.interner));
+};
+
+export const blacPureState: PureStateLibrary = {
   name: 'Blac',
-  setup: () => {
-    resetId();
-    return {
-      demo: new DemoBloc(),
-      wide: new WideBloc(),
-      nested: new NestedBloc(),
-      counter: new CounterBloc(),
-      source: new SourceBloc(),
-      counterA: new CounterABloc(),
-      counterB: new CounterBBloc(),
-      counterC: new CounterCBloc(),
-      getter: new GetterBloc(),
-      wideGetters: new WideGettersBloc(),
-    } satisfies BlacHandle;
-  },
-  operations: {
-    // ── CRUD Operations ──
+  ops: {
+    'create 1k': op({
+      setup: () => ({ s: track(new ListStore()), rows: buildData(1000) }),
+      run: ({ s, rows }) => s.emit({ data: rows, selected: null }),
+      teardown,
+    }),
+    'append 1k': op({
+      setup: () => {
+        const base = buildData(1000);
+        return { s: track(new ListStore(base)), base, more: buildData(1000) };
+      },
+      // Appends to the same base each call, so repeated calls cost the same.
+      run: ({ s, base, more }) => s.patch({ data: [...base, ...more] }),
+      teardown,
+    }),
+    'update every 10th': op({
+      setup: () => track(new ListStore(buildData(1000))),
+      run: (s) => s.patch({ data: listOps.updateEvery10th(s.state.data) }),
+      teardown,
+    }),
+    clear: op({
+      setup: () => ({ s: track(new ListStore()), rows: buildData(1000) }),
+      run: ({ s, rows }) => {
+        s.emit({ data: rows, selected: null });
+        s.emit({ data: [], selected: null });
+      },
+      teardown,
+    }),
 
-    'create 1k': (h) => {
-      const { demo } = h as BlacHandle;
-      demo.emit({ data: buildData(1000), selected: null });
-    },
-    'update every 10th': (h) => {
-      const { demo } = h as BlacHandle;
-      if (demo.state.data.length === 0) {
-        demo.emit({ data: buildData(1000), selected: null });
-      }
-      const newData = demo.state.data.slice(0);
-      for (let i = 0, len = newData.length; i < len; i += 10) {
-        const r = newData[i];
-        newData[i] = { id: r.id, label: r.label + ' !!!' };
-      }
-      demo.patch({ data: newData });
-    },
-    'append 1k': (h) => {
-      const { demo } = h as BlacHandle;
-      if (demo.state.data.length === 0) {
-        demo.emit({ data: buildData(1000), selected: null });
-      }
-      demo.patch({ data: [...demo.state.data, ...buildData(1000)] });
-    },
-    clear: (h) => {
-      const { demo } = h as BlacHandle;
-      demo.emit({ data: buildData(1000), selected: null });
-      demo.emit({ data: [], selected: null });
-    },
-
-    // ── State Update Patterns ──
-
-    'redundant emit': (h) => {
-      const { demo } = h as BlacHandle;
-      demo.emit({ data: buildData(100), selected: null });
-      const snapshot = demo.state;
-      for (let i = 0; i < 1000; i++) {
-        demo.emit(snapshot);
-      }
-    },
-    'redundant patch': (h) => {
-      const { demo } = h as BlacHandle;
-      demo.emit({ data: buildData(100), selected: 5 });
-      for (let i = 0; i < 1000; i++) {
-        demo.patch({ selected: 5 });
-      }
-    },
-    'patch 1 of 20 fields': (h) => {
-      const { wide } = h as BlacHandle;
-      for (let i = 0; i < 1000; i++) {
-        wide.patch({ field10: i });
-      }
-    },
-    'nested object update': (h) => {
-      const { nested } = h as BlacHandle;
-      for (let i = 0; i < 1000; i++) {
-        const current = nested.state;
-        nested.emit({
-          a: {
-            ...current.a,
-            b: {
-              ...current.a.b,
-              c: { ...current.a.b.c, value: i },
-            },
-          },
-        });
-      }
-    },
-    'batch rapid updates': (h) => {
-      const { counter } = h as BlacHandle;
-      let total = 0;
-      const unsub = counter.subscribe(
-        () => ALL_PATHS,
-        () => {
-          total += counter.state.count;
-        },
-      );
-      for (let i = 0; i < 1000; i++) {
-        counter.patch({ count: i });
-      }
-      unsub();
-      void total;
-    },
-
-    // ── Same-tick burst (path-scoped consumer) ──
-    //
-    // Registers a path-scoped consumer, which is what a mounted `useBloc`
-    // component does. That switches `patch` off the zero-consumer ALL_PATHS
-    // shortcut and onto the precise per-path lane, where every `mark()` unions
-    // into the channel's accumulated set. With a microtask scheduler the flush
-    // only runs at end of tick, so a synchronous burst accumulates. This op
-    // exists to keep that path honest — see perf-plan.md Phase 1.
-    'same-tick burst 1000 (tracked consumer)': (h) => {
-      const { wide } = h as BlacHandle;
-      wide.registerConsumerPaths(
-        'bench',
-        new Set([wide.interner.intern('field0')]),
-      );
-      for (let i = 0; i < 1000; i++) {
-        wide.patch({ field0: i });
-      }
-      wide.unregisterConsumer('bench');
-    },
-
-    // ── Subscription & Notification ──
-
-    'notify 100 subscribers': (h) => {
-      const { demo } = h as BlacHandle;
-      const unsubs: (() => void)[] = [];
-      for (let i = 0; i < 100; i++) {
-        unsubs.push(
-          demo.subscribe(
-            () => ALL_PATHS,
-            () => {},
-          ),
-        );
-      }
-      for (let i = 0; i < 100; i++) {
-        demo.emit({ data: [], selected: i });
-      }
-      unsubs.forEach((u) => u());
-    },
-    'subscriber with computed filter': (h) => {
-      const { demo } = h as BlacHandle;
-      let hitCount = 0;
-      const unsubs: (() => void)[] = [];
-      for (let i = 0; i < 10; i++) {
-        const threshold = (i + 1) * 10;
-        unsubs.push(
-          demo.subscribe(
-            () => ALL_PATHS,
-            () => {
-              const { selected } = demo.state;
-              if (selected !== null && selected >= threshold) {
-                hitCount++;
-              }
-            },
-          ),
-        );
-      }
-      for (let i = 0; i < 1000; i++) {
-        demo.emit({ data: [], selected: i % 100 });
-      }
-      unsubs.forEach((u) => u());
-      void hitCount;
-    },
-
-    // ── Derived & Cross-Store ──
-
-    'derived state computation': (h) => {
-      const { source } = h as BlacHandle;
-      let result = 0;
-      for (let i = 0; i < 1000; i++) {
-        source.patch({ value: i });
-        result = source.state.value * 2;
-      }
-      void result;
-    },
-    'multi-store coordination': (h) => {
-      const { counterA, counterB, counterC } = h as BlacHandle;
-      let notifications = 0;
-      const unsubA = counterA.subscribe(
-        () => ALL_PATHS,
-        () => {
-          notifications++;
-        },
-      );
-      const unsubB = counterB.subscribe(
-        () => ALL_PATHS,
-        () => {
-          notifications++;
-        },
-      );
-      const unsubC = counterC.subscribe(
-        () => ALL_PATHS,
-        () => {
-          notifications++;
-        },
-      );
-      for (let i = 0; i < 1000; i++) {
-        counterA.patch({ count: i });
-        counterB.patch({ count: counterA.state.count * 2 });
-        counterC.patch({ count: counterA.state.count + counterB.state.count });
-      }
-      unsubA();
-      unsubB();
-      unsubC();
-      void notifications;
-    },
-
-    // ── State Read Overhead ──
-    //
-    // There is no read-time proxy: `bloc.state` is the raw structural
-    // snapshot and reads are plain property access. These ops mirror the
-    // equivalent Zustand/Redux operations (raw `getState()` reads) so the
-    // columns line up. Path-interest tracking lives in the `DirtyChannel`
-    // (subscribe-time).
-
-    'proxy track 1 field': (h) => {
-      const { counter } = h as BlacHandle;
-      for (let i = 0; i < 1000; i++) {
-        counter.patch({ count: i });
-        void counter.state.count;
-      }
-    },
-    // Pure read cost: `.state`/`getState()` is an O(1) field read in every
-    // library here, so this measures the 20 dynamic `field${j}` string lookups
-    // in this loop, not library machinery. Kept as a shared baseline.
-    'read 20 fields (baseline)': (h) => {
-      const { wide } = h as BlacHandle;
-      for (let i = 0; i < 1000; i++) {
-        const s = wide.state;
-        for (let j = 0; j < 20; j++) {
-          void s[`field${j}` as keyof WideState];
+    'redundant emit': op({
+      setup: () => track(new ListStore(buildData(100))),
+      run: (s) => {
+        const snapshot = s.state;
+        for (let i = 0; i < 1000; i++) s.emit(snapshot);
+      },
+      teardown,
+    }),
+    'redundant patch': op({
+      setup: () => track(new ListStore(buildData(100), 5)),
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) s.patch({ selected: 5 });
+      },
+      teardown,
+    }),
+    'patch 1 of 20 fields': op({
+      setup: () => track(new WideStore()),
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) s.patch({ field10: i });
+      },
+      teardown,
+    }),
+    'nested object update': op({
+      setup: () => track(new NestedStore()),
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) {
+          const user = s.state.user;
+          s.emit({ user: { ...user, profile: { ...user.profile, age: i } } });
         }
-      }
-    },
+      },
+      teardown,
+    }),
+    // One tick: the flush coalesces the burst into one notification.
+    'batch rapid updates': op({
+      setup: () => {
+        const s = track(new CounterStore());
+        onAll(s, () => void s.state.count);
+        return s;
+      },
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) s.patch({ count: i });
+        flush();
+      },
+      teardown,
+    }),
+    'same-tick burst 1000 (tracked consumer)': op({
+      setup: () => {
+        const s = track(new WideStore());
+        watchPath(s, 'bench', 'field0', () => void s.state.field0);
+        return s;
+      },
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) s.patch({ field0: i });
+        flush();
+      },
+      teardown,
+    }),
 
-    // ── Getter Tracking ──
-    //
-    // Blac getters are plain class accessors over `this.state`; there is no
-    // getter-tracking interception. Mirrors Redux's selector-based ops.
+    'notify 100 subscribers': op({
+      setup: () => {
+        const s = track(new ListStore());
+        for (let i = 0; i < 100; i++) onAll(s, () => {});
+        return s;
+      },
+      run: (s) => {
+        for (let i = 0; i < 100; i++) {
+          s.patch({ selected: i });
+          flush();
+        }
+      },
+      teardown,
+    }),
+    'subscriber with computed filter': op({
+      setup: () => {
+        const s = track(new ListStore());
+        const hits = { n: 0 };
+        for (let i = 0; i < 10; i++) {
+          const threshold = (i + 1) * 10;
+          onAll(s, () => {
+            const { selected } = s.state;
+            if (selected !== null && selected >= threshold) hits.n++;
+          });
+        }
+        return s;
+      },
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) {
+          s.patch({ selected: i % 100 });
+          flush();
+        }
+      },
+      teardown,
+    }),
+    'multi-store coordination': op({
+      setup: () => {
+        const stores = [0, 1, 2].map(() => track(new CounterStore()));
+        for (const s of stores) onAll(s, () => {});
+        return stores;
+      },
+      run: ([a, b, c]) => {
+        for (let i = 0; i < 1000; i++) {
+          a.patch({ count: i });
+          b.patch({ count: a.state.count * 2 });
+          c.patch({ count: a.state.count + b.state.count });
+          flush();
+        }
+      },
+      teardown,
+    }),
+    '1 of 1,000 row subscribers': op({
+      setup: () => {
+        const s = track(new ListStore(buildData(ROWS)));
+        for (let i = 0; i < ROWS; i++) {
+          watchPath(s, `row${i}`, `data.${i}.label`, () => {
+            void s.state.data[i].label;
+          });
+        }
+        return s;
+      },
+      run: (s) => {
+        for (let i = 0; i < ROW_UPDATES; i++) {
+          s.patch({ data: listOps.relabel(s.state.data, (i * 7) % ROWS) });
+          flush();
+        }
+      },
+      teardown,
+    }),
 
-    'getter track simple': (h) => {
-      const { getter } = h as BlacHandle;
-      for (let i = 0; i < 1000; i++) {
-        getter.emit({ count: i });
-        void getter.doubled;
-      }
-    },
-    'getter track wide aggregate': (h) => {
-      const { wideGetters } = h as BlacHandle;
-      for (let i = 0; i < 1000; i++) {
-        wideGetters.patch({ field0: i });
-        void wideGetters.sum;
-      }
-    },
+    'read 20 fields (baseline)': op({
+      setup: () => track(new WideStore()),
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) {
+          const state = s.state;
+          for (let j = 0; j < WIDE_FIELDS; j++) void state[fieldKey(j)];
+        }
+      },
+      teardown,
+    }),
+    // Blac getters are plain class accessors over `this.state`.
+    'getter track simple': op({
+      setup: () => track(new CounterStore()),
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) {
+          s.emit({ count: i });
+          void s.doubled;
+        }
+      },
+      teardown,
+    }),
+    'getter track wide aggregate': op({
+      setup: () => track(new WideStore()),
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) {
+          s.patch({ field0: i });
+          void s.sum;
+        }
+      },
+      teardown,
+    }),
 
-    // ── Registry Lifecycle ──
-
-    'acquire/release cycle': () => {
-      for (let i = 0; i < 1000; i++) {
-        const inst = acquire(CounterBloc, {
-          args: { id: `bench-${i}` },
-          refId: `bench-${i}`,
-        });
-        release(CounterBloc, {
-          args: { id: `bench-${i}` },
-          refId: `bench-${i}`,
-        });
-        void inst;
-      }
-    },
-    'instance create/dispose': () => {
-      for (let i = 0; i < 1000; i++) {
-        const bloc = new CounterBloc();
-        bloc.dispose();
-      }
-    },
+    'acquire/release cycle': op({
+      setup: () => undefined,
+      run: () => {
+        for (let i = 0; i < 1000; i++) {
+          const ref = { args: { id: `bench-${i}` }, refId: `bench-${i}` };
+          acquire(KeyedCounter, ref);
+          release(KeyedCounter, ref);
+        }
+      },
+    }),
+    'instance create/dispose': op({
+      setup: () => undefined,
+      run: () => {
+        for (let i = 0; i < 1000; i++) new PlainCounter().dispose();
+      },
+    }),
   },
   retain: (n) => {
-    const blocs = Array.from({ length: n }, () => new CounterABloc());
+    const blocs = Array.from({ length: n }, () => new PlainCounter());
     return () => blocs.forEach((b) => b.dispose());
-  },
-  teardown: (h) => {
-    const handle = h as BlacHandle;
-    handle.demo.dispose();
-    handle.wide.dispose();
-    handle.nested.dispose();
-    handle.counter.dispose();
-    handle.source.dispose();
-    handle.counterA.dispose();
-    handle.counterB.dispose();
-    handle.counterC.dispose();
-    handle.getter.dispose();
-    handle.wideGetters.dispose();
   },
 };

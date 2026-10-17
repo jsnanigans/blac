@@ -3,405 +3,288 @@ import {
   createSelector,
   createSlice,
   type PayloadAction,
+  type Reducer,
 } from '@reduxjs/toolkit';
-import { buildData, resetId } from '../../shared/data';
-import type {
-  CounterState,
-  DataItem,
-  NestedState,
-  PureStateBenchmark,
-  WideState,
+import { buildData } from '../../shared/data';
+import { ROWS, ROW_UPDATES, op } from '../../shared/pure';
+import {
+  WIDE_FIELDS,
+  createNestedState,
+  createWideState,
+  fieldKey,
+  type DataItem,
+  type PureStateLibrary,
+  type WideState,
 } from '../../shared/types';
-import { createNestedState, createWideState } from '../../shared/types';
 
-// --- Demo slice (list operations) ---
+// Redux notifies synchronously on every dispatch, so no op needs a flush.
+// Each op builds a store holding only the slice it uses.
 
-interface DemoState {
+interface ListState {
   data: DataItem[];
   selected: number | null;
 }
 
-const demoInitial: DemoState = { data: [], selected: null };
-
-const demoSlice = createSlice({
-  name: 'demo',
-  initialState: demoInitial,
+const list = createSlice({
+  name: 'list',
+  initialState: { data: [], selected: null } as ListState,
   reducers: {
-    setData(
-      state,
-      action: PayloadAction<{ data: DataItem[]; selected: number | null }>,
-    ) {
-      state.data = action.payload.data;
-      state.selected = action.payload.selected;
+    set(_state, action: PayloadAction<ListState>) {
+      return action.payload;
     },
-    updateEveryTenth(state) {
-      for (let i = 0, len = state.data.length; i < len; i += 10) {
-        state.data[i] = {
-          id: state.data[i].id,
-          label: state.data[i].label + ' !!!',
-        };
-      }
-    },
-    appendData(state, action: PayloadAction<DataItem[]>) {
+    append(state, action: PayloadAction<DataItem[]>) {
       state.data.push(...action.payload);
     },
-    clear(state) {
-      state.data = [];
-      state.selected = null;
+    updateEvery10th(state) {
+      for (let i = 0; i < state.data.length; i += 10) {
+        state.data[i].label += ' !!!';
+      }
     },
-    setSelected(state, action: PayloadAction<number | null>) {
+    relabel(state, action: PayloadAction<number>) {
+      state.data[action.payload].label += ' !!!';
+    },
+    select(state, action: PayloadAction<number | null>) {
       state.selected = action.payload;
     },
   },
 });
 
-// --- Wide slice (20 fields) ---
-
-const wideSlice = createSlice({
+const wide = createSlice({
   name: 'wide',
-  initialState: createWideState() as WideState,
+  initialState: createWideState(),
   reducers: {
-    setField10(state, action: PayloadAction<number>) {
-      state.field10 = action.payload;
+    set(state, action: PayloadAction<{ field: number; value: number }>) {
+      state[fieldKey(action.payload.field)] = action.payload.value;
     },
   },
 });
 
-// --- Nested slice ---
-
-const nestedSlice = createSlice({
+const nested = createSlice({
   name: 'nested',
-  initialState: createNestedState() as NestedState,
+  initialState: createNestedState(),
   reducers: {
-    setValue(state, action: PayloadAction<number>) {
-      state.a.b.c.value = action.payload;
+    setAge(state, action: PayloadAction<number>) {
+      state.user.profile.age = action.payload;
     },
   },
 });
 
-// --- Counter slice ---
-
-const counterSlice = createSlice({
+const counter = createSlice({
   name: 'counter',
-  initialState: { count: 0 } as CounterState,
+  initialState: { count: 0 },
   reducers: {
-    setCount(state, action: PayloadAction<number>) {
+    set(state, action: PayloadAction<number>) {
       state.count = action.payload;
     },
   },
 });
 
-const sourceSlice = createSlice({
-  name: 'source',
-  initialState: { value: 0 },
-  reducers: {
-    setValue(state, action: PayloadAction<number>) {
-      state.value = action.payload;
-    },
-  },
-});
-
-const counterASlice = createSlice({
-  name: 'counterA',
-  initialState: { count: 0 } as CounterState,
-  reducers: {
-    setCount(state, action: PayloadAction<number>) {
-      state.count = action.payload;
-    },
-  },
-});
-
-const counterBSlice = createSlice({
-  name: 'counterB',
-  initialState: { count: 0 } as CounterState,
-  reducers: {
-    setCount(state, action: PayloadAction<number>) {
-      state.count = action.payload;
-    },
-  },
-});
-
-const counterCSlice = createSlice({
-  name: 'counterC',
-  initialState: { count: 0 } as CounterState,
-  reducers: {
-    setCount(state, action: PayloadAction<number>) {
-      state.count = action.payload;
-    },
-  },
-});
-
-function createBenchmarkStore() {
-  return configureStore({
-    reducer: {
-      demo: demoSlice.reducer,
-      wide: wideSlice.reducer,
-      nested: nestedSlice.reducer,
-      counter: counterSlice.reducer,
-      source: sourceSlice.reducer,
-      counterA: counterASlice.reducer,
-      counterB: counterBSlice.reducer,
-      counterC: counterCSlice.reducer,
-    },
+const storeOf = <S>(reducer: Reducer<S>, preloadedState?: S) =>
+  configureStore({
+    reducer,
+    preloadedState,
     middleware: (getDefault) =>
       getDefault({ serializableCheck: false, immutableCheck: false }),
   });
-}
 
-type BenchmarkStore = ReturnType<typeof createBenchmarkStore>;
+const listStore = (data: DataItem[] = [], selected: number | null = null) =>
+  storeOf(list.reducer, { data, selected });
 
-export const reduxToolkitPureState: PureStateBenchmark = {
+const counterStore = () => storeOf(counter.reducer);
+
+const sumFields = (s: WideState): number => {
+  let sum = 0;
+  for (let j = 0; j < WIDE_FIELDS; j++) sum += s[fieldKey(j)];
+  return sum;
+};
+
+export const reduxToolkitPureState: PureStateLibrary = {
   name: 'Redux Toolkit',
-  setup: () => {
-    resetId();
-    return createBenchmarkStore();
-  },
-  operations: {
-    // ── CRUD Operations ──
+  ops: {
+    'create 1k': op({
+      setup: () => ({ s: listStore(), rows: buildData(1000) }),
+      run: ({ s, rows }) =>
+        s.dispatch(list.actions.set({ data: rows, selected: null })),
+    }),
+    'append 1k': op({
+      setup: () => ({ s: listStore(buildData(1000)), more: buildData(1000) }),
+      run: ({ s, more }) => s.dispatch(list.actions.append(more)),
+    }),
+    'update every 10th': op({
+      setup: () => listStore(buildData(1000)),
+      run: (s) => s.dispatch(list.actions.updateEvery10th()),
+    }),
+    clear: op({
+      setup: () => ({ s: listStore(), rows: buildData(1000) }),
+      run: ({ s, rows }) => {
+        s.dispatch(list.actions.set({ data: rows, selected: null }));
+        s.dispatch(list.actions.set({ data: [], selected: null }));
+      },
+    }),
 
-    'create 1k': (h) => {
-      const store = h as BenchmarkStore;
-      store.dispatch(
-        demoSlice.actions.setData({ data: buildData(1000), selected: null }),
-      );
-    },
-    'update every 10th': (h) => {
-      const store = h as BenchmarkStore;
-      if (store.getState().demo.data.length === 0) {
-        store.dispatch(
-          demoSlice.actions.setData({ data: buildData(1000), selected: null }),
-        );
-      }
-      store.dispatch(demoSlice.actions.updateEveryTenth());
-    },
-    'append 1k': (h) => {
-      const store = h as BenchmarkStore;
-      if (store.getState().demo.data.length === 0) {
-        store.dispatch(
-          demoSlice.actions.setData({ data: buildData(1000), selected: null }),
-        );
-      }
-      store.dispatch(demoSlice.actions.appendData(buildData(1000)));
-    },
-    clear: (h) => {
-      const store = h as BenchmarkStore;
-      store.dispatch(
-        demoSlice.actions.setData({ data: buildData(1000), selected: null }),
-      );
-      store.dispatch(demoSlice.actions.clear());
-    },
-
-    // ── State Update Patterns ──
-
-    'redundant emit': (h) => {
-      const store = h as BenchmarkStore;
-      store.dispatch(
-        demoSlice.actions.setData({ data: buildData(100), selected: null }),
-      );
-      const snapshot = store.getState().demo;
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(
-          demoSlice.actions.setData({
-            data: snapshot.data,
-            selected: snapshot.selected,
-          }),
-        );
-      }
-    },
-    'redundant patch': (h) => {
-      const store = h as BenchmarkStore;
-      store.dispatch(
-        demoSlice.actions.setData({ data: buildData(100), selected: 5 }),
-      );
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(demoSlice.actions.setSelected(5));
-      }
-    },
-    'patch 1 of 20 fields': (h) => {
-      const store = h as BenchmarkStore;
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(wideSlice.actions.setField10(i));
-      }
-    },
-    'nested object update': (h) => {
-      const store = h as BenchmarkStore;
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(nestedSlice.actions.setValue(i));
-      }
-    },
-    'batch rapid updates': (h) => {
-      const store = h as BenchmarkStore;
-      let total = 0;
-      const unsub = store.subscribe(() => {
-        total += store.getState().counter.count;
-      });
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(counterSlice.actions.setCount(i));
-      }
-      unsub();
-      void total;
-    },
-
-    // ── Same-tick burst (scoped subscriber) ──
-    //
-    // Counterpart to Blac's path-scoped consumer: a subscriber reading one
-    // field. 1000 synchronous dispatches in one tick.
-    'same-tick burst 1000 (tracked consumer)': (h) => {
-      const store = h as BenchmarkStore;
-      let seen = 0;
-      const unsub = store.subscribe(() => {
-        seen += store.getState().wide.field10;
-      });
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(wideSlice.actions.setField10(i));
-      }
-      unsub();
-      void seen;
-    },
-
-    // ── Subscription & Notification ──
-
-    'notify 100 subscribers': (h) => {
-      const store = h as BenchmarkStore;
-      const unsubs: (() => void)[] = [];
-      for (let i = 0; i < 100; i++) {
-        unsubs.push(store.subscribe(() => {}));
-      }
-      for (let i = 0; i < 100; i++) {
-        store.dispatch(demoSlice.actions.setData({ data: [], selected: i }));
-      }
-      unsubs.forEach((u) => u());
-    },
-    'subscriber with computed filter': (h) => {
-      const store = h as BenchmarkStore;
-      let hitCount = 0;
-      const unsubs: (() => void)[] = [];
-      for (let i = 0; i < 10; i++) {
-        const threshold = (i + 1) * 10;
-        unsubs.push(
-          store.subscribe(() => {
-            const selected = store.getState().demo.selected;
-            if (selected !== null && selected >= threshold) {
-              hitCount++;
-            }
-          }),
-        );
-      }
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(
-          demoSlice.actions.setData({ data: [], selected: i % 100 }),
-        );
-      }
-      unsubs.forEach((u) => u());
-      void hitCount;
-    },
-
-    // ── Derived & Cross-Store ──
-
-    'derived state computation': (h) => {
-      const store = h as BenchmarkStore;
-      const selectDerived = createSelector(
-        (state: ReturnType<BenchmarkStore['getState']>) => state.source.value,
-        (value) => value * 2,
-      );
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(sourceSlice.actions.setValue(i));
-        void selectDerived(store.getState());
-      }
-    },
-    'multi-store coordination': (h) => {
-      const store = h as BenchmarkStore;
-      let notifications = 0;
-      const unsub = store.subscribe(() => {
-        notifications++;
-      });
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(counterASlice.actions.setCount(i));
-        store.dispatch(
-          counterBSlice.actions.setCount(store.getState().counterA.count * 2),
-        );
-        store.dispatch(
-          counterCSlice.actions.setCount(
-            store.getState().counterA.count + store.getState().counterB.count,
-          ),
-        );
-      }
-      unsub();
-      void notifications;
-    },
-
-    // ── Proxy Tracking Overhead (raw state access) ──
-
-    'proxy track 1 field': (h) => {
-      const store = h as BenchmarkStore;
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(counterSlice.actions.setCount(i));
-        void store.getState().counter.count;
-      }
-    },
-    // Pure read cost: `.state`/`getState()` is an O(1) field read in every
-    // library here, so this measures the 20 dynamic `field${j}` string lookups
-    // in this loop, not library machinery. Kept as a shared baseline.
-    'read 20 fields (baseline)': (h) => {
-      const store = h as BenchmarkStore;
-      for (let i = 0; i < 1000; i++) {
-        const s = store.getState().wide;
-        for (let j = 0; j < 20; j++) {
-          void s[`field${j}` as keyof WideState];
+    'redundant emit': op({
+      setup: () => listStore(buildData(100)),
+      run: (s) => {
+        const snapshot = s.getState();
+        for (let i = 0; i < 1000; i++) s.dispatch(list.actions.set(snapshot));
+      },
+    }),
+    'redundant patch': op({
+      setup: () => listStore(buildData(100), 5),
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) s.dispatch(list.actions.select(5));
+      },
+    }),
+    'patch 1 of 20 fields': op({
+      setup: () => storeOf(wide.reducer),
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) {
+          s.dispatch(wide.actions.set({ field: 10, value: i }));
         }
-      }
-    },
+      },
+    }),
+    'nested object update': op({
+      setup: () => storeOf(nested.reducer),
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) s.dispatch(nested.actions.setAge(i));
+      },
+    }),
+    'batch rapid updates': op({
+      setup: () => {
+        const s = counterStore();
+        s.subscribe(() => void s.getState().count);
+        return s;
+      },
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) s.dispatch(counter.actions.set(i));
+      },
+    }),
+    'same-tick burst 1000 (tracked consumer)': op({
+      setup: () => {
+        const s = storeOf(wide.reducer);
+        let prev = s.getState().field0;
+        s.subscribe(() => {
+          const v = s.getState().field0;
+          if (v !== prev) prev = v;
+        });
+        return s;
+      },
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) {
+          s.dispatch(wide.actions.set({ field: 0, value: i }));
+        }
+      },
+    }),
 
-    // ── Getter Tracking (selectors) ──
+    'notify 100 subscribers': op({
+      setup: () => {
+        const s = listStore();
+        for (let i = 0; i < 100; i++) s.subscribe(() => {});
+        return s;
+      },
+      run: (s) => {
+        for (let i = 0; i < 100; i++) s.dispatch(list.actions.select(i));
+      },
+    }),
+    'subscriber with computed filter': op({
+      setup: () => {
+        const s = listStore();
+        const hits = { n: 0 };
+        for (let i = 0; i < 10; i++) {
+          const threshold = (i + 1) * 10;
+          s.subscribe(() => {
+            const { selected } = s.getState();
+            if (selected !== null && selected >= threshold) hits.n++;
+          });
+        }
+        return s;
+      },
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) {
+          s.dispatch(list.actions.select(i % 100));
+        }
+      },
+    }),
+    // Three stores, like the other libraries; one store with three slices is
+    // the more idiomatic Redux shape but would run every reducer per dispatch.
+    'multi-store coordination': op({
+      setup: () => {
+        const stores = [0, 1, 2].map(counterStore);
+        for (const s of stores) s.subscribe(() => {});
+        return stores;
+      },
+      run: ([a, b, c]) => {
+        for (let i = 0; i < 1000; i++) {
+          a.dispatch(counter.actions.set(i));
+          b.dispatch(counter.actions.set(a.getState().count * 2));
+          c.dispatch(
+            counter.actions.set(a.getState().count + b.getState().count),
+          );
+        }
+      },
+    }),
+    // Each row subscriber compares its own item, as a `useSelector` does.
+    '1 of 1,000 row subscribers': op({
+      setup: () => {
+        const s = listStore(buildData(ROWS));
+        for (let i = 0; i < ROWS; i++) {
+          let prev = s.getState().data[i];
+          s.subscribe(() => {
+            const item = s.getState().data[i];
+            if (item !== prev) {
+              prev = item;
+              void item.label;
+            }
+          });
+        }
+        return s;
+      },
+      run: (s) => {
+        for (let i = 0; i < ROW_UPDATES; i++) {
+          s.dispatch(list.actions.relabel((i * 7) % ROWS));
+        }
+      },
+    }),
 
-    'getter track simple': (h) => {
-      const store = h as BenchmarkStore;
-      const selectDoubled = createSelector(
-        (state: ReturnType<BenchmarkStore['getState']>) => state.counter.count,
-        (count) => count * 2,
-      );
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(counterSlice.actions.setCount(i));
-        void selectDoubled(store.getState());
-      }
-    },
-    'getter track wide aggregate': (h) => {
-      const store = h as BenchmarkStore;
-      const selectSum = createSelector(
-        (state: ReturnType<BenchmarkStore['getState']>) => state.wide,
-        (wide) => {
-          let sum = 0;
-          for (let j = 0; j < 20; j++) {
-            sum += wide[`field${j}` as keyof WideState] as number;
-          }
-          return sum;
-        },
-      );
-      for (let i = 0; i < 1000; i++) {
-        store.dispatch(wideSlice.actions.setField10(i));
-        void selectSum(store.getState());
-      }
-    },
-
-    // ── Registry Lifecycle (store create + destroy) ──
-
-    'acquire/release cycle': () => {
-      for (let i = 0; i < 1000; i++) {
-        const s = createBenchmarkStore();
-        void s.getState();
-      }
-    },
-    'instance create/dispose': () => {
-      for (let i = 0; i < 1000; i++) {
-        const s = createBenchmarkStore();
-        void s.getState();
-      }
-    },
+    'read 20 fields (baseline)': op({
+      setup: () => storeOf(wide.reducer),
+      run: (s) => {
+        for (let i = 0; i < 1000; i++) {
+          const state = s.getState();
+          for (let j = 0; j < WIDE_FIELDS; j++) void state[fieldKey(j)];
+        }
+      },
+    }),
+    'getter track simple': op({
+      setup: () => ({
+        s: counterStore(),
+        doubled: createSelector(
+          (st: { count: number }) => st.count,
+          (count) => count * 2,
+        ),
+      }),
+      run: ({ s, doubled }) => {
+        for (let i = 0; i < 1000; i++) {
+          s.dispatch(counter.actions.set(i));
+          void doubled(s.getState());
+        }
+      },
+    }),
+    'getter track wide aggregate': op({
+      setup: () => ({
+        s: storeOf(wide.reducer),
+        sum: createSelector((st: WideState) => st, sumFields),
+      }),
+      run: ({ s, sum }) => {
+        for (let i = 0; i < 1000; i++) {
+          s.dispatch(wide.actions.set({ field: 0, value: i }));
+          void sum(s.getState());
+        }
+      },
+    }),
   },
   retain: (n) => {
-    const stores = Array.from({ length: n }, () =>
-      configureStore({ reducer: { counter: counterSlice.reducer } }),
-    );
+    const stores = Array.from({ length: n }, counterStore);
     return () => {
       stores.length = 0;
     };
