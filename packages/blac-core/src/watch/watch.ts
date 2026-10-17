@@ -201,7 +201,7 @@ function isArray(input: unknown): input is readonly BlocInput[] {
 /**
  * Watch one or more blocs for state changes.
  *
- * Thin wrapper around `container.channel.subscribe(ALL_PATHS, ...)`. The
+ * Thin wrapper around `container.channel.subscribe(() => ALL_PATHS, ...)`. The
  * callback fires once immediately, then on every state change of any of the
  * passed blocs. Returning `watch.STOP` from the callback tears down all
  * subscriptions. Subscriptions are microtask-deferred, so callbacks land
