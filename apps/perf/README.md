@@ -1,136 +1,115 @@
-# React State Management Benchmarks
+# State management benchmarks
 
-A browser-based performance comparison tool for React state management libraries.
-
-## Supported Libraries
-
-- **Blac** — BlaC's Cubit + useBloc
-- **Zustand** — Zustand store + useStore
-
-More libraries (Redux Toolkit, Jotai, etc.) can be added by implementing the benchmark component contract.
-
-## Quick Start
+Browser benchmarks comparing Blac with Zustand, Redux Toolkit and React Context.
 
 ```bash
-pnpm --filter perf dev
+pnpm --filter perf bench   # production build + preview, http://localhost:3001/
+pnpm --filter perf dev     # dev server, for working on the app only
 ```
 
-Open http://localhost:3001/
+Use `bench` for numbers. The dev build runs React's and Blac's dev-only
+checks, which slows each library by a different amount; the dashboard shows a
+warning when it is running one. Run in Chrome, with no other heavy tabs. For a
+GC between samples, start Chrome with `--js-flags=--expose-gc`.
 
-## Measurement Strategy
+`/demo` runs the list operations by hand on any implementation. `/debug` holds
+one-off instrumentation and is not a benchmark.
 
-### Dual Measurement
+## Suites
 
-Each benchmark operation is measured two ways:
+**List** — js-framework-benchmark operations on a 1,000-row table: create,
+replace, update every 10th row, update 1 row, select, swap, remove, create
+10,000, append 1,000, clear. Each library runs twice:
 
-1. **React.Profiler** — captures `actualDuration` (render time with memoization) and `baseDuration` (worst-case render time)
-2. **performance.mark/measure** — end-to-end timing from trigger to paint, including state update + React reconciliation + DOM mutation
+- **sub rows**: each row reads its item (`data[i]`) and the selection from the
+  store itself.
+- **prop rows**: the parent reads everything and passes primitives to memoised
+  rows.
 
-### Pure State Benchmarks
+Compare within an architecture, never across. Every implementation renders the
+same markup (`shared/list.tsx`) and does the same list transforms.
 
-Raw state management throughput measured without React involvement. Instantiates state containers directly and measures operation speed.
+**Re-render** — consumers reading different slices of a store, one update per
+sample. Reports renders per update against the optimum, and time.
 
-### Statistical Rigor
+**Pure state** — store operations without React. Each op builds its own stores
+and data in an untimed `setup`, so only the op body is timed.
 
-- Configurable warmup runs (default: 5, discarded)
-- Configurable measured runs (default: 20)
-- Outlier removal (2.5 sigma from median via MAD)
-- Reports: min, median, mean, p95, max, stddev
+## How timing works
 
-### Op set — deliberately minimal
+- **List and re-render:** each benchmark mounts in its own React root, so
+  dashboard updates never re-render it. A sample runs as follows:
+  1. Apply the op's setup.
+  2. Let the page paint.
+  3. Time from the trigger until every microtask has run. Store notifications,
+     React's sync render, commit and passive effects all happen within that
+     window.
+- **Style, layout and paint are excluded.** They depend only on the resulting
+  DOM, which is the same for every library, and waiting for a frame adds up to
+  16ms of vsync phase to each sample.
+- **"React render"** is the summed Profiler `actualDuration` for those commits.
+  The production build aliases `react-dom/client` to `react-dom/profiling` so
+  the Profiler keeps working.
+- **React DevTools is disabled.** The extension measures every committed host
+  node, which forces a layout per commit. `index.html` opts out of it; add
+  `?devtools` to the URL to keep it.
+- **Late commits are flagged.** If React commits after a timed window closes,
+  the console warns `[perf] … committed after the timed window`.
+- **Blac flushes on a manual schedule in pure-state ops.** Its containers use a
+  `ManualScheduler`, and an op that needs notifications delivered calls
+  `pump()`. That is the same flush the default microtask scheduler runs, but
+  synchronous, so the timed loop holds no `await`. Zustand and Redux notify
+  synchronously on every update.
+- **Coalescing is measured on purpose.** In `batch rapid updates` and
+  `same-tick burst`, Blac delivers one notification for 1,000 same-tick
+  updates, while the others deliver 1,000. Every other notification op flushes
+  after each update.
 
-The pure-state suite keeps **one op per aspect**. It was trimmed from 29 ops to 20 because
-extra ops cost run time and reviewer attention without adding signal. Before adding an op,
-check it is not already covered; before re-adding one of these, read why it went:
+## Reading the numbers
 
-| Removed                              | Why                                                                                                            |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `create 10k`                         | Same code path as `create 1k`, just bigger. Scaling is not what this suite tests                               |
-| `getter track multiple`              | Measured identical to `getter track simple` (79.5µs vs 75.2µs) — a second plain accessor over `.state` is free |
-| `getter change detection miss`       | 4.3µs — at the 5µs timer floor, and there is no read interception to detect                                    |
-| `proxy change detection miss`        | 5.1µs — same, floor-level noise                                                                                |
-| `proxy change detection hit`         | Same emit loop as `getter track simple`, differing only by a free getter                                       |
-| `proxy track deep nested (5 levels)` | Floor-level plain property access; `.state` is an O(1) field read                                              |
-| `acquire shared instance`            | `acquire/release cycle` already covers the registry path                                                       |
-| `selector notification skip`         | `redundant patch` already covers no-op change filtering                                                        |
-| `cross-store propagation`            | `multi-store coordination` is the strict superset (3 stores vs 2)                                              |
+- **The timer resolves to 5µs.** COOP/COEP headers make the page
+  cross-origin isolated; without them the clamp is 100µs, and the report header
+  says which applied. A pure-state op that finishes within 50µs is repeated
+  until a sample spans about 1ms (at most 1,000 calls), and the report shows
+  the count, e.g. `×200`. So every op must cost the same when run again on its
+  handle.
+- **Each cell is the median after outlier removal, ± its coefficient of
+  variation.** Ratios compare against the best cell in the row. The report ends
+  with every row where Blac is more than 1.25× the best.
+- **Most pure-state op bodies loop 1,000 times,** so per-update cost is roughly
+  the median divided by 1,000. `1 of 1,000 row subscribers` makes 100 updates
+  against 1,000 subscribers.
+- **Retained memory is Chrome-only.** It uses
+  `performance.measureUserAgentSpecificMemory()` over 10k minimal instances,
+  median of 5 readings.
+- **Registry-lifecycle ops are Blac-only.** The other libraries have no
+  acquire, release or refcounting, so these are reported without ratios.
 
-`proxy cache reuse` was removed earlier: it was a byte-identical duplicate of
-`proxy track 20 fields` (now `read 20 fields (baseline)`).
+## Pure-state op history
 
-Removing those ops also made the `derived` and `deepNested` containers dead in every
-library; they were deleted, so each `setup()` now builds 10 containers instead of 12.
+The suite keeps one op per aspect. Before adding one, check it is not already
+covered; before re-adding a removed one, read why it went:
 
-### Reading the numbers — caveats
+| Removed                                            | Why                                                                 |
+| -------------------------------------------------- | ------------------------------------------------------------------- |
+| `create 10k`                                       | Same path as `create 1k`, just bigger                               |
+| `getter track multiple`                            | Identical to `getter track simple`: a second plain accessor is free |
+| `getter/proxy change detection miss`               | At the 5µs timer floor                                              |
+| `proxy change detection hit`                       | Same emit loop as `getter track simple`                             |
+| `proxy track deep nested (5 levels)`               | Floor-level plain property access                                   |
+| `acquire shared instance`                          | `acquire/release cycle` covers the registry path                    |
+| `selector notification skip`                       | `redundant patch` covers no-op filtering                            |
+| `cross-store propagation`                          | `multi-store coordination` is the superset                          |
+| `proxy cache reuse`                                | Byte-identical to `read 20 fields (baseline)`                       |
+| `derived state computation`, `proxy track 1 field` | Same patch-then-read loop as `getter track simple`                  |
 
-Know these before drawing conclusions from a run:
+## Adding a library
 
-- **Timer resolution is 5µs.** `vite.config.ts` sets COOP/COEP so `performance.now()` gets
-  5µs resolution instead of the default 100µs clamp, but every measurement is still a
-  multiple of 5µs. A row showing `StdDev 0µs / CV 0.0%` is **below the timer's resolution**,
-  not perfectly stable. Treat differences under ~15µs (3 ticks) as noise, and don't chase
-  a "1.10x slower" that is one tick wide.
-- **Each pure-state sample is one run of the whole op body.** Most op bodies contain their
-  own internal 1000-iteration loop, so the reported median is the cost of ~1000 operations,
-  not one. Per-operation cost is roughly `median / 1000`.
-- **Op bodies under 50µs are timed over 10 back-to-back calls per sample** and divided by
-  10, so a 5µs tick is a few percent of the window instead of a third of it. The runner
-  probes each op after warmup to decide; the report lists which ops were repeated.
-- **Retained memory is Chrome-only.** `performance.measureUserAgentSpecificMemory()` needs
-  the cross-origin isolation the dev server already sets. Each library's `retain(n)` creates
-  10k minimal instances; the reported figure is the memory delta per instance, median of
-  five. The two readings land on different GC cycles, so a run with 1000 instances showed
-  a ±250 B/instance jitter; 10k keeps it under ~25 B. Other browsers skip the section.
-- **`setup()` runs inside the measured loop**, once per sample, but outside the timed
-  region. Only Blac defines a `teardown` (it disposes its containers); Zustand and Redux
-  define none, so they leave their stores to GC.
-- **Cross-library ops must do equivalent work.** Ops with no counterpart in another library
-  are reported separately without ratios — see "Registry Lifecycle" in the generated report.
-  When adding an op, make the comparison fair or mark it per-library.
-- **Read-only ops measure JS property access.** `.state` / `getState()` is an O(1) field
-  read in all three libraries, so `read 20 fields (baseline)` mostly measures the 20 dynamic
-  `field${j}` lookups in the benchmark loop itself.
-
-## Adding a New Library
-
-1. Create `src/libraries/<name>/FrameworkBenchmark.tsx` — a React component accepting `onReady: (api: BenchmarkAPI) => void`
-2. Create `src/libraries/<name>/pure-state.ts` — implements `PureStateBenchmark` interface
-3. Register in `src/libraries/registry.ts`
-
-The `BenchmarkAPI` contract:
-
-- `run()` — create 1,000 rows
-- `runLots()` — create 10,000 rows
-- `add()` — append 1,000 rows
-- `update()` — update every 10th row
-- `clear()` — clear all rows
-- `swapRows()` — swap rows at index 1 and 998
-
-## Project Structure
-
-```
-apps/perf/
-├── main.tsx                          # Entry point
-├── index.html                        # HTML template
-├── src/
-│   ├── App.tsx                       # Root component
-│   ├── shared/
-│   │   ├── types.ts                  # BenchmarkAPI, result types
-│   │   ├── data.ts                   # Shared data generation
-│   │   └── stats.ts                  # Statistical analysis
-│   ├── harness/
-│   │   ├── BenchmarkRunner.ts        # Orchestration + measurement
-│   │   ├── ProfilerWrapper.tsx       # React.Profiler wrapper
-│   │   └── timing.ts                 # performance.mark/measure helpers
-│   ├── libraries/
-│   │   ├── blac/                     # Blac implementation
-│   │   ├── zustand/                  # Zustand implementation
-│   │   └── registry.ts              # Library lookup
-│   ├── ui/
-│   │   ├── Dashboard.tsx             # Main dashboard
-│   │   ├── ResultsTable.tsx          # React benchmark results
-│   │   ├── PureStateResults.tsx      # Pure state results
-│   │   └── dashboard.css             # Styles
-│   └── benchmarks/
-│       └── JSFrameworkBenchmark.tsx   # Original standalone benchmark (preserved)
-```
+1. Add the implementations:
+   - `src/libraries/<name>/list.tsx`: sub-row and prop-row components that call
+     `onReady(api: ListAPI)`.
+   - `rerender.ts`: a `RerenderLibrary` that returns hooks per consumer shape.
+   - `pure-state.ts`: a `PureStateLibrary` with the ops in `shared/pure.ts`.
+2. Register them in `src/libraries/registry.ts`.
+3. Make each op do the same work as the other libraries' versions, written in
+   that library's idiomatic style. If no equivalent exists, leave the op out.
