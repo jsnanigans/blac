@@ -72,7 +72,7 @@ function decodePaths(paths: PathSet, interner: PathInterner): string[] {
 
 ## Perf notes
 
-- The plugin manager subscribes to every container with `ALL_PATHS` interest. This defeats the single-consumer-skip optimization in `StructuralContainer` for any container that has plugins installed. Devtools/persist plugins genuinely want every change; for fine-grained subscribers prefer `container.channel.subscribe(interest, cb)` directly.
+- The plugin manager subscribes to every container with `ALL_PATHS` interest. Every flush of every container then runs the bridge. Devtools/persist plugins genuinely want every change; for fine-grained subscribers prefer `container.channel.subscribe(interest, cb)` directly.
 - Stateful plugins (logging) can opt into path-level signals by decoding `paths` via the interner.
 
 ## Official Plugins

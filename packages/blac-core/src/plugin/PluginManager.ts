@@ -49,10 +49,10 @@ interface ContainerBridge {
  * with `ALL_PATHS` interest and dispatches
  * `onStateChange(ctx, prev, next, paths)` on every flush.
  *
- * `ALL_PATHS` interest defeats the single-consumer-skip optimization in
- * `StructuralContainer` — an intended trade-off for plugins that genuinely
- * want every change (devtools/persist). Plugins that want low overhead
- * should remain uninstalled or environment-gated.
+ * `ALL_PATHS` interest wakes the bridge on every flush of every container —
+ * an intended trade-off for plugins that genuinely want every change
+ * (devtools/persist). Plugins that want low overhead should remain
+ * uninstalled or environment-gated.
  *
  * @example
  * ```ts
@@ -305,7 +305,7 @@ export class PluginManager {
     this.containerBridges.delete(container);
   }
 
-  // Bridges cost every container its single-consumer skip, so they exist only
+  // Bridges cost every container a callback per flush, so they exist only
   // while some installed plugin implements `onStateChange`.
   private hasStateChangePlugin(): boolean {
     for (const { plugin } of this.plugins.values()) {
