@@ -1,52 +1,4 @@
 import type React from 'react';
-import type { ProfilerOnRenderCallback } from 'react';
-
-export interface DataItem {
-  id: number;
-  label: string;
-}
-
-export interface BenchmarkAPI {
-  run: () => void;
-  runLots: () => void;
-  add: () => void;
-  update: () => void;
-  clear: () => void;
-  swapRows: () => void;
-  select: (id: number) => void;
-  remove: (id: number) => void;
-}
-
-export type OperationName =
-  | 'run'
-  | 'runLots'
-  | 'add'
-  | 'update'
-  | 'clear'
-  | 'swapRows';
-
-export const OPERATION_LABELS: Record<OperationName, string> = {
-  run: 'Create 1,000 rows',
-  runLots: 'Create 10,000 rows',
-  add: 'Append 1,000 rows',
-  update: 'Update every 10th row',
-  clear: 'Clear',
-  swapRows: 'Swap rows',
-};
-
-export interface ProfilerMetric {
-  id: string;
-  phase: Parameters<ProfilerOnRenderCallback>[1];
-  actualDuration: number;
-  baseDuration: number;
-  startTime: number;
-  commitTime: number;
-}
-
-export interface TimingResult {
-  endToEnd: number;
-  profiler: ProfilerMetric[];
-}
 
 export interface StatResult {
   min: number;
@@ -58,25 +10,107 @@ export interface StatResult {
   samples: number;
 }
 
-export interface OperationResult {
-  operation: OperationName;
-  endToEnd: StatResult;
-  renderActual: StatResult;
-  renderBase: StatResult;
+// ── List suite (js-framework-benchmark style) ──
+
+export interface DataItem {
+  id: number;
+  label: string;
 }
 
-export interface LibraryResults {
+/** Actions every list implementation exposes to the runner. */
+export interface ListAPI {
+  run: () => void;
+  runLots: () => void;
+  add: () => void;
+  updateEvery10th: () => void;
+  updateRow: (id: number) => void;
+  select: (id: number) => void;
+  swapRows: () => void;
+  remove: (id: number) => void;
+  clear: () => void;
+  idAt: (index: number) => number;
+}
+
+export type RowArchitecture = 'sub rows' | 'prop rows';
+
+export interface ListLibrary {
+  name: string;
+  rows: RowArchitecture;
+  Component: React.ComponentType<{ onReady: (api: ListAPI) => void }>;
+}
+
+export interface ListOpResult {
+  op: string;
+  time: StatResult;
+  render: StatResult;
+}
+
+export interface ListResults {
   library: string;
-  operations: OperationResult[];
-  timestamp: number;
+  rows: RowArchitecture;
+  ops: ListOpResult[];
+}
+
+// ── Re-render suite ──
+
+export type NestedPath = 'name' | 'age' | 'theme' | 'lang';
+
+/**
+ * One mounted store, with a hook per consumer shape. Each hook reads only
+ * what its consumer renders, in the library's idiomatic way.
+ */
+export interface RerenderStore {
+  Provider?: React.ComponentType<{ children: React.ReactNode }>;
+  useField(field: number): number;
+  useFields(start: number, count: number): readonly number[];
+  useFieldSum(): number;
+  useNested(path: NestedPath): string | number;
+  bump: (field: number) => void;
+  toggleTheme: () => void;
+  dispose?: () => void;
+}
+
+export interface RerenderLibrary {
+  name: string;
+  create: () => RerenderStore;
+}
+
+export interface RerenderScenarioResult {
+  scenario: string;
+  renders: StatResult;
+  optimalRenders: number;
+  time: StatResult;
+}
+
+export interface RerenderResults {
+  library: string;
+  scenarios: RerenderScenarioResult[];
+}
+
+// ── Pure-state suite ──
+
+export interface PureOp<H = unknown> {
+  /** Builds this op's stores and data; runs before every sample, untimed. */
+  setup: () => H;
+  run: (handle: H) => void;
+  teardown?: (handle: H) => void;
+}
+
+export interface PureStateLibrary {
+  name: string;
+  ops: Record<string, PureOp>;
+  /**
+   * Create `n` minimal live instances and return a function that releases
+   * them. Used to measure retained bytes per instance.
+   */
+  retain?: (n: number) => () => void;
 }
 
 export interface PureStateResult {
   library: string;
-  operation: string;
-  opsPerSecond: number;
-  avgDuration: StatResult;
-  /** Back-to-back op calls per timed sample; `avgDuration` is per call. */
+  op: string;
+  time: StatResult;
+  /** Back-to-back op calls per timed sample; `time` is per call. */
   repetitions: number;
 }
 
@@ -86,150 +120,57 @@ export interface RetainedMemoryResult {
   bytesPerInstance: StatResult;
 }
 
-export interface WideState {
-  field0: number;
-  field1: number;
-  field2: number;
-  field3: number;
-  field4: number;
-  field5: number;
-  field6: number;
-  field7: number;
-  field8: number;
-  field9: number;
-  field10: number;
-  field11: number;
-  field12: number;
-  field13: number;
-  field14: number;
-  field15: number;
-  field16: number;
-  field17: number;
-  field18: number;
-  field19: number;
-}
+// ── Shared state shapes ──
+
+export const WIDE_FIELDS = 20;
+
+export type WideState = Record<`field${number}`, number>;
+
+export const fieldKey = (i: number): `field${number}` => `field${i}`;
 
 export function createWideState(): WideState {
-  return {
-    field0: 0,
-    field1: 0,
-    field2: 0,
-    field3: 0,
-    field4: 0,
-    field5: 0,
-    field6: 0,
-    field7: 0,
-    field8: 0,
-    field9: 0,
-    field10: 0,
-    field11: 0,
-    field12: 0,
-    field13: 0,
-    field14: 0,
-    field15: 0,
-    field16: 0,
-    field17: 0,
-    field18: 0,
-    field19: 0,
-  };
+  const state: WideState = {};
+  for (let i = 0; i < WIDE_FIELDS; i++) state[fieldKey(i)] = 0;
+  return state;
 }
 
 export interface NestedState {
-  a: { b: { c: { value: number } } };
-}
-
-export function createNestedState(): NestedState {
-  return { a: { b: { c: { value: 0 } } } };
-}
-
-export interface CounterState {
-  count: number;
-}
-
-export interface PureStateBenchmark {
-  name: string;
-  setup: () => unknown;
-  operations: Record<string, (handle: unknown) => void>;
-  teardown?: (handle: unknown) => void;
-  /**
-   * Create `n` minimal live instances and return a function that releases
-   * them. Used to measure retained bytes per instance.
-   */
-  retain?: (n: number) => () => void;
-}
-
-export interface LibraryDefinition {
-  name: string;
-  Component: React.ComponentType<{ onReady: (api: BenchmarkAPI) => void }>;
-  /**
-   * Optional pure-state (no-React) microbenchmark suite, implemented for all
-   * three libraries. Blac's ops measure raw `state` reads, mirroring the
-   * Zustand/Redux equivalents.
-   */
-  pureState?: PureStateBenchmark;
-}
-
-// ── Re-render Benchmark Types ──
-
-export type RerenderScenario =
-  | 'singleField'
-  | 'manyConsumers'
-  | 'nestedPaths'
-  | 'mixedReads'
-  | 'unrelatedUpdate';
-
-export const RERENDER_SCENARIO_LABELS: Record<RerenderScenario, string> = {
-  singleField: 'Single Field Update (20 consumers)',
-  manyConsumers: 'Many Consumers (100 consumers)',
-  nestedPaths: 'Nested Path Tracking (4 consumers)',
-  mixedReads: 'Mixed Read Patterns (15 consumers)',
-  unrelatedUpdate: 'Unrelated Field Update (10 consumers)',
-};
-
-export interface RerenderBenchmarkAPI {
-  trigger(): void;
-  getRenderCounts(): number[];
-  resetRenderCounts(): void;
-  getConsumerCount(): number;
-  getOptimalRenders(): number;
-}
-
-export interface RerenderBenchmarkProps {
-  scenario: RerenderScenario;
-  onReady: (api: RerenderBenchmarkAPI) => void;
-}
-
-export interface RerenderOperationResult {
-  scenario: RerenderScenario;
-  totalRenders: StatResult;
-  optimalRenders: number;
-  endToEnd: StatResult;
-  renderActual: StatResult;
-}
-
-export interface RerenderLibraryResults {
-  library: string;
-  scenarios: RerenderOperationResult[];
-  timestamp: number;
-}
-
-export interface RerenderLibraryDefinition {
-  name: string;
-  Component: React.ComponentType<RerenderBenchmarkProps>;
-}
-
-export interface DeepNestedState {
   user: {
     profile: { name: string; age: number };
     settings: { theme: string; lang: string };
   };
 }
 
-export function createDeepNestedState(): DeepNestedState {
+export function createNestedState(): NestedState {
   return {
     user: {
       profile: { name: 'Alice', age: 30 },
       settings: { theme: 'dark', lang: 'en' },
+    },
+  };
+}
+
+export function readNested(s: NestedState, path: NestedPath): string | number {
+  switch (path) {
+    case 'name':
+      return s.user.profile.name;
+    case 'age':
+      return s.user.profile.age;
+    case 'theme':
+      return s.user.settings.theme;
+    case 'lang':
+      return s.user.settings.lang;
+  }
+}
+
+export function toggledTheme(s: NestedState): NestedState {
+  return {
+    user: {
+      ...s.user,
+      settings: {
+        ...s.user.settings,
+        theme: s.user.settings.theme === 'dark' ? 'light' : 'dark',
+      },
     },
   };
 }

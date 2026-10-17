@@ -1,7 +1,17 @@
 import type { StatResult } from './types';
 
+const medianOfSorted = (sorted: number[]): number => {
+  const n = sorted.length;
+  return n % 2 === 0
+    ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2
+    : sorted[Math.floor(n / 2)];
+};
+
+const ascending = (a: number, b: number): number => a - b;
+
 export function computeStats(values: number[]): StatResult {
-  if (values.length === 0) {
+  const n = values.length;
+  if (n === 0) {
     return {
       min: 0,
       max: 0,
@@ -12,57 +22,37 @@ export function computeStats(values: number[]): StatResult {
       samples: 0,
     };
   }
-
-  const sorted = [...values].sort((a, b) => a - b);
-  const n = sorted.length;
-
-  const sum = sorted.reduce((acc, v) => acc + v, 0);
-  const mean = sum / n;
-
-  const median =
-    n % 2 === 0
-      ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2
-      : sorted[Math.floor(n / 2)];
-
-  const p95Index = Math.ceil(n * 0.95) - 1;
-  const p95 = sorted[Math.min(p95Index, n - 1)];
-
+  const sorted = [...values].sort(ascending);
+  const mean = sorted.reduce((acc, v) => acc + v, 0) / n;
   const variance = sorted.reduce((acc, v) => acc + (v - mean) ** 2, 0) / n;
-  const stddev = Math.sqrt(variance);
-
   return {
     min: sorted[0],
     max: sorted[n - 1],
     mean,
-    median,
-    p95,
-    stddev,
+    median: medianOfSorted(sorted),
+    p95: sorted[Math.min(Math.ceil(n * 0.95) - 1, n - 1)],
+    stddev: Math.sqrt(variance),
     samples: n,
   };
 }
 
-export function removeOutliers(
-  values: number[],
-  sigmaThreshold = 2.5,
-): number[] {
+/** Drops samples more than `threshold` scaled MADs from the median. */
+export function removeOutliers(values: number[], threshold = 2.5): number[] {
   if (values.length < 4) return values;
-
-  const sorted = [...values].sort((a, b) => a - b);
-  const n = sorted.length;
-  const median =
-    n % 2 === 0
-      ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2
-      : sorted[Math.floor(n / 2)];
-
+  const median = medianOfSorted([...values].sort(ascending));
   const mad =
-    [...sorted].map((v) => Math.abs(v - median)).sort((a, b) => a - b)[
-      Math.floor(n / 2)
-    ] * 1.4826;
-
+    medianOfSorted(values.map((v) => Math.abs(v - median)).sort(ascending)) *
+    1.4826;
   if (mad === 0) return values;
-
-  return values.filter((v) => Math.abs(v - median) / mad <= sigmaThreshold);
+  return values.filter((v) => Math.abs(v - median) / mad <= threshold);
 }
+
+export const summarize = (values: number[]): StatResult =>
+  computeStats(removeOutliers(values));
+
+/** Coefficient of variation, in percent. */
+export const cv = (s: StatResult): number =>
+  s.mean > 0 ? (s.stddev / s.mean) * 100 : 0;
 
 export function formatBytes(bytes: number): string {
   if (Math.abs(bytes) < 1024) return `${bytes.toFixed(0)} B`;
@@ -71,7 +61,8 @@ export function formatBytes(bytes: number): string {
 }
 
 export function formatMs(ms: number): string {
-  if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;
-  if (ms < 100) return `${ms.toFixed(1)}ms`;
+  if (ms < 1)
+    return `${(ms * 1000).toFixed(ms < 0.001 ? 2 : ms < 0.01 ? 1 : 0)}µs`;
+  if (ms < 100) return `${ms.toFixed(2)}ms`;
   return `${ms.toFixed(0)}ms`;
 }

@@ -188,6 +188,9 @@ importers:
       '@blac/react':
         specifier: workspace:*
         version: link:../../packages/blac-react
+      '@dirtytalk/engine':
+        specifier: workspace:*
+        version: link:../../packages/dirtytalk-engine
       '@dirtytalk/structural':
         specifier: workspace:*
         version: link:../../packages/dirtytalk-structural
