@@ -187,21 +187,16 @@ set to fix the refcount-corruption bug (S1).
 
 - **R1. `@blac/react` dep tracking never disarms.** Fixed in the second pass
   (S9).
-- **R2. `process.env.NODE_ENV` in library code.** Used by the tracker and
-  interner. It throws in unbundled browser ESM; already tracked in
-  `review/03-bundle-and-packaging.md` §4.
-- **R3. Per-index array tracking still has a size cliff.** It interns one id
-  per index and field. See `review/02-performance.md` §7. The wildcard/bitmap
-  `PathSet` idea is the next big structural win.
-- **R4. `deepMerge` drops a null prototype.** It spreads `{ ...target }`, so
-  an `Object.create(null)` branch becomes a normal object after a patch.
-  Harmless today.
-- **R5. `ProxyCache` keys on `(target, prefixId)` without the interner.**
-  Sharing one cache across containers of different classes could reuse a
-  proxy with the wrong prefix meaning. The docs already say to scope caches
-  per call-site.
-- **R6. `apps/examples` `tsc` crashes ("Debug Failure").** Reproduced on
-  clean HEAD, so it's unrelated to this work.
+- **R2. `process.env.NODE_ENV` in library code.** Fixed in the third pass.
+- **R3. Per-index array tracking still has a size cliff.** Fixed in the third
+  pass (arrays over 256 are tracked whole).
+- **R4. `deepMerge` drops a null prototype.** Fixed in the third pass.
+- **R5. `ProxyCache` keys on `(target, prefixId)` without the interner.** Not
+  a bug: a reused handler stores only `prefixId`, and its `ctx` (with the
+  interner) is repointed on reuse, so the id is always resolved in the
+  interner that produced it.
+- **R6. `apps/examples` `tsc` crashes ("Debug Failure").** Fixed in the third
+  pass.
 
 ## Second pass (2026-10-17)
 
@@ -273,15 +268,51 @@ plot 745. Lint and typecheck are clean. Benches are unchanged within noise
 
 ### Still open
 
-- R2–R6 above.
-- `_refineAncestorMarks` is O(skeleton × depth) per atomic replacement; an
-  interner child index would make it O(descendants). P4b is already fast, so
-  not done.
-- devtools shows the root id as `\0root` in changed paths.
-- insomni's `package.json` still declares `^0.0.3`; bump to the released
-  versions before publishing insomni, since it now needs `paintFrame`.
-- `FrameSpine` is no longer used by `GpuSceneRoot` (still exported from
-  `insomni/internal`, with tests).
+- See the third pass.
+
+## Third pass (2026-10-17)
+
+Suites: structural 219, blac-core 703, blac-react 203, devtools-ui 20,
+devtools-connect 30, logging 5, persist 18. Typecheck and lint are clean,
+including `apps/examples`. Each fix has a test that fails without it.
+
+- **R2.** The tracker's read-only traps and the interner's size warning read
+  `process.env.NODE_ENV` through `isDev()` (`src/env.ts`). A missing
+  `process` counts as production, matching blac-core's `IS_DEV`.
+- **R3.** Arrays longer than `MAX_TRACKED_ARRAY_LENGTH` (256) are returned
+  raw and recorded at their own path; a large root array records the root
+  id. Render plus emit of one changed item, reading every `title`/`done`:
+
+  | Items  | Before  | After    |
+  | ------ | ------- | -------- |
+  | 100    | 0.07 ms | 0.07 ms  |
+  | 1,000  | 0.89 ms | 0.014 ms |
+  | 10,000 | 9.7 ms  | 0.13 ms  |
+
+  Trade-off: a consumer of a large list wakes on any change to it (the
+  Zustand model) rather than only on the fields it read. The web-docs
+  tracking pages described an older "iteration coarsens" behaviour; they now
+  match the code.
+
+- **R4.** `deepMerge` clones a null-prototype branch with `Object.create(null)`;
+  everything else still uses spread.
+- **R5.** Not a bug (see above).
+- **R6.** `apps/examples/tsconfig.json` mapped `@blac/react/testing` to
+  `testing.ts`; the file is `testing.tsx`. TS 6 resolved the `.tsx` fallback
+  and then hit an internal assertion instead of reporting it.
+- **Root id display.** `interner.lookup(rootId)` returns `''` (the whole
+  state, as in `getAt`) instead of `\0root`; devtools chips show `<root>`.
+- **insomni.** `FrameSpine` stays: it's a documented public export. The
+  damage docs no longer say `GpuSceneRoot` owns one.
+
+Not done:
+
+- `_refineAncestorMarks` stays O(skeleton × depth). An interner child index
+  walks every interned descendant, which can be more than the skeleton, and
+  P4b is already fast.
+- insomni now declares `@dirtytalk/engine` ^0.2.2 and `@dirtytalk/spatial`
+  ^0.2.0 (the pending changeset versions; `paintFrame` isn't in 0.1.1).
+  Release these before publishing insomni.
 
 ## Files
 
