@@ -478,6 +478,12 @@ const setMergedKey = (
   }
 };
 
+// Spread is the fast path; only a null-prototype object needs `Object.create`.
+const cloneShallow = (o: Record<string, unknown>): Record<string, unknown> =>
+  Object.getPrototypeOf(o) === null
+    ? Object.assign(Object.create(null) as Record<string, unknown>, o)
+    : { ...o };
+
 const deepMerge = <S>(target: S, patch: Partial<S>): S => {
   if (!isPlainPatchObject(target) || !isPlainPatchObject(patch)) {
     // Either side isn't a plain object — patch replaces wholesale.
@@ -506,7 +512,7 @@ const deepMerge = <S>(target: S, patch: Partial<S>): S => {
         ? deepMerge(prevVal, nextVal)
         : nextVal;
     if (!Object.is(mergedVal, prevVal)) {
-      if (out === undefined) out = { ...(target as Record<string, unknown>) };
+      out ??= cloneShallow(target as Record<string, unknown>);
       setMergedKey(out, key, mergedVal);
     }
   }

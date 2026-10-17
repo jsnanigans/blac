@@ -194,6 +194,17 @@ describe('StructuralContainer — deepMerge __proto__ guard', () => {
     });
     expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
   });
+
+  it('a null-prototype branch keeps its null prototype after a patch', () => {
+    class Dict extends TestContainer<{ byId: Record<string, number> }> {}
+    const byId = Object.assign(Object.create(null), { a: 1 });
+    const c = new Dict({ byId }, { scheduler: new SyncScheduler() });
+
+    c.patch({ byId: { b: 2 } });
+
+    expect(Object.getPrototypeOf(c.state.byId)).toBeNull();
+    expect({ ...c.state.byId }).toEqual({ a: 1, b: 2 });
+  });
 });
 
 describe('StructuralContainer — deepMerge lazy-clone (reference identity)', () => {
