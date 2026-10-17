@@ -3,6 +3,7 @@ import { emptyPathSet, expandWithAncestors, pathSetEquals } from './path-set';
 import type { PathSet } from './path-set';
 import { ProxyCache, trackRender } from './tracker';
 import type { StructuralContainer } from './container';
+import type { PathSubscription } from './path-index';
 
 export interface UseStructuralOptions {
   select?: never;
@@ -24,6 +25,7 @@ export function useStructural<S, C extends StructuralContainer<S>>(
   // `pathRef` expanded with ancestor-watch ids, so a patch that replaces a
   // parent atomically (e.g. an array) still wakes a reader of a descendant.
   const interestRef = useRef<PathSet>(pathRef.current);
+  const subRef = useRef<PathSubscription | null>(null);
   const cacheRef = useRef<ProxyCache | null>(null);
   // The paths of the last commit; renders that never commit don't touch it.
   const committedRef = useRef<PathSet | null>(null);
@@ -37,17 +39,17 @@ export function useStructural<S, C extends StructuralContainer<S>>(
     // Re-register paths in case this effect is re-running after a StrictMode
     // cleanup cycle (render body did not re-run, so we re-register from the ref).
     container.registerConsumerPaths(consumerId, pathRef.current);
-    const unsub = container.subscribe(
-      () => interestRef.current,
-      () => force(),
-    );
+    const sub = container.subscribePaths(() => force());
+    sub.setInterest(interestRef.current);
+    subRef.current = sub;
     // Close the mount gap (T6): if state advanced between the render snapshot
     // and this subscribe, force one re-render so we don't stay stale.
     if (container.state !== renderStateRef.current) {
       force();
     }
     return () => {
-      unsub();
+      subRef.current = null;
+      sub.unsubscribe();
       container.unregisterConsumer(consumerId);
     };
   }, [container, consumerId]);
@@ -74,6 +76,7 @@ export function useStructural<S, C extends StructuralContainer<S>>(
     committedRef.current = paths;
     container.registerConsumerPaths(consumerId, paths);
     interestRef.current = expandWithAncestors(paths, container.interner);
+    subRef.current?.setInterest(interestRef.current);
   });
 
   return [value, container] as const;

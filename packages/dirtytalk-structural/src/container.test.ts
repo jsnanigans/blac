@@ -1014,3 +1014,118 @@ describe('StructuralContainer — registry robustness', () => {
     expect(leaf).not.toHaveBeenCalled();
   });
 });
+
+describe('StructuralContainer — subscribePaths', () => {
+  type AB = { a: number; b: number };
+  class Box extends TestContainer<AB> {}
+  const box = () => new Box({ a: 0, b: 0 }, { scheduler: new SyncScheduler() });
+  const ids = (c: Box, ...paths: string[]): PathSet =>
+    new Set<PathId>(paths.map((p) => c.interner.intern(p)));
+
+  it('wakes only subscriptions watching a changed path, once per flush', () => {
+    const c = box();
+    c.registerConsumerPaths('x', ids(c, 'a', 'b'));
+    const a = vi.fn();
+    const b = vi.fn();
+    c.subscribePaths(a).setInterest(ids(c, 'a', 'b'));
+    c.subscribePaths(b).setInterest(ids(c, 'b'));
+    c.emit({ a: 1, b: 0 });
+    expect([a.mock.calls.length, b.mock.calls.length]).toEqual([1, 0]);
+    c.emit({ a: 2, b: 1 });
+    expect([a.mock.calls.length, b.mock.calls.length]).toEqual([2, 1]);
+  });
+
+  it('follows setInterest and stops after unsubscribe', () => {
+    const c = box();
+    c.registerConsumerPaths('x', ids(c, 'a', 'b'));
+    const cb = vi.fn();
+    const sub = c.subscribePaths(cb);
+    sub.setInterest(ids(c, 'a'));
+    sub.setInterest(ids(c, 'b'));
+    c.emit({ a: 1, b: 0 });
+    expect(cb).not.toHaveBeenCalled();
+    c.emit({ a: 1, b: 1 });
+    expect(cb).toHaveBeenCalledTimes(1);
+    sub.unsubscribe();
+    c.emit({ a: 1, b: 2 });
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips a subscription removed earlier in the same flush', () => {
+    const c = box();
+    c.registerConsumerPaths('x', ids(c, 'a'));
+    const second = vi.fn();
+    let secondSub: { unsubscribe(): void } | null = null;
+    c.subscribePaths(() => secondSub?.unsubscribe()).setInterest(ids(c, 'a'));
+    const sub = c.subscribePaths(second);
+    sub.setInterest(ids(c, 'a'));
+    secondSub = sub;
+    c.emit({ a: 1, b: 0 });
+    expect(second).not.toHaveBeenCalled();
+  });
+
+  it('ALL_PATHS interest wakes on any change', () => {
+    const c = box();
+    const cb = vi.fn();
+    c.subscribePaths(cb).setInterest(ALL_PATHS);
+    c.emit({ a: 1, b: 0 });
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('StructuralContainer — skeleton trie', () => {
+  type L = { items: { title: string }[]; n: number };
+  class List extends TestContainer<L> {}
+  const dirtyOf = (c: List, run: () => void): string[] => {
+    let seen: string[] = [];
+    const unsub = c.subscribe(
+      () => ALL_PATHS,
+      (d) => {
+        seen =
+          d === ALL_PATHS
+            ? ['<all>']
+            : [...d].map((id) => c.interner.lookup(id));
+      },
+    );
+    run();
+    unsub();
+    return seen.filter((p) => p !== '').sort();
+  };
+
+  it('keeps step with consumers registered after the first diff', () => {
+    const c = new List(
+      { items: [{ title: 'a' }, { title: 'b' }], n: 0 },
+      { scheduler: new SyncScheduler() },
+    );
+    const t0 = c.interner.intern('items.0.title');
+    const t1 = c.interner.intern('items.1.title');
+    c.registerConsumerPaths('A', new Set([t0]));
+    c.emit({ ...c.state, n: 1 });
+    c.unregisterConsumer('A');
+    c.registerConsumerPaths('B', new Set([t1]));
+    const both = [{ title: 'x' }, { title: 'y' }];
+    expect(dirtyOf(c, () => c.emit({ ...c.state, items: both }))).toEqual([
+      'items.1.title',
+    ]);
+  });
+
+  it('marks a leaf that changes from +0 to -0', () => {
+    const c = new List({ items: [], n: 0 }, { scheduler: new SyncScheduler() });
+    c.registerConsumerPaths('A', new Set([c.interner.intern('n')]));
+    expect(dirtyOf(c, () => c.emit({ ...c.state, n: -0 }))).toEqual(['n']);
+  });
+
+  it('runs custom equality below an unchanged reference', () => {
+    const c = new List(
+      { items: [{ title: 'a' }], n: 0 },
+      {
+        scheduler: new SyncScheduler(),
+        equality: new Map([['items.0.title', () => false]]),
+      },
+    );
+    c.registerConsumerPaths('A', new Set([c.interner.intern('items.0.title')]));
+    expect(dirtyOf(c, () => c.emit({ ...c.state, n: 1 }))).toEqual([
+      'items.0.title',
+    ]);
+  });
+});

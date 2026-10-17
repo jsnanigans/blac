@@ -44,13 +44,6 @@ export class PathInterner {
   // Parallel cache: for a real path id, its ancestor-watch id once interned
   // (see `internAncestorOf`).
   private readonly _ancestorOf: (PathId | undefined)[] = [];
-  // Parallel cache: memoized existing ancestor ids per id (see `ancestorIds`).
-  private readonly _ancestorIds: (readonly PathId[])[] = [];
-  // Parallel cache: `_paths.length` at the time `_ancestorIds[id]` was
-  // computed, so a stale entry (interner grew since) can be detected and
-  // recomputed lazily per id instead of clearing the whole cache on `intern`.
-  // Entries that already hold every prefix are final and skip the check.
-  private readonly _ancestorIdsVersion: number[] = [];
   // Parallel cache: ancestor-watch ids of every strict-ancestor prefix per id
   // (see `ancestorWatchIds`). Force-interned, so never stale.
   private readonly _ancestorWatchIds: (readonly PathId[])[] = [];
@@ -157,7 +150,7 @@ export class PathInterner {
    * Memoized segments of the path for `id` (i.e. `lookup(id).split('.')`, with
    * the empty path decoding to `[]`). The returned array is cached per id and
    * is reference-stable across calls — hot-loop readers (`diffAlongSkeleton`,
-   * `_refineAncestorMarks`) split each path at most once ever.
+   * the skeleton trie) split each path at most once ever.
    */
   lookupSegments(id: PathId): readonly string[] {
     const cached = this._segments[id];
@@ -166,32 +159,6 @@ export class PathInterner {
     const segments = path === '' ? [] : path.split('.');
     this._segments[id] = segments;
     return segments;
-  }
-
-  /**
-   * The ids of every *already-interned* strict-ancestor prefix of `id`'s path,
-   * longest first. A plain (never force-interning) `_map` read per shrinking
-   * prefix — a missing intermediate is simply skipped, so `.size` is never
-   * affected. Memoized per id and reference-stable across calls.
-   */
-  ancestorIds(id: PathId): readonly PathId[] {
-    const cached = this._ancestorIds[id];
-    if (cached !== undefined) {
-      const version = this._ancestorIdsVersion[id];
-      if (version === -1 || version === this._paths.length) return cached;
-    }
-    const segments = this.lookupSegments(id);
-    const result: PathId[] = [];
-    for (let k = segments.length - 1; k >= 1; k--) {
-      const prefixId = this._map.get(segments.slice(0, k).join('.'));
-      if (prefixId !== undefined) result.push(prefixId);
-    }
-    this._ancestorIds[id] = result;
-    // Every prefix present → no later intern can change the answer; mark final
-    // so unrelated interning never forces a recompute.
-    this._ancestorIdsVersion[id] =
-      result.length === segments.length - 1 ? -1 : this._paths.length;
-    return result;
   }
 
   /**

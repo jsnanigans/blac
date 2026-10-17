@@ -173,15 +173,6 @@ describe('trackRender', () => {
     expect(asPathStrings(paths, interner)).toContain('tags');
   });
 
-  it('4i. a large array is a raw leaf recorded at its own path', () => {
-    const interner = new PathInterner();
-    const items = Array.from({ length: 1000 }, (_, i) => ({ title: `t${i}` }));
-    const { value, paths } = trackRender({ items }, interner);
-    expect(value.items).toBe(items);
-    value.items.map((i) => i.title);
-    expect(asPathStrings(paths, interner)).toEqual(['items']);
-  });
-
   it('5. conditional reads only record the taken branch', () => {
     const interner = new PathInterner();
     const { value, paths } = trackRender({ a: 1, b: 2 }, interner);

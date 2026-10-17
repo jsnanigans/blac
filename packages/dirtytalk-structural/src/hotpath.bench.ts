@@ -7,6 +7,7 @@ import {
   __setPersistTrackingProxies,
 } from './tracker';
 import { PathInterner } from './path-interner';
+import { expandWithAncestors } from './path-set';
 
 /**
  * Micro-benchmarks for the `@dirtytalk/structural` emit/patch/consumer-registry
@@ -231,5 +232,52 @@ describe('PC1 trackRender swap reuse', () => {
       swapRowsScenario(1000, persist),
       { time: 500 },
     );
+  }
+});
+
+// ---------------------------------------------------------------------------
+// R1 — one row component per item (`items[i].title`/`.done`), one item
+// changed: the skeleton diff and the flush, through `subscribePaths`
+// ---------------------------------------------------------------------------
+
+type Row = { title: string; done: boolean };
+
+function rowsScenario(n: number, kind: 'emit' | 'patch'): () => void {
+  class Rows extends StructuralContainer<{ items: Row[] }> {
+    change(i: number): void {
+      const items = this.state.items.slice();
+      items[i] = { ...items[i], done: !items[i].done };
+      if (kind === 'emit') this.emit({ items });
+      else this.patch({ items });
+    }
+  }
+  const c = new Rows(
+    {
+      items: Array.from({ length: n }, (_, i) => ({
+        title: 't' + i,
+        done: false,
+      })),
+    },
+    { scheduler: new SyncScheduler() },
+  );
+  for (let i = 0; i < n; i++) {
+    const tracked = trackRender(c.state, c.interner, new ProxyCache());
+    void tracked.value.items[i].title;
+    void tracked.value.items[i].done;
+    tracked.disarm();
+    c.registerConsumerPaths('c' + i, tracked.paths);
+    c.subscribePaths(() => {}).setInterest(
+      expandWithAncestors(tracked.paths, c.interner),
+    );
+  }
+  let k = 0;
+  return () => c.change((k++ * 7) % n);
+}
+
+describe('R1 row consumers', () => {
+  for (const kind of ['emit', 'patch'] as const) {
+    bench(`R1 ${kind} 1 of 1000 rows`, rowsScenario(1000, kind), {
+      time: 500,
+    });
   }
 });

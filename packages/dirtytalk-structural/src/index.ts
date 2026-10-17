@@ -22,3 +22,4 @@ export type { TrackResult, TrackTraceEvent } from './tracker';
 export { diffAlongSkeleton, changedPathsFromPatch, getAt } from './diff';
 export { StructuralContainer } from './container';
 export type { StructuralContainerOptions, DeepPartial } from './container';
+export type { PathSubscription } from './path-index';

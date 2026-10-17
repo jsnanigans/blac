@@ -3,8 +3,10 @@ import {
   MicrotaskScheduler,
   type Scheduler,
 } from '@dirtytalk/engine';
-import { changedAt, changedPathsFromPatch, diffAlongSkeleton } from './diff';
+import { changedPathsFromPatch, getAtSegments } from './diff';
 import { PathInterner } from './path-interner';
+import { PathIndex, type PathSubscription } from './path-index';
+import { SkeletonTrie } from './skeleton-trie';
 
 /**
  * Recursively make all object-valued properties optional.
@@ -112,6 +114,12 @@ export abstract class StructuralContainer<S> {
   private _consumers: ConsumerIndex | null = null;
   private _allPathsConsumers = 0;
   private _skeleton: PathSet = EMPTY_SKELETON;
+  // `index.skeleton` as a trie, built by the first diff and then kept in step
+  // by `_applyRefDelta`, so mounting consumers doesn't pay for it per path.
+  private _trie: SkeletonTrie | null = null;
+  // Backs `subscribePaths`; one channel subscription dispatches to all.
+  private _pathIndex: PathIndex | null = null;
+  private readonly _onError?: (err: unknown) => void;
   // Allocated only when `options.equality` is given; `_equalsFn` derives the
   // per-path callback from it.
   private _equalsFn?: (id: PathId, a: unknown, b: unknown) => boolean;
@@ -124,6 +132,7 @@ export abstract class StructuralContainer<S> {
     this._state = initial;
     this._interner = StructuralContainer.getInternerFor(this.constructor);
     const scheduler = options.scheduler ?? sharedScheduler;
+    this._onError = options.onError;
     this._channel = new DirtyChannel<PathSet>(PathSetSpace, scheduler, {
       onError: options.onError,
     });
@@ -191,14 +200,11 @@ export abstract class StructuralContainer<S> {
       // the whole space for any ALL_PATHS subscribers (blac bridge, plugins,
       // watch/select).
       dirty = ALL_PATHS;
+    } else if (this._skeleton === ALL_PATHS) {
+      dirty = ALL_PATHS;
     } else {
-      dirty = diffAlongSkeleton(
-        prev,
-        next,
-        this._skeleton,
-        this._interner,
-        this._equalsFn,
-      );
+      dirty = new Set<PathId>();
+      this._skeletonTrie().diff(prev, next, dirty, this._equalsFn);
     }
     this._markChanged(dirty);
   }
@@ -259,6 +265,23 @@ export abstract class StructuralContainer<S> {
    */
   subscribe(interest: () => PathSet, cb: (dirty: PathSet) => void): () => void {
     return this._channel.subscribe(interest, cb);
+  }
+
+  /**
+   * Subscribe with an interest set via `setInterest` instead of a thunk. A
+   * flush looks up only the dirty ids, so with many consumers a change costs
+   * the consumers it wakes, not one interest check per subscriber.
+   */
+  subscribePaths(cb: () => void): PathSubscription {
+    if (this._pathIndex === null) {
+      const index = new PathIndex(this._onError);
+      this._pathIndex = index;
+      this._channel.subscribe(
+        () => ALL_PATHS,
+        (dirty) => index.dispatch(dirty),
+      );
+    }
+    return this._pathIndex.subscribe(cb);
   }
 
   registerConsumerPaths(id: ConsumerId, paths: PathSet): void {
@@ -336,6 +359,7 @@ export abstract class StructuralContainer<S> {
         if (count <= 0) {
           index.refCounts.delete(id);
           index.skeleton.delete(id);
+          this._trie?.remove(id, this._interner.lookupSegments(id));
         } else {
           index.refCounts.set(id, count);
         }
@@ -348,7 +372,10 @@ export abstract class StructuralContainer<S> {
         if (prevSet !== undefined && prevSet.has(id)) continue;
         const count = (index.refCounts.get(id) ?? 0) + 1;
         index.refCounts.set(id, count);
-        if (count === 1) index.skeleton.add(id);
+        if (count === 1) {
+          index.skeleton.add(id);
+          this._trie?.add(id, this._interner.lookupSegments(id));
+        }
       }
     }
     this._skeleton = this._allPathsConsumers > 0 ? ALL_PATHS : index.skeleton;
@@ -364,9 +391,9 @@ export abstract class StructuralContainer<S> {
    * any consumer whose expanded interest includes that ancestor — but it cannot
    * distinguish which child paths actually changed value.
    *
-   * This method replaces each ancestor-watch mark with a targeted
-   * `diffAlongSkeleton`-style pass over the skeleton paths that are children of
-   * that ancestor, adding only the ones whose value actually changed. The normal
+   * This method replaces each ancestor-watch mark with a diff of the skeleton
+   * subtree below that ancestor, adding only the paths whose value actually
+   * changed. The normal
    * `PathId(path)` mark (for consumers that pinned the parent directly, e.g. via
    * `.map()`) is preserved — it passes through unchanged.
    *
@@ -379,15 +406,8 @@ export abstract class StructuralContainer<S> {
     if (rough === ALL_PATHS) return rough;
     const roughSet = rough as Set<PathId>;
 
-    // Single pass over `roughSet`: build the refine *targets* (real-path ids
-    // every ancestor-watch mark decodes to) and, in the same pass, collect the
-    // non-ancestor marks to keep (e.g. PathId("items") for whole-array readers
-    // that pinned the parent directly, e.g. via .map()). Ancestor-watch marks
-    // are dropped — they are replaced by the precise leaf marks below.
     // Pre-scan before allocating: a plain-object patch (the common case) has no
-    // ancestor-watch marks at all, and the two collections below would be built
-    // only to be thrown away at the `targetIds.size === 0` exit. Detecting that
-    // first is what makes this path genuinely zero-overhead.
+    // ancestor-watch marks at all.
     const interner = this._interner;
     let hasAncestorMark = false;
     for (const id of roughSet) {
@@ -398,44 +418,42 @@ export abstract class StructuralContainer<S> {
     }
     if (!hasAncestorMark) return rough;
 
-    // Fast exit: nothing in the skeleton to refine against. Checked before the
-    // single pass below so an unrefinable patch allocates nothing either.
+    // Fast exit: nothing in the skeleton to refine against.
     if (this._skeleton === ALL_PATHS) return rough;
     const skeleton = this._skeleton as Set<PathId>;
     if (skeleton.size === 0) return rough;
 
-    const targetIds = new Set<PathId>();
-    const nonAncestorIds: PathId[] = [];
+    // Ancestor-watch marks are replaced by the changed skeleton paths below
+    // their target; every other mark is kept (e.g. `items` for a consumer
+    // that pinned the whole array via `.map()`).
+    const trie = this._skeletonTrie();
+    const result = new Set<PathId>();
     for (const id of roughSet) {
       const target = interner.ancestorTargetId(id);
-      if (target !== undefined) targetIds.add(target);
-      else nonAncestorIds.push(id);
-    }
-
-    const equalsFn = this._equalsFn;
-    // Seed with the non-ancestor marks collected above. Consumers whose
-    // expanded interest relied on the dropped ancestor-watch marks match the
-    // precise leaves added below instead.
-    const result = new Set<PathId>(nonAncestorIds);
-
-    // Single pass over the skeleton: a leaf that descends from any refined
-    // ancestor is marked iff its value actually changed (one read per leaf,
-    // never re-walked per ancestor). Same value-compare as diffAlongSkeleton.
-    for (const skelId of skeleton) {
-      const ancestors = interner.ancestorIds(skelId);
-      let descends = false;
-      for (let i = 0; i < ancestors.length; i++) {
-        if (targetIds.has(ancestors[i])) {
-          descends = true;
-          break;
-        }
+      if (target === undefined) {
+        result.add(id);
+        continue;
       }
-      if (descends && changedAt(prev, next, skelId, interner, equalsFn)) {
-        result.add(skelId);
-      }
+      const segments = interner.lookupSegments(target);
+      trie.diffBelow(
+        segments,
+        getAtSegments(prev, segments),
+        getAtSegments(next, segments),
+        result,
+        this._equalsFn,
+      );
     }
 
     return result;
+  }
+
+  private _skeletonTrie(): SkeletonTrie {
+    if (this._trie !== null) return this._trie;
+    const trie = new SkeletonTrie();
+    for (const id of this._consumers?.skeleton ?? []) {
+      trie.add(id, this._interner.lookupSegments(id));
+    }
+    return (this._trie = trie);
   }
 }
 
