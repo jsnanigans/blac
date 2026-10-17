@@ -213,7 +213,9 @@ class TrackHandler implements ProxyHandler<object> {
     // Array methods called on the proxy read `this.length`, `this[i]` through
     // the trap, and their callbacks get sub-proxies, so `items.map(i =>
     // i.title)` records `items.length`, `items.0.title`, … precisely.
-    if (!Object.prototype.hasOwnProperty.call(t, key)) {
+    // An absent key records like an own one, so the consumer wakes when it is
+    // added.
+    if (!Object.prototype.hasOwnProperty.call(t, key) && key in t) {
       // Identity-search methods compare a raw argument against elements, so
       // binding them to the proxy would never match object elements. Bind to
       // the raw target and pin the array path instead.

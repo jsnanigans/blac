@@ -389,6 +389,20 @@ describe('trackRender', () => {
     expect(strings).toContain('dict.k');
   });
 
+  it('14c. reading an absent key records it, so adding the key wakes', () => {
+    const interner = new PathInterner();
+    const { value, paths } = trackRender(
+      { item: { label: 'a' } as { label: string; done?: boolean } },
+      interner,
+    );
+    void value.item.label;
+    expect(value.item.done).toBeUndefined();
+    expect(asPathStrings(paths, interner)).toEqual([
+      'item.done',
+      'item.label',
+    ]);
+  });
+
   it('16. (PN5) lazy prefix memo — interner.size stable + identical paths across renders', () => {
     const interner = new PathInterner();
     const fixture = () => ({
