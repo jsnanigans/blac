@@ -3,20 +3,6 @@ import type { PathSet } from './path-set';
 import { NO_PARENT, type PathInterner } from './path-interner';
 
 /**
- * When true, array iteration methods (.map, .filter, .forEach, .find,
- * .reduce, Symbol.iterator, etc.) bind to the recording proxy rather than the
- * raw array. Callbacks receive per-index sub-proxies, so `items.map(i =>
- * i.title)` records `items.length`, `items.0.title`, `items.1.title`, …
- * instead of just `items`. Re-renders are isolated to the specific items and
- * fields that actually changed.
- *
- * Set to false to revert to coarse tracking: every array iteration records
- * only the array's own entry path (e.g. `items`), waking all consumers of
- * that array on any element change regardless of which field changed.
- */
-const TRACK_ARRAY_ITERATION = true;
-
-/**
  * When true, `trackRender` honors a `ProxyCache` passed as its third argument
  * and reuses proxies for (target, prefix) pairs unchanged since the caller's
  * last render, instead of allocating a fresh Proxy every call. When false,
@@ -125,12 +111,6 @@ export const raw = <T>(v: T): T => {
  */
 export const untracked = raw;
 
-const childPath = (parent: string, key: string): string =>
-  parent === '' ? key : `${parent}.${key}`;
-
-const isWrappable = (v: unknown): v is object =>
-  v !== null && typeof v === 'object';
-
 /**
  * True when `v` should be recursively proxy-wrapped: plain object literals
  * (or `Object.create(null)`) and arrays. Everything else — `Map`, `Set`,
@@ -154,20 +134,21 @@ interface TrackSession {
   instance: number;
 }
 
-interface CachedProxyEntry {
-  proxy: object;
-  session: TrackSession;
-  interner: PathInterner;
-  /**
-   * The `wrap` function of whichever `trackRender` call most recently claimed
-   * this entry. Recursive `wrap()` calls made from inside this entry's own
-   * proxy traps MUST go through `entry.wrap`, not a closed-over `wrap`
-   * reference — otherwise a reused proxy keeps recursing into the render that
-   * originally created it (via that render's own per-call `proxyByTarget`
-   * fast path), silently bypassing the persistent-cache repoint logic for
-   * every level below the one that was actually reused.
-   */
-  wrap: (target: object, prefix: string, prefixId: PathId) => unknown;
+/** Proxy store keyed by target: the head of that target's handler list. */
+interface HandlerStore {
+  get(target: object): TrackHandler | undefined;
+  set(target: object, handler: TrackHandler): unknown;
+  delete(target: object): unknown;
+}
+
+/** State of one `trackRender` call, shared by every proxy it claims. */
+interface TrackContext {
+  readonly session: TrackSession;
+  readonly interner: PathInterner;
+  /** The caller's `ProxyCache` store, or a per-call one created on demand. */
+  store: HandlerStore | undefined;
+  /** Targets whose handler list held more than one prefix this call. */
+  readonly touched: Set<object> | undefined;
 }
 
 /**
@@ -185,37 +166,231 @@ interface CachedProxyEntry {
  * across two independently-timed callers would let one caller's render
  * silently repoint an entry the other caller is still reading from.
  *
- * No entry is ever evicted explicitly — the outer `WeakMap` keyed by `target`
- * lets entries for objects no longer referenced anywhere else be collected
+ * No entry is ever evicted explicitly — the `WeakMap` keyed by `target` lets
+ * entries for objects no longer referenced anywhere else be collected
  * normally.
  */
 export class ProxyCache {
-  private byTarget = new WeakMap<object, Map<PathId, CachedProxyEntry>>();
+  /** @internal — head of each target's handler list (one per prefix). */
+  readonly byTarget: HandlerStore = new WeakMap<object, TrackHandler>();
+}
 
-  /**
-   * @internal — used by `trackRender`'s `wrap()` only. The entries for
-   * `target`, keyed by prefix id, created on first use.
-   */
-  _entries(target: object): Map<PathId, CachedProxyEntry> {
-    let byPrefix = this.byTarget.get(target);
-    if (byPrefix === undefined) {
-      byPrefix = new Map<PathId, CachedProxyEntry>();
-      this.byTarget.set(target, byPrefix);
+/**
+ * The `ProxyHandler` of one recording proxy, and its cache entry. Traps run
+ * with `this` bound to the handler, so one instance per proxy carries all of
+ * its state — no per-proxy trap closures. `ctx` is repointed when a later
+ * `trackRender` call reuses the proxy, so the traps record into that call's
+ * session.
+ */
+class TrackHandler implements ProxyHandler<object> {
+  proxy: object = null as unknown as object;
+
+  constructor(
+    public ctx: TrackContext,
+    readonly prefixId: PathId,
+    readonly isArray: boolean,
+    /** Next handler for the same target at another prefix. */
+    public next: TrackHandler | undefined,
+  ) {}
+
+  get(t: object, key: string | symbol, receiver: unknown): unknown {
+    const session = this.ctx.session;
+    // Frozen (post-render): a transparent pass-through. Two-arg Reflect.get
+    // (receiver = target) avoids re-entering this trap through getters.
+    if (!session.armed) {
+      if (traceHook !== null) this._trace('pass-through', String(key));
+      return Reflect.get(t, key);
     }
-    return byPrefix;
+
+    // Symbol keys never record. Iteration (`Symbol.iterator`) is invoked with
+    // the proxy as receiver, so its internal index reads go through this trap.
+    if (typeof key === 'symbol') return Reflect.get(t, key, receiver);
+
+    const value = Reflect.get(t, key, receiver);
+
+    // Inherited properties (array methods, prototype getters) don't record.
+    // Array methods called on the proxy read `this.length`, `this[i]` through
+    // the trap, and their callbacks get sub-proxies, so `items.map(i =>
+    // i.title)` records `items.length`, `items.0.title`, … precisely.
+    if (!Object.prototype.hasOwnProperty.call(t, key)) {
+      // Identity-search methods compare a raw argument against elements, so
+      // binding them to the proxy would never match object elements. Bind to
+      // the raw target and pin the array path instead.
+      if (
+        this.isArray &&
+        (key === 'includes' || key === 'indexOf' || key === 'lastIndexOf') &&
+        typeof value === 'function'
+      ) {
+        this._pin();
+        return (value as (...a: unknown[]) => unknown).bind(t);
+      }
+      return value;
+    }
+
+    // Own property: record it and drop the immediate parent, so only maximal
+    // (leaf) paths remain — a reference change to an ancestor can't wake a
+    // consumer that only read a leaf beneath it.
+    const prefixId = this.prefixId;
+    const interner = this.ctx.interner;
+    const id = interner.internChild(prefixId, key);
+    const paths = session.paths;
+    paths.add(id);
+    if (traceHook !== null) this._trace('record', key, interner.lookup(id));
+    // An iteration/enumeration-pinned path is a content dependency that a
+    // later own read (e.g. `.length`) must not narrow away.
+    if (prefixId !== NO_PARENT && session.pinned?.has(prefixId) !== true) {
+      paths.delete(prefixId);
+      if (traceHook !== null) this._trace('drop-parent');
+    }
+
+    // Primitives, functions, and non-plain objects (Map, Set, Date, class
+    // instances) are leaves, returned raw. The path is already recorded, so a
+    // reference change still wakes the consumer.
+    if (
+      value === null ||
+      typeof value !== 'object' ||
+      !isStructurallyWrappable(value)
+    ) {
+      return value;
+    }
+
+    // Non-configurable, non-writable own data property (e.g. a field of an
+    // Object.freeze'd state): the Proxy [[Get]] invariant forbids returning
+    // anything but the exact target value, so it stays raw.
+    const desc = Object.getOwnPropertyDescriptor(t, key);
+    if (desc !== undefined && !desc.configurable && !desc.writable) {
+      return value;
+    }
+
+    return wrap(this.ctx, value, id);
+  }
+
+  ownKeys(t: object): ArrayLike<string | symbol> {
+    // Enumeration (Object.keys, for..in, object spread) depends on the shape,
+    // so pin this object's path: it must survive deeper reads and wake on key
+    // add/remove.
+    if (this.ctx.session.armed) {
+      this._pin();
+      if (traceHook !== null) this._trace('ownKeys');
+    }
+    return Reflect.ownKeys(t);
+  }
+
+  has(t: object, key: string | symbol): boolean {
+    // `key in obj` queries a specific child path — record it so the consumer
+    // wakes when that key is added or removed.
+    if (this.ctx.session.armed && typeof key !== 'symbol') {
+      const interner = this.ctx.interner;
+      const id = interner.internChild(this.prefixId, key);
+      this.ctx.session.paths.add(id);
+      if (traceHook !== null) this._trace('has', key, interner.lookup(id));
+    }
+    return Reflect.has(t, key);
+  }
+
+  // State is read-only from outside a bloc. In dev, catch stray writes that
+  // would otherwise bypass rendering with no warning.
+  set(t: object, key: string | symbol, value: unknown): boolean {
+    if (process.env.NODE_ENV !== 'production') throwReadOnly('set', key);
+    return Reflect.set(t, key, value);
+  }
+
+  deleteProperty(t: object, key: string | symbol): boolean {
+    if (process.env.NODE_ENV !== 'production') throwReadOnly('delete', key);
+    return Reflect.deleteProperty(t, key);
+  }
+
+  defineProperty(
+    t: object,
+    key: string | symbol,
+    descriptor: PropertyDescriptor,
+  ): boolean {
+    if (process.env.NODE_ENV !== 'production') throwReadOnly('define', key);
+    return Reflect.defineProperty(t, key, descriptor);
+  }
+
+  /** Pin this proxy's own path as a content dependency. */
+  private _pin(): void {
+    const prefixId = this.prefixId;
+    if (prefixId === NO_PARENT) return;
+    const session = this.ctx.session;
+    session.paths.add(prefixId);
+    (session.pinned ??= new Set<PathId>()).add(prefixId);
+    if (traceHook !== null) this._trace('pin', undefined, this._prefix());
+  }
+
+  private _prefix(): string {
+    return this.prefixId === NO_PARENT
+      ? ''
+      : this.ctx.interner.lookup(this.prefixId);
+  }
+
+  private _trace(
+    kind: TrackTraceEvent['kind'],
+    key?: string,
+    path?: string,
+  ): void {
+    const prefix = this._prefix();
+    traceHook?.({
+      instance: this.ctx.session.instance,
+      kind,
+      prefix,
+      key,
+      path: kind === 'drop-parent' ? prefix : path,
+      armed: this.ctx.session.armed,
+    });
   }
 }
 
-// Discard every entry not claimed by `live` (the completed call's session), so
-// an object read at a shifting prefix (e.g. a reordered list item) doesn't
+const throwReadOnly = (op: string, key: string | symbol): never => {
+  throw new Error(
+    `Cannot ${op} property "${String(key)}" on tracked state — state is ` +
+      'read-only outside a bloc. Call a bloc method to mutate state instead.',
+  );
+};
+
+/**
+ * The recording proxy for `target` read at `prefixId`, reused from the store
+ * when one exists for that pair (claimed for `ctx`), otherwise created.
+ */
+const wrap = (ctx: TrackContext, target: object, prefixId: PathId): object => {
+  const store = (ctx.store ??= new Map<object, TrackHandler>());
+  const head = store.get(target);
+  for (let h = head; h !== undefined; h = h.next) {
+    if (h.prefixId === prefixId) {
+      h.ctx = ctx;
+      if (head?.next !== undefined) ctx.touched?.add(target);
+      return h.proxy;
+    }
+  }
+  const handler = new TrackHandler(ctx, prefixId, Array.isArray(target), head);
+  const proxy = new Proxy(target, handler);
+  handler.proxy = proxy;
+  proxyToTarget.set(proxy, target);
+  store.set(target, handler);
+  if (head !== undefined) ctx.touched?.add(target);
+  return proxy;
+};
+
+// Drop every handler for `target` not claimed by `ctx` (the completed call),
+// so an object read at a shifting prefix (e.g. a reordered list item) doesn't
 // accumulate one stale entry per prefix it has ever been read at.
 const pruneStale = (
-  entries: Map<PathId, CachedProxyEntry>,
-  live: TrackSession,
+  store: HandlerStore,
+  target: object,
+  ctx: TrackContext,
 ): void => {
-  for (const [prefixId, entry] of entries) {
-    if (entry.session !== live) entries.delete(prefixId);
+  let head: TrackHandler | undefined;
+  let tail: TrackHandler | undefined;
+  for (let h = store.get(target); h !== undefined; h = h.next) {
+    if (h.ctx !== ctx) continue;
+    if (tail === undefined) head = h;
+    else tail.next = h;
+    tail = h;
   }
+  if (tail !== undefined) tail.next = undefined;
+  if (head === undefined) store.delete(target);
+  else store.set(target, head);
 };
 
 /**
@@ -233,27 +408,23 @@ const pruneStale = (
  *   still resolves to the same value. A consumer that reads the whole `user`
  *   object (no deeper key) keeps `user` as its leaf and wakes on any change.
  * - Primitives, `null`, and `undefined` short-circuit and are returned as-is.
- * - Nested objects/arrays return a child proxy that records into the same
- *   `paths` set. Proxies are cached per (target, prefix) via a per-call
- *   `WeakMap<object, Map<prefix, proxy>>`, so `value.user === value.user`
- *   within one render, while the same object reached via two different paths
- *   gets two distinct proxies that each record their own prefix. When a
- *   `ProxyCache` is passed as the third argument (and `PERSIST_TRACKING_PROXIES`
- *   is enabled), a `(target, prefix)` pair unchanged since the caller's last
- *   `trackRender` call reuses the same Proxy instead of allocating a new one;
- *   see {@link ProxyCache}.
- * - Iteration (when {@link TRACK_ARRAY_ITERATION} is true, the default): array
- *   methods and `for..of` / spread bind to the proxy, so the method's internal
- *   index reads (`this.length`, `this[0]`, …) go through the `get` trap.
- *   Callbacks receive per-index sub-proxies, so `items.map(i => i.title)`
- *   records `items.length`, `items.0.title`, `items.1.title`, … — precise
- *   leaf paths that isolate re-renders to the specific items and fields that
- *   changed. When the flag is false the old coarsening applies: every
- *   iteration records only the array's own entry path (e.g. `items`).
- * - Methods (own functions on non-array objects) are bound to the parent
- *   proxy so internal `this.x` reads continue to record.
- * - Reading a method without invoking it does not record (methods live on
- *   the prototype, not on the object itself).
+ * - Nested plain objects/arrays return a child proxy that records into the
+ *   same `paths` set. Proxies are cached per (target, prefix), so
+ *   `value.user === value.user` within one render, while the same object
+ *   reached via two different paths gets two distinct proxies that each
+ *   record their own prefix. When a `ProxyCache` is passed as the third
+ *   argument, a `(target, prefix)` pair unchanged since the caller's last
+ *   `trackRender` call reuses the same Proxy; see {@link ProxyCache}.
+ * - Iteration: array methods and `for..of` / spread run against the proxy,
+ *   so their internal index reads (`this.length`, `this[0]`, …) go through
+ *   the `get` trap and callbacks receive per-index sub-proxies:
+ *   `items.map(i => i.title)` records `items.length`, `items.0.title`, … —
+ *   precise leaf paths that isolate re-renders to the items and fields that
+ *   changed. `includes` / `indexOf` / `lastIndexOf` run against the raw
+ *   array and pin the array's own path instead.
+ * - Methods called on the proxy keep it as their receiver, so internal
+ *   `this.x` reads continue to record. Reading an inherited method without
+ *   invoking it does not record.
  *
  * The returned `paths` is always a `Set<PathId>` — never the `ALL_PATHS`
  * sentinel (that sentinel is for source-side signalling).
@@ -282,20 +453,11 @@ export const trackRender = <S>(
   const cache =
     (persistOverride ?? PERSIST_TRACKING_PROXIES) ? proxyCache : undefined;
 
-  // Path ids that array iteration has asserted as *content* dependencies (the
-  // array's own entry path). Unlike a plain object — where reading `user.name`
-  // legitimately narrows interest away from `user` — iterating or calling a
-  // method on an array means the consumer depends on element contents, so a
-  // later own-property read such as `.length` must NOT supersede it. Pinning is
-  // order-independent: whichever of (`.length` read, iteration) happens last,
-  // the array path survives.
-  //
-  // `armed`: when false, every trap short-circuits to a raw pass-through and
-  // records nothing. Flipped by the returned `disarm()` (see TrackResult).
-  // `instance`: identifies this render's proxy tree in trace events (see
-  // __setTrackTrace). All four fields are grouped into one `session` object so
-  // a reused proxy's handler can be repointed at a new render's session live
-  // (via `entry.session`) rather than baking in stale closed-over variables.
+  // `pinned`: path ids that iteration/enumeration asserted as *content*
+  // dependencies, so a later own-property read (e.g. `.length`) must not
+  // supersede them. `armed`: when false, every trap is a raw pass-through
+  // (flipped by `disarm`). Grouped in one object so a reused proxy is
+  // repointed at a new render by swapping its `ctx`.
   const session: TrackSession = {
     paths: new Set<PathId>(),
     pinned: null,
@@ -303,344 +465,46 @@ export const trackRender = <S>(
     instance: ++traceInstanceSeq,
   };
 
-  if (!isWrappable(state)) {
+  if (state === null || typeof state !== 'object') {
     return { value: state, paths: session.paths, disarm: () => {} };
   }
 
-  // Per-call cache keyed by (target, prefix): target -> prefix -> proxy. Dies
-  // with this function frame so each render gets fresh recordings; do not
-  // promote to module scope. Keying by prefix (not target alone) means the
-  // same object reached via two distinct paths gets two proxies, each
-  // recording its own prefix, while a repeat read at the same path is
-  // ===-identical. With a `cache`, its entries claimed by this call's
-  // `session` play the same role, so nothing per-call is allocated.
-  const proxyByTarget =
-    cache === undefined
-      ? new WeakMap<object, Map<PathId, unknown>>()
-      : undefined;
-
-  // Cache entry maps holding more than one prefix for a target this call, so
-  // `disarm` can drop the prefixes this render did not claim (see
-  // `pruneStale`). A single-entry map can hold nothing stale, and most never
-  // grow past one, so this usually stays empty.
-  const touched =
-    cache !== undefined ? new Set<Map<PathId, CachedProxyEntry>>() : undefined;
-
-  // `prefixId` is the interned id of `prefix` (`NO_PARENT` at the root); the
-  // parent's `get` trap interns it right before wrapping, so child reads and
-  // cache lookups key on the number instead of re-hashing the joined string.
-  const wrap = (target: object, prefix: string, prefixId: PathId): unknown => {
-    let byPrefix: Map<PathId, unknown> | undefined;
-    let entries: Map<PathId, CachedProxyEntry> | undefined;
-    if (cache !== undefined) {
-      entries = cache._entries(target);
-      const existing = entries.get(prefixId);
-      if (existing !== undefined) {
-        if (existing.session !== session) {
-          existing.session = session;
-          existing.interner = interner;
-          existing.wrap = wrap;
-        }
-        if (entries.size > 1) touched?.add(entries);
-        return existing.proxy;
-      }
-    } else {
-      byPrefix = proxyByTarget?.get(target);
-      if (byPrefix === undefined) {
-        byPrefix = new Map<PathId, unknown>();
-        proxyByTarget?.set(target, byPrefix);
-      }
-      const cached = byPrefix.get(prefixId);
-      if (cached !== undefined) return cached;
-    }
-
-    const isArray = Array.isArray(target);
-
-    const entry: CachedProxyEntry = {
-      proxy: undefined as unknown as object,
-      session,
-      interner,
-      wrap,
-    };
-
-    // Pin this array's own entry path as a content dependency. Called when an
-    // iteration entry point (Symbol.iterator) or any array method is accessed.
-    const pinArrayPath = (): void => {
-      if (prefixId === NO_PARENT) return;
-      entry.session.paths.add(prefixId);
-      (entry.session.pinned ??= new Set<PathId>()).add(prefixId);
-      traceHook?.({
-        instance: entry.session.instance,
-        kind: 'pin',
-        prefix,
-        path: prefix,
-        armed: entry.session.armed,
-      });
-    };
-
-    const handler: ProxyHandler<object> = {
-      get(t, key, receiver) {
-        // Frozen (post-render): behave as a transparent pass-through. Return
-        // the raw underlying value with no recording and no sub-proxy wrapping.
-        // Two-arg Reflect.get (receiver = target) avoids re-entering this trap.
-        if (!entry.session.armed) {
-          traceHook?.({
-            instance: entry.session.instance,
-            kind: 'pass-through',
-            prefix,
-            key: String(key),
-            armed: entry.session.armed,
-          });
-          return Reflect.get(t, key);
-        }
-
-        // Symbol keys (Symbol.iterator, Symbol.toStringTag, ...) never
-        // record. On arrays we additionally bind any function value to the
-        // raw target so iteration coarsens — the iterator's internal reads
-        // bypass this proxy (spec § Caveats: iteration entry point only).
-        if (typeof key === 'symbol') {
-          const sv = Reflect.get(t, key, receiver);
-          if (isArray && typeof sv === 'function') {
-            if (TRACK_ARRAY_ITERATION) {
-              // Bind to the proxy so the iterator's internal index reads
-              // (e.g. this[0], this.length) go through the get trap and
-              // record per-index paths.
-              return (sv as (...a: unknown[]) => unknown).bind(
-                entry.wrap(t, prefix, prefixId),
-              );
-            }
-            // Iteration entry point (Symbol.iterator → for..of / spread). The
-            // consumer depends on element contents, so pin the array's path.
-            pinArrayPath();
-            return (sv as (...a: unknown[]) => unknown).bind(t);
-          }
-          return sv;
-        }
-
-        const value = Reflect.get(t, key, receiver);
-
-        // Inherited / prototype properties: do not record. For arrays we
-        // bind prototype methods (.map, .find, .reduce, ...) to the raw
-        // target so per-index reads they perform bypass this proxy. The
-        // entry path was already recorded when the array itself was read
-        // from its parent, satisfying the coarsening contract.
-        if (!Object.prototype.hasOwnProperty.call(t, key)) {
-          if (isArray && typeof value === 'function') {
-            // Identity-search methods compare a raw argument against elements
-            // with `===` / SameValueZero. Binding to the recording proxy would
-            // hand them wrapped sub-proxies, so `arr.includes(rawItem)` would
-            // never match for object arrays. Bind these to the raw target so
-            // the comparison is correct, and coarsen: pin the array's entry
-            // path so element-content changes still wake the consumer.
-            if (
-              key === 'includes' ||
-              key === 'indexOf' ||
-              key === 'lastIndexOf'
-            ) {
-              pinArrayPath();
-              return (value as (...a: unknown[]) => unknown).bind(t);
-            }
-            if (TRACK_ARRAY_ITERATION) {
-              // Bind to the proxy so the method's internal reads (this.length,
-              // this[0], this[1], …) go through the get trap. Callbacks
-              // receive sub-proxies and their property accesses record precise
-              // leaf paths (e.g. items.0.title) instead of the coarse entry.
-              return (value as (...a: unknown[]) => unknown).bind(
-                entry.wrap(t, prefix, prefixId),
-              );
-            }
-            // Array method (.map, .find, .reduce, .includes, …). Using one
-            // means the consumer depends on element contents, so pin the
-            // array's path — a later `.length` read must not drop it.
-            pinArrayPath();
-            return (value as (...a: unknown[]) => unknown).bind(t);
-          }
-          return value;
-        }
-
-        // Own property — record the path. Then drop the immediate parent:
-        // this deeper read supersedes it, leaving only maximal (leaf) paths.
-        // Reference changes to an ancestor object therefore can't falsely wake
-        // a consumer that only read a specific leaf beneath it.
-        const id = entry.interner.internChild(prefixId, key as string);
-        entry.session.paths.add(id);
-        traceHook?.({
-          instance: entry.session.instance,
-          kind: 'record',
-          prefix,
-          key: key as string,
-          path: childPath(prefix, key as string),
-          armed: entry.session.armed,
-        });
-        if (prefixId !== NO_PARENT) {
-          // Keep an iteration-pinned array path: `.length` (or any own read)
-          // must not narrow away a content dependency the consumer also has.
-          if (entry.session.pinned?.has(prefixId) !== true) {
-            entry.session.paths.delete(prefixId);
-            traceHook?.({
-              instance: entry.session.instance,
-              kind: 'drop-parent',
-              prefix,
-              path: prefix,
-              armed: entry.session.armed,
-            });
-          }
-        }
-
-        if (!isWrappable(value)) {
-          // Primitive, null, undefined: return as-is.
-          return value;
-        }
-
-        if (typeof value === 'function') {
-          // Own function on a non-array object: bind to the proxy so
-          // internal `this.x` reads keep recording. (Arrays don't reach
-          // here for prototype methods — those are inherited and handled
-          // above; own functions on arrays are unusual but pass through
-          // unbound to avoid breaking native iteration receivers.)
-          if (!isArray) {
-            return (value as (...a: unknown[]) => unknown).bind(
-              entry.wrap(t, prefix, prefixId),
-            );
-          }
-          return value;
-        }
-
-        // Only recurse into plain objects/arrays. Maps, Sets, Dates, and class
-        // instances are leaves: returning the raw value avoids rebinding their
-        // methods' `this` to the proxy (which breaks receiver-checked built-ins
-        // like `Map.prototype.get`). The path was already recorded above, so a
-        // reference change to the value still wakes the consumer.
-        if (!isStructurallyWrappable(value as object)) {
-          return value;
-        }
-
-        // Non-configurable, non-writable own data property (e.g. a field of an
-        // Object.freeze'd state). The Proxy [[Get]] invariant forbids returning
-        // anything other than the exact target value for such a property, so
-        // wrapping it would throw a TypeError. Return the raw value; the path
-        // was already recorded above as a coarse leaf.
-        const desc = Object.getOwnPropertyDescriptor(t, key);
-        if (desc && !desc.configurable && !desc.writable) {
-          return value;
-        }
-
-        return entry.wrap(
-          value as object,
-          childPath(prefix, key as string),
-          id,
-        );
-      },
-
-      ownKeys(t) {
-        // Enumeration (Object.keys, for..in, spread of an object) depends on
-        // the object's shape, so pin its own entry path — a later deeper read
-        // must not narrow it away, and it must wake on key add/remove. Skips
-        // the root (prefix === '') via pinArrayPath's own guard. Array
-        // length/iteration behaviour is unaffected: for..of / spread / methods
-        // never route through ownKeys.
-        if (entry.session.armed) {
-          pinArrayPath();
-          traceHook?.({
-            instance: entry.session.instance,
-            kind: 'ownKeys',
-            prefix,
-            armed: entry.session.armed,
-          });
-        }
-        return Reflect.ownKeys(t);
-      },
-
-      has(t, key) {
-        // `key in obj` queries a specific child path — record it so the
-        // consumer wakes when that key is added or removed.
-        if (entry.session.armed && typeof key !== 'symbol') {
-          entry.session.paths.add(
-            entry.interner.internChild(prefixId, key as string),
-          );
-          traceHook?.({
-            instance: entry.session.instance,
-            kind: 'has',
-            prefix,
-            key: key as string,
-            path: childPath(prefix, key as string),
-            armed: entry.session.armed,
-          });
-        }
-        return Reflect.has(t, key);
-      },
-
-      set(t, key, value) {
-        // State is read-only from outside a bloc. In dev, catch stray writes
-        // that would otherwise bypass rendering with no warning.
-        if (process.env.NODE_ENV !== 'production') {
-          throw new Error(
-            `Cannot set property "${String(key)}" on tracked state — state is ` +
-              'read-only outside a bloc. Call a bloc method to mutate state instead.',
-          );
-        }
-        return Reflect.set(t, key, value);
-      },
-
-      deleteProperty(t, key) {
-        if (process.env.NODE_ENV !== 'production') {
-          throw new Error(
-            `Cannot delete property "${String(key)}" on tracked state — state is ` +
-              'read-only outside a bloc. Call a bloc method to mutate state instead.',
-          );
-        }
-        return Reflect.deleteProperty(t, key);
-      },
-
-      defineProperty(t, key, descriptor) {
-        if (process.env.NODE_ENV !== 'production') {
-          throw new Error(
-            `Cannot define property "${String(key)}" on tracked state — state is ` +
-              'read-only outside a bloc. Call a bloc method to mutate state instead.',
-          );
-        }
-        return Reflect.defineProperty(t, key, descriptor);
-      },
-    };
-
-    const proxy = new Proxy(target, handler);
-    entry.proxy = proxy;
-    proxyToTarget.set(proxy, target);
-    if (entries !== undefined) {
-      entries.set(prefixId, entry);
-      if (entries.size > 1) touched?.add(entries);
-    } else {
-      byPrefix?.set(prefixId, proxy);
-    }
-    return proxy;
+  const ctx: TrackContext = {
+    session,
+    interner,
+    store: cache?.byTarget,
+    touched: cache !== undefined ? new Set<object>() : undefined,
   };
 
-  traceHook?.({
-    instance: session.instance,
-    kind: 'root-wrap',
-    prefix: '',
-    armed: session.armed,
-  });
+  if (traceHook !== null) {
+    traceHook({
+      instance: session.instance,
+      kind: 'root-wrap',
+      prefix: '',
+      armed: true,
+    });
+  }
   return {
-    value: wrap(state as object, '', NO_PARENT) as S,
+    value: wrap(ctx, state, NO_PARENT) as S,
     paths: session.paths,
     disarm: () => {
-      // Property reads keep routing through this call's `wrap` (even for
-      // reused entries — see `entry.wrap` repointing above) until `armed`
-      // flips false below, so `touched` is only fully settled here, once this
-      // render's synchronous read pass is over. Prune each touched entry map
-      // down to the prefixes this render claimed, dropping stale ones from
-      // prior renders (e.g. an item that has since shifted index).
-      if (touched !== undefined) {
-        for (const entries of touched) pruneStale(entries, session);
+      // Reads keep routing through this call's handlers until `armed` flips,
+      // so `touched` is only settled here. Prune each touched target down to
+      // the prefixes this render claimed.
+      const store = ctx.store;
+      if (ctx.touched !== undefined && store !== undefined) {
+        for (const target of ctx.touched) pruneStale(store, target, ctx);
+        ctx.touched.clear();
       }
       session.armed = false;
-      traceHook?.({
-        instance: session.instance,
-        kind: 'disarm',
-        prefix: '',
-        armed: false,
-      });
+      if (traceHook !== null) {
+        traceHook({
+          instance: session.instance,
+          kind: 'disarm',
+          prefix: '',
+          armed: false,
+        });
+      }
     },
   };
 };

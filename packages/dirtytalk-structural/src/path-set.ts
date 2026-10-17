@@ -1,5 +1,6 @@
 import type { PathId } from './types';
 import type { Space } from '@dirtytalk/engine';
+import type { PathInterner } from './path-interner';
 
 export const ALL_PATHS: unique symbol = Symbol.for(
   '@dirtytalk/structural/ALL_PATHS',
@@ -66,4 +67,31 @@ export const PathSetSpace: Space<PathSet> = {
     for (const id of small) if (large.has(id)) return true;
     return false;
   },
+};
+
+/**
+ * Add an ancestor-watch id for every ancestor of every tracked leaf, so a
+ * `patch` that replaces a parent atomically (e.g. the array `items`) wakes a
+ * consumer that read a child (`items.length`).
+ *
+ * Ancestor-watch ids only match marks the source emits for atomic
+ * replacements, never a plain-object pulse-up: `{'user.email'}` does not wake
+ * when a sibling `user.name` changes. The `''` root is never added; a root
+ * change already marks `ALL_PATHS`.
+ *
+ * Returns `paths` itself when no leaf has an ancestor.
+ */
+export const expandWithAncestors = (
+  paths: PathSet,
+  interner: PathInterner,
+): PathSet => {
+  if (paths === ALL_PATHS) return ALL_PATHS;
+  let expanded: Set<PathId> | undefined;
+  for (const id of paths) {
+    const watch = interner.ancestorWatchIds(id);
+    if (watch.length === 0) continue;
+    expanded ??= new Set<PathId>(paths);
+    for (let i = 0; i < watch.length; i++) expanded.add(watch[i]);
+  }
+  return expanded ?? paths;
 };

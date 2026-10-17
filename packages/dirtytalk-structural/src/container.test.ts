@@ -969,3 +969,37 @@ describe('StructuralContainer — dispose', () => {
     }).not.toThrow();
   });
 });
+
+describe('StructuralContainer — registry robustness', () => {
+  it('a registered set growing afterwards does not drop ids other consumers hold', () => {
+    const c = make();
+    const live = new Set<PathId>([c.interner.intern('count')]);
+    c.registerConsumerPaths('A', live);
+    live.add(c.interner.intern('label'));
+    c.registerConsumerPaths('B', setOf(c, 'label'));
+    c.unregisterConsumer('A');
+
+    const cb = vi.fn();
+    c.subscribe(() => setOf(c, 'label'), cb);
+    c.emit({ count: 0, label: 'b' });
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  it('patch wakes ALL_PATHS subscribers when per-path equality calls every value equal', () => {
+    const c = make(
+      { count: 0, label: 'a' },
+      {
+        scheduler: new SyncScheduler(),
+        equality: new Map([['label', () => true]]),
+      },
+    );
+    c.registerConsumerPaths('A', setOf(c, 'label'));
+    const all = vi.fn();
+    const leaf = vi.fn();
+    c.subscribe(() => ALL_PATHS, all);
+    c.subscribe(() => setOf(c, 'label'), leaf);
+    c.patch({ label: 'b' });
+    expect(all).toHaveBeenCalledTimes(1);
+    expect(leaf).not.toHaveBeenCalled();
+  });
+});

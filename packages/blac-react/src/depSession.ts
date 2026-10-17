@@ -6,13 +6,13 @@ import type {
 import { DEP_BRAND } from '@blac/core/internal';
 import {
   ALL_PATHS,
+  expandWithAncestors,
   pathSetEquals,
   trackRender,
   ProxyCache,
   type PathSet,
 } from '@dirtytalk/structural';
 import { buildTrackedProxy } from './buildTrackedProxy';
-import { expandWithAncestors } from './expandWithAncestors';
 
 type SessionEntry =
   | { kind: 'primary'; paths: PathSet }

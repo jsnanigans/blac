@@ -7,6 +7,7 @@ export {
   pathSetUnion,
   pathSetEquals,
   PathSetSpace,
+  expandWithAncestors,
 } from './path-set';
 export type { PathSet, AllPaths } from './path-set';
 export {

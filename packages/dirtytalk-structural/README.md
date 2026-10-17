@@ -135,7 +135,8 @@ required.
 | `ALL_PATHS`                       | Sentinel `PathSet` — `intersects` always returns true                   |
 | `pathSetUnion`                    | Pure union of two `PathSet` values                                      |
 | `pathSetEquals`                   | Equality check for two `PathSet` values                                 |
-| `trackRender`                     | `(state, interner, proxyCache?) => { value: S, paths: PathSet }`        |
+| `expandWithAncestors`             | Add ancestor-watch ids so atomic parent replacements wake leaf readers  |
+| `trackRender`                     | `(state, interner, proxyCache?) => { value, paths, disarm }`            |
 | `ProxyCache`                      | Opt-in cache: reuses proxies across `trackRender` calls                 |
 | `raw`                             | `(v) => v` — unwrap a tracked proxy to its raw target                   |
 | `diffAlongSkeleton`               | `(prev, next, skeleton, interner) => PathSet`                           |

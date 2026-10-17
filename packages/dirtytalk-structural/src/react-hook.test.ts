@@ -405,4 +405,44 @@ describe('useStructural', () => {
     expect(seen).toContain(7);
     expect(seen[seen.length - 1]).toBe(7);
   });
+
+  it('12. a descendant reader wakes on an atomic parent replacement under an ALL_PATHS skeleton', () => {
+    class List extends TestContainer<{ items: number[] }> {}
+    const c = new List({ items: [1] }, { scheduler: new SyncScheduler() });
+    c.registerConsumerPaths('all', ALL_PATHS);
+    let renders = 0;
+    function App() {
+      const [state] = useStructural(c);
+      renders++;
+      return React.createElement(
+        'span',
+        null,
+        (state as { items: number[] }).items.length,
+      );
+    }
+    act(() => {
+      render(React.createElement(App));
+    });
+    const before = renders;
+    act(() => {
+      c.patch({ items: [1, 2] });
+    });
+    expect(renders).toBe(before + 1);
+  });
+
+  it('13. reads after commit do not add paths', () => {
+    const c = makeContainer();
+    let captured: CounterState | undefined;
+    function App() {
+      const [state] = useStructural(c);
+      captured = state as CounterState;
+      return React.createElement('span', null, captured.count);
+    }
+    act(() => {
+      render(React.createElement(App));
+    });
+    void captured?.label;
+    const paths = [...c.getConsumerPaths().values()][0] as Set<number>;
+    expect([...paths].map((id) => c.interner.lookup(id))).toEqual(['count']);
+  });
 });

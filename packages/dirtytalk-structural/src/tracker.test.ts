@@ -598,10 +598,9 @@ describe('trackRender — ProxyCache', () => {
       const cache = new ProxyCache();
       const shared = { name: 'shared' };
       // `@internal` field, reached for assertion only — not part of the public API.
+      type Handler = { prefixId: PathId; next: Handler | undefined };
       const byTarget = (
-        cache as unknown as {
-          byTarget: WeakMap<object, Map<PathId, unknown>>;
-        }
+        cache as unknown as { byTarget: WeakMap<object, Handler> }
       ).byTarget;
 
       const renderAtIndex = (index: number): void => {
@@ -619,11 +618,11 @@ describe('trackRender — ProxyCache', () => {
 
       // Only the most recent render's prefix survives for the shared object —
       // the cache does not accumulate one entry per index it has ever been at.
-      const byPrefix = byTarget.get(shared);
-      expect(byPrefix?.size).toBe(1);
-      expect(
-        [...(byPrefix?.keys() ?? [])].map((id) => interner.lookup(id)),
-      ).toEqual(['list.2']);
+      const prefixes: string[] = [];
+      for (let h = byTarget.get(shared); h !== undefined; h = h.next) {
+        prefixes.push(interner.lookup(h.prefixId));
+      }
+      expect(prefixes).toEqual(['list.2']);
     } finally {
       __setPersistTrackingProxies(null);
     }

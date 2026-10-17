@@ -1,4 +1,4 @@
-import type { PathInterner } from './path-interner';
+import { NO_PARENT, type PathInterner } from './path-interner';
 import type { PathId } from './types';
 import { ALL_PATHS, emptyPathSet, type PathSet } from './path-set';
 
@@ -50,6 +50,55 @@ export const getAtSegments = (
 };
 
 /**
+ * True when the value at `segments` differs (`Object.is`) between `prev` and
+ * `next`. Equivalent to comparing two `getAtSegments` reads, but stops at the
+ * first shared reference on the way down: an identical subtree can't differ
+ * beneath it, so an immutable update only walks the paths it replaced.
+ */
+export const changedAtSegments = (
+  prev: unknown,
+  next: unknown,
+  segments: readonly string[],
+): boolean => {
+  let p = prev;
+  let n = next;
+  for (let i = 0; i < segments.length; i++) {
+    if (p === n) return false;
+    const segment = segments[i];
+    p =
+      p !== null && typeof p === 'object'
+        ? (p as Record<string, unknown>)[segment]
+        : undefined;
+    n =
+      n !== null && typeof n === 'object'
+        ? (n as Record<string, unknown>)[segment]
+        : undefined;
+  }
+  return !Object.is(p, n);
+};
+
+/**
+ * Whether the value at path `id` changed between `prev` and `next`, under
+ * `equalsAt` when given (it sees both full reads), else `Object.is` with the
+ * shared-reference early exit of {@link changedAtSegments}.
+ */
+export const changedAt = (
+  prev: unknown,
+  next: unknown,
+  id: PathId,
+  interner: PathInterner,
+  equalsAt?: (pathId: PathId, prev: unknown, next: unknown) => boolean,
+): boolean => {
+  const segments = interner.lookupSegments(id);
+  if (equalsAt === undefined) return changedAtSegments(prev, next, segments);
+  return !equalsAt(
+    id,
+    getAtSegments(prev, segments),
+    getAtSegments(next, segments),
+  );
+};
+
+/**
  * Diff `prev` against `next` along the `skeleton` of observed paths.
  *
  * Walks each `PathId` in the skeleton, looks up its dotted string, reads the
@@ -78,11 +127,7 @@ export const diffAlongSkeleton = <S>(
 
   const result = new Set<PathId>();
   for (const id of ids) {
-    const segments = interner.lookupSegments(id);
-    const pv = getAtSegments(prev, segments);
-    const nv = getAtSegments(next, segments);
-    const eq = equalsAt ? equalsAt(id, pv, nv) : Object.is(pv, nv);
-    if (!eq) result.add(id);
+    if (changedAt(prev, next, id, interner, equalsAt)) result.add(id);
   }
   return result;
 };
@@ -169,52 +214,53 @@ export const changedPathsFromPatch = <S>(
   equalsAt?: (pathId: PathId, prev: unknown, next: unknown) => boolean,
 ): PathSet => {
   const out = new Set<PathId>();
-  // Thread the prev/next subtree references down the recursion and index by
-  // key, rather than re-deriving each value with `getAt(root, dottedPath)`.
-  // `getAt` re-walks from the root and `split('.')`s a fresh array per path —
-  // pure overhead on the hot mutation path when the parallel subtree is
-  // already in hand. `prevNode[key]` reproduces `getAt(prev, childPath)`
-  // exactly (a non-object node yields `undefined`, matching getAt's guard).
-  const walk = (
-    node: unknown,
-    prevNode: unknown,
-    nextNode: unknown,
-    basePath: string,
-  ): void => {
-    if (!isPlainPatchObject(node)) return;
-    const prevObj =
-      prevNode !== null && typeof prevNode === 'object'
-        ? (prevNode as Record<string, unknown>)
-        : undefined;
-    const nextObj =
-      nextNode !== null && typeof nextNode === 'object'
-        ? (nextNode as Record<string, unknown>)
-        : undefined;
-    for (const key of Object.keys(node)) {
-      const childPath = basePath === '' ? key : `${basePath}.${key}`;
-      const id = interner.intern(childPath);
-      const pv = prevObj?.[key];
-      const nv = nextObj?.[key];
-      const eq = equalsAt ? equalsAt(id, pv, nv) : Object.is(pv, nv);
-      if (eq) continue; // value unchanged → skip this branch (and its subtree)
-      out.add(id);
-      const childPatch = node[key];
-      if (isPlainPatchObject(childPatch)) {
-        // Plain-object branch: recurse and mark the precise changed leaves,
-        // which descendant-readers match directly — no ancestor-watch needed.
-        walk(childPatch, pv, nv, childPath);
-      } else if (isObjectLike(pv) || isObjectLike(nv)) {
-        // Atomic replacement of something readable-into (array, null'd object,
-        // class instance, Date, Map, …): the diff can't see inside it, so a
-        // consumer that read a *descendant* (e.g. `items.length`,
-        // `profile.bio`) has nothing to match the normal `childPath` mark.
-        // Emit the ancestor-watch mark so its expanded-ancestor interest
-        // intersects. Skipped when both sides are primitives — no descendant
-        // path can have been recorded beneath one.
-        out.add(interner.internAncestorOf(id));
-      }
-    }
-  };
-  walk(patch as unknown, prev, next, '');
+  walkChanged(patch, prev, next, NO_PARENT, interner, equalsAt, out);
   return out;
+};
+
+// Threads the prev/next subtrees down alongside the patch and indexes them by
+// key (`prevNode[key]` matches `getAt(prev, childPath)`: a non-object node
+// yields `undefined`), and interns child ids from the parent id, so the hot
+// mutation path builds no path strings.
+const walkChanged = (
+  node: unknown,
+  prevNode: unknown,
+  nextNode: unknown,
+  parentId: PathId,
+  interner: PathInterner,
+  equalsAt:
+    | ((pathId: PathId, prev: unknown, next: unknown) => boolean)
+    | undefined,
+  out: Set<PathId>,
+): void => {
+  if (!isPlainPatchObject(node)) return;
+  const prevObj = isObjectLike(prevNode)
+    ? (prevNode as Record<string, unknown>)
+    : undefined;
+  const nextObj = isObjectLike(nextNode)
+    ? (nextNode as Record<string, unknown>)
+    : undefined;
+  for (const key of Object.keys(node)) {
+    const id = interner.internChild(parentId, key);
+    const pv = prevObj?.[key];
+    const nv = nextObj?.[key];
+    const eq = equalsAt ? equalsAt(id, pv, nv) : Object.is(pv, nv);
+    if (eq) continue; // value unchanged → skip this branch (and its subtree)
+    out.add(id);
+    const childPatch = node[key];
+    if (isPlainPatchObject(childPatch)) {
+      // Plain-object branch: recurse and mark the precise changed leaves,
+      // which descendant-readers match directly — no ancestor-watch needed.
+      walkChanged(childPatch, pv, nv, id, interner, equalsAt, out);
+    } else if (isObjectLike(pv) || isObjectLike(nv)) {
+      // Atomic replacement of something readable-into (array, null'd object,
+      // class instance, Date, Map, …): the diff can't see inside it, so a
+      // consumer that read a *descendant* (e.g. `items.length`,
+      // `profile.bio`) has nothing to match the normal mark. Emit the
+      // ancestor-watch mark so its expanded-ancestor interest intersects.
+      // Skipped when both sides are primitives — no descendant path can have
+      // been recorded beneath one.
+      out.add(interner.internAncestorOf(id));
+    }
+  }
 };

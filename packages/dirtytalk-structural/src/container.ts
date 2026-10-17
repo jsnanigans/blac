@@ -3,11 +3,7 @@ import {
   MicrotaskScheduler,
   type Scheduler,
 } from '@dirtytalk/engine';
-import {
-  changedPathsFromPatch,
-  diffAlongSkeleton,
-  getAtSegments,
-} from './diff';
+import { changedAt, changedPathsFromPatch, diffAlongSkeleton } from './diff';
 import { PathInterner } from './path-interner';
 
 /**
@@ -170,8 +166,8 @@ export abstract class StructuralContainer<S> {
 
   /**
    * Read-only snapshot of every registered consumer's watched path set, keyed
-   * by consumer id. For inspection/devtools only — these are the live interest
-   * sets that feed the diff skeleton, *not* a copy. `ALL_PATHS` means the
+   * by consumer id. For inspection/devtools only — each set is the snapshot
+   * taken when the consumer last registered it. `ALL_PATHS` means the
    * consumer opted out of path tracking (e.g. React select-mode) and wakes on
    * any change. Select-mode consumers don't register here at all.
    */
@@ -203,23 +199,8 @@ export abstract class StructuralContainer<S> {
         this._interner,
         this._equalsFn,
       );
-      // The skeleton only covers registered consumers' watched paths. A
-      // change outside every skeleton path (e.g. an untracked field) yields
-      // an empty diff here, which would otherwise make `#flush`'s empty
-      // fast-path swallow the mark before ALL_PATHS subscribers (the blac
-      // bridge, plugins, watch/select) ever run. Since we already know
-      // `prev !== next` (reference short-circuit above), union in the
-      // reserved root-sentinel id so ALL_PATHS interests still wake while
-      // leaf `Set` interests (which never request the sentinel) stay asleep.
-      if (
-        dirty !== ALL_PATHS &&
-        (dirty as Set<PathId>).size === 0 &&
-        !Object.is(prev, next)
-      ) {
-        dirty = new Set<PathId>([this._interner.rootId()]);
-      }
     }
-    this._channel.mark(dirty);
+    this._markChanged(dirty);
   }
 
   /**
@@ -261,7 +242,7 @@ export abstract class StructuralContainer<S> {
       this._interner,
       this._equalsFn,
     );
-    this._channel.mark(this._refineAncestorMarks(rough, prev, next));
+    this._markChanged(this._refineAncestorMarks(rough, prev, next));
   }
 
   protected update(fn: (state: S) => S): void {
@@ -289,8 +270,12 @@ export abstract class StructuralContainer<S> {
     const prev = index.paths.get(id);
     if (prev && pathSetEquals(prev, paths)) return; // fast-path skip
 
-    index.paths.set(id, paths);
-    this._applyRefDelta(index, prev, paths);
+    // Store a snapshot: callers pass live tracking sets that can keep growing
+    // after registration, and the refcounts must be released for exactly the
+    // ids that were counted.
+    const snapshot = paths === ALL_PATHS ? paths : new Set(paths);
+    index.paths.set(id, snapshot);
+    this._applyRefDelta(index, prev, snapshot);
   }
 
   unregisterConsumer(id: ConsumerId): void {
@@ -303,6 +288,20 @@ export abstract class StructuralContainer<S> {
   // ---------------------------------------------------------------------------
   // Internals
   // ---------------------------------------------------------------------------
+
+  // Mark the paths of a state change that already happened. The diff only
+  // covers registered consumers' watched paths (and per-path equality may
+  // call every patched value equal), so it can come back empty, which would
+  // make the channel's empty fast-path swallow the mark before ALL_PATHS
+  // subscribers (the blac bridge, plugins, watch/select) ever run. Mark the
+  // reserved root-sentinel id instead: ALL_PATHS interests still wake, while
+  // leaf `Set` interests (which never request the sentinel) stay asleep.
+  private _markChanged(dirty: PathSet): void {
+    if (dirty !== ALL_PATHS && dirty.size === 0) {
+      dirty = new Set<PathId>([this._interner.rootId()]);
+    }
+    this._channel.mark(dirty);
+  }
 
   // Incrementally fold a single consumer's `prev`→`next` interest change into
   // the refcounted skeleton, then republish `_skeleton`. `undefined` on either
@@ -388,7 +387,7 @@ export abstract class StructuralContainer<S> {
     const interner = this._interner;
     let hasAncestorMark = false;
     for (const id of roughSet) {
-      if (interner.isAncestorId(id)) {
+      if (interner.ancestorTargetId(id) !== undefined) {
         hasAncestorMark = true;
         break;
       }
@@ -404,15 +403,10 @@ export abstract class StructuralContainer<S> {
     const targetIds = new Set<PathId>();
     const nonAncestorIds: PathId[] = [];
     for (const id of roughSet) {
-      if (interner.isAncestorId(id)) {
-        const target = interner.ancestorTargetId(id);
-        if (target !== undefined) targetIds.add(target);
-      } else {
-        nonAncestorIds.push(id);
-      }
+      const target = interner.ancestorTargetId(id);
+      if (target !== undefined) targetIds.add(target);
+      else nonAncestorIds.push(id);
     }
-    // An ancestor-watch mark with no decodable target leaves nothing to refine.
-    if (targetIds.size === 0) return rough;
 
     const equalsFn = this._equalsFn;
     // Seed with the non-ancestor marks collected above. Consumers whose
@@ -432,12 +426,9 @@ export abstract class StructuralContainer<S> {
           break;
         }
       }
-      if (!descends) continue;
-      const segments = interner.lookupSegments(skelId);
-      const pv = getAtSegments(prev, segments);
-      const nv = getAtSegments(next, segments);
-      const eq = equalsFn ? equalsFn(skelId, pv, nv) : Object.is(pv, nv);
-      if (!eq) result.add(skelId);
+      if (descends && changedAt(prev, next, skelId, interner, equalsFn)) {
+        result.add(skelId);
+      }
     }
 
     return result;

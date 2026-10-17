@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useReducer, useRef } from 'react';
-import { emptyPathSet } from './path-set';
+import { emptyPathSet, expandWithAncestors } from './path-set';
 import type { PathSet } from './path-set';
-import { trackRender } from './tracker';
+import { ProxyCache, trackRender } from './tracker';
 import type { StructuralContainer } from './container';
 
 export interface UseStructuralOptions {
@@ -21,6 +21,10 @@ export function useStructural<S, C extends StructuralContainer<S>>(
 ): readonly [S, C] {
   const consumerId = useId();
   const pathRef = useRef<PathSet>(emptyPathSet());
+  // `pathRef` expanded with ancestor-watch ids, so a patch that replaces a
+  // parent atomically (e.g. an array) still wakes a reader of a descendant.
+  const interestRef = useRef<PathSet>(pathRef.current);
+  const cacheRef = useRef<ProxyCache | null>(null);
   const [, force] = useReducer((x: number) => x + 1, 0);
   // Render-time state snapshot, read by the subscription effect to close the
   // mount gap (T6): an emit landing between the render read and this passive
@@ -32,7 +36,7 @@ export function useStructural<S, C extends StructuralContainer<S>>(
     // cleanup cycle (render body did not re-run, so we re-register from the ref).
     container.registerConsumerPaths(consumerId, pathRef.current);
     const unsub = container.subscribe(
-      () => pathRef.current,
+      () => interestRef.current,
       () => force(),
     );
     // Close the mount gap (T6): if state advanced between the render snapshot
@@ -46,18 +50,20 @@ export function useStructural<S, C extends StructuralContainer<S>>(
     };
   }, [container, consumerId]);
 
-  const { value, paths } = trackRender(container.state, container.interner);
+  const { value, paths, disarm } = trackRender(
+    container.state,
+    container.interner,
+    (cacheRef.current ??= new ProxyCache()),
+  );
   pathRef.current = paths;
   renderStateRef.current = container.state;
-  // NOTE: registerConsumerPaths is intentionally NOT called here. The proxy
-  // hasn't been accessed yet, so `paths` is an empty Set that the proxy will
-  // mutate during JSX evaluation. Registering at this point would store an
-  // empty interest with the container and freeze the skeleton at that
-  // snapshot — subsequent emits would diff against an empty skeleton and
-  // silently drop wakeups. The useLayoutEffect below registers the populated
-  // set after render.
+  // `paths` fills while the caller evaluates its JSX, so it is registered at
+  // commit, not here. Disarming first stops reads that outlive the render
+  // (effects, handlers) from adding paths.
   useLayoutEffect(() => {
-    container.registerConsumerPaths(consumerId, pathRef.current);
+    disarm();
+    container.registerConsumerPaths(consumerId, paths);
+    interestRef.current = expandWithAncestors(paths, container.interner);
   });
 
   return [value, container] as const;

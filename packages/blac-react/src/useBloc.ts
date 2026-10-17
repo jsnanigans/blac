@@ -15,6 +15,7 @@ import {
 import {
   ALL_PATHS,
   emptyPathSet,
+  expandWithAncestors,
   trackRender,
   ProxyCache,
   type PathSet,
@@ -23,7 +24,6 @@ import { useProvidedArgs } from './BlocProvider';
 import { useRegistry } from './RegistryProvider';
 import { buildTrackedProxy } from './buildTrackedProxy';
 import { DepSession, makeDepWrapper, type DepHandleLike } from './depSession';
-import { expandWithAncestors } from './expandWithAncestors';
 import type { UseBlocOptions, UseBlocReturn } from './types';
 
 let nextConsumerId = 0;
