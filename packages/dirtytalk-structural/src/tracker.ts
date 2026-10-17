@@ -309,13 +309,16 @@ class TrackHandler implements ProxyHandler<object> {
     return Reflect.defineProperty(t, key, descriptor);
   }
 
-  /** Pin this proxy's own path as a content dependency. */
+  /**
+   * Pin this proxy's own path as a content dependency. The root pins the
+   * root id, which the container marks on every change.
+   */
   private _pin(): void {
-    const prefixId = this.prefixId;
-    if (prefixId === NO_PARENT) return;
+    const id =
+      this.prefixId === NO_PARENT ? this.ctx.interner.rootId() : this.prefixId;
     const session = this.ctx.session;
-    session.paths.add(prefixId);
-    (session.pinned ??= new Set<PathId>()).add(prefixId);
+    session.paths.add(id);
+    (session.pinned ??= new Set<PathId>()).add(id);
     if (traceHook !== null) this._trace('pin', undefined, this._prefix());
   }
 
@@ -353,6 +356,18 @@ const throwReadOnly = (op: string, key: string | symbol): never => {
  * The recording proxy for `target` read at `prefixId`, reused from the store
  * when one exists for that pair (claimed for `ctx`), otherwise created.
  */
+const createProxy = (
+  ctx: TrackContext,
+  target: object,
+  prefixId: PathId,
+  next: TrackHandler | undefined,
+): TrackHandler => {
+  const handler = new TrackHandler(ctx, prefixId, Array.isArray(target), next);
+  handler.proxy = new Proxy(target, handler);
+  proxyToTarget.set(handler.proxy, target);
+  return handler;
+};
+
 const wrap = (ctx: TrackContext, target: object, prefixId: PathId): object => {
   const store = (ctx.store ??= new Map<object, TrackHandler>());
   const head = store.get(target);
@@ -363,13 +378,10 @@ const wrap = (ctx: TrackContext, target: object, prefixId: PathId): object => {
       return h.proxy;
     }
   }
-  const handler = new TrackHandler(ctx, prefixId, Array.isArray(target), head);
-  const proxy = new Proxy(target, handler);
-  handler.proxy = proxy;
-  proxyToTarget.set(proxy, target);
+  const handler = createProxy(ctx, target, prefixId, head);
   store.set(target, handler);
   if (head !== undefined) ctx.touched?.add(target);
-  return proxy;
+  return handler.proxy;
 };
 
 // Drop every handler for `target` not claimed by `ctx` (the completed call),
@@ -485,7 +497,10 @@ export const trackRender = <S>(
     });
   }
   return {
-    value: wrap(ctx, state, NO_PARENT) as S,
+    // The root is never reused: a reused child proxy is only reachable via a
+    // `get` that records it, but a reused root reaches the consumer unchanged,
+    // so `useMemo(..., [state])` would skip every read and record nothing.
+    value: createProxy(ctx, state, NO_PARENT, undefined).proxy as S,
     paths: session.paths,
     disarm: () => {
       // Reads keep routing through this call's handlers until `armed` flips,

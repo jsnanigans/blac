@@ -445,4 +445,74 @@ describe('useStructural', () => {
     const paths = [...c.getConsumerPaths().values()][0] as Set<number>;
     expect([...paths].map((id) => c.interner.lookup(id))).toEqual(['count']);
   });
+
+  it('14. a memo keyed on state still tracks after a local re-render', () => {
+    class User extends TestContainer<{ user: { name: string } }> {}
+    const c = new User(
+      { user: { name: 'a' } },
+      { scheduler: new SyncScheduler() },
+    );
+    let bump: () => void = () => {};
+    let seen = '';
+    function App() {
+      const [state] = useStructural(c);
+      const [, setTick] = React.useState(0);
+      bump = () => setTick((t) => t + 1);
+      seen = React.useMemo(
+        () => (state as { user: { name: string } }).user.name,
+        [state],
+      );
+      return null;
+    }
+    act(() => {
+      render(React.createElement(App));
+    });
+    act(() => bump());
+    act(() => {
+      c.emit({ user: { name: 'b' } });
+    });
+    expect(seen).toBe('b');
+  });
+
+  it('15. Object.keys on the root wakes when a root key is added', () => {
+    class Bag extends TestContainer<Record<string, number>> {}
+    const c = new Bag({ a: 1, b: 2 }, { scheduler: new SyncScheduler() });
+    let seen = 0;
+    function App() {
+      const [state] = useStructural(c);
+      seen = Object.keys(state as object).length;
+      return null;
+    }
+    act(() => {
+      render(React.createElement(App));
+    });
+    act(() => {
+      c.emit({ ...c.state, c: 3 });
+    });
+    expect(seen).toBe(3);
+  });
+
+  it('16. a change between render and commit re-renders', () => {
+    const c = makeContainer();
+    let showLabel = false;
+    let seen = '';
+    function Child() {
+      React.useLayoutEffect(() => {
+        if (showLabel) c.patch({ label: 'b' });
+      });
+      return null;
+    }
+    function App() {
+      const [state] = useStructural(c);
+      const s = state as CounterState;
+      seen = showLabel ? s.label : String(s.count);
+      return React.createElement(Child);
+    }
+    const { rerender } = render(React.createElement(App));
+    showLabel = true;
+    act(() => {
+      rerender(React.createElement(App));
+    });
+    expect(seen).toBe('b');
+  });
 });

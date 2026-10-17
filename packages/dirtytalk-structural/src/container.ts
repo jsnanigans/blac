@@ -293,12 +293,16 @@ export abstract class StructuralContainer<S> {
   // covers registered consumers' watched paths (and per-path equality may
   // call every patched value equal), so it can come back empty, which would
   // make the channel's empty fast-path swallow the mark before ALL_PATHS
-  // subscribers (the blac bridge, plugins, watch/select) ever run. Mark the
-  // reserved root-sentinel id instead: ALL_PATHS interests still wake, while
-  // leaf `Set` interests (which never request the sentinel) stay asleep.
+  // subscribers (the blac bridge, plugins, watch/select) ever run. The
+  // reserved root id fills that gap. It is also what root-shape readers
+  // (`Object.keys(state)`, `'k' in state`) pin, since any change may add a
+  // root key, so it is marked whenever one is registered.
   private _markChanged(dirty: PathSet): void {
-    if (dirty !== ALL_PATHS && dirty.size === 0) {
-      dirty = new Set<PathId>([this._interner.rootId()]);
+    if (dirty !== ALL_PATHS) {
+      const rootId = this._interner.rootId();
+      if (dirty.size === 0 || this._consumers?.skeleton.has(rootId)) {
+        (dirty as Set<PathId>).add(rootId);
+      }
     }
     this._channel.mark(dirty);
   }

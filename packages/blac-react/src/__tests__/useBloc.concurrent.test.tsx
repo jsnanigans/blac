@@ -49,3 +49,47 @@ it('a time-sliced render that yields before commit keeps its instance', async ()
   root.unmount();
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = actEnv;
 });
+
+class LabelCubit extends Cubit<{ n: number; label: string }> {
+  constructor() {
+    super({ n: 0, label: 'a' });
+  }
+  setLabel(label: string) {
+    this.patch({ label });
+  }
+}
+
+it('a change flushed between render and commit re-renders', async () => {
+  const actEnv = (globalThis as any).IS_REACT_ACT_ENVIRONMENT;
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = false;
+  const el = document.createElement('div');
+  const root = createRoot(el);
+  let showLabel = false;
+  let bloc: LabelCubit | undefined;
+  function App() {
+    const [state, b] = useBloc(LabelCubit);
+    bloc = b;
+    return <span>{showLabel ? state.label : state.n}</span>;
+  }
+  // Rendered after App in the same pass; the yields after it let the
+  // microtask flush run before commit.
+  function Mutate() {
+    if (showLabel) queueMicrotask(() => bloc?.setLabel('b'));
+    return null;
+  }
+  const tree = () => (
+    <>
+      <App />
+      <Mutate />
+      <Slow />
+      <Slow />
+    </>
+  );
+  startTransition(() => root.render(tree()));
+  await vi.waitFor(() => expect(el.textContent).toBe('0'));
+  showLabel = true;
+  startTransition(() => root.render(tree()));
+  await vi.waitFor(() => expect(el.textContent).toBe('b'));
+  root.unmount();
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = actEnv;
+});

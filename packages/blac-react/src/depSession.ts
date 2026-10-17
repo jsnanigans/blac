@@ -45,6 +45,7 @@ export class DepSession {
   private readonly entries = new Map<StateContainer, SessionEntry>();
   private readonly subs = new Map<StateContainer, DepSub>();
   private lastReconciled: Map<StateContainer, SessionEntry> | null = null;
+  private readonly disarms: Array<() => void> = [];
   private readonly refId: string;
 
   constructor(
@@ -56,6 +57,7 @@ export class DepSession {
 
   begin(primary: StateContainer, paths: PathSet): void {
     this.entries.clear();
+    this.disarms.length = 0;
     this.entries.set(primary, { kind: 'primary', paths });
   }
 
@@ -65,13 +67,21 @@ export class DepSession {
     Type: StateContainerConstructor,
     key: string,
     args: unknown,
+    disarm: () => void,
   ): void {
+    this.disarms.push(disarm);
     const existing = this.entries.get(dep);
     if (existing !== undefined) {
       existing.paths = unionPaths(existing.paths, paths);
     } else {
       this.entries.set(dep, { kind: 'dep', paths, Type, key, args });
     }
+  }
+
+  /** Stops every dep tracked this render from recording further reads. */
+  disarm(): void {
+    for (const disarm of this.disarms) disarm();
+    this.disarms.length = 0;
   }
 
   /** Forces the next `reconcile` to run in full. */
@@ -233,7 +243,7 @@ export function makeDepWrapper(
       } else {
         cache.ref.current = result.value;
       }
-      session.record(dep, result.paths, brand.Type, key, args);
+      session.record(dep, result.paths, brand.Type, key, args, result.disarm);
       return [result.value, cache.proxy];
     },
   } as DepHandleLike;

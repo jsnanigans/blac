@@ -76,8 +76,8 @@ export const PathSetSpace: Space<PathSet> = {
  *
  * Ancestor-watch ids only match marks the source emits for atomic
  * replacements, never a plain-object pulse-up: `{'user.email'}` does not wake
- * when a sibling `user.name` changes. The `''` root is never added; a root
- * change already marks `ALL_PATHS`.
+ * when a sibling `user.name` changes. The `''` root is never added: root-shape
+ * readers pin the root id instead, which every change marks.
  *
  * Returns `paths` itself when no leaf has an ancestor.
  */

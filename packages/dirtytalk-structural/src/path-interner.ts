@@ -201,11 +201,11 @@ export class PathInterner {
   }
 
   /**
-   * Reserved **root-sentinel** id: not a real path, used by `emit` to wake
-   * `ALL_PATHS` interests when a change lands outside every consumer's
-   * skeleton (so the skeleton diff is otherwise empty). Idempotent — repeated
-   * calls return the same id via `intern`'s dedup. Never intersects a leaf
-   * consumer's `Set<PathId>` interest since no consumer ever requests it.
+   * Reserved **root-sentinel** id: not a real path. The container marks it
+   * when a change lands outside every consumer's skeleton (so `ALL_PATHS`
+   * interests still wake) and on every change once a root-shape reader
+   * (`Object.keys(state)`) has pinned it. Idempotent — repeated calls return
+   * the same id via `intern`'s dedup.
    */
   rootId(): PathId {
     return this.intern(ROOT_SENTINEL);

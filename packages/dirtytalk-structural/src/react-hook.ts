@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useReducer, useRef } from 'react';
-import { emptyPathSet, expandWithAncestors } from './path-set';
+import { emptyPathSet, expandWithAncestors, pathSetEquals } from './path-set';
 import type { PathSet } from './path-set';
 import { ProxyCache, trackRender } from './tracker';
 import type { StructuralContainer } from './container';
@@ -25,6 +25,8 @@ export function useStructural<S, C extends StructuralContainer<S>>(
   // parent atomically (e.g. an array) still wakes a reader of a descendant.
   const interestRef = useRef<PathSet>(pathRef.current);
   const cacheRef = useRef<ProxyCache | null>(null);
+  // The paths of the last commit; renders that never commit don't touch it.
+  const committedRef = useRef<PathSet | null>(null);
   const [, force] = useReducer((x: number) => x + 1, 0);
   // Render-time state snapshot, read by the subscription effect to close the
   // mount gap (T6): an emit landing between the render read and this passive
@@ -50,18 +52,26 @@ export function useStructural<S, C extends StructuralContainer<S>>(
     };
   }, [container, consumerId]);
 
+  const renderState = container.state;
   const { value, paths, disarm } = trackRender(
-    container.state,
+    renderState,
     container.interner,
     (cacheRef.current ??= new ProxyCache()),
   );
   pathRef.current = paths;
-  renderStateRef.current = container.state;
+  renderStateRef.current = renderState;
   // `paths` fills while the caller evaluates its JSX, so it is registered at
   // commit, not here. Disarming first stops reads that outlive the render
   // (effects, handlers) from adding paths.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
     disarm();
+    // A change between render and commit was diffed against the previous
+    // skeleton, which may lack paths only this render read.
+    if (container.state !== renderState) force();
+    const committed = committedRef.current;
+    if (committed !== null && pathSetEquals(committed, paths)) return;
+    committedRef.current = paths;
     container.registerConsumerPaths(consumerId, paths);
     interestRef.current = expandWithAncestors(paths, container.interner);
   });

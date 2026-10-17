@@ -257,11 +257,15 @@ export function useBloc<
       disarm();
     }
     const deps = consumer.deps;
+    deps.disarm();
     if (consumer.isSelectMode) {
       // A later switch back to auto-track must reconcile in full.
       deps.invalidate();
       return;
     }
+    // A change between render and commit was diffed against the previous
+    // interest, which may lack paths only this render read.
+    if (container.state !== rawState) consumer.bump();
     if (deps.isUnchanged()) return;
 
     const primary = consumer.container;
