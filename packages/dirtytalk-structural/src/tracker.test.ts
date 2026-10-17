@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vite-plus/test';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import { PathInterner } from './path-interner';
 import {
   __setPersistTrackingProxies,
@@ -171,6 +171,15 @@ describe('trackRender', () => {
     expect(value.tags.indexOf('c')).toBe(2);
     expect(value.tags.includes('z')).toBe(false);
     expect(asPathStrings(paths, interner)).toContain('tags');
+  });
+
+  it('4i. a large array is a raw leaf recorded at its own path', () => {
+    const interner = new PathInterner();
+    const items = Array.from({ length: 1000 }, (_, i) => ({ title: `t${i}` }));
+    const { value, paths } = trackRender({ items }, interner);
+    expect(value.items).toBe(items);
+    value.items.map((i) => i.title);
+    expect(asPathStrings(paths, interner)).toEqual(['items']);
   });
 
   it('5. conditional reads only record the taken branch', () => {
@@ -681,5 +690,17 @@ describe('trackRender — ProxyCache', () => {
     } finally {
       process.env.NODE_ENV = originalEnv;
     }
+  });
+
+  it('29. without a `process` global, writes pass through', () => {
+    const state = { user: { name: 'a' } };
+    const { value } = trackRender(state, new PathInterner());
+    vi.stubGlobal('process', undefined);
+    try {
+      value.user.name = 'b';
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(state.user.name).toBe('b');
   });
 });

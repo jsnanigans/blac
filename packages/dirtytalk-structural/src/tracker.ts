@@ -1,3 +1,4 @@
+import { isDev } from './env';
 import type { PathId } from './types';
 import type { PathSet } from './path-set';
 import { NO_PARENT, type PathInterner } from './path-interner';
@@ -10,6 +11,16 @@ import { NO_PARENT, type PathInterner } from './path-interner';
  * passing one — kept as a single rollout toggle while this is verified.
  */
 const PERSIST_TRACKING_PROXIES = true;
+
+/**
+ * Arrays longer than this are leaves: per-index tracking would intern and
+ * diff one path per element and field read. The array's own path still
+ * records, so replacing it wakes the consumer.
+ */
+export const MAX_TRACKED_ARRAY_LENGTH = 256;
+
+const isLargeArray = (v: unknown): v is unknown[] =>
+  Array.isArray(v) && v.length > MAX_TRACKED_ARRAY_LENGTH;
 
 export interface TrackResult<S> {
   value: S;
@@ -243,13 +254,14 @@ class TrackHandler implements ProxyHandler<object> {
       if (traceHook !== null) this._trace('drop-parent');
     }
 
-    // Primitives, functions, and non-plain objects (Map, Set, Date, class
-    // instances) are leaves, returned raw. The path is already recorded, so a
+    // Primitives, functions, non-plain objects (Map, Set, Date, class
+    // instances) and large arrays are leaves, returned raw. The path is already recorded, so a
     // reference change still wakes the consumer.
     if (
       value === null ||
       typeof value !== 'object' ||
-      !isStructurallyWrappable(value)
+      !isStructurallyWrappable(value) ||
+      isLargeArray(value)
     ) {
       return value;
     }
@@ -291,12 +303,12 @@ class TrackHandler implements ProxyHandler<object> {
   // State is read-only from outside a bloc. In dev, catch stray writes that
   // would otherwise bypass rendering with no warning.
   set(t: object, key: string | symbol, value: unknown): boolean {
-    if (process.env.NODE_ENV !== 'production') throwReadOnly('set', key);
+    if (isDev()) throwReadOnly('set', key);
     return Reflect.set(t, key, value);
   }
 
   deleteProperty(t: object, key: string | symbol): boolean {
-    if (process.env.NODE_ENV !== 'production') throwReadOnly('delete', key);
+    if (isDev()) throwReadOnly('delete', key);
     return Reflect.deleteProperty(t, key);
   }
 
@@ -305,7 +317,7 @@ class TrackHandler implements ProxyHandler<object> {
     key: string | symbol,
     descriptor: PropertyDescriptor,
   ): boolean {
-    if (process.env.NODE_ENV !== 'production') throwReadOnly('define', key);
+    if (isDev()) throwReadOnly('define', key);
     return Reflect.defineProperty(t, key, descriptor);
   }
 
@@ -433,7 +445,8 @@ const pruneStale = (
  *   `items.map(i => i.title)` records `items.length`, `items.0.title`, … —
  *   precise leaf paths that isolate re-renders to the items and fields that
  *   changed. `includes` / `indexOf` / `lastIndexOf` run against the raw
- *   array and pin the array's own path instead.
+ *   array and pin the array's own path instead. Arrays longer than
+ *   {@link MAX_TRACKED_ARRAY_LENGTH} are returned raw and tracked as a whole.
  * - Methods called on the proxy keep it as their receiver, so internal
  *   `this.x` reads continue to record. Reading an inherited method without
  *   invoking it does not record.
@@ -478,6 +491,10 @@ export const trackRender = <S>(
   };
 
   if (state === null || typeof state !== 'object') {
+    return { value: state, paths: session.paths, disarm: () => {} };
+  }
+  if (isLargeArray(state)) {
+    session.paths.add(interner.rootId());
     return { value: state, paths: session.paths, disarm: () => {} };
   }
 

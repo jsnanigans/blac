@@ -492,6 +492,25 @@ describe('useStructural', () => {
     expect(seen).toBe(3);
   });
 
+  it('15b. a large root array wakes when replaced', () => {
+    class List extends TestContainer<number[]> {}
+    const initial = Array.from({ length: 1000 }, (_, i) => i);
+    const c = new List(initial, { scheduler: new SyncScheduler() });
+    let seen = 0;
+    function App() {
+      const [state] = useStructural(c);
+      seen = (state as number[])[0];
+      return null;
+    }
+    act(() => {
+      render(React.createElement(App));
+    });
+    act(() => {
+      c.emit(c.state.map((n) => n + 1));
+    });
+    expect(seen).toBe(1);
+  });
+
   it('16. a change between render and commit re-renders', () => {
     const c = makeContainer();
     let showLabel = false;

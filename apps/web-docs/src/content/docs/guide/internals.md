@@ -357,11 +357,11 @@ The recording rules are deliberate, and each one earns its keep:
   prototype props never record. Re-reads are idempotent (it's a `Set`).
 - **Nested plain objects/arrays return child proxies** recording into the same
   set, cached per target so `value.user === value.user` within one render.
-- **Iteration coarsens.** `.map` / `.find` / `for..of` on an array record the
-  _entry_ path (`items`) but not per-index paths (`items.0`) or `items.length`.
-  Array methods are bound to the raw target so their internal reads bypass the
-  proxy. Direct index access still records the leaf: `value.items[2]` records
-  `items.2`.
+- **Iteration is per item.** `.map` / `.find` / `for..of` run against the
+  proxy, so they record `items.length` and each field the callback reads
+  (`items.0.title`, …). `includes` / `indexOf` / `lastIndexOf` run on the raw
+  array and record `items`. Arrays longer than 256 are returned raw and
+  recorded as `items`, so interning and diffing stay bounded on huge lists.
 - **Leaf collection types are not recursed.** `Map`, `Set`, `Date`, and class
   instances are returned raw (wrapping them would rebind receiver-checked
   built-ins like `Map.prototype.get`). A reference change to the whole value
