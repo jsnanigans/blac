@@ -1,61 +1,64 @@
-import type { LibraryDefinition } from '../shared/types';
-import {
-  BlacFrameworkBenchmark,
-  BlacPropDrilledFrameworkBenchmark,
-} from './blac/FrameworkBenchmark';
+import type {
+  ListLibrary,
+  PureStateLibrary,
+  RerenderLibrary,
+} from '../shared/types';
+import { BlacPropRows, BlacSubRows } from './blac/list';
 import { blacPureState } from './blac/pure-state';
-import {
-  ReduxToolkitFrameworkBenchmark,
-  ReduxToolkitPerRowFrameworkBenchmark,
-} from './redux-toolkit/FrameworkBenchmark';
+import { blacRerender } from './blac/rerender';
+import { contextRerender } from './react-context/rerender';
+import { ReduxPropRows, ReduxSubRows } from './redux-toolkit/list';
 import { reduxToolkitPureState } from './redux-toolkit/pure-state';
-import {
-  ZustandFrameworkBenchmark,
-  ZustandPerRowFrameworkBenchmark,
-} from './zustand/FrameworkBenchmark';
+import { reduxRerender } from './redux-toolkit/rerender';
+import { ZustandPropRows, ZustandSubRows } from './zustand/list';
 import { zustandPureState } from './zustand/pure-state';
+import {
+  zustandNoSelectorRerender,
+  zustandSelectorRerender,
+} from './zustand/rerender';
 
-// Each library is registered twice for the React benchmark, once per row
-// architecture, because the two have opposite cost profiles and comparing
-// across them is meaningless:
+// Each library runs the list suite twice, once per row architecture, because
+// the two have opposite cost profiles:
 //
-//   "(prop rows)" — parent holds `selected` and passes `isSelected` down.
-//                   Cheap mount, but a select re-renders the parent and diffs
-//                   every row.
-//   "(sub rows)"  — each row subscribes and reads `selected` itself.
+//   "(sub rows)"  — each row reads its item and the selection from the store.
 //                   Only affected rows re-render, but mount pays one
 //                   subscription per row.
+//   "(prop rows)" — the parent reads everything and passes props down. Cheap
+//                   mount, but every change re-renders the parent and compares
+//                   every row.
 //
-// Compare like with like: "(prop rows)" against "(prop rows)".
-// Pure-state results are identical for both variants of a library, so only the
-// "(sub rows)" entry carries a `pureState` — otherwise every pure-state op
-// would be measured and reported twice.
-export const libraries: LibraryDefinition[] = [
-  {
-    name: 'Blac (sub rows)',
-    Component: BlacFrameworkBenchmark,
-    pureState: blacPureState,
-  },
-  {
-    name: 'Blac (prop rows)',
-    Component: BlacPropDrilledFrameworkBenchmark,
-  },
-  {
-    name: 'Zustand (sub rows)',
-    Component: ZustandPerRowFrameworkBenchmark,
-    pureState: zustandPureState,
-  },
-  {
-    name: 'Zustand (prop rows)',
-    Component: ZustandFrameworkBenchmark,
-  },
+// Compare like with like: "(sub rows)" against "(sub rows)".
+export const listLibraries: ListLibrary[] = [
+  { name: 'Blac (sub rows)', rows: 'sub rows', Component: BlacSubRows },
+  { name: 'Zustand (sub rows)', rows: 'sub rows', Component: ZustandSubRows },
   {
     name: 'Redux Toolkit (sub rows)',
-    Component: ReduxToolkitPerRowFrameworkBenchmark,
-    pureState: reduxToolkitPureState,
+    rows: 'sub rows',
+    Component: ReduxSubRows,
+  },
+  { name: 'Blac (prop rows)', rows: 'prop rows', Component: BlacPropRows },
+  {
+    name: 'Zustand (prop rows)',
+    rows: 'prop rows',
+    Component: ZustandPropRows,
   },
   {
     name: 'Redux Toolkit (prop rows)',
-    Component: ReduxToolkitFrameworkBenchmark,
+    rows: 'prop rows',
+    Component: ReduxPropRows,
   },
+];
+
+export const rerenderLibraries: RerenderLibrary[] = [
+  blacRerender,
+  zustandSelectorRerender,
+  zustandNoSelectorRerender,
+  contextRerender,
+  reduxRerender,
+];
+
+export const pureStateLibraries: PureStateLibrary[] = [
+  blacPureState,
+  zustandPureState,
+  reduxToolkitPureState,
 ];
