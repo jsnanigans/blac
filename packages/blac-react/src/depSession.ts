@@ -11,6 +11,7 @@ import {
   trackRender,
   ProxyCache,
   type PathSet,
+  type PathSubscription,
 } from '@dirtytalk/structural';
 import { buildTrackedProxy } from './buildTrackedProxy';
 
@@ -25,8 +26,7 @@ type SessionEntry =
     };
 
 interface DepSub {
-  unsubscribe: () => void;
-  interestRef: { current: PathSet };
+  subscription: PathSubscription;
   registry: StateContainerRegistry;
   Type: StateContainerConstructor;
   key: string;
@@ -121,7 +121,7 @@ export class DepSession {
       dep.registerConsumerPaths(consumerId, entry.paths);
       const existing = subs.get(dep);
       if (existing) {
-        existing.interestRef.current = interest;
+        existing.subscription.setInterest(interest);
         continue;
       }
       const live = registry.acquire(entry.Type, entry.key, {
@@ -136,14 +136,10 @@ export class DepSession {
         this.onChange();
         continue;
       }
-      const interestRef: { current: PathSet } = { current: interest };
-      const unsubscribe = dep.channel.subscribe(
-        () => interestRef.current,
-        this.onChange,
-      );
+      const subscription = dep.subscribePaths(this.onChange);
+      subscription.setInterest(interest);
       subs.set(dep, {
-        unsubscribe,
-        interestRef,
+        subscription,
         registry,
         Type: entry.Type,
         key: entry.key,
@@ -160,7 +156,7 @@ export class DepSession {
   }
 
   private drop(dep: StateContainer, sub: DepSub): void {
-    sub.unsubscribe();
+    sub.subscription.unsubscribe();
     dep.unregisterConsumer(this.consumerId);
     sub.registry.release(sub.Type, sub.key, false, this.refId);
   }

@@ -19,6 +19,7 @@ import {
   trackRender,
   ProxyCache,
   type PathSet,
+  type PathSubscription,
 } from '@dirtytalk/structural';
 import { useProvidedArgs } from './BlocProvider';
 import { useRegistry } from './RegistryProvider';
@@ -159,30 +160,30 @@ export function useBloc<
     () => (onStoreChange: () => void) => {
       consumer.notify = onStoreChange;
       const container = consumer.container;
-      const unsubscribe = container.channel.subscribe(
-        () => consumer.interest,
-        () => {
-          if (consumer.isSelectMode) {
-            const select = consumer.select;
-            if (select) {
-              const next = select(
-                container.state as ExtractState<T>,
-                container as unknown as InstanceState<T>,
-              );
-              const prev = consumer.selection;
-              if (prev !== null && shallowArrayEqual(prev, next)) return;
-              consumer.selection = next;
-            }
+      const subscription = container.subscribePaths(() => {
+        if (consumer.isSelectMode) {
+          const select = consumer.select;
+          if (select) {
+            const next = select(
+              container.state as ExtractState<T>,
+              container as unknown as InstanceState<T>,
+            );
+            const prev = consumer.selection;
+            if (prev !== null && shallowArrayEqual(prev, next)) return;
+            consumer.selection = next;
           }
-          consumer.bump();
-        },
-      );
+        }
+        consumer.bump();
+      });
+      subscription.setInterest(consumer.interest);
+      consumer.subscription = subscription;
       container.registerConsumerPaths(consumerId, consumer.paths);
       // An emit raised during render is still pending in the channel, so its
       // next flush delivers it to this subscriber.
       return () => {
         consumer.notify = noop;
-        unsubscribe();
+        consumer.subscription = null;
+        subscription.unsubscribe();
         container.unregisterConsumer(consumerId);
       };
     },
@@ -229,7 +230,7 @@ export function useBloc<
     state = rawState;
     // Recomputed every render: the selector may close over props.
     consumer.selection = select(rawState, bloc as InstanceState<T>);
-    consumer.interest = ALL_PATHS;
+    setInterest(consumer, ALL_PATHS);
   } else {
     const tracked = trackRender(
       rawState,
@@ -270,7 +271,10 @@ export function useBloc<
 
     const primary = consumer.container;
     primary.registerConsumerPaths(consumerId, consumer.paths);
-    consumer.interest = expandWithAncestors(consumer.paths, primary.interner);
+    setInterest(
+      consumer,
+      expandWithAncestors(consumer.paths, primary.interner),
+    );
     deps.reconcile(registry);
   });
 
@@ -301,6 +305,8 @@ interface Consumer {
   getServerSnapshot: () => number;
   /** Expanded leaf paths, or `ALL_PATHS` in select mode. */
   interest: PathSet;
+  /** `null` while unsubscribed. */
+  subscription: PathSubscription | null;
   paths: PathSet;
   isSelectMode: boolean;
   selection: unknown[] | null;
@@ -335,6 +341,7 @@ function createConsumer(): Consumer {
     getSnapshot: () => consumer.version,
     getServerSnapshot: () => consumer.version,
     interest: emptyPathSet(),
+    subscription: null,
     paths: emptyPathSet(),
     isSelectMode: false,
     selection: null,
@@ -352,6 +359,11 @@ function createConsumer(): Consumer {
   };
   return consumer;
 }
+
+const setInterest = (consumer: Consumer, interest: PathSet): void => {
+  consumer.interest = interest;
+  consumer.subscription?.setInterest(interest);
+};
 
 // Own args win over provider args. Shared by render and the ownership effect,
 // which recreates a disposed instance and must not drop its args.

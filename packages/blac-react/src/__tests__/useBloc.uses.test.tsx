@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { StrictMode } from 'react';
 import { render, act, screen } from '@testing-library/react';
-import { Cubit, ensure } from '@blac/core';
+import { Cubit, StateContainer, ensure } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { blacTestSetup } from '@blac/core/testing';
+import type { PathSubscription } from '@dirtytalk/structural';
 
 class CounterBloc extends Cubit<{ count: number }> {
   constructor() {
@@ -12,10 +13,6 @@ class CounterBloc extends Cubit<{ count: number }> {
   increment() {
     this.emit({ count: this.state.count + 1 });
   }
-}
-
-interface ChannelProtoLike {
-  subscribe: (...args: never[]) => () => void;
 }
 
 const ensureBloc = () => ensure(CounterBloc) as unknown as CounterBloc;
@@ -52,19 +49,22 @@ describe('useBloc — useSyncExternalStore', () => {
     let subs = 0;
     let unsubs = 0;
 
-    // Count on the channel PROTOTYPE so the counters survive the
-    // dispose/recreate that StrictMode's double-invoke puts the instance
-    // through — a per-instance spy would be discarded with the first instance.
-    const proto = Object.getPrototypeOf(
-      ensureBloc().channel,
-    ) as ChannelProtoLike;
-    const original = proto.subscribe;
-    proto.subscribe = function patched(this: unknown, ...args: never[]) {
+    // Count on the PROTOTYPE so the counters survive the dispose/recreate
+    // that StrictMode's double-invoke puts the instance through — a
+    // per-instance spy would be discarded with the first instance.
+    const proto = StateContainer.prototype as unknown as {
+      subscribePaths: (this: unknown, cb: () => void) => PathSubscription;
+    };
+    const original = proto.subscribePaths;
+    proto.subscribePaths = function patched(this: unknown, cb) {
       subs++;
-      const unsubscribe = original.apply(this, args);
-      return () => {
-        unsubs++;
-        unsubscribe();
+      const subscription = original.call(this, cb);
+      return {
+        setInterest: (interest) => subscription.setInterest(interest),
+        unsubscribe: () => {
+          unsubs++;
+          subscription.unsubscribe();
+        },
       };
     };
 
@@ -88,6 +88,6 @@ describe('useBloc — useSyncExternalStore', () => {
     });
     expect(unsubs).toBe(subs);
 
-    proto.subscribe = original;
+    proto.subscribePaths = original;
   });
 });
