@@ -1,4 +1,4 @@
-/// <reference types="node" />
+import { isDev } from './env';
 import type { PathId } from './types';
 
 /**
@@ -22,9 +22,7 @@ const ANCESTOR_SENTINEL = '\0a:';
 /**
  * Sentinel path string for the reserved **root** id (see {@link PathInterner.rootId}).
  * Also NUL-prefixed like {@link ANCESTOR_SENTINEL} but distinct from it, so
- * `lookup`/`isAncestorId` must check for it explicitly *before* falling back
- * to the ancestor-watch NUL-guard — otherwise `'\0root'.slice(ANCESTOR_SENTINEL.length)`
- * would silently mangle it into `'oot'`.
+ * `lookup`/`isAncestorId` check for it before the ancestor-watch NUL-guard.
  */
 const ROOT_SENTINEL = '\0root';
 
@@ -64,11 +62,7 @@ export class PathInterner {
     this._paths.push(path);
     const id = this._paths.length - 1;
     this._map.set(path, id);
-    if (
-      process.env.NODE_ENV !== 'production' &&
-      this._paths.length === 5000 &&
-      !this._warnedSize
-    ) {
+    if (this._paths.length === 5000 && !this._warnedSize && isDev()) {
       this._warnedSize = true;
       console.warn(
         'PathInterner: 5000+ entries interned. Per-class interners are ' +
@@ -201,7 +195,7 @@ export class PathInterner {
   }
 
   /**
-   * Reserved **root-sentinel** id: not a real path. The container marks it
+   * Reserved **root-sentinel** id; `lookup` decodes it to `''`. The container marks it
    * when a change lands outside every consumer's skeleton (so `ALL_PATHS`
    * interests still wake) and on every change once a root-shape reader
    * (`Object.keys(state)`) has pinned it. Idempotent — repeated calls return
@@ -225,10 +219,9 @@ export class PathInterner {
       );
     }
     const path = this._paths[id];
-    // Root-sentinel guard *before* the ancestor NUL-slice below — both are
-    // NUL-prefixed, but the root sentinel has no real path to decode to, so
-    // it must not be sliced as if it were an ancestor-watch id.
-    if (path === ROOT_SENTINEL) return path;
+    // The root id decodes to the empty path (the whole state, as in `getAt`).
+    // Checked before the ancestor NUL-slice below, since both are NUL-prefixed.
+    if (path === ROOT_SENTINEL) return '';
     // Decode ancestor-watch ids back to the real path so callers never see the
     // internal sentinel. Cheap NUL-byte guard before the slice.
     return path.charCodeAt(0) === 0

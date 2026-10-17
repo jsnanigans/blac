@@ -60,6 +60,11 @@ describe('PathInterner', () => {
     expect(interner.lookup(ancestor)).toBe('items');
   });
 
+  it('lookup decodes the root id to the empty path', () => {
+    const interner = new PathInterner();
+    expect(interner.lookup(interner.rootId())).toBe('');
+  });
+
   it('ancestor-watch ids of different paths do not collide', () => {
     const interner = new PathInterner();
     expect(interner.internAncestor('a')).not.toBe(interner.internAncestor('b'));

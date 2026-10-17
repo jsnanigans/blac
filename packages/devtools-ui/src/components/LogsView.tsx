@@ -89,7 +89,7 @@ const ChangedPathsChips: FC<{ paths: string[] | 'all' }> = ({ paths }) => {
     >
       {visible.map((p) => (
         <span key={p} style={chipStyle}>
-          {p}
+          {p || '<root>'}
         </span>
       ))}
       {overflow > 0 && (

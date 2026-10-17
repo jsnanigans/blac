@@ -58,7 +58,7 @@ export const PathChips: FC<{
           key={p}
           style={!highlight || highlight.has(p) ? chipStyle : dimStyle}
         >
-          {p}
+          {p || '<root>'}
         </span>
       ))}
       {overflow > 0 && (
