@@ -188,8 +188,9 @@ set to fix the refcount-corruption bug (S1).
 - **R1. `@blac/react` dep tracking never disarms.** Fixed in the second pass
   (S9).
 - **R2. `process.env.NODE_ENV` in library code.** Fixed in the third pass.
-- **R3. Per-index array tracking still has a size cliff.** Fixed in the third
-  pass (arrays over 256 are tracked whole).
+- **R3. Per-index array tracking still has a size cliff.** Tried in the third
+  pass (arrays over 256 tracked whole), reverted in the fourth: it made one
+  row component per item 16× slower.
 - **R4. `deepMerge` drops a null prototype.** Fixed in the third pass.
 - **R5. `ProxyCache` keys on `(target, prefixId)` without the interner.** Not
   a bug: a reused handler stores only `prefixId`, and its `ctx` (with the
@@ -290,9 +291,8 @@ including `apps/examples`. Each fix has a test that fails without it.
   | 10,000 | 9.7 ms  | 0.13 ms  |
 
   Trade-off: a consumer of a large list wakes on any change to it (the
-  Zustand model) rather than only on the fields it read. The web-docs
-  tracking pages described an older "iteration coarsens" behaviour; they now
-  match the code.
+  Zustand model) rather than only on the fields it read. **Reverted in the
+  fourth pass.** The web-docs tracking pages now describe per-item tracking.
 
 - **R4.** `deepMerge` clones a null-prototype branch with `Object.create(null)`;
   everything else still uses spread.
@@ -307,12 +307,59 @@ including `apps/examples`. Each fix has a test that fails without it.
 
 Not done:
 
-- `_refineAncestorMarks` stays O(skeleton × depth). An interner child index
-  walks every interned descendant, which can be more than the skeleton, and
-  P4b is already fast.
+- `_refineAncestorMarks` stays O(skeleton × depth). Superseded by the
+  fourth pass's skeleton trie.
 - insomni now declares `@dirtytalk/engine` ^0.2.2 and `@dirtytalk/spatial`
   ^0.2.0 (the pending changeset versions; `paintFrame` isn't in 0.1.1).
   Release these before publishing insomni.
+
+## Fourth pass (2026-10-17)
+
+An end-to-end A/B (`useBloc` + React `act`, happy-dom, medians of 5
+alternating runs, pre-review `d298d147` vs this pass) showed R3 made the
+common "one row component per item" pattern 16× slower: every row read
+`items`, so every change re-rendered all of them. R3 is reverted, and that
+pattern is now the optimization target.
+
+- **Skeleton trie.** `emit` and the `patch` refine walk the consumer skeleton
+  as a path trie (`src/skeleton-trie.ts`) and stop at every unchanged
+  reference, instead of walking each skeleton path from the root. Built by
+  the first diff, then kept in step by the refcount delta. Single-child
+  chains are followed in a loop so deep paths don't pay a call per level.
+- **Indexed dispatch.** `StructuralContainer.subscribePaths(cb)` returns a
+  subscription with `setInterest(paths)`. One channel subscriber looks up each
+  dirty id in a path→subscription index (`src/path-index.ts`), so a flush
+  costs the consumers it wakes, not an interest check per subscriber.
+  `useBloc`, its dep tracking and `useStructural` use it.
+- Removed `PathInterner.ancestorIds` (its only user was the old refine loop).
+- Docs: the internals page and plugins page described a "single-consumer
+  skip" that no longer exists (only zero consumers skip the diff).
+
+Structural only (`hotpath.bench.ts` R1 and a scratch 1,000-row bench, µs per
+change of one item):
+
+| Case                   | Before | Trie | Trie + index |
+| ---------------------- | ------ | ---- | ------------ |
+| emit, 1,000 row comps  | 65     | 22   | 12           |
+| patch, 1,000 row comps | 102    | 29   | 12.5         |
+| emit, 10,000 row comps | 760    | 330  | 160          |
+
+End to end (ms per 10 updates, or per mount):
+
+| Scenario                                  | Pre-review | Now  | Δ     |
+| ----------------------------------------- | ---------- | ---- | ----- |
+| Mount 1,000 rows                          | 10.6       | 10.6 | same  |
+| Toggle 1 item, 100 row components         | 0.60       | 0.54 | 1.12× |
+| Toggle 1 item, 1,000 row components       | 3.34       | 2.39 | 1.40× |
+| Patch 1 title, 1,000 row components       | 3.79       | 2.33 | 1.63× |
+| Toggle 1 item, 1 list component of 1,000  | 28.8       | 27.0 | 1.07× |
+| Patch 1 key of 1,000-key map, 1,000 comps | 4.38       | 3.48 | 1.26× |
+
+The map case was 20–40% slower than pre-review from the first pass on; the
+indexed dispatch fixes it. What remains per row update is mostly React: an
+update to one row clones the fibers of all its siblings, and the dev build's
+profiler timers (`performance.now`) cost ~17%. P4a (every path changes) is
+within ~5% of the old diff; P4b is 1.1–1.7× faster.
 
 ## Files
 
