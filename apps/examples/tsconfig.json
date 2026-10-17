@@ -22,7 +22,7 @@
       "@blac/core/testing": ["../../packages/blac-core/src/testing.ts"],
       "@blac/core/plugins": ["../../packages/blac-core/src/plugins.ts"],
       "@blac/react": ["../../packages/blac-react/src/index.ts"],
-      "@blac/react/testing": ["../../packages/blac-react/src/testing.ts"],
+      "@blac/react/testing": ["../../packages/blac-react/src/testing.tsx"],
       "@blac/plugin-persist": ["../../packages/plugin-persist/src/index.ts"],
       "@blac/devtools-connect": [
         "../../packages/devtools-connect/src/index.ts"
