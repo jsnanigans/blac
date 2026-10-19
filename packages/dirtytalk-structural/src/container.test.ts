@@ -851,11 +851,19 @@ describe('StructuralContainer — patch ancestor-mark refinement (P4b)', () => {
 });
 
 describe('StructuralContainer — incremental skeleton refcounting (P5)', () => {
-  // `_skeleton` is private; read it at runtime (TS `private` is compile-only)
-  // to compare the incrementally-maintained skeleton against a from-scratch
-  // union of every currently-registered consumer's paths.
-  const skeletonOf = (c: Counter): PathSet =>
-    (c as unknown as { _skeleton: PathSet })._skeleton;
+  // The refcounts are private; read them at runtime (TS `private` is
+  // compile-only) to compare the incrementally-maintained skeleton against a
+  // from-scratch union of every currently-registered consumer's paths.
+  const skeletonOf = (c: Counter): PathSet => {
+    const internals = c as unknown as {
+      _allPathsConsumers: number;
+      _consumers: { refCounts: number[] } | null;
+    };
+    if (internals._allPathsConsumers > 0) return ALL_PATHS;
+    const ids = new Set<PathId>();
+    internals._consumers?.refCounts.forEach((n, id) => n > 0 && ids.add(id));
+    return ids;
+  };
   const fromScratch = (c: Counter): PathSet => {
     let s: PathSet = new Set<PathId>();
     for (const p of c.getConsumerPaths().values()) s = pathSetUnion(s, p);
@@ -1069,6 +1077,19 @@ describe('StructuralContainer — subscribePaths', () => {
     const cb = vi.fn();
     c.subscribePaths(cb).setInterest(ALL_PATHS);
     c.emit({ a: 1, b: 0 });
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  it('wakes a child reader on an unrefinable atomic replace', () => {
+    class Items extends TestContainer<{ items: number[] }> {}
+    const c = new Items({ items: [1] }, { scheduler: new SyncScheduler() });
+    const length = new Set([c.interner.intern('items.length')]);
+    c.registerConsumerPaths('reader', length);
+    // An ALL_PATHS consumer leaves no skeleton to refine the mark against.
+    c.registerConsumerPaths('all', ALL_PATHS);
+    const cb = vi.fn();
+    c.subscribePaths(cb).setInterest(length);
+    c.patch({ items: [1, 2] });
     expect(cb).toHaveBeenCalledTimes(1);
   });
 });

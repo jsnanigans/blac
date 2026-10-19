@@ -9,8 +9,8 @@ interface TrieNode {
   readonly readKey: string | number;
   readonly parent: TrieNode | null;
   /** Skeleton ids whose path ends here (the root holds the root id). */
-  readonly ids: PathId[];
-  readonly children: TrieNode[];
+  ids: PathId[];
+  children: TrieNode[];
   /** Built once `children` outgrows a linear scan. */
   byKey: Map<string, TrieNode> | null;
   /** Position in `parent.children`, for O(1) removal. */
@@ -19,12 +19,17 @@ interface TrieNode {
 
 const INDEX = /^(?:0|[1-9]\d{0,8})$/;
 
+// Shared until the first add. Small arrays grow by `concat`, which allocates
+// the exact length: a push onto `[]` reserves 17 slots, and most nodes hold
+// one id or a few children.
+const NONE: never[] = [];
+
 const newNode = (key: string, parent: TrieNode | null): TrieNode => ({
   key,
   readKey: INDEX.test(key) ? Number(key) : key,
   parent,
-  ids: [],
-  children: [],
+  ids: NONE,
+  children: NONE,
   byKey: null,
   slot: 0,
 });
@@ -56,7 +61,10 @@ export class SkeletonTrie {
       if (next === undefined) {
         next = newNode(key, node);
         next.slot = node.children.length;
-        node.children.push(next);
+        node.children =
+          node.children.length < SCAN_LIMIT
+            ? node.children.concat(next)
+            : (node.children.push(next), node.children);
         if (node.byKey !== null) {
           node.byKey.set(key, next);
         } else if (node.children.length > SCAN_LIMIT) {
@@ -65,7 +73,7 @@ export class SkeletonTrie {
       }
       node = next;
     }
-    node.ids.push(id);
+    node.ids = node.ids.concat(id);
   }
 
   remove(id: PathId, segments: readonly string[]): void {

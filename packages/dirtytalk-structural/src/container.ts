@@ -5,7 +5,7 @@ import {
 } from '@dirtytalk/engine';
 import { changedPathsFromPatch, getAtSegments } from './diff';
 import { PathInterner } from './path-interner';
-import { PathIndex, type PathSubscription } from './path-index';
+import { PathIndex, setAt, type PathSubscription } from './path-index';
 import { SkeletonTrie } from './skeleton-trie';
 
 /**
@@ -38,13 +38,11 @@ const sharedScheduler = /* @__PURE__ */ new MicrotaskScheduler();
 
 interface ConsumerIndex {
   readonly paths: Map<ConsumerId, PathSet>;
-  readonly refCounts: Map<PathId, number>;
-  readonly skeleton: Set<PathId>;
+  /** How many consumers watch each id; the skeleton is every id above 0. */
+  readonly refCounts: number[];
+  /** Skeleton size. */
+  size: number;
 }
-
-// `_skeleton` before any consumer registers. Shared and never mutated: the
-// refcounting only ever writes to a container's own `ConsumerIndex.skeleton`.
-const EMPTY_SKELETON: PathSet = new Set<PathId>();
 
 export interface StructuralContainerOptions {
   /**
@@ -107,14 +105,12 @@ export abstract class StructuralContainer<S> {
   // Consumer bookkeeping, allocated by the first `registerConsumerPaths` so a
   // container nobody tracks never pays for it. Incremental skeleton
   // refcounting (replaces the O(consumers × paths) from-scratch union):
-  // `skeleton` is the live backing set for `_skeleton` when no ALL_PATHS
-  // consumer is registered; `refCounts` tracks how many consumers reference
-  // each id so an id leaves the skeleton only on its final 1→0 transition;
-  // `_allPathsConsumers` counts ALL_PATHS-interest consumers.
+  // `refCounts` tracks how many consumers reference each id so an id leaves
+  // the skeleton only on its final 1→0 transition; `_allPathsConsumers`
+  // counts ALL_PATHS-interest consumers, which make the skeleton everything.
   private _consumers: ConsumerIndex | null = null;
   private _allPathsConsumers = 0;
-  private _skeleton: PathSet = EMPTY_SKELETON;
-  // `index.skeleton` as a trie, built by the first diff and then kept in step
+  // The skeleton as a trie, built by the first diff and then kept in step
   // by `_applyRefDelta`, so mounting consumers doesn't pay for it per path.
   private _trie: SkeletonTrie | null = null;
   // Backs `subscribePaths`; one channel subscription dispatches to all.
@@ -200,7 +196,7 @@ export abstract class StructuralContainer<S> {
       // the whole space for any ALL_PATHS subscribers (blac bridge, plugins,
       // watch/select).
       dirty = ALL_PATHS;
-    } else if (this._skeleton === ALL_PATHS) {
+    } else if (this._allPathsConsumers > 0) {
       dirty = ALL_PATHS;
     } else {
       dirty = new Set<PathId>();
@@ -287,8 +283,8 @@ export abstract class StructuralContainer<S> {
   registerConsumerPaths(id: ConsumerId, paths: PathSet): void {
     const index = (this._consumers ??= {
       paths: new Map(),
-      refCounts: new Map(),
-      skeleton: new Set(),
+      refCounts: [],
+      size: 0,
     });
     const prev = index.paths.get(id);
     if (prev && pathSetEquals(prev, paths)) return; // fast-path skip
@@ -323,7 +319,7 @@ export abstract class StructuralContainer<S> {
   private _markChanged(dirty: PathSet): void {
     if (dirty !== ALL_PATHS) {
       const rootId = this._interner.rootId();
-      if (dirty.size === 0 || this._consumers?.skeleton.has(rootId)) {
+      if (dirty.size === 0 || (this._consumers?.refCounts[rootId] ?? 0) > 0) {
         (dirty as Set<PathId>).add(rootId);
       }
     }
@@ -331,11 +327,9 @@ export abstract class StructuralContainer<S> {
   }
 
   // Incrementally fold a single consumer's `prev`→`next` interest change into
-  // the refcounted skeleton, then republish `_skeleton`. `undefined` on either
-  // side means "no interest" (register of a new id / unregister). `ALL_PATHS`
-  // interests are counted separately: while any exist the skeleton is
-  // `ALL_PATHS`; otherwise it is the live `_skeletonSet`. An id is added on its
-  // 0→1 refcount transition and dropped on its final 1→0 transition, so the
+  // the refcounted skeleton. `undefined` on either side means "no interest"
+  // (register of a new id / unregister). `ALL_PATHS` interests are counted
+  // separately. An id is added on its 0→1 refcount transition and dropped on its final 1→0 transition, so the
   // result is always set-equal to a from-scratch union of all current
   // consumers' paths.
   private _applyRefDelta(
@@ -355,13 +349,11 @@ export abstract class StructuralContainer<S> {
     } else if (prevSet !== undefined) {
       for (const id of prevSet) {
         if (nextSet !== undefined && nextSet.has(id)) continue;
-        const count = (index.refCounts.get(id) ?? 0) - 1;
-        if (count <= 0) {
-          index.refCounts.delete(id);
-          index.skeleton.delete(id);
+        const count = (index.refCounts[id] ?? 0) - 1;
+        index.refCounts[id] = count > 0 ? count : 0;
+        if (count === 0) {
+          index.size--;
           this._trie?.remove(id, this._interner.lookupSegments(id));
-        } else {
-          index.refCounts.set(id, count);
         }
       }
     }
@@ -370,15 +362,14 @@ export abstract class StructuralContainer<S> {
     } else if (nextSet !== undefined) {
       for (const id of nextSet) {
         if (prevSet !== undefined && prevSet.has(id)) continue;
-        const count = (index.refCounts.get(id) ?? 0) + 1;
-        index.refCounts.set(id, count);
+        const count = (index.refCounts[id] ?? 0) + 1;
+        setAt(index.refCounts, id, count);
         if (count === 1) {
-          index.skeleton.add(id);
+          index.size++;
           this._trie?.add(id, this._interner.lookupSegments(id));
         }
       }
     }
-    this._skeleton = this._allPathsConsumers > 0 ? ALL_PATHS : index.skeleton;
   }
 
   /**
@@ -418,10 +409,10 @@ export abstract class StructuralContainer<S> {
     }
     if (!hasAncestorMark) return rough;
 
-    // Fast exit: nothing in the skeleton to refine against.
-    if (this._skeleton === ALL_PATHS) return rough;
-    const skeleton = this._skeleton as Set<PathId>;
-    if (skeleton.size === 0) return rough;
+    // Consumers watch their own paths only, so a mark that can't be refined
+    // must wake everyone.
+    if (this._allPathsConsumers > 0) return ALL_PATHS;
+    if (this._consumers === null || this._consumers.size === 0) return rough;
 
     // Ancestor-watch marks are replaced by the changed skeleton paths below
     // their target; every other mark is kept (e.g. `items` for a consumer
@@ -450,8 +441,10 @@ export abstract class StructuralContainer<S> {
   private _skeletonTrie(): SkeletonTrie {
     if (this._trie !== null) return this._trie;
     const trie = new SkeletonTrie();
-    for (const id of this._consumers?.skeleton ?? []) {
-      trie.add(id, this._interner.lookupSegments(id));
+    const counts = this._consumers?.refCounts ?? [];
+    for (let id = 0; id < counts.length; id++) {
+      if ((counts[id] ?? 0) > 0)
+        trie.add(id, this._interner.lookupSegments(id));
     }
     return (this._trie = trie);
   }

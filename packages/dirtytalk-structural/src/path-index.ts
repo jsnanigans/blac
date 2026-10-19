@@ -11,6 +11,12 @@ export interface PathSubscription {
   unsubscribe(): void;
 }
 
+type Slot = Entry | Entry[] | Set<Entry>;
+
+// Above this many subscribers an id's slot becomes a `Set`, so removal stays
+// O(1) for ids every consumer watches.
+const SMALL = 8;
+
 // Shared initial interest; `move` never mutates an interest set.
 const NO_INTEREST: PathSet = new Set<PathId>();
 
@@ -38,6 +44,17 @@ class Entry implements PathSubscription {
   }
 }
 
+// Fills the gap up to `id` first: a write far past the end would turn the
+// array into a slow dictionary.
+export const setAt = <T>(
+  arr: (T | undefined)[],
+  id: number,
+  value: T,
+): void => {
+  while (arr.length < id) arr.push(undefined);
+  arr[id] = value;
+};
+
 /**
  * Dispatches a flush to the subscriptions whose interest intersects it, by
  * looking up each dirty id, so a change wakes its consumers without visiting
@@ -45,9 +62,11 @@ class Entry implements PathSubscription {
  */
 export class PathIndex {
   readonly entries = new Set<Entry>();
-  // A lone subscriber is stored as itself: most ids are watched by one
-  // consumer, and a `Set` each would dominate mount cost.
-  private readonly _byId = new Map<PathId, Entry | Set<Entry>>();
+  // A lone subscriber is stored as itself and a few as an array: most ids are
+  // watched by one or two consumers, and a `Set` each would dominate mount
+  // cost.
+  // Indexed by id: ids are small dense integers, so an array skips hashing.
+  private readonly _byId: (Slot | undefined)[] = [];
   private readonly _all = new Set<Entry>();
   private _stamp = 0;
 
@@ -65,12 +84,21 @@ export class PathIndex {
     } else {
       for (const id of prev) {
         if (next !== undefined && next !== ALL_PATHS && next.has(id)) continue;
-        const at = this._byId.get(id);
+        const at = this._byId[id];
         if (at === entry) {
-          this._byId.delete(id);
+          this._byId[id] = undefined;
         } else if (at instanceof Set) {
           at.delete(entry);
-          if (at.size === 1) this._byId.set(id, at.values().next().value!);
+          if (at.size === SMALL) this._byId[id] = [...at];
+        } else if (Array.isArray(at)) {
+          const i = at.indexOf(entry);
+          if (i === -1) continue;
+          if (at.length === 2) {
+            this._byId[id] = at[1 - i];
+          } else {
+            at[i] = at[at.length - 1];
+            at.pop();
+          }
         }
       }
     }
@@ -81,10 +109,13 @@ export class PathIndex {
     }
     for (const id of next) {
       if (prev !== ALL_PATHS && prev.has(id)) continue;
-      const at = this._byId.get(id);
-      if (at === undefined) this._byId.set(id, entry);
+      const at = this._byId[id];
+      if (at === undefined) setAt(this._byId, id, entry);
       else if (at instanceof Set) at.add(entry);
-      else if (at !== entry) this._byId.set(id, new Set([at, entry]));
+      else if (Array.isArray(at)) {
+        if (at.length < SMALL) at.push(entry);
+        else this._byId[id] = new Set(at).add(entry);
+      } else if (at !== entry) this._byId[id] = [at, entry];
     }
   }
 
@@ -104,9 +135,10 @@ export class PathIndex {
       }
     } else {
       for (const id of dirty) {
-        const at = this._byId.get(id);
-        if (at instanceof Set) for (const e of at) take(e);
-        else if (at !== undefined) take(at);
+        const at = this._byId[id];
+        if (at === undefined) continue;
+        if (at instanceof Entry) take(at);
+        else for (const e of at) take(e);
       }
       for (const e of this._all) take(e);
     }

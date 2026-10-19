@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useReducer, useRef } from 'react';
-import { emptyPathSet, expandWithAncestors, pathSetEquals } from './path-set';
+import { emptyPathSet, pathSetEquals } from './path-set';
 import type { PathSet } from './path-set';
 import { ProxyCache, trackRender } from './tracker';
 import type { StructuralContainer } from './container';
@@ -75,7 +75,7 @@ export function useStructural<S, C extends StructuralContainer<S>>(
     if (committed !== null && pathSetEquals(committed, paths)) return;
     committedRef.current = paths;
     container.registerConsumerPaths(consumerId, paths);
-    interestRef.current = expandWithAncestors(paths, container.interner);
+    interestRef.current = paths;
     subRef.current?.setInterest(interestRef.current);
   });
 
