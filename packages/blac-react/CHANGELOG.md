@@ -1,5 +1,42 @@
 # @blac/react
 
+## 2.1.2
+
+### Patch Changes
+
+- 55c9bd3: Faster tracking and mounting. Tracking proxies no longer register in a global `WeakMap` for `raw()`, a child proxy drops its parent path once per render instead of on every read, and own properties are read without `Reflect.get`. A getter defined on a state object itself now runs against the raw object: its path is still tracked, but the reads inside it are not recorded separately. Path subscriptions, skeleton diffs and `useBloc`'s dependency session allocate less per consumer.
+- d29adc5: Reading a key the state doesn't have yet (`item.done` before it is set) now tracks that path, so the component re-renders when the key is added. Previously the read was ignored: a component that also read a sibling field never woke for the new key, and one that read nothing else woke on every change to the parent object.
+- 34f744c: Faster tracking and diffing: `trackRender` uses a single handler object per
+  proxy (no per-proxy closures or path strings), `emit` and array `patch` stop
+  diffing a path at the first shared reference, and `patch` builds no path
+  strings. `registerConsumerPaths` stores a snapshot, so a tracking set that
+  keeps growing after registration no longer corrupts the skeleton for other
+  consumers. `patch` now wakes `ALL_PATHS` subscribers when per-path equality
+  calls every patched value equal. `useStructural` disarms its tracker at
+  commit, reuses proxies across renders and expands its interest with ancestor
+  watches. Exports `expandWithAncestors`, which `@blac/react` now imports
+  instead of keeping its own copy.
+- 5a0f7ad: Faster updates with many row consumers. `emit` and `patch` diff along the consumer skeleton as a path trie, skipping unchanged subtrees by reference, and the new `subscribePaths(cb)` dispatches a flush by looking up the changed paths instead of checking every subscriber. `useStructural` and `useBloc` use it. One changed item of a 1,000-row list now costs ~10 µs in structural (was ~65 µs for `emit`, ~100 µs for `patch`). Removed `PathInterner.ancestorIds`, which nothing uses any more.
+- 5a361e5: Fix missed re-renders:
+  
+  - The root tracking proxy is no longer reused across renders, so a
+    `useMemo(..., [state])` that skips its reads still tracks.
+  - `Object.keys(state)`, `for..in` and `'k' in state` on the root now wake
+    when a root key is added.
+  - `useStructural` and `useBloc` re-render when state changed between render
+    and commit.
+  - `useBloc` stops dep tracking at commit, so reads in effects and handlers no
+    longer add dep paths.
+- Updated dependencies [55c9bd3]
+- Updated dependencies [d29adc5]
+- Updated dependencies [d46c53b]
+- Updated dependencies [7d88540]
+- Updated dependencies [34f744c]
+- Updated dependencies [b15a2bc]
+- Updated dependencies [5a0f7ad]
+- Updated dependencies [5a361e5]
+  - @dirtytalk/structural@0.1.4
+
 ## 2.1.1
 
 ### Minor Changes

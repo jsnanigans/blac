@@ -1,6 +1,6 @@
 {
   "name": "@blac/react",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "React bindings for BlaC — useBloc hook with automatic re-render optimization",
