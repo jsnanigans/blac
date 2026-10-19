@@ -472,6 +472,47 @@ describe('SceneRoot — pipeline stability', () => {
     ]);
   });
 
+  it("a small move's overlapping rects merge into one region", () => {
+    const { renderer, scheduler, root } = setup();
+    root.channel.mark([
+      { rect: { x: 0, y: 0, w: 10, h: 10 }, kind: 'paint' },
+      { rect: { x: 2, y: 0, w: 10, h: 10 }, kind: 'paint' },
+    ]);
+    scheduler.pump();
+    expect(renderer.calls[0]).toEqual(['begin', [{ x: 0, y: 0, w: 12, h: 10 }]]);
+  });
+
+  it('past 16 regions the bounding rect covers every damage rect', () => {
+    const { renderer, scheduler, root } = setup();
+    const damage = Array.from({ length: 20 }, (_, i) => ({
+      rect: { x: i * 5, y: 0, w: 1, h: 1 },
+      kind: 'paint' as const,
+    }));
+    root.channel.mark(damage);
+    scheduler.pump();
+    expect(renderer.calls[0]).toEqual(['begin', [{ x: 0, y: 0, w: 96, h: 1 }]]);
+  });
+
+  it('damage from doLayout is painted in the same frame', () => {
+    const { renderer, scheduler, root } = setup();
+    const child = new TestNode({ bounds: { x: 0, y: 0, w: 10, h: 10 } });
+    class Parent extends PipelineNode {
+      override doLayout(): void {
+        child.setBounds({ x: 50, y: 50, w: 10, h: 10 });
+      }
+    }
+    const parent = new Parent({ bounds: { x: 0, y: 0, w: 100, h: 100 } });
+    root.adoptChild(parent);
+    parent.adoptChild(child);
+    scheduler.pump();
+    renderer.calls.length = 0;
+    parent.pubMark('layout', { x: 0, y: 0, w: 1, h: 1 });
+    scheduler.pump();
+    const begins = renderer.calls.filter(([c]) => c === 'begin');
+    expect(begins).toHaveLength(1);
+    expect(begins[0][1]).toContainEqual({ x: 50, y: 50, w: 10, h: 10 });
+  });
+
   it('adopting an ancestor throws instead of creating a cycle', () => {
     const { root } = setup();
     const a = new TestNode();

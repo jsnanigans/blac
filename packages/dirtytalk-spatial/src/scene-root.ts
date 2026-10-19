@@ -60,34 +60,54 @@ export interface SceneRootOptions {
  */
 const MAX_REGIONS = 16;
 
-// The frame's damage rects clamped to `bounds`, with empty rects and rects
-// inside an earlier one dropped, collapsed to one bounding rect past
-// MAX_REGIONS.
+// The frame's damage rects clamped to `bounds`, empty rects dropped. A rect
+// merges into an earlier region when their bounding rect is no larger than
+// both areas together (containment, or a small move's overlapping erase/fill
+// pair), so disjoint rects stay separate. Past MAX_REGIONS the frame
+// collapses to one bounding rect.
 const frameRegions = (dirty: DirtyRegion, bounds: Rect): Rect[] => {
   const regions: Rect[] = [];
-  outer: for (const d of dirty) {
-    const r = rectClamp(d.rect, bounds);
+  let i = 0;
+  outer: for (; i < dirty.length; i++) {
+    const r = rectClamp(dirty[i].rect, bounds);
     if (r.w <= 0 || r.h <= 0) continue;
     for (const k of regions) {
-      if (
-        r.x >= k.x &&
-        r.y >= k.y &&
-        r.x + r.w <= k.x + k.w &&
-        r.y + r.h <= k.y + k.h
-      ) {
+      const x = Math.min(k.x, r.x);
+      const y = Math.min(k.y, r.y);
+      const w = Math.max(k.x + k.w, r.x + r.w) - x;
+      const h = Math.max(k.y + k.h, r.y + r.h) - y;
+      if (w * h <= k.w * k.h + r.w * r.h) {
+        k.x = x;
+        k.y = y;
+        k.w = w;
+        k.h = h;
         continue outer;
       }
     }
     regions.push(r);
-    if (regions.length > MAX_REGIONS) return [unionRects(regions)];
+    if (regions.length > MAX_REGIONS) break;
   }
-  return regions;
+  if (regions.length <= MAX_REGIONS) return regions;
+  for (i++; i < dirty.length; i++) {
+    const r = rectClamp(dirty[i].rect, bounds);
+    if (r.w > 0 && r.h > 0) regions.push(r);
+  }
+  return [unionRects(regions)];
+};
+
+const overlapsAny = (regions: readonly Rect[], r: Rect): boolean => {
+  for (const region of regions) if (rectOverlaps(region, r)) return true;
+  return false;
 };
 
 export class SceneRoot extends SceneNode {
   readonly channel: DirtyChannel<DirtyRegion>;
   readonly renderer: Renderer2D;
   private readonly onFrameTiming?: (timing: FrameTiming) => void;
+
+  // Collects damage raised by the data/layout stages so it joins the frame
+  // being rendered instead of waiting for the next one.
+  private _stageDamage: Damage[] | null = null;
 
   /**
    * When true, damage is ignored: every frame repaints the whole bounds and the
@@ -138,15 +158,14 @@ export class SceneRoot extends SceneNode {
    * the scene size. Adoption order (z-order) is preserved among painted nodes.
    */
   private _paintCulled(regions: readonly Rect[]): number {
+    // Most children miss the regions' bounding rect; test that first.
+    const all = regions.length === 1 ? regions[0] : unionRects(regions);
     let painted = 0;
     for (const child of this.children) {
-      for (const region of regions) {
-        if (rectOverlaps(region, child.bounds)) {
-          child.paint(undefined);
-          painted++;
-          break;
-        }
-      }
+      if (!rectOverlaps(all, child.bounds)) continue;
+      if (regions.length > 1 && !overlapsAny(regions, child.bounds)) continue;
+      child.paint(undefined);
+      painted++;
     }
     return painted;
   }
@@ -165,34 +184,58 @@ export class SceneRoot extends SceneNode {
 
   /** Package-private — called by SceneNode.markDamaged via the structural-type contract. */
   _emitDamage(damage: Damage): void {
-    this.channel.mark([damage]);
+    if (this._stageDamage !== null) this._stageDamage.push(damage);
+    else this.channel.mark([damage]);
   }
 
   hitTest(x: number, y: number): SceneNode | null {
     return hitTestNode(this, x, y);
   }
 
-  private _renderFrame(dirty: DirtyRegion): void {
+  // Stage 1 — data, then stage 2 — layout ('data' implies layout). Each node
+  // runs each stage at most once per frame however often it was marked. Damage
+  // the stages raise (a doLayout moving children) is staged again and joins
+  // this frame; returns the frame's full damage list.
+  private _runStages(dirty: DirtyRegion): DirtyRegion {
+    const extra: Damage[] = [];
+    this._stageDamage = extra;
+    let rebuilt: Set<SceneNode> | undefined;
+    let laidOut: Set<SceneNode> | undefined;
+    let list = dirty;
+    let from = 0;
+    try {
+      for (;;) {
+        const to = list.length;
+        for (let i = from; i < to; i++) {
+          const d = list[i];
+          const node = d.node as SceneNode | undefined;
+          if (d.kind !== 'data' || !node?.rebuildData) continue;
+          if ((rebuilt ??= new Set()).has(node)) continue;
+          rebuilt.add(node);
+          node.rebuildData();
+        }
+        for (let i = from; i < to; i++) {
+          const d = list[i];
+          const node = d.node as SceneNode | undefined;
+          if (d.kind === 'paint' || !node?.doLayout) continue;
+          if ((laidOut ??= new Set()).has(node)) continue;
+          laidOut.add(node);
+          node.doLayout();
+        }
+        if (extra.length === 0) return list;
+        list = list.concat(extra);
+        extra.length = 0;
+        from = to;
+      }
+    } finally {
+      this._stageDamage = null;
+    }
+  }
+
+  private _renderFrame(marked: DirtyRegion): void {
     const timing = this.onFrameTiming;
     const t0 = timing ? performance.now() : 0;
-    // Stage 1 — data, then stage 2 — layout ('data' implies layout). Each
-    // node runs each stage at most once per frame however often it was marked.
-    let rebuilt: Set<SceneNode> | undefined;
-    for (const d of dirty) {
-      const node = d.node as SceneNode | undefined;
-      if (d.kind !== 'data' || !node?.rebuildData) continue;
-      if ((rebuilt ??= new Set()).has(node)) continue;
-      rebuilt.add(node);
-      node.rebuildData();
-    }
-    let laidOut: Set<SceneNode> | undefined;
-    for (const d of dirty) {
-      const node = d.node as SceneNode | undefined;
-      if (d.kind === 'paint' || !node?.doLayout) continue;
-      if ((laidOut ??= new Set()).has(node)) continue;
-      laidOut.add(node);
-      node.doLayout();
-    }
+    const dirty = this._runStages(marked);
     // Stage 3 — paint. In full-frame mode, damage is ignored: repaint the whole
     // bounds and visit every child. Otherwise hand the renderer the individual
     // damage rects (disjoint, so a multi-rect scissor skips the dead gap between

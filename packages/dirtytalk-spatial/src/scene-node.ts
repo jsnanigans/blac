@@ -50,7 +50,7 @@ export abstract class SceneNode {
 
   /**
    * Run `fn` with this node's damage buffered, then emit one entry per kind
-   * with the union rect. Damage is emitted even when `fn` throws, so the
+   * and target node with the union rect. Damage is emitted even when `fn` throws, so the
    * mutations it made before throwing still repaint.
    */
   protected batch(fn: () => void): void {
@@ -71,14 +71,21 @@ export abstract class SceneNode {
   private _emitBatchedDamage(buffer: Damage[]): void {
     const root = this._root();
     if (!root) return;
-    // One entry per kind, in order of first appearance.
-    const kinds: DamageKind[] = [];
-    for (const d of buffer) if (!kinds.includes(d.kind)) kinds.push(d.kind);
-    for (const kind of kinds) {
+    // One entry per kind and target node (setBounds targets the parent's
+    // layout), in order of first appearance.
+    const firsts: Damage[] = [];
+    for (const d of buffer) {
+      if (!firsts.some((f) => f.kind === d.kind && f.node === d.node)) {
+        firsts.push(d);
+      }
+    }
+    for (const { kind, node } of firsts) {
       const rects: Rect[] = [];
-      for (const d of buffer) if (d.kind === kind) rects.push(d.rect);
+      for (const d of buffer) {
+        if (d.kind === kind && d.node === node) rects.push(d.rect);
+      }
       const rect = rects.length === 1 ? rects[0] : unionRects(rects);
-      root._emitDamage({ rect, kind, node: this });
+      root._emitDamage({ rect, kind, node });
     }
   }
 

@@ -90,6 +90,16 @@ describe('SceneNode', () => {
     expect(root.damages[0].rect).toEqual({ x: 0, y: 0, w: 15, h: 15 });
   });
 
+  it('batch keeps the parent as the target of setBounds layout damage', () => {
+    const root = new StubRoot();
+    const child = new TestNode({ bounds: { x: 0, y: 0, w: 10, h: 10 } });
+    root.adoptChild(child);
+    root.damages.length = 0;
+    child.pubBatch(() => child.setBounds({ x: 5, y: 5, w: 10, h: 10 }));
+    const layout = root.damages.filter((d) => d.kind === 'layout');
+    expect(layout.map((d) => d.node)).toEqual([root]);
+  });
+
   it('batch emits per-kind entries when multiple kinds present', () => {
     const root = new StubRoot();
     const child = new TestNode({ bounds: { x: 0, y: 0, w: 10, h: 10 } });
