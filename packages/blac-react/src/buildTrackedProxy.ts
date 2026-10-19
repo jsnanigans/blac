@@ -39,6 +39,74 @@ function collectGetters(proto: object): Map<string | symbol, Getter> {
   return getters;
 }
 
+// Methods on the prototype, so a mount allocates the handler and the proxy
+// only, not a set of closures.
+class BlocHandler implements ProxyHandler<object> {
+  // Bound methods are cached so `bloc.method` keeps a stable identity across
+  // reads — an unstable one would defeat memoisation in consumers. Keyed by
+  // the underlying function too, so a reassigned method is re-bound.
+  private boundMethods:
+    | Map<string | symbol, { fn: Method; bound: Method }>
+    | undefined = undefined;
+
+  constructor(
+    private readonly getters: Map<string | symbol, Getter>,
+    private readonly tracksState: boolean,
+    private readonly trackedStateRef: { current: unknown },
+    private readonly onDepHandle: ((handle: object) => unknown) | undefined,
+  ) {}
+
+  get(target: object, key: string | symbol): unknown {
+    const getter = this.getters.get(key);
+    if (getter !== undefined) {
+      const tracked = this.trackedStateRef.current;
+      // `[WITH_TRACKED_STATE]` invokes the getter with `this` = the real
+      // instance, so no per-read thunk is needed.
+      return this.wrapDepHandle(
+        tracked == null || !this.tracksState
+          ? getter.call(target)
+          : (target as TrackedStateTarget)[WITH_TRACKED_STATE](
+              tracked,
+              getter,
+              this.onDepHandle,
+            ),
+      );
+    }
+
+    // Receiver is the real instance, so own fields keep their `#private`
+    // brand. Methods are bound to it too, otherwise `bloc.method()` would
+    // call with `this` = proxy and fail the same brand check.
+    const value = Reflect.get(target, key, target);
+    if (typeof value === 'function') {
+      const fn = value as Method;
+      this.boundMethods ??= new Map();
+      let cached = this.boundMethods.get(key);
+      if (cached === undefined || cached.fn !== fn) {
+        cached = { fn, bound: fn.bind(target) };
+        this.boundMethods.set(key, cached);
+      }
+      return this.wrapDepHandle(cached.bound);
+    }
+    return this.wrapDepHandle(value);
+  }
+
+  set(target: object, key: string | symbol, value: unknown): boolean {
+    return Reflect.set(target, key, value, target);
+  }
+
+  private wrapDepHandle(value: unknown): unknown {
+    if (
+      this.onDepHandle !== undefined &&
+      (typeof value === 'function' || typeof value === 'object') &&
+      value !== null &&
+      (value as Record<symbol, unknown>)[DEP_BRAND] !== undefined
+    ) {
+      return this.onDepHandle(value as object);
+    }
+    return value;
+  }
+}
+
 /**
  * Build a per-consumer proxy for a bloc instance.
  *
@@ -59,70 +127,15 @@ export function buildTrackedProxy<T extends object>(
   instance: T,
   trackedStateRef: { current: unknown },
   onDepHandle?: (handle: object) => unknown,
-): { proxy: T } {
+): T {
   // Both string- and symbol-keyed prototype getters (excluding
   // Object.prototype). Arrow-function class properties are own values, not
   // getters, and pass through unmodified.
-  const getters = collectGetters(Object.getPrototypeOf(instance) as object);
-  const tracksState = supportsTrackedState(instance as object);
-
-  // Bound methods are cached so `bloc.method` keeps a stable identity across
-  // reads — an unstable one would defeat memoisation in consumers. Keyed by
-  // the underlying function too, so a reassigned method is re-bound.
-  let boundMethods:
-    | Map<string | symbol, { fn: Method; bound: Method }>
-    | undefined;
-
-  const wrapDepHandle = (value: unknown): unknown => {
-    if (
-      onDepHandle !== undefined &&
-      (typeof value === 'function' || typeof value === 'object') &&
-      value !== null &&
-      (value as Record<symbol, unknown>)[DEP_BRAND] !== undefined
-    ) {
-      return onDepHandle(value as object);
-    }
-    return value;
-  };
-
-  const proxy = new Proxy(instance as object, {
-    get(target, key) {
-      const getter = getters.get(key);
-      if (getter !== undefined) {
-        const tracked = trackedStateRef.current;
-        // `[WITH_TRACKED_STATE]` invokes the getter with `this` = the real
-        // instance, so no per-read thunk is needed.
-        return wrapDepHandle(
-          tracked == null || !tracksState
-            ? getter.call(target)
-            : (target as TrackedStateTarget)[WITH_TRACKED_STATE](
-                tracked,
-                getter,
-                onDepHandle,
-              ),
-        );
-      }
-
-      // Receiver is the real instance, so own fields keep their `#private`
-      // brand. Methods are bound to it too, otherwise `bloc.method()` would
-      // call with `this` = proxy and fail the same brand check.
-      const value = Reflect.get(target, key, target);
-      if (typeof value === 'function') {
-        const fn = value as Method;
-        boundMethods ??= new Map();
-        let cached = boundMethods.get(key);
-        if (cached === undefined || cached.fn !== fn) {
-          cached = { fn, bound: fn.bind(target) };
-          boundMethods.set(key, cached);
-        }
-        return wrapDepHandle(cached.bound);
-      }
-      return wrapDepHandle(value);
-    },
-    set(target, key, value) {
-      return Reflect.set(target, key, value, target);
-    },
-  }) as T;
-
-  return { proxy };
+  const handler = new BlocHandler(
+    collectGetters(Object.getPrototypeOf(instance) as object),
+    supportsTrackedState(instance),
+    trackedStateRef,
+    onDepHandle,
+  );
+  return new Proxy(instance, handler as ProxyHandler<T>);
 }

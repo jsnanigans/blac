@@ -17,7 +17,7 @@ class WithPrivateField {
 describe('buildTrackedProxy', () => {
   it('reads #private fields from getters and methods', () => {
     const instance = new WithPrivateField();
-    const { proxy } = buildTrackedProxy(instance, { current: null });
+    const proxy = buildTrackedProxy(instance, { current: null });
 
     expect(proxy.value).toBe(1);
     expect(proxy.read()).toBe(1);
@@ -25,7 +25,7 @@ describe('buildTrackedProxy', () => {
 
   it('keeps bound method identity stable across reads', () => {
     const instance = new WithPrivateField();
-    const { proxy } = buildTrackedProxy(instance, { current: null });
+    const proxy = buildTrackedProxy(instance, { current: null });
 
     // Reading the reference twice is the point of the test.
     // oxlint-disable-next-line typescript/unbound-method
@@ -36,7 +36,7 @@ describe('buildTrackedProxy', () => {
 
   it('re-binds a method that was reassigned on the instance', () => {
     const instance = new WithPrivateField();
-    const { proxy } = buildTrackedProxy(instance, { current: null });
+    const proxy = buildTrackedProxy(instance, { current: null });
     proxy.read();
     instance.read = () => 2;
 
@@ -44,7 +44,7 @@ describe('buildTrackedProxy', () => {
   });
 
   it('runs setters against the real instance', () => {
-    const { proxy } = buildTrackedProxy(new WithPrivateField(), {
+    const proxy = buildTrackedProxy(new WithPrivateField(), {
       current: null,
     });
     proxy.value = 3;

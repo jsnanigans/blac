@@ -7,7 +7,6 @@ import { DEP_BRAND } from '@blac/core/internal';
 import {
   ALL_PATHS,
   emptyPathSet,
-  expandWithAncestors,
   pathSetEquals,
   trackRender,
   ProxyCache,
@@ -152,11 +151,10 @@ export class DepSession {
         this.onChange();
         continue;
       }
-      const interest = expandWithAncestors(entry.paths, dep.interner);
       dep.registerConsumerPaths(consumerId, entry.paths);
       const existing = subs?.get(dep);
       if (existing) {
-        existing.subscription.setInterest(interest);
+        existing.subscription.setInterest(entry.paths);
         continue;
       }
       const refId = this.refId;
@@ -173,7 +171,7 @@ export class DepSession {
         continue;
       }
       const subscription = dep.subscribePaths(this.onChange);
-      subscription.setInterest(interest);
+      subscription.setInterest(entry.paths);
       (this.subs ??= new Map()).set(dep, {
         subscription,
         registry,
@@ -273,7 +271,7 @@ export function makeDepWrapper(
       let cache = perDep.get(dep);
       if (cache === undefined) {
         const ref = { current: result.value as unknown };
-        cache = { ref, proxy: buildTrackedProxy(dep, ref, onDepHandle).proxy };
+        cache = { ref, proxy: buildTrackedProxy(dep, ref, onDepHandle) };
         perDep.set(dep, cache);
       } else {
         cache.ref.current = result.value;

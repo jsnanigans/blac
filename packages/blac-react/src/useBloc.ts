@@ -1,21 +1,15 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useSyncExternalStore,
-} from 'react';
+import { useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import {
   type ExtractArgs,
   type ExtractState,
   type InstanceState,
   type StateContainer,
   type StateContainerConstructor,
+  type StateContainerRegistry,
 } from '@blac/core';
 import {
   ALL_PATHS,
   emptyPathSet,
-  expandWithAncestors,
   trackRender,
   ProxyCache,
   type PathSet,
@@ -85,13 +79,10 @@ export function useBloc<
   BlocClass: T,
   options?: UseBlocOptions<T>,
 ): UseBlocReturn<T, ExtractState<T>> {
-  type TBloc = InstanceState<T>;
-
   const registry = useRegistry();
 
   const consumerRef = useRef<Consumer | null>(null);
   const consumer = (consumerRef.current ??= createConsumer());
-  const consumerId = consumer.id;
 
   consumer.select = options?.select;
   consumer.onMount = options?.onMount;
@@ -99,138 +90,41 @@ export function useBloc<
 
   consumer.ownArgs = (options as { args?: ExtractArgs<T> } | undefined)?.args;
   consumer.providerArgs = useProvidedArgs(BlocClass);
-  const effectiveArgs = resolveEffectiveArgs(consumer) as
-    | ExtractArgs<T>
-    | undefined;
+  const effectiveArgs = resolveEffectiveArgs(consumer);
   const instanceKey = registry.resolveKey(BlocClass, undefined, effectiveArgs);
 
-  // Bumped by the ownership effect when the rendered instance was disposed and
-  // recreated before commit (a same-commit owner handoff, or StrictMode's
-  // double effect). Rebuilds the memo and the subscription against the live
-  // instance, since the tracked proxy can't be retargeted in place.
-  const rebindNonce = consumer.rebindNonce;
-
-  const { bloc, trackedBloc } = useMemo<{
-    bloc: TBloc;
-    trackedBloc: TBloc;
-  }>(() => {
-    // No ref during render; the ownership effect claims it on commit. The
-    // registry sweeps the instance if no commit ever does (SSR, discarded
-    // renders).
-    const instance = registry.acquire(BlocClass, instanceKey, {
-      canCreate: true,
-      countRef: false,
-      args: effectiveArgs,
-      sweepIfUnowned: true,
-    }) as TBloc;
-
-    // Dep proxies get `onDepHandle` too, so nested `.track()` calls (A→B→C)
-    // record into this consumer's session.
-    let depWrappers: Map<object, unknown> | undefined;
-    const onDepHandle = (handle: object): unknown => {
-      depWrappers ??= new Map();
-      const cached = depWrappers.get(handle);
-      if (cached !== undefined) return cached;
-      const wrapper = makeDepWrapper(
-        handle as DepHandleLike,
-        registry,
-        consumer.deps,
-        consumer.tracked,
-        onDepHandle,
-      );
-      depWrappers.set(handle, wrapper);
-      return wrapper;
-    };
-
-    const { proxy } = buildTrackedProxy(
-      instance as object,
-      consumer.tracked,
-      onDepHandle,
-    );
-
-    return { bloc: instance, trackedBloc: proxy as TBloc };
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [BlocClass, instanceKey, rebindNonce, registry]);
-
-  consumer.container = bloc as unknown as StateContainer;
-
-  // Keyed on `BlocClass` as well as the key: classes without args or a
-  // `static key` share the default key, so `useBloc(cond ? A : B)` must still
-  // re-subscribe on a class swap.
-  const subscribe = useMemo(
-    () => (onStoreChange: () => void) => {
-      consumer.notify = onStoreChange;
-      const container = consumer.container;
-      const subscription = container.subscribePaths(() => {
-        if (consumer.isSelectMode) {
-          const select = consumer.select;
-          if (select) {
-            const next = select(
-              container.state as ExtractState<T>,
-              container as unknown as InstanceState<T>,
-            );
-            const prev = consumer.selection;
-            if (prev !== null && shallowArrayEqual(prev, next)) return;
-            consumer.selection = next;
-          }
-        }
-        consumer.bump();
-      });
-      subscription.setInterest(consumer.interest);
-      consumer.subscription = subscription;
-      container.registerConsumerPaths(consumerId, consumer.paths);
-      // An emit raised during render is still pending in the channel, so its
-      // next flush delivers it to this subscriber.
-      return () => {
-        consumer.notify = noop;
-        consumer.subscription = null;
-        subscription.unsubscribe();
-        container.unregisterConsumer(consumerId);
-      };
-    },
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-    [BlocClass, instanceKey, consumerId, rebindNonce, registry],
-  );
+  // A memo kept on the consumer rather than in `useMemo`: no hook, deps array
+  // or factory closure per mount. `rebindNonce` is bumped by the commit when
+  // the rendered instance was disposed and recreated before commit (a
+  // same-commit owner handoff, or StrictMode's double effect); the tracked
+  // proxy can't be retargeted in place. Keyed on `BlocClass` as well as the
+  // key: classes without args or a `static key` share the default key, so
+  // `useBloc(cond ? A : B)` must still re-subscribe on a class swap.
+  if (
+    consumer.BlocClass !== BlocClass ||
+    consumer.instanceKey !== instanceKey ||
+    consumer.registry !== registry ||
+    consumer.boundNonce !== consumer.rebindNonce
+  ) {
+    bind(consumer, BlocClass, instanceKey, registry, effectiveArgs);
+  }
 
   useSyncExternalStore(
-    subscribe,
+    consumer.subscribe,
     consumer.getSnapshot,
-    consumer.getServerSnapshot,
+    consumer.getSnapshot,
   );
-
-  // Ownership is claimed at commit so acquire and release pair exactly. Not
-  // keyed on `rebindNonce`: a rebind must not release and re-acquire the ref.
-  useLayoutEffect(() => {
-    const live = registry.acquire(BlocClass, instanceKey, {
-      canCreate: true,
-      countRef: true,
-      refId: consumer.primaryRefId,
-      args: resolveEffectiveArgs(consumer),
-    }) as TBloc;
-    consumer.ownedBloc = live;
-    consumer.onMount?.(live as InstanceType<T>);
-    // The render captured a stale instance; re-render against the live one.
-    if (live !== bloc) {
-      consumer.rebindNonce++;
-      consumer.bump();
-    }
-    return () => {
-      // Before release, so the bloc is still alive in the callback.
-      consumer.onUnmount?.((consumer.ownedBloc ?? bloc) as InstanceType<T>);
-      registry.release(BlocClass, instanceKey, false, consumer.primaryRefId);
-    };
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [BlocClass, instanceKey, consumerId, registry]);
 
   const container = consumer.container;
   const rawState = container.state as ExtractState<T>;
+  consumer.renderedState = rawState;
   const select = consumer.select;
   consumer.isSelectMode = select !== undefined;
   let state: ExtractState<T>;
   if (select !== undefined) {
     state = rawState;
     // Recomputed every render: the selector may close over props.
-    consumer.selection = select(rawState, bloc as InstanceState<T>);
+    consumer.selection = select(rawState, container as InstanceState<T>);
     setInterest(consumer, ALL_PATHS);
   } else {
     const tracked = trackRender(
@@ -249,49 +143,24 @@ export function useBloc<
     consumer.deps.begin(container, tracked.paths);
   }
 
+  // Stable callbacks that read this render's inputs from the consumer.
   // oxlint-disable-next-line react-hooks/exhaustive-deps
-  useLayoutEffect(() => {
-    // Getters called after commit read live state, not this render's proxy.
-    consumer.tracked.current = null;
-    const disarm = consumer.disarm;
-    if (disarm !== null) {
-      consumer.disarm = null;
-      disarm();
-    }
-    const deps = consumer.deps;
-    deps.disarm();
-    if (consumer.isSelectMode) {
-      // A later switch back to auto-track must reconcile in full.
-      deps.invalidate();
-      return;
-    }
-    // A change between render and commit was diffed against the previous
-    // interest, which may lack paths only this render read.
-    if (container.state !== rawState) consumer.bump();
-    if (deps.isUnchanged()) return;
-
-    const primary = consumer.container;
-    primary.registerConsumerPaths(consumerId, consumer.paths);
-    setInterest(
-      consumer,
-      expandWithAncestors(consumer.paths, primary.interner),
-    );
-    deps.reconcile(registry);
-  });
-
+  useLayoutEffect(consumer.commit);
   // oxlint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => () => consumer.deps.dispose(), [consumerId]);
+  useLayoutEffect(consumer.mount, NO_DEPS);
 
-  return [state, trackedBloc] as UseBlocReturn<T, ExtractState<T>>;
+  return [state, consumer.trackedBloc] as UseBlocReturn<T, ExtractState<T>>;
 }
 
 const noop = (): void => {};
 
 // Initial `interest` and `paths`; neither is ever mutated in place.
 const NO_PATHS: PathSet = emptyPathSet();
+const NO_DEPS: [] = [];
 
 /**
- * Everything one `useBloc` call keeps between renders.
+ * Everything one `useBloc` call keeps between renders. Its callbacks are
+ * created once, so a render allocates no closures.
  *
  * `bump` increments `version` before calling `notify`: uSES requires
  * `getSnapshot()` to reflect the change by the time it is notified.
@@ -299,18 +168,31 @@ const NO_PATHS: PathSet = emptyPathSet();
 interface Consumer {
   id: string;
   primaryRefId: string;
-  /** Written only by the render memo. */
+  // The render's inputs, read by the commit of that render.
+  BlocClass: StateContainerConstructor;
+  instanceKey: string;
+  registry: StateContainerRegistry;
+  /** Written only by `bind`. */
   container: StateContainer;
+  trackedBloc: unknown;
+  subscribe: (onStoreChange: () => void) => () => void;
+  boundNonce: number;
+  rebindNonce: number;
+  renderedState: unknown;
   version: number;
   /** `noop` while unsubscribed. */
   notify: () => void;
   bump: () => void;
   getSnapshot: () => number;
-  getServerSnapshot: () => number;
-  /** Expanded leaf paths, or `ALL_PATHS` in select mode. */
+  onChange: () => void;
+  unsubscribe: () => void;
+  commit: () => void;
+  mount: () => () => void;
+  /** The committed `paths`, or `ALL_PATHS` in select mode. */
   interest: PathSet;
   /** `null` while unsubscribed. */
   subscription: PathSubscription | null;
+  subscribedTo: StateContainer | null;
   paths: PathSet;
   isSelectMode: boolean;
   selection: unknown[] | null;
@@ -325,8 +207,11 @@ interface Consumer {
   tracked: { current: unknown };
   disarm: (() => void) | null;
   proxyCache: ProxyCache | null;
-  rebindNonce: number;
-  /** The instance the ownership effect holds a ref on. */
+  // The instance the consumer holds a ref on, claimed at commit so acquire
+  // and release pair exactly.
+  ownedClass: StateContainerConstructor | null;
+  ownedKey: string;
+  ownedRegistry: StateContainerRegistry | null;
   ownedBloc: unknown;
 }
 
@@ -335,7 +220,15 @@ function createConsumer(): Consumer {
   const consumer: Consumer = {
     id,
     primaryRefId: `useBloc@${id}`,
+    BlocClass: null as unknown as StateContainerConstructor,
+    instanceKey: '',
+    registry: null as unknown as StateContainerRegistry,
     container: null as unknown as StateContainer,
+    trackedBloc: null,
+    subscribe: null as unknown as Consumer['subscribe'],
+    boundNonce: 0,
+    rebindNonce: 0,
+    renderedState: undefined,
     version: 0,
     notify: noop,
     bump: () => {
@@ -343,13 +236,17 @@ function createConsumer(): Consumer {
       consumer.notify();
     },
     getSnapshot: () => consumer.version,
-    getServerSnapshot: () => consumer.version,
+    onChange: () => onChange(consumer),
+    unsubscribe: () => unsubscribe(consumer),
+    commit: () => commit(consumer),
+    mount: () => teardown,
     interest: NO_PATHS,
     subscription: null,
+    subscribedTo: null,
     paths: NO_PATHS,
     isSelectMode: false,
     selection: null,
-    deps: new DepSession(id, () => consumer.bump()),
+    deps: null as unknown as DepSession,
     select: undefined,
     onMount: undefined,
     onUnmount: undefined,
@@ -358,10 +255,172 @@ function createConsumer(): Consumer {
     tracked: { current: null },
     disarm: null,
     proxyCache: null,
-    rebindNonce: 0,
+    ownedClass: null,
+    ownedKey: '',
+    ownedRegistry: null,
     ownedBloc: null,
   };
+  const teardown = (): void => {
+    release(consumer);
+    consumer.deps.dispose();
+  };
+  consumer.deps = new DepSession(id, consumer.bump);
   return consumer;
+}
+
+function bind(
+  consumer: Consumer,
+  BlocClass: StateContainerConstructor,
+  instanceKey: string,
+  registry: StateContainerRegistry,
+  args: unknown,
+): void {
+  // No ref during render; the commit claims it. The registry sweeps the
+  // instance if no commit ever does (SSR, discarded renders).
+  const instance = registry.acquire(BlocClass, instanceKey, {
+    canCreate: true,
+    countRef: false,
+    args: args as ExtractArgs<StateContainerConstructor>,
+    sweepIfUnowned: true,
+  }) as unknown as StateContainer;
+
+  // Dep proxies get `onDepHandle` too, so nested `.track()` calls (A→B→C)
+  // record into this consumer's session.
+  let depWrappers: Map<object, unknown> | undefined;
+  const onDepHandle = (handle: object): unknown => {
+    depWrappers ??= new Map();
+    const cached = depWrappers.get(handle);
+    if (cached !== undefined) return cached;
+    const wrapper = makeDepWrapper(
+      handle as DepHandleLike,
+      registry,
+      consumer.deps,
+      consumer.tracked,
+      onDepHandle,
+    );
+    depWrappers.set(handle, wrapper);
+    return wrapper;
+  };
+
+  consumer.BlocClass = BlocClass;
+  consumer.instanceKey = instanceKey;
+  consumer.registry = registry;
+  consumer.boundNonce = consumer.rebindNonce;
+  consumer.container = instance;
+  consumer.trackedBloc = buildTrackedProxy(
+    instance,
+    consumer.tracked,
+    onDepHandle,
+  );
+  // A new identity per instance, so uSES re-subscribes.
+  consumer.subscribe = (onStoreChange) => subscribe(consumer, onStoreChange);
+}
+
+function subscribe(consumer: Consumer, onStoreChange: () => void): () => void {
+  consumer.notify = onStoreChange;
+  const container = consumer.container;
+  const subscription = container.subscribePaths(consumer.onChange);
+  subscription.setInterest(consumer.interest);
+  consumer.subscription = subscription;
+  consumer.subscribedTo = container;
+  container.registerConsumerPaths(consumer.id, consumer.paths);
+  // An emit raised during render is still pending in the channel, so its
+  // next flush delivers it to this subscriber.
+  return consumer.unsubscribe;
+}
+
+function unsubscribe(consumer: Consumer): void {
+  consumer.notify = noop;
+  consumer.subscription?.unsubscribe();
+  consumer.subscription = null;
+  consumer.subscribedTo?.unregisterConsumer(consumer.id);
+  consumer.subscribedTo = null;
+}
+
+function onChange(consumer: Consumer): void {
+  if (consumer.isSelectMode) {
+    const select = consumer.select;
+    const container = consumer.subscribedTo;
+    if (select && container !== null) {
+      const next = select(container.state, container);
+      const prev = consumer.selection;
+      if (prev !== null && shallowArrayEqual(prev, next)) return;
+      consumer.selection = next;
+    }
+  }
+  consumer.bump();
+}
+
+function claim(consumer: Consumer): void {
+  const { BlocClass, instanceKey, registry } = consumer;
+  if (
+    consumer.ownedClass === BlocClass &&
+    consumer.ownedKey === instanceKey &&
+    consumer.ownedRegistry === registry
+  ) {
+    return;
+  }
+  release(consumer);
+  const live = registry.acquire(BlocClass, instanceKey, {
+    canCreate: true,
+    countRef: true,
+    refId: consumer.primaryRefId,
+    args: resolveEffectiveArgs(
+      consumer,
+    ) as ExtractArgs<StateContainerConstructor>,
+  });
+  consumer.ownedClass = BlocClass;
+  consumer.ownedKey = instanceKey;
+  consumer.ownedRegistry = registry;
+  consumer.ownedBloc = live;
+  consumer.onMount?.(live);
+  // The render captured a stale instance; re-render against the live one.
+  if (live !== (consumer.container as unknown)) {
+    consumer.rebindNonce++;
+    consumer.bump();
+  }
+}
+
+function release(consumer: Consumer): void {
+  const { ownedClass, ownedRegistry } = consumer;
+  if (ownedClass === null || ownedRegistry === null) return;
+  // Before release, so the bloc is still alive in the callback.
+  consumer.onUnmount?.(consumer.ownedBloc);
+  consumer.ownedClass = null;
+  consumer.ownedRegistry = null;
+  ownedRegistry.release(
+    ownedClass,
+    consumer.ownedKey,
+    false,
+    consumer.primaryRefId,
+  );
+}
+
+function commit(consumer: Consumer): void {
+  claim(consumer);
+  // Getters called after commit read live state, not this render's proxy.
+  consumer.tracked.current = null;
+  const disarm = consumer.disarm;
+  if (disarm !== null) {
+    consumer.disarm = null;
+    disarm();
+  }
+  const deps = consumer.deps;
+  deps.disarm();
+  if (consumer.isSelectMode) {
+    // A later switch back to auto-track must reconcile in full.
+    deps.invalidate();
+    return;
+  }
+  const primary = consumer.container;
+  // A change between render and commit was diffed against the previous
+  // interest, which may lack paths only this render read.
+  if (primary.state !== consumer.renderedState) consumer.bump();
+  if (deps.isUnchanged()) return;
+
+  primary.registerConsumerPaths(consumer.id, consumer.paths);
+  setInterest(consumer, consumer.paths);
+  deps.reconcile(consumer.registry);
 }
 
 const setInterest = (consumer: Consumer, interest: PathSet): void => {
