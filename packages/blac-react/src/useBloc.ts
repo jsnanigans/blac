@@ -126,8 +126,9 @@ export function useBloc<
 
     // Dep proxies get `onDepHandle` too, so nested `.track()` calls (A→B→C)
     // record into this consumer's session.
-    const depWrappers = new Map<object, unknown>();
+    let depWrappers: Map<object, unknown> | undefined;
     const onDepHandle = (handle: object): unknown => {
+      depWrappers ??= new Map();
       const cached = depWrappers.get(handle);
       if (cached !== undefined) return cached;
       const wrapper = makeDepWrapper(
@@ -286,6 +287,9 @@ export function useBloc<
 
 const noop = (): void => {};
 
+// Initial `interest` and `paths`; neither is ever mutated in place.
+const NO_PATHS: PathSet = emptyPathSet();
+
 /**
  * Everything one `useBloc` call keeps between renders.
  *
@@ -340,9 +344,9 @@ function createConsumer(): Consumer {
     },
     getSnapshot: () => consumer.version,
     getServerSnapshot: () => consumer.version,
-    interest: emptyPathSet(),
+    interest: NO_PATHS,
     subscription: null,
-    paths: emptyPathSet(),
+    paths: NO_PATHS,
     isSelectMode: false,
     selection: null,
     deps: new DepSession(id, () => consumer.bump()),

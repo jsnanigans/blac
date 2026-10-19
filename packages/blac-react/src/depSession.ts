@@ -6,6 +6,7 @@ import type {
 import { DEP_BRAND } from '@blac/core/internal';
 import {
   ALL_PATHS,
+  emptyPathSet,
   expandWithAncestors,
   pathSetEquals,
   trackRender,
@@ -15,15 +16,14 @@ import {
 } from '@dirtytalk/structural';
 import { buildTrackedProxy } from './buildTrackedProxy';
 
-type SessionEntry =
-  | { kind: 'primary'; paths: PathSet }
-  | {
-      kind: 'dep';
-      paths: PathSet;
-      Type: StateContainerConstructor;
-      key: string;
-      args: unknown;
-    };
+const NO_PATHS: PathSet = emptyPathSet();
+
+interface DepEntry {
+  paths: PathSet;
+  Type: StateContainerConstructor;
+  key: string;
+  args: unknown;
+}
 
 interface DepSub {
   subscription: PathSubscription;
@@ -42,23 +42,32 @@ interface DepSub {
  * never leaks one.
  */
 export class DepSession {
-  private readonly entries = new Map<StateContainer, SessionEntry>();
-  private readonly subs = new Map<StateContainer, DepSub>();
-  private lastReconciled: Map<StateContainer, SessionEntry> | null = null;
-  private readonly disarms: Array<() => void> = [];
-  private readonly refId: string;
+  // Most consumers read no deps, so everything dep-related is allocated on the
+  // first dep a render records.
+  private primary: StateContainer | null = null;
+  private primaryPaths: PathSet = NO_PATHS;
+  private entries: Map<StateContainer, DepEntry> | null = null;
+  private subs: Map<StateContainer, DepSub> | null = null;
+  private reconciled = false;
+  private lastPrimary: StateContainer | null = null;
+  private lastPrimaryPaths: PathSet = NO_PATHS;
+  private lastEntries: Map<StateContainer, DepEntry> | null = null;
+  private disarms: Array<() => void> | null = null;
 
   constructor(
     private readonly consumerId: string,
     private readonly onChange: () => void,
-  ) {
-    this.refId = `useBloc@${consumerId}:dep`;
+  ) {}
+
+  private get refId(): string {
+    return `useBloc@${this.consumerId}:dep`;
   }
 
   begin(primary: StateContainer, paths: PathSet): void {
-    this.entries.clear();
-    this.disarms.length = 0;
-    this.entries.set(primary, { kind: 'primary', paths });
+    this.entries?.clear();
+    if (this.disarms !== null) this.disarms.length = 0;
+    this.primary = primary;
+    this.primaryPaths = paths;
   }
 
   record(
@@ -69,30 +78,47 @@ export class DepSession {
     args: unknown,
     disarm: () => void,
   ): void {
-    this.disarms.push(disarm);
-    const existing = this.entries.get(dep);
+    (this.disarms ??= []).push(disarm);
+    // A dep that resolves to the primary only widens the primary's entry.
+    if (dep === this.primary) {
+      this.primaryPaths = unionPaths(this.primaryPaths, paths);
+      return;
+    }
+    const entries = (this.entries ??= new Map());
+    const existing = entries.get(dep);
     if (existing !== undefined) {
       existing.paths = unionPaths(existing.paths, paths);
     } else {
-      this.entries.set(dep, { kind: 'dep', paths, Type, key, args });
+      entries.set(dep, { paths, Type, key, args });
     }
   }
 
   /** Stops every dep tracked this render from recording further reads. */
   disarm(): void {
-    for (const disarm of this.disarms) disarm();
-    this.disarms.length = 0;
+    const disarms = this.disarms;
+    if (disarms === null) return;
+    for (const disarm of disarms) disarm();
+    disarms.length = 0;
   }
 
   /** Forces the next `reconcile` to run in full. */
   invalidate(): void {
-    this.lastReconciled = null;
+    this.reconciled = false;
   }
 
   isUnchanged(): boolean {
-    const last = this.lastReconciled;
-    if (last === null || last.size !== this.entries.size) return false;
-    for (const [container, entry] of this.entries) {
+    if (
+      !this.reconciled ||
+      this.lastPrimary !== this.primary ||
+      !pathSetEquals(this.lastPrimaryPaths, this.primaryPaths)
+    ) {
+      return false;
+    }
+    const last = this.lastEntries;
+    const entries = this.entries;
+    if ((last?.size ?? 0) !== (entries?.size ?? 0)) return false;
+    if (last === null || entries === null) return true;
+    for (const [container, entry] of entries) {
       const prev = last.get(container);
       if (prev === undefined || !sameEntry(prev, entry)) return false;
     }
@@ -100,17 +126,26 @@ export class DepSession {
   }
 
   reconcile(registry: StateContainerRegistry): void {
-    const { consumerId, refId, subs, entries } = this;
+    const { consumerId } = this;
+    const entries = this.entries;
+    this.reconciled = true;
+    this.lastPrimary = this.primary;
+    this.lastPrimaryPaths = this.primaryPaths;
+    this.lastEntries =
+      entries === null || entries.size === 0 ? null : new Map(entries);
 
-    for (const [dep, sub] of subs) {
-      if (!entries.has(dep)) {
-        this.drop(dep, sub);
-        subs.delete(dep);
+    const subs = this.subs;
+    if (subs !== null) {
+      for (const [dep, sub] of subs) {
+        if (entries?.has(dep) !== true) {
+          this.drop(dep, sub);
+          subs.delete(dep);
+        }
       }
     }
+    if (entries === null) return;
 
     for (const [dep, entry] of entries) {
-      if (entry.kind === 'primary') continue;
       // StrictMode's simulated unmount can dispose a dep this render captured;
       // re-render so the session resolves the live instance.
       if (dep.$blac.disposed) {
@@ -119,11 +154,12 @@ export class DepSession {
       }
       const interest = expandWithAncestors(entry.paths, dep.interner);
       dep.registerConsumerPaths(consumerId, entry.paths);
-      const existing = subs.get(dep);
+      const existing = subs?.get(dep);
       if (existing) {
         existing.subscription.setInterest(interest);
         continue;
       }
+      const refId = this.refId;
       const live = registry.acquire(entry.Type, entry.key, {
         canCreate: true,
         countRef: true,
@@ -138,21 +174,22 @@ export class DepSession {
       }
       const subscription = dep.subscribePaths(this.onChange);
       subscription.setInterest(interest);
-      subs.set(dep, {
+      (this.subs ??= new Map()).set(dep, {
         subscription,
         registry,
         Type: entry.Type,
         key: entry.key,
       });
     }
-
-    this.lastReconciled = new Map(entries);
   }
 
   dispose(): void {
-    for (const [dep, sub] of this.subs) this.drop(dep, sub);
-    this.subs.clear();
-    this.lastReconciled = null;
+    const subs = this.subs;
+    if (subs !== null) {
+      for (const [dep, sub] of subs) this.drop(dep, sub);
+      subs.clear();
+    }
+    this.reconciled = false;
   }
 
   private drop(dep: StateContainer, sub: DepSub): void {
@@ -162,10 +199,12 @@ export class DepSession {
   }
 }
 
-function sameEntry(a: SessionEntry, b: SessionEntry): boolean {
-  if (a.kind !== b.kind || !pathSetEquals(a.paths, b.paths)) return false;
-  if (a.kind === 'primary' || b.kind === 'primary') return true;
-  return a.key === b.key && Object.is(a.args, b.args);
+function sameEntry(a: DepEntry, b: DepEntry): boolean {
+  return (
+    pathSetEquals(a.paths, b.paths) &&
+    a.key === b.key &&
+    Object.is(a.args, b.args)
+  );
 }
 
 function unionPaths(a: PathSet, b: PathSet): PathSet {

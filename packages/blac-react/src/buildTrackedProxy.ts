@@ -69,10 +69,9 @@ export function buildTrackedProxy<T extends object>(
   // Bound methods are cached so `bloc.method` keeps a stable identity across
   // reads — an unstable one would defeat memoisation in consumers. Keyed by
   // the underlying function too, so a reassigned method is re-bound.
-  const boundMethods = new Map<
-    string | symbol,
-    { fn: Method; bound: Method }
-  >();
+  let boundMethods:
+    | Map<string | symbol, { fn: Method; bound: Method }>
+    | undefined;
 
   const wrapDepHandle = (value: unknown): unknown => {
     if (
@@ -110,6 +109,7 @@ export function buildTrackedProxy<T extends object>(
       const value = Reflect.get(target, key, target);
       if (typeof value === 'function') {
         const fn = value as Method;
+        boundMethods ??= new Map();
         let cached = boundMethods.get(key);
         if (cached === undefined || cached.fn !== fn) {
           cached = { fn, bound: fn.bind(target) };
