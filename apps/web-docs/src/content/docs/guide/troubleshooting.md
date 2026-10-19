@@ -266,7 +266,7 @@ const job = acquire(JobCubit, { refId });
 release(JobCubit, { refId });
 ```
 
-`keepAlive` instances are never auto-disposed at refcount 0; tear them down explicitly with `release(C, { forceDispose: true })` or `clear(Class)` (a test/teardown utility — see [testing core](/testing/core)). Owner page: [Instance management](/core/instance-management); see also [Configuration](/core/configuration#keepalive-true).
+`keepAlive` instances are never auto-disposed at refcount 0; tear them down explicitly with `release(C, { forceDispose: true })` or `clear(Class)` (a test/teardown utility — see [testing core](/testing/core)). Owner page: [Instance management](/core/instance-management); see also [Configuration](/core/configuration#-keepalive-true-).
 
 </details>
 

@@ -186,7 +186,7 @@ This is useful when you want a real instance with real state management, but nee
 
 ## Stubs
 
-### `createCubitStub(BlocClass, options?)` {#create-cubit-stub}
+### `createCubitStub(BlocClass, options?)`
 
 ```ts
 function createCubitStub<T extends StateContainerConstructor>(

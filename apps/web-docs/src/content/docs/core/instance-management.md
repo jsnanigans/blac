@@ -278,7 +278,7 @@ const [s] = useBloc(UserCardCubit, { args: { userId } });
 
 Identity precedence: own `args` (via `static key(args)`, else structural hash of `args`) > `<BlocProvider>` context args > `'default'`.
 
-The resolved key is the registry's single source of truth — `acquire` and `release` both run their `args` through the same resolution, so a ref taken under a given args key is dropped under the same key. See [Passing Inputs](/guide/inputs) for the full model and [Configuration](/core/configuration#key-args-string) for `static key`.
+The resolved key is the registry's single source of truth — `acquire` and `release` both run their `args` through the same resolution, so a ref taken under a given args key is dropped under the same key. See [Passing Inputs](/guide/inputs) for the full model and [Configuration](/core/configuration#-key-args--string-) for `static key`.
 
 ## Querying the registry
 
@@ -382,7 +382,7 @@ class SessionCubit extends Cubit<SessionState> {
 }
 ```
 
-`keepAlive` instances are never auto-disposed at ref count 0 — tear them down explicitly with `release(Class, { forceDispose: true })` or `clear(Class)` in teardown. See [Configuration](/core/configuration#keepalive-true).
+`keepAlive` instances are never auto-disposed at ref count 0 — tear them down explicitly with `release(Class, { forceDispose: true })` or `clear(Class)` in teardown. See [Configuration](/core/configuration#-keepalive-true-).
 
 ### Instance never disposed / memory leak
 

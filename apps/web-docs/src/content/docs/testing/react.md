@@ -49,7 +49,7 @@ Renders a React component with a single bloc pre-configured in an isolated regis
 
 The returned object is the standard `RenderResult` from Testing Library, plus a `bloc` property containing the stub instance.
 
-Aside from `bloc`, the options are exactly the [`createCubitStub`](/testing/core#create-cubit-stub) options — including `args` (to run `init()`) and `deps` (to fire `onDepsChanged`). See [Inputs](/guide/inputs) for what those lanes mean.
+Aside from `bloc`, the options are exactly the [`createCubitStub`](/testing/core#createcubitstubblocclass-options) options — including `args` (to run `init()`) and `deps` (to fire `onDepsChanged`). See [Inputs](/guide/inputs) for what those lanes mean.
 
 ### Basic usage
 
