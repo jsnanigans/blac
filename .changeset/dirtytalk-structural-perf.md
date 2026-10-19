@@ -1,5 +1,5 @@
 ---
-'@dirtytalk/structural': minor
+'@dirtytalk/structural': patch
 '@blac/react': patch
 ---
 
