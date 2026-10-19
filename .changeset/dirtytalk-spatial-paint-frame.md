@@ -1,5 +1,5 @@
 ---
-'@dirtytalk/spatial': minor
+'@dirtytalk/spatial': patch
 ---
 
 Adds `protected SceneRoot.paintFrame(regions)`, so a subclass can replace the

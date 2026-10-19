@@ -1,5 +1,5 @@
 ---
-'@dirtytalk/spatial': minor
+'@dirtytalk/spatial': patch
 ---
 
 - `data` and `layout` damage now runs even for zero-size or off-screen nodes.
