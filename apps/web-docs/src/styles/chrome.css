@@ -415,7 +415,7 @@ starlight-toc a:focus-visible {
 */
 
 .sl-markdown-content {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .sl-markdown-content :where(p, li, dd, blockquote, .starlight-aside) {
@@ -425,7 +425,6 @@ starlight-toc a:focus-visible {
 .sl-markdown-content :where(code:not(pre code)) {
   white-space: normal;
   overflow-wrap: break-word;
-  word-break: break-word;
 }
 
 .sl-markdown-content :where(table) {

@@ -171,9 +171,9 @@
   --sl-color-text-accent: var(--blac-dusty);
   --sl-color-text-invert: var(--blac-bg); /* inverted context (dark badges) */
 
-  /* Polarity anchors */
-  --sl-color-white: var(--blac-bg); /* "white" in light = cream paper */
-  --sl-color-black: var(--blac-ink); /* "black" in light = warm near-black */
+  /* Polarity anchors — Starlight's "white" is always the high-contrast ink */
+  --sl-color-white: var(--blac-ink);
+  --sl-color-black: var(--blac-bg);
 
   /* Gray ramp: 1 = darkest text, 6 = lightest surface.
      Starlight light mode gray convention: 1 is the darkest (body text proxy),
@@ -185,6 +185,7 @@
   --sl-color-gray-4: #bdb09e; /* bg/border only — not used as text */
   --sl-color-gray-5: #ddd5c3; /* subtle dividers */
   --sl-color-gray-6: #efe7d4; /* surface fill (= --blac-surface) */
+  --sl-color-gray-7: #fcf9f2; /* code blocks — warm, lighter than the page */
 }
 
 /* ── Global font application ────────────────────────────────────────────────
