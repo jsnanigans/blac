@@ -1,5 +1,18 @@
 # @blac/devtools-ui
 
+## 2.0.23
+
+### Patch Changes
+
+- b15a2bc: `interner.lookup(rootId)` returns `''` instead of the internal `\0root`
+  sentinel; devtools shows it as `<root>`.
+- Updated dependencies [55c9bd3]
+- Updated dependencies [d29adc5]
+- Updated dependencies [34f744c]
+- Updated dependencies [5a0f7ad]
+- Updated dependencies [5a361e5]
+  - @blac/react@2.1.2
+
 ## 2.0.22
 
 ### Patch Changes
