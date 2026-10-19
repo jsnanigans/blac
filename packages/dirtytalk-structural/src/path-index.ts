@@ -11,8 +11,11 @@ export interface PathSubscription {
   unsubscribe(): void;
 }
 
+// Shared initial interest; `move` never mutates an interest set.
+const NO_INTEREST: PathSet = new Set<PathId>();
+
 class Entry implements PathSubscription {
-  interest: PathSet = new Set<PathId>();
+  interest: PathSet = NO_INTEREST;
   alive = true;
   seen = 0;
 
@@ -42,7 +45,9 @@ class Entry implements PathSubscription {
  */
 export class PathIndex {
   readonly entries = new Set<Entry>();
-  private readonly _byId = new Map<PathId, Set<Entry>>();
+  // A lone subscriber is stored as itself: most ids are watched by one
+  // consumer, and a `Set` each would dominate mount cost.
+  private readonly _byId = new Map<PathId, Entry | Set<Entry>>();
   private readonly _all = new Set<Entry>();
   private _stamp = 0;
 
@@ -60,9 +65,13 @@ export class PathIndex {
     } else {
       for (const id of prev) {
         if (next !== undefined && next !== ALL_PATHS && next.has(id)) continue;
-        const set = this._byId.get(id);
-        set?.delete(entry);
-        if (set?.size === 0) this._byId.delete(id);
+        const at = this._byId.get(id);
+        if (at === entry) {
+          this._byId.delete(id);
+        } else if (at instanceof Set) {
+          at.delete(entry);
+          if (at.size === 1) this._byId.set(id, at.values().next().value!);
+        }
       }
     }
     if (next === undefined) return;
@@ -72,9 +81,10 @@ export class PathIndex {
     }
     for (const id of next) {
       if (prev !== ALL_PATHS && prev.has(id)) continue;
-      let set = this._byId.get(id);
-      if (set === undefined) this._byId.set(id, (set = new Set()));
-      set.add(entry);
+      const at = this._byId.get(id);
+      if (at === undefined) this._byId.set(id, entry);
+      else if (at instanceof Set) at.add(entry);
+      else if (at !== entry) this._byId.set(id, new Set([at, entry]));
     }
   }
 
@@ -94,8 +104,9 @@ export class PathIndex {
       }
     } else {
       for (const id of dirty) {
-        const set = this._byId.get(id);
-        if (set !== undefined) for (const e of set) take(e);
+        const at = this._byId.get(id);
+        if (at instanceof Set) for (const e of at) take(e);
+        else if (at !== undefined) take(at);
       }
       for (const e of this._all) take(e);
     }

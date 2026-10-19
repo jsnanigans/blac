@@ -75,10 +75,9 @@ export const __setPersistTrackingProxies = (v: boolean | null): void => {
   persistOverride = v;
 };
 
-// Registry of every recording proxy → its raw target, populated by `wrap` on
-// each `trackRender` call. Keyed weakly by the proxy, so entries vanish once a
-// render's proxies are collected. Backs the exported `raw()` escape hatch.
-const proxyToTarget = new WeakMap<object, object>();
+// Every recording proxy's `get` trap answers this key with its raw target,
+// which backs `raw()` without a registry entry per proxy.
+const RAW = Symbol('dirtytalk.raw');
 
 /**
  * Unwrap a recording proxy to its underlying raw target. Returns `v` unchanged
@@ -88,7 +87,7 @@ const proxyToTarget = new WeakMap<object, object>();
  */
 export const raw = <T>(v: T): T => {
   if (v !== null && typeof v === 'object') {
-    const target = proxyToTarget.get(v as object);
+    const target = (v as Record<symbol, unknown>)[RAW];
     if (target !== undefined) return target as T;
   }
   return v;
@@ -148,8 +147,11 @@ interface TrackContext {
   readonly interner: PathInterner;
   /** The caller's `ProxyCache` store, or a per-call one created on demand. */
   store: HandlerStore | undefined;
-  /** Targets whose handler list held more than one prefix this call. */
-  readonly touched: Set<object> | undefined;
+  /** Whether `store` outlives this call (a `ProxyCache`). */
+  readonly persistent: boolean;
+  /** Targets whose handler list held more than one prefix this call.
+   * Allocated on first use, and only for a persistent store. */
+  touched: Set<object> | null;
 }
 
 /**
@@ -185,6 +187,11 @@ export class ProxyCache {
  */
 class TrackHandler implements ProxyHandler<object> {
   proxy: object = null as unknown as object;
+  /** Set when the parent records this proxy's path; the first own read here
+   * drops it, so later reads skip the delete. */
+  parentRecorded = false;
+  /** `interner.childIds(prefixId)` of the interner it was resolved from. */
+  childIds: ReadonlyMap<string, PathId> | undefined = undefined;
 
   constructor(
     public ctx: TrackContext,
@@ -195,6 +202,7 @@ class TrackHandler implements ProxyHandler<object> {
   ) {}
 
   get(t: object, key: string | symbol, receiver: unknown): unknown {
+    if (key === RAW) return t;
     const session = this.ctx.session;
     // Frozen (post-render): a transparent pass-through. Two-arg Reflect.get
     // (receiver = target) avoids re-entering this trap through getters.
@@ -207,8 +215,6 @@ class TrackHandler implements ProxyHandler<object> {
     // the proxy as receiver, so its internal index reads go through this trap.
     if (typeof key === 'symbol') return Reflect.get(t, key, receiver);
 
-    const value = Reflect.get(t, key, receiver);
-
     // Inherited properties (array methods, prototype getters) don't record.
     // Array methods called on the proxy read `this.length`, `this[i]` through
     // the trap, and their callbacks get sub-proxies, so `items.map(i =>
@@ -216,6 +222,7 @@ class TrackHandler implements ProxyHandler<object> {
     // An absent key records like an own one, so the consumer wakes when it is
     // added.
     if (!Object.prototype.hasOwnProperty.call(t, key) && key in t) {
+      const value = Reflect.get(t, key, receiver);
       // Identity-search methods compare a raw argument against elements, so
       // binding them to the proxy would never match object elements. Bind to
       // the raw target and pin the array path instead.
@@ -230,20 +237,28 @@ class TrackHandler implements ProxyHandler<object> {
       return value;
     }
 
+    // A plain read: `Reflect.get` with the proxy as receiver costs ~10% of a
+    // render here, and only an own getter would see the difference.
+    const value = (t as Record<string, unknown>)[key];
+
     // Own property: record it and drop the immediate parent, so only maximal
     // (leaf) paths remain — a reference change to an ancestor can't wake a
     // consumer that only read a leaf beneath it.
     const prefixId = this.prefixId;
     const interner = this.ctx.interner;
-    const id = interner.internChild(prefixId, key);
+    const childIds = (this.childIds ??= interner.childIds(prefixId));
+    const id = childIds.get(key) ?? interner.internChild(prefixId, key);
     const paths = session.paths;
     paths.add(id);
     if (traceHook !== null) this._trace('record', key, interner.lookup(id));
     // An iteration/enumeration-pinned path is a content dependency that a
     // later own read (e.g. `.length`) must not narrow away.
-    if (prefixId !== NO_PARENT && session.pinned?.has(prefixId) !== true) {
-      paths.delete(prefixId);
-      if (traceHook !== null) this._trace('drop-parent');
+    if (this.parentRecorded) {
+      this.parentRecorded = false;
+      if (session.pinned?.has(prefixId) !== true) {
+        paths.delete(prefixId);
+        if (traceHook !== null) this._trace('drop-parent');
+      }
     }
 
     // Primitives, functions, and non-plain objects (Map, Set, Date, class
@@ -367,7 +382,6 @@ const createProxy = (
 ): TrackHandler => {
   const handler = new TrackHandler(ctx, prefixId, Array.isArray(target), next);
   handler.proxy = new Proxy(target, handler);
-  proxyToTarget.set(handler.proxy, target);
   return handler;
 };
 
@@ -376,15 +390,23 @@ const wrap = (ctx: TrackContext, target: object, prefixId: PathId): object => {
   const head = store.get(target);
   for (let h = head; h !== undefined; h = h.next) {
     if (h.prefixId === prefixId) {
+      // A cache reused across containers must not keep another interner's ids.
+      if (h.ctx.interner !== ctx.interner) h.childIds = undefined;
       h.ctx = ctx;
-      if (head?.next !== undefined) ctx.touched?.add(target);
+      h.parentRecorded = true;
+      if (head?.next !== undefined) markTouched(ctx, target);
       return h.proxy;
     }
   }
   const handler = createProxy(ctx, target, prefixId, head);
+  handler.parentRecorded = true;
   store.set(target, handler);
-  if (head !== undefined) ctx.touched?.add(target);
+  if (head !== undefined) markTouched(ctx, target);
   return handler.proxy;
+};
+
+const markTouched = (ctx: TrackContext, target: object): void => {
+  if (ctx.persistent) (ctx.touched ??= new Set<object>()).add(target);
 };
 
 // Drop every handler for `target` not claimed by `ctx` (the completed call),
@@ -488,7 +510,8 @@ export const trackRender = <S>(
     session,
     interner,
     store: cache?.byTarget,
-    touched: cache !== undefined ? new Set<object>() : undefined,
+    persistent: cache !== undefined,
+    touched: null,
   };
 
   if (traceHook !== null) {
@@ -510,9 +533,9 @@ export const trackRender = <S>(
       // so `touched` is only settled here. Prune each touched target down to
       // the prefixes this render claimed.
       const store = ctx.store;
-      if (ctx.touched !== undefined && store !== undefined) {
+      if (ctx.touched !== null && store !== undefined) {
         for (const target of ctx.touched) pruneStale(store, target, ctx);
-        ctx.touched.clear();
+        ctx.touched = null;
       }
       session.armed = false;
       if (traceHook !== null) {

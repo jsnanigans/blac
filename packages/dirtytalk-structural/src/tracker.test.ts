@@ -397,10 +397,7 @@ describe('trackRender', () => {
     );
     void value.item.label;
     expect(value.item.done).toBeUndefined();
-    expect(asPathStrings(paths, interner)).toEqual([
-      'item.done',
-      'item.label',
-    ]);
+    expect(asPathStrings(paths, interner)).toEqual(['item.done', 'item.label']);
   });
 
   it('16. (PN5) lazy prefix memo — interner.size stable + identical paths across renders', () => {

@@ -4,17 +4,24 @@ type EqualsAt = (pathId: PathId, prev: unknown, next: unknown) => boolean;
 
 interface TrieNode {
   readonly key: string;
+  /** `key` as an index when it is one: indexing an array by number skips
+   * the string-to-index conversion. */
+  readonly readKey: string | number;
   readonly parent: TrieNode | null;
   /** Skeleton ids whose path ends here (the root holds the root id). */
   readonly ids: PathId[];
   readonly children: TrieNode[];
+  /** Built once `children` outgrows a linear scan. */
   byKey: Map<string, TrieNode> | null;
   /** Position in `parent.children`, for O(1) removal. */
   slot: number;
 }
 
+const INDEX = /^(?:0|[1-9]\d{0,8})$/;
+
 const newNode = (key: string, parent: TrieNode | null): TrieNode => ({
   key,
+  readKey: INDEX.test(key) ? Number(key) : key,
   parent,
   ids: [],
   children: [],
@@ -22,8 +29,16 @@ const newNode = (key: string, parent: TrieNode | null): TrieNode => ({
   slot: 0,
 });
 
-const child = (node: TrieNode, key: string): TrieNode | undefined =>
-  node.byKey?.get(key);
+const SCAN_LIMIT = 8;
+
+const child = (node: TrieNode, key: string): TrieNode | undefined => {
+  if (node.byKey !== null) return node.byKey.get(key);
+  const children = node.children;
+  for (let i = 0; i < children.length; i++) {
+    if (children[i].key === key) return children[i];
+  }
+  return undefined;
+};
 
 /**
  * The consumer skeleton as a path trie, so a diff walks prev/next once from
@@ -42,7 +57,11 @@ export class SkeletonTrie {
         next = newNode(key, node);
         next.slot = node.children.length;
         node.children.push(next);
-        (node.byKey ??= new Map()).set(key, next);
+        if (node.byKey !== null) {
+          node.byKey.set(key, next);
+        } else if (node.children.length > SCAN_LIMIT) {
+          node.byKey = new Map(node.children.map((c) => [c.key, c]));
+        }
       }
       node = next;
     }
@@ -123,9 +142,9 @@ const addChanged = (
   }
 };
 
-const read = (v: unknown, key: string): unknown =>
+const read = (v: unknown, key: string | number): unknown =>
   v !== null && typeof v === 'object'
-    ? (v as Record<string, unknown>)[key]
+    ? (v as Record<string | number, unknown>)[key]
     : undefined;
 
 // Mirrors `changedAt`: a shared reference ends the walk unless a custom
@@ -140,8 +159,8 @@ const walk = (
   const children = node.children;
   for (let i = 0; i < children.length; i++) {
     let c = children[i];
-    let pv = read(p, c.key);
-    let nv = read(n, c.key);
+    let pv = read(p, c.readKey);
+    let nv = read(n, c.readKey);
     // Follow single-child chains (`a.b.c`) in a loop rather than recursing.
     while (
       c.ids.length === 0 &&
@@ -149,8 +168,8 @@ const walk = (
       (pv !== nv || equalsAt !== undefined)
     ) {
       c = c.children[0];
-      pv = read(pv, c.key);
-      nv = read(nv, c.key);
+      pv = read(pv, c.readKey);
+      nv = read(nv, c.readKey);
     }
     // `===` misses only ±0 and NaN, which `addChanged` settles.
     if (c.ids.length !== 0) addChanged(c.ids, pv, nv, out, equalsAt);

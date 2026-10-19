@@ -73,12 +73,7 @@ export class PathInterner {
    * cache turns the hot path into two indexed lookups.
    */
   internChild(parentId: PathId, key: string): PathId {
-    let children =
-      parentId === NO_PARENT ? this._rootChildren : this._children[parentId];
-    if (children === undefined) {
-      children = new Map<string, PathId>();
-      this._children[parentId] = children;
-    }
+    const children = this._childMap(parentId);
     const cached = children.get(key);
     if (cached !== undefined) return cached;
     const id = this.intern(
@@ -86,6 +81,24 @@ export class PathInterner {
     );
     children.set(key, id);
     return id;
+  }
+
+  /**
+   * The ids interned so far for `parentId`'s children, keyed by child key.
+   * Live: `internChild` adds to it. Tracking proxies hold it to skip a lookup.
+   */
+  childIds(parentId: PathId): ReadonlyMap<string, PathId> {
+    return this._childMap(parentId);
+  }
+
+  private _childMap(parentId: PathId): Map<string, PathId> {
+    if (parentId === NO_PARENT) return this._rootChildren;
+    let children = this._children[parentId];
+    if (children === undefined) {
+      children = new Map<string, PathId>();
+      this._children[parentId] = children;
+    }
+    return children;
   }
 
   /**
