@@ -1,5 +1,14 @@
 # @dirtytalk/engine
 
+## 0.2.2
+
+### Patch Changes
+
+- b3309b2: `DirtyChannel` no longer gets stuck when a `Space` method throws during a
+  flush: such errors are reported like subscriber errors and later marks flush
+  normally. Disposing a channel from a callback now stops the rest of that
+  flush. `ManualScheduler` gains `cancel(flush)`.
+
 ## 0.2.1
 
 ### Patch Changes
