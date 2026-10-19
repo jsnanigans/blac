@@ -291,7 +291,7 @@ export default defineConfig({
       plugins: [
         starlightSidebarTopics([
           {
-            label: 'blac',
+            label: 'Guide',
             link: '/guide/introduction/',
             icon: 'open-book',
             items: [
@@ -300,24 +300,17 @@ export default defineConfig({
                 items: [
                   { label: 'What is BlaC?', link: '/guide/introduction/' },
                   { label: 'Quick Start', link: '/guide/getting-started/' },
-                  {
-                    label: 'Tutorial: Todo → time-travel',
-                    link: '/guide/tutorial/',
-                  },
                   { label: 'Core Concepts', link: '/guide/concepts/' },
-                  { label: 'Mental Model', link: '/guide/mental-model/' },
                   { label: 'Passing Inputs', link: '/guide/inputs/' },
+                  { label: 'Tutorial: Todo App', link: '/guide/tutorial/' },
                 ],
               },
               {
                 label: 'Going Deeper',
                 items: [
+                  { label: 'Mental Model', link: '/guide/mental-model/' },
                   { label: 'Async', link: '/guide/async/' },
                   { label: 'TypeScript', link: '/guide/typescript/' },
-                  {
-                    label: 'How BlaC Works Internally',
-                    link: '/guide/internals/',
-                  },
                   {
                     label: 'Troubleshooting & FAQ',
                     link: '/guide/troubleshooting/',
@@ -337,12 +330,9 @@ export default defineConfig({
                 label: 'Integrations',
                 collapsed: true,
                 items: [
+                  { label: 'SSR', link: '/integrations/ssr/' },
                   {
-                    label: 'SSR & per-request isolation',
-                    link: '/integrations/ssr/',
-                  },
-                  {
-                    label: 'Using BlaC outside React',
+                    label: 'Outside React',
                     link: '/integrations/outside-react/',
                   },
                 ],
@@ -355,18 +345,21 @@ export default defineConfig({
                   { label: 'Logging', link: '/plugins/logging/' },
                   { label: 'DevTools', link: '/plugins/devtools/' },
                   { label: 'Persistence', link: '/plugins/persistence/' },
-                  { label: 'Plugin Recipes', link: '/plugins/recipes/' },
+                  { label: 'Recipes', link: '/plugins/recipes/' },
                 ],
               },
               {
                 label: 'Internals',
                 collapsed: true,
-                items: [{ label: 'DirtyTalk', link: '/dirtytalk/' }],
+                items: [
+                  { label: 'How BlaC Works', link: '/guide/internals/' },
+                  { label: 'DirtyTalk', link: '/dirtytalk/' },
+                ],
               },
             ],
           },
           {
-            label: 'blac-core',
+            label: '@blac/core',
             link: '/core/cubit/',
             icon: 'seti:typescript',
             items: [
@@ -385,8 +378,8 @@ export default defineConfig({
                     label: 'Bloc Communication',
                     link: '/core/bloc-communication/',
                   },
-                  { label: 'watch', link: '/core/watch/' },
-                  { label: 'Low-level subscribe', link: '/core/subscribe/' },
+                  { label: 'watch()', link: '/core/watch/' },
+                  { label: 'subscribe()', link: '/core/subscribe/' },
                   { label: 'Authoring Plugins', link: '/core/plugins/' },
                   { label: 'Types', link: '/core/types/' },
                 ],
@@ -394,7 +387,7 @@ export default defineConfig({
             ],
           },
           {
-            label: 'blac-react',
+            label: '@blac/react',
             link: '/react/getting-started/',
             icon: 'seti:react',
             items: [
@@ -402,7 +395,7 @@ export default defineConfig({
                 label: 'Reference',
                 items: [
                   { label: 'Getting Started', link: '/react/getting-started/' },
-                  { label: 'useBloc', link: '/react/use-bloc/' },
+                  { label: 'useBloc()', link: '/react/use-bloc/' },
                   {
                     label: 'Dependency Tracking',
                     link: '/react/dependency-tracking/',

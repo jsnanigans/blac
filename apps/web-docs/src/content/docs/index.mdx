@@ -6,7 +6,7 @@ hero:
   # tagline feeds the Hero override (src/components/overrides/Hero.astro). The
   # <em>state, handled</em> phrase is recoloured coral by the hero's scoped CSS —
   # the concept tagline of the redesign ("chaos resolving into calm").
-  tagline: <em>State, handled.</em> Write a class. Read it like a plain object. Only the components that touched what changed re-render. No selectors, no reducers, no ceremony.
+  tagline: <em>State, handled.</em> Write a class, read it like a plain object, and only the components that used what changed re-render. No selectors, no reducers.
   actions:
     - text: Get started
       link: /guide/getting-started/
@@ -18,13 +18,13 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 import SectionBreak from '../../components/riso/SectionBreak.astro';
 import RisoHeading from '../../components/riso/RisoHeading.astro';
 import CounterDemo from '../../components/demos/CounterDemo.tsx';
 
-:::caution[Beta / pre-release]
-BlaC v2 is in pre-release (beta). While in beta, **breaking API changes may ship in patch releases** without a major version bump — pin exact versions and check the changelog before upgrading. Strict semver resumes once v2 is officially out of beta.
+:::caution[Beta]
+BlaC v2 is in beta. Breaking changes may ship in patch releases, so pin exact versions and check the changelog before upgrading.
 :::
 
 <SectionBreak label="§ the whole loop" dotSize="7px" dotOpacity="0.2" />
@@ -34,8 +34,7 @@ BlaC v2 is in pre-release (beta). While in beta, **breaking API changes may ship
 </RisoHeading>
 
 A class holds your state and the methods that change it. One hook connects it
-to React. That's the entire mental model — no store setup, no provider tree,
-no action types yelling in `SCREAMING_SNAKE_CASE`.
+to React. No store setup, no provider tree, no action types.
 
 ```tsx twoslash
 import React from 'react';
@@ -55,86 +54,67 @@ function Counter() {
 }
 ```
 
-And that's not a screenshot — here's the real thing running, the actual
-`@blac/react` hook driving an actual `Cubit`. The badge counts genuine renders:
+The same code, running live. The badge counts real renders:
 
 <CounterDemo client:visible />
 
 <SectionBreak label="§ why blac" dotSize="7px" dotOpacity="0.2" />
 
 <RisoHeading as="h2" intensity="subtle">
-  Chaos resolving into calm
+  Less wiring, fewer re-renders
 </RisoHeading>
-
-State changes are messy by nature. BlaC lets you write the messy part plainly
-and read it back as something calm, typed, and predictable.
 
 <CardGrid>
   <Card title="Touch it, you're subscribed" icon="magnifier">
-    Read `state.user.name` and you're subscribed to exactly that — nothing more.
-    No selectors to write, no memoization homework, no "why is this
-    re-rendering" archaeology. Every `useBloc` consumer gets its own dependency
-    tracker, so leaf components re-render on their own, without you writing a
-    selector. [How tracking works](/react/dependency-tracking/) · [See the
-    numbers](/react/performance/)
+    Read `state.user.name` and the component re-renders only when that value
+    changes. No selectors, no memoization. [How tracking
+    works](/react/dependency-tracking/)
   </Card>
-  <Card title="Your logic lives in typed classes" icon="pencil">
-    Methods are your actions. `this.state` is your source of truth. `emit`,
-    `update`, and `patch` change it. Inputs are typed and split into three lanes
-    — `args` for construction data, `deps` for non-serializable handles, events
-    for values that change over the instance's life — so shared instances stay
-    safe. [The three input lanes](/guide/inputs/)
+  <Card title="Logic lives in typed classes" icon="pencil">
+    Methods are your actions, `this.state` is the source of truth, and `emit`,
+    `update` and `patch` change it. [Core concepts](/guide/concepts/)
   </Card>
-  <Card title="Cross-bloc getters, tracked automatically" icon="approve-check">
-    A getter on one bloc can read another bloc's state, and a component reading
-    that getter re-renders when either bloc changes — no `useBloc(Other)`, no
-    selectors, no manual wiring. [Bloc communication](/core/bloc-communication/)
+  <Card title="Cross-bloc getters" icon="approve-check">
+    A getter can read another bloc's state, and components reading it re-render
+    when either bloc changes. [Bloc communication](/core/bloc-communication/)
   </Card>
   <Card title="Lifecycle you don't manage" icon="rocket">
-    Instances are shared by default and ref-counted: the first consumer creates
-    one, the last one to unmount disposes it. No provider tree to set up, no
-    manual teardown. [Instance management](/core/instance-management/)
+    Instances are shared and ref-counted: the first consumer creates one, the
+    last to unmount disposes it. [Instance
+    management](/core/instance-management/)
   </Card>
-  <Card title="Plugins for the extras" icon="setting">
-    DevTools, logging, and persistence attach to any bloc without touching its
-    logic. [Plugins overview](/plugins/overview/)
+  <Card title="Batteries, opt-in" icon="setting">
+    [DevTools](/plugins/devtools/), [persistence](/plugins/persistence/),
+    [logging](/plugins/logging/), [testing utilities](/testing/overview/) and
+    [SSR isolation](/integrations/ssr/) attach without touching your logic.
   </Card>
-  <Card title="Escapes React when you do" icon="puzzle">
-    The core is framework-agnostic. `watch()` a bloc from anywhere — a router, a
-    game loop, a test. React is a binding, not a requirement. [Outside
-    React](/integrations/outside-react/)
+  <Card title="Works outside React" icon="puzzle">
+    The core is framework-agnostic. `watch()` a bloc from a router, a game loop
+    or a test. [Outside React](/integrations/outside-react/)
   </Card>
 </CardGrid>
 
-<SectionBreak label="§ batteries" dotSize="7px" dotOpacity="0.2" />
-
-<RisoHeading as="h2" intensity="subtle">
-  Batteries included, opt-in
-</RisoHeading>
-
-The core stays tiny; the extras snap on when you want them.
-
-- **DevTools** — inspect every instance, every state change, live.
-  [Plug it in →](/plugins/devtools/)
-- **Persistence** — state that survives a refresh, one decorator away.
-  [Persist things →](/plugins/persistence/)
-- **Logging** — see every emit as it happens, filter the noise.
-  [Log it →](/plugins/logging/)
-- **Testing utilities** — drive blocs directly, assert on state, no DOM
-  required. [Test it →](/testing/overview/)
-- **SSR & per-request isolation** — Next.js, Remix, React Native: covered.
-  [Integrations →](/integrations/ssr/)
-
 <SectionBreak label="§ where to next" dotSize="7px" dotOpacity="0.2" />
 
-<RisoHeading as="h2" intensity="subtle">
-  Pick your door
-</RisoHeading>
-
-- **New here?** The [Quick Start](/guide/getting-started/) gets you from
-  `pnpm add` to a working component in about five minutes.
-- **Want to build something real?** The
-  [tutorial](/guide/tutorial/) takes a todo app all the way to time-travel.
-- **Just want the API?** Reference docs for
-  [`@blac/core`](/core/cubit/) and [`@blac/react`](/react/getting-started/),
-  plus the [dirtytalk](/dirtytalk/) packages underneath.
+<CardGrid>
+  <LinkCard
+    title="Quick Start"
+    description="From install to a working component in about five minutes."
+    href="/guide/getting-started/"
+  />
+  <LinkCard
+    title="Tutorial"
+    description="Build a todo app, all the way to undo and time-travel."
+    href="/guide/tutorial/"
+  />
+  <LinkCard
+    title="@blac/core reference"
+    description="Cubit, the registry, watch, plugins and types."
+    href="/core/cubit/"
+  />
+  <LinkCard
+    title="@blac/react reference"
+    description="useBloc, dependency tracking and performance."
+    href="/react/getting-started/"
+  />
+</CardGrid>
