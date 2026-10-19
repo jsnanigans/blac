@@ -12,7 +12,7 @@ This page names that hazard plainly and shows the fix that already ships: swappi
 On the client there is one user and one registry, for the life of the tab. On the server there is one **process** and one module-level registry (`globalRegistry`), but **many concurrent users**. Every registry function — `acquire`, `ensure`, `borrow`, `release`, and `watch` (which resolves via `ensure`) — routes through a single module-level variable inside `@blac/core`:
 
 ```ts
-// packages/blac-core/src/registry/config.ts (verified)
+// inside @blac/core (simplified)
 let _registry = globalRegistry;
 
 export function getRegistry(): StateContainerRegistry {
