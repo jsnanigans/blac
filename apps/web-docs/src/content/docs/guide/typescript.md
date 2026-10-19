@@ -245,7 +245,9 @@ type UserState =
   | { status: 'loading' }
   | { status: 'success'; user: User }
   | { status: 'error'; error: string };
-declare class UserCubit extends Cubit<UserState> {}
+declare class UserCubit extends Cubit<UserState> {
+  constructor();
+}
 // ---cut---
 function userLabel(): string {
   const [state] = useBloc(UserCubit);
@@ -292,7 +294,9 @@ import { useBloc } from '@blac/react';
 type UserState =
   | { status: 'loading' }
   | { status: 'success'; user: { name: string } };
-declare class UserCubit extends Cubit<UserState> {}
+declare class UserCubit extends Cubit<UserState> {
+  constructor();
+}
 // ---cut---
 function userName(): string {
   const [state] = useBloc(UserCubit);
@@ -399,7 +403,7 @@ function cartTotal(): number {
 
 ## Conditional `args`
 
-When a bloc declares an `Args` type, `args` in `useBloc` is _optional_ — you may omit it and the hook will inherit args from a `<BlocProvider>` ancestor, or fall back to the default instance key. When the bloc's `Args` is the default `void`, passing `args` is _forbidden_. The type system enforces both directions through a conditional option type (verified in `@blac/react`'s `types.ts`):
+When a bloc declares an `Args` type, `args` in `useBloc` is _optional_ — you may omit it and the hook will inherit args from a `<BlocProvider>` ancestor, or fall back to the default instance key. When the bloc's `Args` is the default `void`, passing `args` is _forbidden_. The type system enforces both directions through a conditional option type:
 
 ```ts twoslash
 import type { ExtractArgs, StateContainerConstructor } from '@blac/core';
@@ -580,7 +584,9 @@ If you _do_ want to annotate the return — for a public package API, say — de
 import { Cubit } from '@blac/core';
 import type { ExtractState, InstanceReadonlyState } from '@blac/core';
 import { useBloc } from '@blac/react';
-declare class TodoCubit extends Cubit<{ items: string[] }> {}
+declare class TodoCubit extends Cubit<{ items: string[] }> {
+  constructor();
+}
 // ---cut---
 type TodoState = ExtractState<typeof TodoCubit>;
 //   ^?
