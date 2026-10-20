@@ -8,7 +8,7 @@
     "build": "node ./scripts/check-snippets.mjs",
     "build:astro": "astro build",
     "preview": "astro preview",
-    "publish": "pnpm run build && wrangler pages deploy",
+    "publish": "pnpm run build && wrangler deploy",
     "typecheck": "astro check"
   },
   "devDependencies": {

@@ -147,9 +147,9 @@ function rehypeTableCellLabels() {
 // https://astro.build/config
 export default defineConfig({
   vite: { plugins: [headPropagationSeedFix] },
-  // Canonical origin — drives sitemap + absolute URLs. Update to the real
-  // production domain when the Cloudflare Pages project is set up.
-  site: 'https://blac-docs.pages.dev',
+  // Canonical origin — drives sitemap + absolute URLs. Matches the custom
+  // domain route in wrangler.toml.
+  site: 'https://blac.42.dog',
   // GFM (tables, strikethrough, autolinks) renders in `.md` via Astro's
   // built-in default, but `@astrojs/mdx` does NOT inherit that default — so
   // tables in `.mdx` pages silently render as literal `| … |` text. Listing
