@@ -1,0 +1,352 @@
+/*
+  Reading typography for Markdown content: headings, prose, links, lists,
+  inline code, tables, asides. Long-form legibility comes first; brand colour
+  is limited to links, list markers and accents.
+*/
+
+body {
+  font-family: var(--blac-font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--blac-pink) 30%, transparent);
+}
+
+.sl-markdown-content {
+  --sl-content-gap-y: 1.125rem;
+  font-size: var(--sl-text-body);
+  overflow-wrap: break-word;
+  font-variant-ligatures: common-ligatures contextual;
+}
+
+.sl-markdown-content :where(p, li, dd, blockquote, .starlight-aside) {
+  text-wrap: pretty;
+}
+
+/* ── Headings ── */
+
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6):not(:where(.not-content *)) {
+  color: var(--blac-fg-strong);
+  text-wrap: balance;
+}
+
+.sl-markdown-content :is(h1, h2, h3):not(:where(.not-content *)) {
+  font-family: var(--blac-font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sl-markdown-content h1:not(:where(.not-content *)) {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.sl-markdown-content h3:not(:where(.not-content *)) {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.sl-markdown-content :is(h4, h5, h6):not(:where(.not-content *)) {
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.sl-markdown-content
+  :not(h1, h2, h3, h4, h5, h6, .sl-heading-wrapper)
+  + :is(.sl-heading-wrapper.level-h2, h2) {
+  margin-top: 3rem;
+}
+
+.sl-markdown-content
+  :not(h1, h2, h3, h4, h5, h6, .sl-heading-wrapper)
+  + :is(.sl-heading-wrapper.level-h3, h3) {
+  margin-top: 2.25rem;
+}
+
+.sl-markdown-content
+  :not(h1, h2, h3, h4, h5, h6, .sl-heading-wrapper)
+  + :is(.sl-heading-wrapper:is(.level-h4, .level-h5, .level-h6), h4, h5, h6) {
+  margin-top: 1.75rem;
+}
+
+.sl-markdown-content :is(.sl-heading-wrapper, h2, h3, h4) + * {
+  margin-top: 0.75rem;
+}
+
+.sl-markdown-content .sl-anchor-link {
+  color: var(--blac-fg-faint);
+}
+
+.sl-markdown-content .sl-anchor-link:hover {
+  color: var(--blac-pink-text);
+}
+
+/* ── Prose ── */
+
+.sl-markdown-content :is(strong, b):not(:where(.not-content *)) {
+  color: var(--blac-fg-strong);
+  font-weight: 650;
+}
+
+.sl-markdown-content a:not(:where(.not-content *)) {
+  color: var(--blac-link);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 0.22em;
+  transition:
+    text-decoration-color 0.15s ease,
+    text-decoration-thickness 0.15s ease;
+}
+
+.sl-markdown-content a:hover:not(:where(.not-content *)) {
+  color: var(--blac-link);
+  text-decoration-color: var(--blac-pink);
+  text-decoration-thickness: 2px;
+}
+
+.sl-markdown-content :is(.sl-link-card, .sl-link-button) a,
+.sl-markdown-content a.sl-link-button {
+  text-decoration: none;
+}
+
+.sl-markdown-content .sl-link-card a:hover {
+  color: inherit;
+}
+
+.sl-markdown-content :is(ul, ol):not(:where(.not-content *)) {
+  padding-inline-start: 1.375rem;
+}
+
+.sl-markdown-content li:not(:where(.not-content *)) {
+  padding-inline-start: 0.25rem;
+}
+
+.sl-markdown-content ul > li:not(:where(.not-content *))::marker {
+  color: var(--blac-pink);
+}
+
+.sl-markdown-content ol > li:not(:where(.not-content *))::marker {
+  color: var(--blac-link);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sl-markdown-content blockquote:not(:where(.not-content *)) {
+  border-inline-start: 3px solid var(--blac-indigo-text);
+  padding-inline-start: 1.25rem;
+  color: var(--blac-fg-dim);
+}
+
+.sl-markdown-content hr:not(:where(.not-content *)) {
+  margin-block: 2.5rem;
+  border-bottom-color: var(--blac-border);
+}
+
+.sl-markdown-content kbd:not(:where(.not-content *)) {
+  padding: 0.1em 0.45em;
+  border: 1px solid var(--blac-border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--blac-radius-sm);
+  background-color: var(--blac-surface);
+  font-family: var(--blac-font-mono);
+  font-size: 0.8125em;
+}
+
+/* ── Inline code ── */
+
+.sl-markdown-content :not(pre) > code:not(:where(.not-content *)) {
+  margin-block: 0;
+  padding: 0.12em 0.4em;
+  border-radius: var(--blac-radius-sm);
+  background-color: var(--blac-surface-2);
+  color: var(--blac-fg-strong);
+  font-size: var(--sl-text-code-sm);
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6) code {
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.sl-markdown-content a > code:not(:where(.not-content *)) {
+  color: inherit;
+}
+
+/* ── Tables ── */
+
+.sl-markdown-content table:not(:where(.not-content *)) {
+  width: 100%;
+  border: 1px solid var(--blac-border);
+  border-radius: var(--blac-radius);
+  border-collapse: separate;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.sl-markdown-content :is(th, td):not(:where(.not-content *)) {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--blac-border);
+  vertical-align: top;
+}
+
+.sl-markdown-content
+  :is(th:first-child, td:first-child):not(:where(.not-content *)) {
+  padding-inline-start: 1rem;
+}
+
+.sl-markdown-content
+  :is(th:last-child, td:last-child):not(:where(.not-content *)) {
+  padding-inline-end: 1rem;
+}
+
+.sl-markdown-content tr:last-child > td:not(:where(.not-content *)) {
+  border-bottom: 0;
+}
+
+.sl-markdown-content th:not(:where(.not-content *)) {
+  background-color: var(--blac-surface);
+  color: var(--blac-fg-strong);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.sl-markdown-content :where(th, td) :where(code:not(pre code)) {
+  white-space: normal;
+}
+
+/* ── Asides ── */
+
+.sl-markdown-content .starlight-aside {
+  border: 1px solid
+    color-mix(in srgb, var(--sl-color-asides-border) 30%, transparent);
+  border-inline-start: 3px solid var(--sl-color-asides-border);
+  border-radius: var(--blac-radius);
+  padding: 1rem 1.25rem;
+  font-size: 0.96875rem;
+  overflow-wrap: normal;
+}
+
+.sl-markdown-content .starlight-aside__title {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  max-width: 100%;
+  font-family: var(--blac-font-body);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-wrap: balance;
+}
+
+.sl-markdown-content .starlight-aside__title svg {
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-block-start: 0.05em;
+}
+
+.sl-markdown-content .starlight-aside__title code {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.sl-markdown-content .starlight-aside__content a {
+  color: var(--sl-color-asides-text-accent);
+}
+
+/* ── Tabs ── */
+
+starlight-tabs [role='tab'][aria-selected='true'] {
+  border-color: var(--blac-pink);
+  color: var(--blac-fg-strong);
+}
+
+/* ── Small screens: tables become labelled row cards ── */
+
+@media (max-width: 44rem) {
+  .sl-markdown-content :where(table) {
+    display: block;
+    border: 0;
+    overflow: visible;
+  }
+
+  .sl-markdown-content :where(table thead) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .sl-markdown-content :where(table tbody) {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .sl-markdown-content :where(table tr) {
+    display: grid;
+    background-color: var(--blac-surface);
+    border: 1px solid var(--blac-border);
+    border-radius: var(--blac-radius);
+    overflow: hidden;
+  }
+
+  .sl-markdown-content table td:not(:where(.not-content *)) {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, 36%) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: start;
+    width: 100%;
+    padding: 0.75rem;
+    border: 0;
+    border-block-start: 1px solid var(--blac-border);
+  }
+
+  .sl-markdown-content table td:first-child:not(:where(.not-content *)) {
+    border-block-start: 0;
+  }
+
+  .sl-markdown-content :where(table td)::before {
+    content: attr(data-label);
+    min-width: 0;
+    color: var(--blac-fg-dim);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1.4;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .sl-markdown-content :where(table td > :first-child) {
+    margin-block-start: 0;
+  }
+
+  .sl-markdown-content :where(table td > :last-child) {
+    margin-block-end: 0;
+  }
+}
+
+@media (max-width: 30rem) {
+  .sl-markdown-content table td:not(:where(.not-content *)) {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+
+  .sl-markdown-content .starlight-aside {
+    padding-inline: 1rem;
+  }
+}

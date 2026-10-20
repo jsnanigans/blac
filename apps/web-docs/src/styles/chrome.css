@@ -1,615 +1,361 @@
 /*
-  BlaC docs — midnight-risograph chrome polish.
-  Re-skins Starlight's sidebar, nav/header, topic-switcher dropdown,
-  <CardGrid>/<Card>, search box, and the on-this-page TOC.
-
-  Contract:
-  - All values reference --blac-* / --sl-* tokens; no raw hex here.
-  - "Calm and readable" — restraint. The loudness lives in page titles and
-    the landing. Nothing here should compete with content.
-  - focus-visible states are preserved everywhere an outline is removed;
-    replaced with a --blac-dusty ring.
-  - Migrates the topic-dropdown and card rules that were in theme.css so they
-    live in the canonical Phase-3 file. theme.css rules not yet superseded are
-    left intact (they cover the hero, which is Phase 4).
-
-  Sections:
-    1. Sidebar
-    2. Header / nav bar
-    3. Topic-switcher dropdown  (primary package switcher — first-class)
-    4. Search
-    5. Card grid
-    6. On-this-page TOC
-    7. Docs content readability
-    8. Shared focus-visible ring
-    9. Light-mode adjustments
-
-  Load order:  fonts.css → tokens.css → riso.css → chrome.css (this file)
+  Starlight chrome: header, sidebar, topics, TOC, search, buttons, cards,
+  pagination. Quiet by default; the pink "overprint" offset shadow marks
+  interactive surfaces on hover, echoing the logo.
 */
 
-/* ── 1. Sidebar ─────────────────────────────────────────────────────────────── */
-
-/* Sidebar panel background */
-.sidebar {
-  background-color: var(--blac-surface);
-  border-right: 1px solid var(--sl-color-gray-5);
+:root {
+  --blac-offset: 4px 4px 0 var(--blac-pink);
 }
-
-/* Sidebar navigation container */
-.sidebar-content {
-  padding-block-start: 0.5rem;
-}
-
-/* Group / section labels */
-.sidebar-group-label {
-  color: var(--blac-ink-dim);
-  font-family: var(--blac-font-body);
-  font-size: var(--blac-text-xs);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-/* Nav links — default state */
-.sidebar a {
-  color: var(--blac-ink-dim);
-  border-radius: 4px;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease;
-}
-
-.sidebar a:hover {
-  color: var(--blac-ink);
-  background-color: var(--blac-surface-2);
-  text-decoration: none;
-}
-
-/* Active / current page link */
-.sidebar a[aria-current='page'],
-.sidebar a[data-current-page='true'] {
-  color: var(--blac-dusty);
-  background-color: color-mix(in srgb, var(--blac-dusty) 10%, transparent);
-  font-weight: 500;
-}
-
-.sidebar a[aria-current='page']:hover,
-.sidebar a[data-current-page='true']:hover {
-  background-color: color-mix(in srgb, var(--blac-dusty) 15%, transparent);
-}
-
-/* Sidebar disclosure buttons (collapsed group toggle) */
-.sidebar details > summary {
-  color: var(--blac-ink-dim);
-  border-radius: 4px;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease;
-}
-
-.sidebar details > summary:hover {
-  color: var(--blac-ink);
-  background-color: var(--blac-surface-2);
-}
-
-/* Focus rings for all sidebar interactive elements */
-.sidebar a:focus-visible,
-.sidebar summary:focus-visible {
-  outline: 2px solid var(--blac-dusty);
-  outline-offset: 2px;
-}
-
-/* ── 2. Header / nav bar ───────────────────────────────────────────────────── */
-
-/* Top nav bar background */
-header.header {
-  background-color: var(--blac-surface);
-  border-bottom: 1px solid var(--sl-color-gray-5);
-  backdrop-filter: none; /* remove any default blur that can break layering */
-}
-
-/* Site title / logo area */
-.site-title {
-  color: var(--blac-ink);
-  font-family: var(--blac-font-display);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.site-title:hover {
-  color: var(--blac-dusty);
-  text-decoration: none;
-}
-
-/* Header icon buttons (GitHub, theme toggle, etc.) */
-header .social-icons a,
-header [data-icon-button] {
-  color: var(--blac-ink-dim);
-  border-radius: 4px;
-  transition: color 0.15s ease;
-}
-
-header .social-icons a:hover,
-header [data-icon-button]:hover {
-  color: var(--blac-ink);
-}
-
-header .social-icons a:focus-visible,
-header [data-icon-button]:focus-visible {
-  outline: 2px solid var(--blac-dusty);
-  outline-offset: 2px;
-}
-
-/* Mobile menu toggle */
-starlight-menu-button button {
-  color: var(--blac-ink-dim);
-  transition: color 0.15s ease;
-}
-
-starlight-menu-button button:hover {
-  color: var(--blac-ink);
-}
-
-starlight-menu-button button:focus-visible {
-  outline: 2px solid var(--blac-dusty);
-  outline-offset: 2px;
-}
-
-/* ── 3. Topic-switcher dropdown ─────────────────────────────────────────────── */
-/*
-  This is the PRIMARY package switcher — the most important navigation control
-  on the site. Keep it first-class and prominent. Elevated over the rest of the
-  sidebar chrome.
-*/
-
-starlight-sidebar-topics-dropdown,
-.topics-dropdown {
-  /* Ensure it has room to breathe at the top of the sidebar */
-  margin-bottom: 0.75rem;
-}
-
-starlight-sidebar-topics-dropdown summary,
-.topics-dropdown summary {
-  /* Override from theme.css — keep the font-weight: 600 and add more presence */
-  font-weight: 600;
-  color: var(--blac-ink);
-  background-color: var(--blac-surface-2);
-  border: 1px solid var(--sl-color-gray-5);
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease,
-    border-color 0.15s ease;
-  cursor: pointer;
-  list-style: none; /* remove disclosure triangle in Firefox */
-}
-
-/* Remove Webkit's default disclosure triangle */
-starlight-sidebar-topics-dropdown summary::-webkit-details-marker,
-.topics-dropdown summary::-webkit-details-marker {
-  display: none;
-}
-
-starlight-sidebar-topics-dropdown summary:hover,
-.topics-dropdown summary:hover {
-  color: var(--blac-dusty);
-  border-color: var(--blac-dusty);
-  background-color: color-mix(
-    in srgb,
-    var(--blac-dusty) 8%,
-    var(--blac-surface-2)
-  );
-}
-
-starlight-sidebar-topics-dropdown summary:focus-visible,
-.topics-dropdown summary:focus-visible {
-  outline: 2px solid var(--blac-dusty);
-  outline-offset: 2px;
-}
-
-/* The open dropdown panel */
-starlight-sidebar-topics-dropdown[open] > ul,
-starlight-sidebar-topics-dropdown details[open] > ul,
-.topics-dropdown[open] > ul,
-.topics-dropdown details[open] > ul {
-  background-color: var(--blac-surface-2);
-  border: 1px solid var(--sl-color-gray-5);
-  border-radius: 6px;
-  margin-top: 0.25rem;
-  padding: 0.25rem 0;
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--blac-bg) 60%, transparent);
-}
-
-/* Topic list items */
-starlight-sidebar-topics-dropdown li a,
-.topics-dropdown li a {
-  color: var(--blac-ink-dim);
-  padding: 0.4rem 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  border-radius: 4px;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease;
-  text-decoration: none;
-}
-
-starlight-sidebar-topics-dropdown li a:hover,
-.topics-dropdown li a:hover {
-  color: var(--blac-ink);
-  background-color: color-mix(in srgb, var(--blac-dusty) 10%, transparent);
-}
-
-/* Active / selected topic */
-starlight-sidebar-topics-dropdown li a[aria-current='true'],
-starlight-sidebar-topics-dropdown li a.active,
-.topics-dropdown li a[aria-current='true'],
-.topics-dropdown li a.active {
-  color: var(--blac-dusty);
-  font-weight: 600;
-}
-
-starlight-sidebar-topics-dropdown li a:focus-visible,
-.topics-dropdown li a:focus-visible {
-  outline: 2px solid var(--blac-dusty);
-  outline-offset: 2px;
-}
-
-/* ── 4. Search ──────────────────────────────────────────────────────────────── */
-
-/* Search trigger button */
-site-search button,
-[data-search-trigger] {
-  background-color: var(--blac-surface-2);
-  border: 1px solid var(--sl-color-gray-5);
-  border-radius: 6px;
-  color: var(--blac-ink-dim);
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    color 0.15s ease;
-}
-
-site-search button:hover,
-[data-search-trigger]:hover {
-  border-color: var(--blac-dusty);
-  color: var(--blac-ink);
-  background-color: color-mix(
-    in srgb,
-    var(--blac-dusty) 6%,
-    var(--blac-surface-2)
-  );
-}
-
-site-search button:focus-visible,
-[data-search-trigger]:focus-visible {
-  outline: 2px solid var(--blac-dusty);
-  outline-offset: 2px;
-}
-
-/* Pagefind search dialog / modal */
-[data-pagefind-ui] .pagefind-ui__search-input {
-  background-color: var(--blac-surface-2);
-  border-color: var(--sl-color-gray-4);
-  color: var(--blac-ink);
-  border-radius: 6px;
-}
-
-[data-pagefind-ui] .pagefind-ui__search-input::placeholder {
-  color: var(--blac-ink-dim);
-}
-
-[data-pagefind-ui] .pagefind-ui__search-input:focus-visible {
-  outline: 2px solid var(--blac-dusty);
-  outline-offset: -1px;
-  border-color: var(--blac-dusty);
-}
-
-/* Search results */
-[data-pagefind-ui] .pagefind-ui__result {
-  border-color: var(--sl-color-gray-5);
-}
-
-[data-pagefind-ui] .pagefind-ui__result-title a {
-  color: var(--blac-dusty);
-}
-
-[data-pagefind-ui] .pagefind-ui__result-title a:hover {
-  color: var(--blac-lavender);
-  text-decoration: underline;
-}
-
-[data-pagefind-ui] .pagefind-ui__result-excerpt mark {
-  background-color: color-mix(in srgb, var(--blac-dusty) 20%, transparent);
-  color: var(--blac-ink);
-  border-radius: 2px;
-}
-
-/* ── 5. Card grid ───────────────────────────────────────────────────────────── */
-/*
-  Starlight's <CardGrid> / <Card> components.
-  Migrated from theme.css (which had .card:hover) — extending with full state.
-*/
-
-.card {
-  background-color: var(--blac-surface);
-  border-color: var(--sl-color-gray-5);
-  border-radius: 8px;
-  /* Inherit the hover lift from theme.css; add transition for border */
-  transition:
-    border-color 0.2s ease,
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.card:hover {
-  /* theme.css already sets border-color + translateY(-2px) — reinforce here
-     so our load-order (chrome after theme) wins cleanly */
-  border-color: var(--blac-dusty);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px color-mix(in srgb, var(--blac-dusty) 12%, transparent);
-}
-
-/* Card title */
-.card .sl-flex .icon + *,
-.card h2,
-.card h3 {
-  color: var(--blac-ink);
-}
-
-/* Card icon accent */
-.card .icon {
-  color: var(--blac-dusty);
-}
-
-/* ── 6. On-this-page TOC ────────────────────────────────────────────────────── */
-
-/* TOC nav container */
-starlight-toc nav {
-  border-left: 1px solid var(--sl-color-gray-5);
-}
-
-/* TOC section heading label */
-.right-sidebar-panel .right-sidebar-label {
-  color: var(--blac-ink-dim);
-  font-size: var(--blac-text-xs);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-/* TOC links */
-starlight-toc a {
-  color: var(--blac-ink-dim);
-  font-size: var(--blac-text-sm);
-  transition: color 0.15s ease;
-  text-decoration: none;
-}
-
-starlight-toc a:hover {
-  color: var(--blac-ink);
-}
-
-/* Current / active TOC entry */
-starlight-toc a[aria-current='true'] {
-  color: var(--blac-dusty);
-  font-weight: 500;
-  /* Subtle left-border marker on the active entry */
-  border-left: 2px solid var(--blac-dusty);
-  padding-left: 0.5rem;
-  margin-left: -2px; /* keep text aligned with inactive entries */
-}
-
-starlight-toc a:focus-visible {
-  outline: 2px solid var(--blac-dusty);
-  outline-offset: 2px;
-}
-
-/* ── 7. Docs content readability ────────────────────────────────────────────── */
-/*
-  Markdown content gets the longest unstructured text and the widest API tables.
-  Keep desktop tables familiar, then switch to labelled row cards on small
-  screens so cells do not collapse into one-word columns.
-*/
-
-.sl-markdown-content {
-  overflow-wrap: break-word;
-}
-
-.sl-markdown-content :where(p, li, dd, blockquote, .starlight-aside) {
-  text-wrap: pretty;
-}
-
-.sl-markdown-content :where(code:not(pre code)) {
-  white-space: normal;
-  overflow-wrap: break-word;
-}
-
-.sl-markdown-content :where(table) {
-  width: 100%;
-  table-layout: auto;
-}
-
-.sl-markdown-content :where(th, td) {
-  vertical-align: top;
-}
-
-.sl-markdown-content :where(th, td) :where(code:not(pre code)) {
-  white-space: normal;
-}
-
-.sl-markdown-content :where(.starlight-aside) {
-  overflow-wrap: normal;
-}
-
-.sl-markdown-content :where(.starlight-aside__title) {
-  display: flex;
-  grid-template-columns: none;
-  gap: 0.65rem;
-  align-items: flex-start;
-  max-width: 100%;
-  line-height: var(--blac-leading-snug);
-  text-wrap: balance;
-}
-
-.sl-markdown-content :where(.starlight-aside__title svg) {
-  flex: 0 0 auto;
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-block-start: 0.15em;
-}
-
-.sl-markdown-content :where(.starlight-aside__title code) {
-  display: inline-block;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow-wrap: normal;
-  word-break: normal;
-}
-
-@media (max-width: 44rem) {
-  .sl-markdown-content :where(table) {
-    display: block;
-    border: 0;
-    overflow: visible;
-  }
-
-  .sl-markdown-content :where(table thead) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  .sl-markdown-content :where(table tbody) {
-    display: grid;
-    gap: 0.75rem;
-  }
-
-  .sl-markdown-content :where(table tr) {
-    display: grid;
-    gap: 0;
-    background-color: color-mix(in srgb, var(--blac-surface) 72%, transparent);
-    border: 1px solid var(--sl-color-gray-5);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .sl-markdown-content :where(table td) {
-    display: grid;
-    grid-template-columns: minmax(6.5rem, 36%) minmax(0, 1fr);
-    gap: 0.75rem;
-    align-items: start;
-    width: 100%;
-    padding: 0.75rem;
-    border: 0;
-    border-block-start: 1px solid var(--sl-color-gray-5);
-  }
-
-  .sl-markdown-content :where(table td:first-child) {
-    border-block-start: 0;
-  }
-
-  .sl-markdown-content :where(table td)::before {
-    content: attr(data-label);
-    min-width: 0;
-    color: var(--blac-ink-dim);
-    font-size: var(--blac-text-xs);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    line-height: var(--blac-leading-snug);
-    text-transform: uppercase;
-    overflow-wrap: anywhere;
-  }
-
-  .sl-markdown-content :where(table td > :first-child) {
-    margin-block-start: 0;
-  }
-
-  .sl-markdown-content :where(table td > :last-child) {
-    margin-block-end: 0;
-  }
-
-  .sl-markdown-content :where(.starlight-aside__title) {
-    font-size: var(--blac-text-lg);
-  }
-}
-
-@media (max-width: 30rem) {
-  .sl-markdown-content :where(table td) {
-    grid-template-columns: 1fr;
-    gap: 0.25rem;
-  }
-
-  .sl-markdown-content :where(.starlight-aside) {
-    margin-inline: 0;
-    padding-inline: 1rem;
-  }
-}
-
-/* ── 8. Shared focus-visible ring ───────────────────────────────────────────── */
-/*
-  Global fallback: any interactive element we haven't explicitly targeted above
-  gets a branded ring when focused via keyboard, replacing Starlight's default
-  browser outline (which can be jarring against the warm-charcoal palette).
-  We do NOT use outline: none without replacement — this is a global enhancement.
-*/
 
 :where(
   a,
   button,
   [role='button'],
-  details > summary,
+  summary,
   input,
   select,
   textarea
 ):focus-visible {
-  outline: 2px solid var(--blac-dusty);
+  outline: 2px solid var(--blac-link);
   outline-offset: 2px;
-  /* Remove any existing outlines that differ per-browser */
-  outline-color: var(--blac-dusty);
 }
 
-/* ── 9. Light-mode adjustments ──────────────────────────────────────────────── */
-/*
-  Most values inherit correctly from the light-mode token overrides in tokens.css.
-  A handful of chrome-specific surfaces need an explicit touch on cream paper.
-*/
+/* ── Header ── */
 
-:root[data-theme='light'] .sidebar {
+header.header {
+  background-color: color-mix(in srgb, var(--blac-bg) 86%, transparent);
+  backdrop-filter: saturate(1.4) blur(14px);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+}
+
+.site-title {
+  gap: 0.6rem;
+  color: var(--blac-fg-strong);
+  font-family: var(--blac-font-display);
+  font-size: 1.375rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.site-title img {
+  height: 2.125rem;
+}
+
+.site-title:hover {
+  color: var(--blac-fg-strong);
+}
+
+site-search button[data-open-modal] {
+  border-color: var(--blac-border);
+  border-radius: 999px;
   background-color: var(--blac-surface);
-  border-right-color: var(--sl-color-gray-5);
+  color: var(--blac-fg-faint);
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
-:root[data-theme='light'] header.header {
-  background-color: var(--blac-surface);
-  border-bottom-color: var(--sl-color-gray-5);
+site-search button[data-open-modal]:hover {
+  border-color: var(--blac-border-strong);
+  color: var(--blac-fg);
 }
 
-:root[data-theme='light'] starlight-sidebar-topics-dropdown summary,
-:root[data-theme='light'] .topics-dropdown summary {
+site-search button[data-open-modal] kbd {
+  border-radius: var(--blac-radius-sm);
   background-color: var(--blac-surface-2);
-  border-color: var(--sl-color-gray-5);
+  font-family: var(--blac-font-body);
 }
 
-:root[data-theme='light'] .card {
+header :is(.social-icons a, starlight-theme-select) {
+  color: var(--blac-fg-dim);
+  transition: color 0.15s ease;
+}
+
+header .social-icons a:hover {
+  color: var(--blac-fg-strong);
+}
+
+/* ── Sidebar ── */
+
+.sidebar-content {
+  gap: 1.25rem;
+}
+
+.sidebar-content a {
+  font-size: 0.9375rem;
+}
+
+.sidebar-content ul ul a {
+  color: var(--blac-fg-dim);
+  border-radius: var(--blac-radius-sm);
+  padding-block: 0.32em;
+  transition:
+    color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.sidebar-content ul ul a:hover {
+  color: var(--blac-fg-strong);
   background-color: var(--blac-surface);
 }
 
-:root[data-theme='light'] site-search button,
-:root[data-theme='light'] [data-search-trigger] {
-  background-color: var(--blac-surface-2);
-  border-color: var(--sl-color-gray-4);
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:is(:hover, :focus) {
+  color: var(--blac-fg-strong);
+  background-color: var(--sl-color-accent-low);
+  box-shadow: inset 3px 0 0 var(--blac-pink);
+  font-weight: 600;
 }
 
-:root[data-theme='light'] [data-pagefind-ui] .pagefind-ui__result-excerpt mark {
-  background-color: color-mix(in srgb, var(--blac-dusty) 15%, transparent);
-  color: var(--blac-ink);
+.sidebar-content summary .large {
+  color: var(--blac-fg-faint);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sidebar-content summary:hover .large {
+  color: var(--blac-fg);
+}
+
+.sidebar-content summary .caret {
+  color: var(--blac-fg-faint);
+}
+
+/* starlight-sidebar-topics: the package switcher above the nav tree */
+.starlight-sidebar-topics a {
+  color: var(--blac-fg-dim);
+  font-size: 0.9375rem;
+  border-radius: var(--blac-radius);
+  transition:
+    color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.starlight-sidebar-topics a:is(:hover, :focus-visible) {
+  color: var(--blac-fg-strong);
+  background-color: var(--blac-surface);
+}
+
+.starlight-sidebar-topics a.starlight-sidebar-topics-current,
+:root[data-theme='light']
+  .starlight-sidebar-topics
+  a.starlight-sidebar-topics-current {
+  color: var(--blac-fg-strong);
+}
+
+.starlight-sidebar-topics .starlight-sidebar-topics-icon {
+  border-color: var(--blac-border-strong);
+  border-radius: var(--blac-radius-sm);
+}
+
+.starlight-sidebar-topics
+  a:is(:hover, :focus-visible)
+  .starlight-sidebar-topics-icon {
+  border-color: var(--blac-fg-dim);
+  background-color: transparent;
+  color: var(--blac-fg-strong);
+}
+
+.starlight-sidebar-topics
+  a.starlight-sidebar-topics-current
+  .starlight-sidebar-topics-icon {
+  border-color: var(--blac-blue);
+  background-color: var(--blac-blue);
+  color: #fff;
+}
+
+/* ── On this page ── */
+
+.right-sidebar-panel h2 {
+  color: var(--blac-fg-faint);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+starlight-toc ul {
+  border-inline-start: 1px solid var(--blac-border);
+}
+
+starlight-toc ul ul {
+  border: 0;
+}
+
+starlight-toc a {
+  margin-inline-start: -1px;
+  border-inline-start: 2px solid transparent;
+  border-radius: 0;
+  color: var(--blac-fg-faint);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  transition:
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+starlight-toc a:hover {
+  color: var(--blac-fg-strong);
+}
+
+starlight-toc a[aria-current='true'] {
+  border-inline-start-color: var(--blac-pink);
+  color: var(--blac-fg-strong);
+  font-weight: 600;
+}
+
+/* ── Page title ── */
+
+.content-panel:has(> .sl-container > h1.page-title) {
+  padding-block-end: 0;
+}
+
+.content-panel:has(> .sl-container > h1.page-title) + .content-panel {
+  border-top: 0;
+}
+
+/* ── Buttons ── */
+
+.sl-link-button {
+  font-weight: 600;
+  transition:
+    transform 0.18s var(--blac-ease),
+    box-shadow 0.18s var(--blac-ease),
+    background-color 0.18s ease,
+    color 0.15s ease;
+}
+
+.sl-link-button.primary,
+.sl-link-button.primary:hover {
+  border-color: var(--blac-blue);
+  background-color: var(--blac-blue);
+  color: #fff;
+}
+
+.sl-link-button.primary:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--blac-offset);
+}
+
+.sl-link-button.secondary {
+  border-color: var(--blac-border-strong);
+  color: var(--blac-fg-strong);
+}
+
+.sl-link-button.secondary:hover {
+  border-color: var(--blac-fg-dim);
+}
+
+.sl-link-button.minimal {
+  color: var(--blac-fg-strong);
+}
+
+.sl-link-button.minimal:hover {
+  color: var(--blac-link);
+}
+
+/* ── Cards ── */
+
+.card {
+  border-color: var(--blac-border);
+  border-radius: var(--blac-radius-lg);
+  background-color: var(--blac-surface);
+}
+
+.card:nth-child(3n + 1) {
+  --sl-card-border: var(--blac-blue);
+  --sl-card-bg: var(--blac-blue);
+}
+
+.card:nth-child(3n + 2) {
+  --sl-card-border: var(--blac-pink);
+  --sl-card-bg: var(--blac-pink);
+}
+
+.card:nth-child(3n + 3) {
+  --sl-card-border: var(--blac-indigo);
+  --sl-card-bg: var(--blac-indigo);
+}
+
+.card .icon {
+  padding: 0.3em;
+  border-radius: var(--blac-radius-sm);
+  color: #fff;
+}
+
+.card .title {
+  font-family: var(--blac-font-display);
+  font-size: 1.1875rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.card .body {
+  color: var(--blac-fg-dim);
+  font-size: 0.96875rem;
+  line-height: 1.65;
+}
+
+.sl-link-card,
+.pagination-links a {
+  border-color: var(--blac-border);
+  border-radius: var(--blac-radius-lg);
+  background-color: var(--blac-surface);
+  box-shadow: none;
+  transition:
+    transform 0.18s var(--blac-ease),
+    box-shadow 0.18s var(--blac-ease),
+    border-color 0.18s ease;
+}
+
+.sl-link-card:hover,
+.pagination-links a:hover {
+  border-color: var(--blac-fg-dim);
+  background-color: var(--blac-surface);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--blac-offset);
+}
+
+.sl-link-card .title {
+  font-family: var(--blac-font-display);
+  font-size: 1.1875rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.sl-link-card .description {
+  color: var(--blac-fg-dim);
+}
+
+.sl-link-card:hover .icon {
+  color: var(--blac-pink-text);
+}
+
+.pagination-links a {
+  color: var(--blac-fg-faint);
+  font-size: 0.8125rem;
+}
+
+.pagination-links .link-title {
+  font-family: var(--blac-font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sl-link-button,
+  .sl-link-card,
+  .pagination-links a {
+    transition: none;
+  }
+
+  .sl-link-button.primary:hover,
+  .sl-link-card:hover,
+  .pagination-links a:hover {
+    transform: none;
+  }
 }

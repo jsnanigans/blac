@@ -6,6 +6,7 @@ import starlightSidebarTopics from 'starlight-sidebar-topics';
 import ts from 'typescript';
 import pluginTwoslash from 'expressive-code-twoslash';
 import remarkGfm from 'remark-gfm';
+import { blacDark, blacLight } from './src/styles/code-themes.mjs';
 
 /*
  * WORKAROUND — content-propagated styles dropped by `astro build`.
@@ -20,7 +21,7 @@ import remarkGfm from 'remark-gfm';
  * is marked, and at render time `createHeadAndContent` silently drops every
  * stylesheet propagated through content-collection MDX:
  *
- *   - scoped <style> from .astro components imported in .mdx (RisoHeading…)
+ *   - scoped <style> from .astro components imported in .mdx (Eyebrow…)
  *   - CSS imported by React islands (demos.css via DemoFrame/RenderCounter)
  *
  * Dev is unaffected (the dev plugin reads transform-time sources, where the
@@ -34,7 +35,7 @@ import remarkGfm from 'remark-gfm';
  *
  * Remove once Astro officially supports the Rolldown-based vite (or the
  * workspace stops overriding vite for this app). Regression test: the built
- * homepage must contain `.riso-heading` and `.blac-demo` style rules.
+ * homepage must contain `.blac-eyebrow` and `.blac-demo` style rules.
  */
 const headPropagationSeedFix = {
   name: 'blac:head-propagation-seed-fix',
@@ -187,12 +188,11 @@ export default defineConfig({
       editLink: {
         baseUrl: 'https://github.com/jsnanigans/blac/edit/main/apps/web-docs/',
       },
-      // Preload the two normal-style woff2s so the browser fetches them
+      // Preload the body and display woff2s so the browser fetches them
       // before CSS parse discovers the @font-face rules — shrinks the
       // font-display:swap window (the metric-matched fallbacks in fonts.css
-      // make whatever window remains shift-free). Italics are not preloaded:
-      // rarely above the fold, not worth blocking bandwidth for.
-      // `crossorigin` is required for font preloads even same-origin.
+      // make whatever window remains shift-free). Italic and mono are not
+      // preloaded. `crossorigin` is required for font preloads even same-origin.
       head: [
         {
           tag: 'link',
@@ -208,7 +208,7 @@ export default defineConfig({
           tag: 'link',
           attrs: {
             rel: 'preload',
-            href: '/fonts/fraunces-latin-opsz-normal.woff2',
+            href: '/fonts/bricolage-grotesque-latin-opsz-normal.woff2',
             as: 'font',
             type: 'font/woff2',
             crossorigin: 'anonymous',
@@ -218,24 +218,13 @@ export default defineConfig({
       components: {
         PageTitle: './src/components/overrides/PageTitle.astro',
         Footer: './src/components/overrides/Footer.astro',
-        // T4.1: the flagship landing set-piece — replaces the stock splash
-        // hero with the two-plate overprint wordmark (see the file's header).
         Hero: './src/components/overrides/Hero.astro',
       },
       customCss: [
-        // Load order per midnight-risograph conventions:
-        //   fonts.css  (T1.2 — @font-face declarations, must come first)
-        //   tokens.css (T1.1 / T1.2 — colors + font token names + type scale)
-        //   riso.css   (T2.1 — print primitives)
-        //   chrome.css (T3.1 — Starlight chrome polish)
-        // theme.css deleted (T5.3): all rules were either dead (`.hero h1` gradient
-        // wordmark — superseded by Hero.astro's .blac-hero class, which deliberately
-        // avoids `.hero`), or fully migrated into chrome.css (card hover, topic-
-        // dropdown font-weight, `.hero .tagline` max-width now owned by
-        // .blac-hero__tagline in Hero.astro).
+        // fonts.css must come first; tokens.css before everything that reads them.
         './src/styles/fonts.css',
         './src/styles/tokens.css',
-        './src/styles/riso.css',
+        './src/styles/content.css',
         './src/styles/chrome.css',
       ],
 
@@ -244,9 +233,16 @@ export default defineConfig({
       // type-on-hover + build-time type-checking: a broken ```ts twoslash``
       // snippet fails the build, exactly like the old VitePress site.
       expressiveCode: {
-        // Keep Starlight's theme-synced defaults; just soften the frame.
+        themes: [blacDark, blacLight],
+        useStarlightUiThemeColors: true,
         styleOverrides: {
-          borderRadius: '0.5rem',
+          borderRadius: '0.625rem',
+          borderColor: 'var(--blac-border)',
+          codeFontSize: 'var(--sl-text-code)',
+          codeLineHeight: '1.7',
+          codePaddingBlock: '1rem',
+          codePaddingInline: '1.25rem',
+          uiFontFamily: 'var(--blac-font-body)',
           frames: {
             shadowColor: 'transparent',
           },
