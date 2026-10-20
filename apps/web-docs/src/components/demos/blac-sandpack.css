@@ -10,7 +10,7 @@
 .blac-sp {
   margin: 1.5rem 0;
   border: 1px solid var(--sl-color-gray-5);
-  border-radius: 0.75rem;
+  border-radius: var(--blac-radius, 0.75rem);
   overflow: hidden;
   background-color: var(--sl-color-bg);
 }
@@ -30,9 +30,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: var(--sl-text-xs);
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   color: var(--sl-color-gray-2);
   text-transform: uppercase;
 }
@@ -41,15 +41,19 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background-color: var(--sl-color-accent);
-  box-shadow: 0 0 0 0 var(--sl-color-accent);
+  background-color: var(--blac-pink, var(--sl-color-accent));
+  box-shadow: 0 0 0 0 var(--blac-pink, var(--sl-color-accent));
   animation: blac-sp-pulse 2.4s ease-out infinite;
 }
 
 @keyframes blac-sp-pulse {
   0% {
     box-shadow: 0 0 0 0
-      color-mix(in srgb, var(--sl-color-accent) 55%, transparent);
+      color-mix(
+        in srgb,
+        var(--blac-pink, var(--sl-color-accent)) 55%,
+        transparent
+      );
   }
   70% {
     box-shadow: 0 0 0 6px transparent;

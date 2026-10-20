@@ -67,30 +67,30 @@ const CUSTOM_SETUP = {
   },
 };
 
-// Syntax palettes — Starlight/Shiki don't expose token colours, so these are
-// hand-tuned to read well against the Starlight surfaces in each mode.
+// Syntax palettes — Starlight/Shiki don't expose token colours, so these
+// mirror src/styles/code-themes.mjs.
 const LIGHT_SYNTAX = {
-  plain: '#3b3b3b',
-  comment: { color: '#9aa0a6', fontStyle: 'italic' as const },
-  keyword: '#9333ea',
-  tag: '#0550ae',
-  punctuation: '#6e7781',
-  definition: '#7c3aed',
-  property: '#0550ae',
-  static: '#0a7c42',
-  string: '#0a7c42',
+  plain: '#24223a',
+  comment: { color: '#6b6884', fontStyle: 'italic' as const },
+  keyword: '#b62f7a',
+  tag: '#b62f7a',
+  punctuation: '#55526c',
+  definition: '#1d669c',
+  property: '#3f3c56',
+  static: '#9a5410',
+  string: '#1d7a4c',
 };
 
 const DARK_SYNTAX = {
-  plain: '#d6deeb',
-  comment: { color: '#637777', fontStyle: 'italic' as const },
-  keyword: '#c792ea',
-  tag: '#7fdbca',
-  punctuation: '#a1aab8',
-  definition: '#82aaff',
-  property: '#addb67',
-  static: '#ecc48d',
-  string: '#ecc48d',
+  plain: '#dddbe8',
+  comment: { color: '#8a87a0', fontStyle: 'italic' as const },
+  keyword: '#f37fbd',
+  tag: '#f37fbd',
+  punctuation: '#a6a3ba',
+  definition: '#6bb2e6',
+  property: '#c3c0d3',
+  static: '#f5b67a',
+  string: '#93d8b0',
 };
 
 /** Tracks Starlight's active theme via the `data-theme` attribute on `<html>`. */
