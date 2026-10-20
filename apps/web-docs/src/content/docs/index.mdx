@@ -3,9 +3,8 @@ title: BlaC
 description: Type-safe state management for React with automatic re-render optimization.
 template: splash
 hero:
-  # tagline feeds the Hero override (src/components/overrides/Hero.astro). The
-  # <em>state, handled</em> phrase is recoloured coral by the hero's scoped CSS —
-  # the concept tagline of the redesign ("chaos resolving into calm").
+  # tagline feeds the Hero override (src/components/overrides/Hero.astro), which
+  # sets the <em> phrase as the headline and the rest as the lead.
   tagline: <em>State, handled.</em> Write a class, read it like a plain object, and only the components that used what changed re-render. No selectors, no reducers.
   actions:
     - text: Get started
@@ -19,19 +18,16 @@ hero:
 ---
 
 import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
-import SectionBreak from '../../components/riso/SectionBreak.astro';
-import RisoHeading from '../../components/riso/RisoHeading.astro';
+import Eyebrow from '../../components/brand/Eyebrow.astro';
 import CounterDemo from '../../components/demos/CounterDemo.tsx';
 
 :::caution[Beta]
 BlaC v2 is in beta. Breaking changes may ship in patch releases, so pin exact versions and check the changelog before upgrading.
 :::
 
-<SectionBreak label="§ the whole loop" dotSize="7px" dotOpacity="0.2" />
+<Eyebrow>The whole loop</Eyebrow>
 
-<RisoHeading as="h2" intensity="subtle">
-  Here. This is all of it.
-</RisoHeading>
+## Here. This is all of it.
 
 A class holds your state and the methods that change it. One hook connects it
 to React. No store setup, no provider tree, no action types.
@@ -58,11 +54,9 @@ The same code, running live. The badge counts real renders:
 
 <CounterDemo client:visible />
 
-<SectionBreak label="§ why blac" dotSize="7px" dotOpacity="0.2" />
+<Eyebrow>Why BlaC</Eyebrow>
 
-<RisoHeading as="h2" intensity="subtle">
-  Less wiring, fewer re-renders
-</RisoHeading>
+## Less wiring, fewer re-renders
 
 <CardGrid>
   <Card title="Touch it, you're subscribed" icon="magnifier">
@@ -94,7 +88,7 @@ The same code, running live. The badge counts real renders:
   </Card>
 </CardGrid>
 
-<SectionBreak label="§ where to next" dotSize="7px" dotOpacity="0.2" />
+<Eyebrow>Where to next</Eyebrow>
 
 <CardGrid>
   <LinkCard

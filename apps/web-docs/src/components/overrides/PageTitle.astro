@@ -1,56 +1,18 @@
 ---
-/*
-  PageTitle.astro — Starlight PageTitle override.
-
-  Preserves the default PageTitle's semantics exactly:
-    - Single <h1> element
-    - id="_top" (PAGE_TITLE_ID = '_top') for skip-link + in-page anchor targets
-    - Title text sourced from starlightRoute.entry.data.title
-    - Starlight's h1 size/spacing tokens honored via :global(h1.page-title)
-
-  Riso treatment:
-    A restrained, text-SAFE version of the RisoHeading look: the title stays
-    high-contrast white (--sl-color-white) in Fraunces, with a subtle 1px
-    .riso-misregister ink ghost — the channel-split "off-press" accent — and NO
-    .riso-overprint box (that class is a shape-fill and would paint a solid
-    rectangle behind the text). Classes are applied directly here rather than
-    via <RisoHeading> because that component does not expose an `id` prop, and
-    the skip-link / anchor contract requires id="_top" on the real <h1>. This
-    file IS the sanctioned override point.
-
-    intensity="loud" is reserved for the landing hero (T4.1).
-    PAGE_TITLE_ID is intentionally inlined as '_top' to avoid importing from an
-    unexported internal Starlight path; the constant has been '_top' since v0.x
-    and is stable (verified in constants.ts).
-*/
+// Same contract as Starlight's PageTitle (single <h1 id="_top">), set in the display face.
 ---
 
-<h1
-  id="_top"
-  class="riso-heading riso-misregister page-title"
-  data-riso-heading="true"
-  data-riso-intensity="normal"
-  style="--blac-misregister: 1px;"
->
-  {Astro.locals.starlightRoute.entry.data.title}
-</h1>
+<h1 id="_top" class="page-title">{Astro.locals.starlightRoute.entry.data.title}</h1>
 
 <style>
-  /*
-    Replicate Starlight's @layer starlight.core h1 rules (spacing + type tokens)
-    and add the Fraunces display font that RisoHeading normally supplies via its
-    scoped .riso-heading rule. Scoped to .page-title to avoid clashing with any
-    other h1 on the page.
-  */
-  @layer starlight.core {
-    :global(h1.page-title) {
-      margin-top: 1rem;
-      font-size: var(--sl-text-h1);
-      line-height: var(--sl-line-height-headings);
-      font-weight: 700;
-      color: var(--sl-color-white);
-      font-family: var(--blac-font-display);
-      letter-spacing: -0.02em;
-    }
+  .page-title {
+    margin-top: 1.5rem;
+    color: var(--blac-fg-strong);
+    font-family: var(--blac-font-display);
+    font-size: var(--sl-text-h1);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
+    text-wrap: balance;
   }
 </style>

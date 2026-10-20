@@ -1,0 +1,41 @@
+---
+// Small section label: the logo's overlapping discs, a label, a hairline.
+---
+
+<p class="blac-eyebrow not-content">
+  <svg viewBox="0 0 18 12" width="18" height="12" aria-hidden="true">
+    <circle cx="6" cy="6" r="5" fill="var(--blac-blue)"></circle>
+    <circle cx="12" cy="6" r="5" fill="var(--blac-pink)"></circle>
+    <path d="M9 2a5 5 0 0 1 0 8a5 5 0 0 1 0-8z" fill="var(--blac-indigo)"></path>
+  </svg>
+  <span><slot /></span>
+</p>
+
+<style>
+  .blac-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-block: 4rem 0;
+    color: var(--blac-fg-dim);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .blac-eyebrow::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid var(--blac-border);
+  }
+
+  .blac-eyebrow svg {
+    flex: none;
+  }
+
+  :global(.sl-markdown-content) .blac-eyebrow + :global(*) {
+    margin-top: 1rem;
+  }
+</style>
