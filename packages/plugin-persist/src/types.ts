@@ -23,20 +23,37 @@ export interface PersistPluginStatusEvent {
   status: PersistPluginStatus;
 }
 
+type MaybePromise<T> = T | Promise<T>;
+
+/**
+ * Storage backend for the persist plugin. Methods may be synchronous: when
+ * `get` returns a record directly (not a promise), hydration completes inside
+ * `onCreated`, before the instance's first state read.
+ */
 export interface IndexedDbPersistAdapter {
   isAvailable(): boolean;
   get<TPayload = unknown>(
     key: string,
-  ): Promise<PersistedRecord<TPayload> | null>;
-  put<TPayload = unknown>(record: PersistedRecord<TPayload>): Promise<void>;
-  delete(key: string): Promise<void>;
-  clear(): Promise<void>;
+  ): MaybePromise<PersistedRecord<TPayload> | null>;
+  put<TPayload = unknown>(
+    record: PersistedRecord<TPayload>,
+  ): MaybePromise<void>;
+  delete(key: string): MaybePromise<void>;
+  clear(): MaybePromise<void>;
 }
 
 export interface IndexedDbPersistPluginOptions {
   databaseName?: string;
   storeName?: string;
   adapter?: IndexedDbPersistAdapter;
+  pluginName?: string;
+}
+
+export interface WebStoragePersistPluginOptions {
+  /** Defaults to `localStorage`; pass `sessionStorage` or a stand-in. */
+  storage?: Storage;
+  /** Prepended to every key; `clearAll` only removes keys with this prefix. */
+  prefix?: string;
   pluginName?: string;
 }
 
@@ -88,6 +105,8 @@ export interface IndexedDbPersistPlugin extends BlacPlugin {
     Type: new (...args: any[]) => TContainer,
     config?: PersistRegistration<S, TPayload, TContainer>,
   ): IndexedDbPersistPlugin;
+  /** Starts every pending debounced write now. Also runs on `pagehide`. */
+  flush(): void;
   clearRecord(key: string): Promise<void>;
   clearAll(): Promise<void>;
   getStatus(instance: StateContainer<object>): PersistPluginStatus | undefined;

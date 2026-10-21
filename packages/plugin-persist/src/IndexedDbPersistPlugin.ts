@@ -4,6 +4,7 @@ import {
   createNativeIndexedDbAdapter,
   NativeIndexedDbAdapter,
 } from './IndexedDbAdapter';
+import { createWebStorageAdapter } from './WebStorageAdapter';
 import type {
   IndexedDbPersistAdapter,
   IndexedDbPersistPlugin,
@@ -13,9 +14,24 @@ import type {
   PersistPluginStatusEvent,
   PersistRegistration,
   PersistedRecord,
+  WebStoragePersistPluginOptions,
 } from './types';
 
 type InternalDefinition = PersistRegistration<any, any, any>;
+
+interface PendingWrite {
+  timer: ReturnType<typeof setTimeout>;
+  write: () => void;
+}
+
+const isPromiseLike = <T>(value: T | PromiseLike<T>): value is PromiseLike<T> =>
+  typeof (value as PromiseLike<T> | null)?.then === 'function';
+
+/** Applies `fn` to `value` synchronously unless `value` is still pending. */
+const then = <T, R>(
+  value: T | PromiseLike<T>,
+  fn: (value: T) => R | PromiseLike<R>,
+): R | PromiseLike<R> => (isPromiseLike(value) ? value.then(fn) : fn(value));
 
 interface InstanceRuntime {
   key: string;
@@ -52,10 +68,7 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     StateContainer<any>,
     InstanceRuntime
   >();
-  private readonly timers = new Map<
-    StateContainer<any>,
-    ReturnType<typeof setTimeout>
-  >();
+  private readonly pendingWrites = new Map<StateContainer<any>, PendingWrite>();
   private readonly statuses = new WeakMap<
     StateContainer<any>,
     PersistPluginStatus
@@ -82,6 +95,13 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     return this;
   }
 
+  flush(): void {
+    for (const { timer, write } of this.pendingWrites.values()) {
+      clearTimeout(timer);
+      write();
+    }
+  }
+
   async clearRecord(key: string): Promise<void> {
     await this.adapter.delete(key);
   }
@@ -102,18 +122,22 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
   onInstall(_context: PluginContext): void {
     if (!this.adapter.isAvailable()) {
       console.warn(
-        `[BlaC] Plugin "${this.name}" disabled: IndexedDB unavailable`,
+        `[BlaC] Plugin "${this.name}" disabled: storage unavailable`,
       );
     }
+    globalThis.addEventListener?.('pagehide', this.onPageHide);
   }
 
   onUninstall(): void {
-    for (const timer of this.timers.values()) {
+    globalThis.removeEventListener?.('pagehide', this.onPageHide);
+    for (const { timer } of this.pendingWrites.values()) {
       clearTimeout(timer);
     }
-    this.timers.clear();
+    this.pendingWrites.clear();
     this.listeners.clear();
   }
+
+  private readonly onPageHide = (): void => this.flush();
 
   onCreated(ctx: PluginContext): void {
     const instance = ctx.container as StateContainer<any>;
@@ -153,7 +177,7 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
       hydratedFromStorage: false,
     });
 
-    void this.hydrate(instance, context, definition, runtime);
+    this.hydrate(instance, context, definition, runtime);
   }
 
   onStateChange(
@@ -200,16 +224,17 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
       }
     }
 
-    const existingTimer = this.timers.get(instance);
-    if (existingTimer) {
-      clearTimeout(existingTimer);
+    const existing = this.pendingWrites.get(instance);
+    if (existing) {
+      clearTimeout(existing.timer);
     }
 
     // Capture the live state now (at flush time). When debounce > 0 the
     // timer fires later, but we re-read ctx.container.state at that point
     // via the save() snapshot, so we don't stale-state here intentionally.
     const delay = definition.debounceMs ?? 0;
-    const timer = setTimeout(() => {
+    const write = () => {
+      this.pendingWrites.delete(instance);
       // Re-read the current state at actual write time so a burst of emits
       // within the debounce window always persists the most recent snapshot.
       const stateAtWrite = context.getState(instance);
@@ -223,9 +248,12 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
         stateAtWrite,
         resolvedPaths,
       );
-    }, delay);
+    };
 
-    this.timers.set(instance, timer);
+    this.pendingWrites.set(instance, {
+      timer: setTimeout(write, delay),
+      write,
+    });
   }
 
   onDestroyed(ctx: PluginContext): void {
@@ -235,24 +263,53 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
       runtime.disposed = true;
     }
 
-    const timer = this.timers.get(instance);
-    if (timer) {
-      clearTimeout(timer);
-      this.timers.delete(instance);
+    const pending = this.pendingWrites.get(instance);
+    if (pending) {
+      clearTimeout(pending.timer);
+      this.pendingWrites.delete(instance);
     }
   }
 
-  private async hydrate(
+  /**
+   * Reads the stored record and applies it. A synchronous adapter hydrates
+   * before this returns, so the first state read already sees stored state.
+   */
+  private hydrate(
     instance: StateContainer<any>,
     context: PluginContext,
     definition: InternalDefinition,
     runtime: InstanceRuntime,
-  ): Promise<void> {
+  ): void {
+    const onError = (error: unknown) =>
+      this.handleError(instance, context, definition, error);
     try {
-      const record =
-        (await this.adapter.get(runtime.key)) ??
-        (runtime.legacyKey ? await this.adapter.get(runtime.legacyKey) : null);
+      const record = then(this.adapter.get(runtime.key), (found) =>
+        found === null && runtime.legacyKey
+          ? this.adapter.get(runtime.legacyKey)
+          : found,
+      );
+      if (isPromiseLike(record)) {
+        record
+          .then((found) =>
+            this.applyRecord(instance, context, definition, runtime, found),
+          )
+          .then(undefined, onError);
+      } else {
+        this.applyRecord(instance, context, definition, runtime, record);
+      }
+    } catch (error) {
+      onError(error);
+    }
+  }
 
+  private applyRecord(
+    instance: StateContainer<any>,
+    context: PluginContext,
+    definition: InternalDefinition,
+    runtime: InstanceRuntime,
+    record: PersistedRecord | null,
+  ): void {
+    try {
       if (
         runtime.disposed ||
         this.runtimes.get(instance)?.hydrationToken !== runtime.hydrationToken
@@ -493,6 +550,15 @@ export function createIndexedDbPersistPlugin(
   options: IndexedDbPersistPluginOptions = {},
 ): IndexedDbPersistPlugin {
   return new IndexedDbPersistPluginImpl(options);
+}
+
+export function createWebStoragePersistPlugin(
+  options: WebStoragePersistPluginOptions = {},
+): IndexedDbPersistPlugin {
+  return new IndexedDbPersistPluginImpl({
+    adapter: createWebStorageAdapter(options),
+    pluginName: options.pluginName ?? 'web-storage-persist',
+  });
 }
 
 export { NativeIndexedDbAdapter, createNativeIndexedDbAdapter };

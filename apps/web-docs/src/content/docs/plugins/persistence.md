@@ -133,9 +133,26 @@ await persist.clearRecord('cart'); // clear one record
 await persist.clearAll(); // clear everything
 ```
 
+## `localStorage` / `sessionStorage`
+
+For small state that must be there on first paint (a signed-in user, a theme), use the web storage plugin. It shares the registration API above, but its adapter is synchronous, so hydration finishes inside instance creation and the first render already sees stored state: no flash of default state.
+
+```ts
+import { createWebStoragePersistPlugin } from '@blac/plugin-persist';
+
+const persist = createWebStoragePersistPlugin({
+  storage: sessionStorage, // default: localStorage
+  prefix: 'my-app:', // default: 'blac-persist:'; clearAll() only removes this prefix
+});
+persist.persist(UserCubit, { debounceMs: 250 });
+getPluginManager().install(persist);
+```
+
+Writes are debounced per `debounceMs`. Pending writes are flushed on `pagehide`, so a quick tab close does not lose the last change; call `persist.flush()` to do the same on demand (for example before a redirect). Storage errors such as a full quota reach the registration's `onError`.
+
 ## Custom storage adapter
 
-Implement the `IndexedDbPersistAdapter` interface to use a different storage backend:
+Implement the `IndexedDbPersistAdapter` interface to use a different storage backend. Methods may return values directly instead of promises; a synchronous `get` hydrates synchronously, as in the web storage plugin:
 
 ```ts
 import {

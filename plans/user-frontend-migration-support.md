@@ -37,7 +37,7 @@ Missing:
 | D1 | `@blac({ isolated: true })` | **Add it.** Update the docs stance with it. |
 | D2 | `@blac/async` shape | **Helper `resource(this, ...)`.** The spike must evaluate how it works and how ergonomic it is (call-site noise, typing, test seeding) against the mixin/subclass alternatives before the full build. |
 | D3 | `clearWhere` and keepAlive | **Yes, clears keepAlive.** Existing `clear(Class)` / `clearAll()` already dispose keepAlive instances; `clearWhere` matches that. Also provide utilities to clear/reset everything (see Phase 1, item 4). |
-| D4 | Persist: second sync adapter interface, or a new plugin class? | Open. Decide after reading `IndexedDbPersistPlugin.ts`. |
+| D4 | Persist: second sync adapter interface, or a new plugin class? | **Neither.** The adapter interface now accepts sync or async results; the plugin hydrates synchronously when `get` returns a value. `createWebStoragePersistPlugin` is a factory over it. |
 
 ## Phases
 
@@ -64,7 +64,7 @@ Missing:
 - 2c. **done** — `renderWithBlocs`, or document `renderWithRegistry` with several `registerOverride` calls. Pick whichever is smaller once 2b exists.
 - 2d. **done** — Document a "mock `useBloc`" recipe (override + stub) in `apps/web-docs/src/content/docs/testing/`.
 
-### Phase 3: plugin-persist
+### Phase 3: plugin-persist — **done**
 
 - Add a `localStorage` / `sessionStorage` adapter with synchronous hydration (no flash at boot for `UserCubit`), debounced write, and flush on `pagehide`.
 - Resolve D4 first. Tests alongside `IndexedDbPersistPlugin.test.ts`.
