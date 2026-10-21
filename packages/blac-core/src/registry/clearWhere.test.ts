@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { Cubit } from '../core/Cubit';
 import { blac } from '../decorators';
 import { acquire, clearAll, clearWhere, getAll, hasInstance } from './index';
+import { getRegistry } from './config';
 
 class UserCubit extends Cubit<{ n: number }, { userId: string }> {
   static key = (a: { userId: string }) => a.userId;
@@ -40,5 +41,18 @@ describe('clearWhere', () => {
     expect(kept.$blac.disposed).toBe(true);
     expect(getAll(UserCubit)).toHaveLength(0);
     expect(getAll(KeepAliveUserCubit)).toHaveLength(0);
+  });
+
+  it('resets everything with () => true while keeping registered types', () => {
+    acquire(UserCubit, { args: { userId: 'a' } });
+    acquire(KeepAliveUserCubit, { args: { userId: 'b' } });
+
+    clearWhere(() => true);
+
+    expect(getAll(UserCubit)).toHaveLength(0);
+    expect(getAll(KeepAliveUserCubit)).toHaveLength(0);
+    expect(getRegistry().getTypes()).toEqual(
+      expect.arrayContaining([UserCubit, KeepAliveUserCubit]),
+    );
   });
 });

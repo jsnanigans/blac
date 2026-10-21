@@ -54,7 +54,7 @@ Missing:
 3. `waitForState(bloc, predicate, { timeout })` in `testing.ts` — **done**
    - Check current state first, then resolve on the first matching `stateChanged`; reject on timeout; clean up the subscription either way.
    - Tests: already-true, becomes-true, timeout.
-4. Clear/reset utilities (D3): `clearAll()` already disposes everything but also forgets registered types; decide whether a variant that keeps types, or a per-class-list helper, is needed. Scope after `clearWhere` lands.
+4. Clear/reset utilities (D3) — **done, no new API**: `clearWhere(() => true)` disposes everything (keepAlive included) and keeps registered types; `clearAll()` also forgets types. Per-class resets use `clear(Class)`.
 5. Optional: `borrow` accepting `{ key }` so lookups need not repeat the full `Args`. Skip unless a concrete need appears.
 
 ### Phase 2: react and testing
