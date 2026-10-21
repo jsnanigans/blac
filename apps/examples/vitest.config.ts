@@ -4,6 +4,7 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
+      '@blac/async': path.resolve(__dirname, '../../packages/blac-async/src'),
       '@blac/core/testing': path.resolve(
         __dirname,
         '../../packages/blac-core/src/testing',

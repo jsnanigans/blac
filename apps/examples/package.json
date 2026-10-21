@@ -26,6 +26,7 @@
   "license": "ISC",
   "description": "Blac examples app showcasing state management features",
   "dependencies": {
+    "@blac/async": "workspace:*",
     "@blac/core": "workspace:*",
     "@blac/devtools-connect": "workspace:*",
     "@blac/devtools-ui": "workspace:*",

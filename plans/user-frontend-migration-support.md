@@ -74,13 +74,14 @@ Missing:
 
 ### Phase 4: `@blac/async`
 
-**Progress:** D2a, D5 and D6 decided. `onActivated(container, cb(signal))` is implemented, tested and committed in `@blac/core` (`6c5b807d`). Spike done (scratch: `apps/examples/src/examples/async-spike/`, 12 tests, `tsc` clean); not committed.
+**Progress:** D2a, D5 and D6 decided. `onActivated(container, cb(signal))` is implemented, tested and committed in `@blac/core` (`6c5b807d`). Spike done and committed (`91c509f1`); the scratch folder is since removed.
 
 **Build progress** (`packages/blac-async`, 14 tests; `vp check`, `tsc` and `vp run build` clean):
 
 - Done: scaffold; `resource` (status union, latest-wins with abort, in-flight dedupe, `reload`, `staleTime`, `auto`, slot restored on deactivate); `mutation` (`invalidates`, `success`); `invalidate(tag)` with a per-registry tag index (D5: active or already-loaded reloads, otherwise marked stale and loaded on next activation); `configureAsync({ onError, onSuccess, retryOn })` (D6: per-call `onError` returning `false` suppresses the global one; `retryOn` retries once); state constructors `idle/loading/success/failure` as the seeding seam.
 - Core addition: `$blac.registry` (read-only) so mutations and the tag index stay scoped to the owning registry.
-- Open: README, web-docs page, a real example (the `async-spike` scratch folder and the `fakeFetch` export in `02-async/FeedCubit.ts` are still to be removed), optional `paginated()`.
+- Done: `resource`/`mutation` callbacks receive the container `args` (no `this.args!`); README; web-docs page `guide/async-resources`; example `14-async-resources` (with a test) replaces the spike scratch folder, and the `fakeFetch` export is reverted.
+- Open: `paginated()` (optional, not started); per-symbol `api:check` for `@blac/async` (no API report configured for the package yet); CHANGELOG comes from `.changeset/blac-async.md`.
 
 **Spike results**
 

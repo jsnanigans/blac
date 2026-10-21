@@ -306,6 +306,10 @@ export default defineConfig({
                 items: [
                   { label: 'Mental Model', link: '/guide/mental-model/' },
                   { label: 'Async', link: '/guide/async/' },
+                  {
+                    label: 'Async Resources',
+                    link: '/guide/async-resources/',
+                  },
                   { label: 'TypeScript', link: '/guide/typescript/' },
                   {
                     label: 'Troubleshooting & FAQ',

@@ -115,6 +115,9 @@ importers:
 
   apps/examples:
     dependencies:
+      '@blac/async':
+        specifier: workspace:*
+        version: link:../../packages/blac-async
       '@blac/core':
         specifier: workspace:*
         version: link:../../packages/blac-core

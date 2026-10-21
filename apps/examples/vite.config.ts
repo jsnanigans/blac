@@ -34,6 +34,7 @@ export default defineConfig({
         replacement: src('blac-react/src/testing.tsx'),
       },
       { find: /^@blac\/react$/, replacement: src('blac-react/src/index.ts') },
+      { find: /^@blac\/async$/, replacement: src('blac-async/src/index.ts') },
       {
         find: /^@blac\/plugin-persist$/,
         replacement: src('plugin-persist/src/index.ts'),

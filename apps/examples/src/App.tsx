@@ -14,6 +14,7 @@ import { DashboardDemo } from './examples/10-dashboard/DashboardDemo';
 import { MessengerApp } from './examples/11-messenger';
 import { EncapsulationDemo } from './examples/12-encapsulation/EncapsulationDemo';
 import { TestingDemo } from './examples/13-testing/TestingDemo';
+import { AsyncResourcesDemo } from './examples/14-async-resources/AsyncResourcesDemo';
 import { useState } from 'react';
 import { useBloc } from '@blac/react';
 import { PerformanceOverlay } from './shared/components';
@@ -174,6 +175,9 @@ export function App() {
               </Route>
               <Route path="/testing">
                 <TestingDemo />
+              </Route>
+              <Route path="/async-resources">
+                <AsyncResourcesDemo />
               </Route>
             </div>
           </div>

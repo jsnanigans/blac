@@ -3,13 +3,13 @@ import { callWithRetry, reportError } from './config';
 import { indexTags } from './invalidate';
 import type { AsyncState, DataOf, SlotKey } from './types';
 
-export interface ResourceOptions {
+export interface ResourceOptions<A = unknown> {
   /** Load on every activation. */
   auto?: boolean;
   /** Milliseconds a successful load stays fresh across `load()` calls. */
   staleTime?: number;
-  /** Targets for `invalidate(tag)`; evaluated on activation, so it may read `args`. */
-  tags?: () => readonly string[];
+  /** Targets for `invalidate(tag)`; evaluated on activation. */
+  tags?: (args: A) => readonly string[];
   /** Runs before the global `onError`; return `false` to suppress it. */
   onError?: (error: unknown) => boolean | void;
 }
@@ -21,11 +21,15 @@ export interface Resource {
   reload(): Promise<void>;
 }
 
-export function resource<S extends object, K extends SlotKey<S> & string>(
-  host: Cubit<S, any>,
+export function resource<
+  S extends object,
+  K extends SlotKey<S> & string,
+  A = void,
+>(
+  host: Cubit<S, A>,
   key: K,
-  fn: (signal: AbortSignal) => Promise<DataOf<S[K]>>,
-  { auto = false, staleTime = 0, tags, onError }: ResourceOptions = {},
+  fn: (signal: AbortSignal, args: A) => Promise<DataOf<S[K]>>,
+  { auto = false, staleTime = 0, tags, onError }: ResourceOptions<A> = {},
 ): Resource {
   type T = DataOf<S[K]>;
   const ctx = { kind: 'resource', key, host } as const;
@@ -47,7 +51,7 @@ export function resource<S extends object, K extends SlotKey<S> & string>(
       : controller.signal;
     stale = false;
     set({ status: 'loading', data: slot().data });
-    const promise = callWithRetry(() => fn(signal), ctx)
+    const promise = callWithRetry(() => fn(signal, host.args as A), ctx)
       .then(
         (data) => {
           if (signal.aborted) return;
@@ -87,7 +91,9 @@ export function resource<S extends object, K extends SlotKey<S> & string>(
 
   onActivated(host, (signal) => {
     lifetime = signal;
-    const unindex = tags ? indexTags(host.$blac.registry, tags(), entry) : null;
+    const unindex = tags
+      ? indexTags(host.$blac.registry, tags(host.args as A), entry)
+      : null;
     signal.addEventListener(
       'abort',
       () => {

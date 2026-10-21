@@ -202,6 +202,17 @@ export const exampleCatalog: RouteMeta[] = [
       'RegistryProvider',
     ],
   },
+  {
+    id: '14',
+    path: '/async-resources',
+    title: 'Async Resources',
+    navLabel: 'Resources',
+    category: 'Data Flow',
+    badge: 'Core',
+    blurb:
+      'resource() and mutation() from @blac/async: a status slot, abort on release, and tag-based invalidation across cubits.',
+    concepts: ['resource', 'mutation', 'invalidate', 'AsyncState'],
+  },
 ];
 
 export function getRouteMeta(path: string): RouteMeta {
