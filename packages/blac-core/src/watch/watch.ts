@@ -77,6 +77,12 @@ export interface WatchOptions {
    * Defaults to `true`.
    */
   create?: boolean;
+  /**
+   * Stops the watch when aborted, equivalent to calling the returned stop
+   * function. An already-aborted signal returns a no-op stop without
+   * creating or acquiring anything.
+   */
+  signal?: AbortSignal;
 }
 
 type ExtractInstance<T> =
@@ -268,6 +274,8 @@ function watchImpl(
   const inputs = isSingle ? [blocsOrBloc] : blocsOrBloc;
   const registry = getRegistry();
   const create = options?.create ?? true;
+  const signal = options?.signal;
+  if (signal?.aborted) return () => {};
 
   const targets = inputs.map((input) => toWatchTarget(registry, input));
   const refIds = targets.map(() => `_watch_${watchRefSeq++}`);
@@ -284,6 +292,7 @@ function watchImpl(
   const cleanup = () => {
     if (disposed) return;
     disposed = true;
+    signal?.removeEventListener('abort', cleanup);
     for (const unsub of channelUnsubs) unsub?.();
     for (const unsub of disposedUnsubs) unsub?.();
     channelUnsubs.length = 0;
@@ -333,6 +342,8 @@ function watchImpl(
       queueMicrotask(() => resubscribeAt(index));
     });
   };
+
+  signal?.addEventListener('abort', cleanup, { once: true });
 
   try {
     for (let i = 0; i < targets.length; i++) instances.push(resolveAt(i));

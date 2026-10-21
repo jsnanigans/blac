@@ -416,6 +416,62 @@ describe('watch', () => {
       expect(callback).toHaveBeenCalledTimes(1);
     });
 
+    it('stops and releases its ref when the signal aborts', async () => {
+      const counter = acquire(CounterCubit);
+      const callback = vi.fn();
+      const controller = new AbortController();
+
+      watch(CounterCubit, callback, { signal: controller.signal });
+      controller.abort();
+      counter.increment();
+      await flush();
+
+      expect(callback).toHaveBeenCalledTimes(1);
+      release(CounterCubit);
+      expect(hasInstance(CounterCubit)).toBe(false);
+    });
+
+    it('returns a no-op stop for an already-aborted signal', () => {
+      const callback = vi.fn();
+
+      const stop = watch(CounterCubit, callback, {
+        signal: AbortSignal.abort(),
+      });
+
+      expect(callback).not.toHaveBeenCalled();
+      expect(hasInstance(CounterCubit)).toBe(false);
+      expect(stop).not.toThrow();
+    });
+
+    it('removes the abort listener once stopped another way', () => {
+      const controller = new AbortController();
+      const remove = vi.spyOn(controller.signal, 'removeEventListener');
+
+      const stop = watch(CounterCubit, vi.fn(), { signal: controller.signal });
+      stop();
+
+      expect(remove).toHaveBeenCalledWith('abort', expect.any(Function));
+    });
+
+    it('works with { create: false } and a late abort', async () => {
+      const counter = acquire(CounterCubit);
+      const callback = vi.fn();
+      const controller = new AbortController();
+
+      watch(CounterCubit, callback, {
+        create: false,
+        signal: controller.signal,
+      });
+      counter.increment();
+      await flush();
+      expect(callback).toHaveBeenCalledTimes(2);
+
+      controller.abort();
+      counter.increment();
+      await flush();
+      expect(callback).toHaveBeenCalledTimes(2);
+    });
+
     it('releases its refs when the first callback throws', () => {
       expect(() =>
         watch(CounterCubit, () => {

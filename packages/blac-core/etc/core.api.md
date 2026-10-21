@@ -823,6 +823,7 @@ export interface WatchFn extends WatchSingleFn {
 // @public
 export interface WatchOptions {
   create?: boolean;
+  signal?: AbortSignal;
 }
 
 // @public
