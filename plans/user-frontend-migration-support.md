@@ -37,6 +37,7 @@ Missing:
 | D1 | `@blac({ isolated: true })` | **Add it.** Update the docs stance with it. |
 | D2 | `@blac/async` shape | **Helper `resource(this, ...)`.** The spike must evaluate how it works and how ergonomic it is (call-site noise, typing, test seeding) against the mixin/subclass alternatives before the full build. |
 | D3 | `clearWhere` and keepAlive | **Yes, clears keepAlive.** Existing `clear(Class)` / `clearAll()` already dispose keepAlive instances; `clearWhere` matches that. Also provide utilities to clear/reset everything (see Phase 1, item 4). |
+| D2a | How `resource(this, ...)` learns about activation | **Open.** `onActivate` and `onSystemEvent` are `protected` on `StateContainer`, so a helper called from a field initializer cannot hook activation, which `auto: true` and abort-on-deactivate need. Options: (1) a small public activation hook in core, e.g. `onActivated(container, cb(signal))` (recommended; keeps the helper shape and public-API-only rule); (2) a `Cubit` subclass/mixin overriding `onActivate` (no core change, but forces a base class on every site); (3) make `onActivate` public (smallest change, widens every cubit's API). |
 | D4 | Persist: second sync adapter interface, or a new plugin class? | **Neither.** The adapter interface now accepts sync or async results; the plugin hydrates synchronously when `get` returns a value. `createWebStoragePersistPlugin` is a factory over it. |
 
 ## Phases
@@ -70,6 +71,8 @@ Missing:
 - Resolve D4 first. Tests alongside `IndexedDbPersistPlugin.test.ts`.
 
 ### Phase 4: `@blac/async`
+
+Blocked on D2a before the spike starts.
 
 Spike (time-boxed, ~1 day), in parallel with Phase 1:
 
