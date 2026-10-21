@@ -9,12 +9,12 @@ BlaC has an official set of plugins for these common needs. All plugins implemen
 
 ## Official plugins
 
-| Package                                                                  | Purpose                                                         | Typical environment |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------- | ------------------- |
-| [`@blac/logging-plugin`](/plugins/logging)                               | Console logging, instance monitoring, rapid lifecycle detection | Development         |
-| [`@blac/devtools-connect`](/plugins/devtools)                            | Agent that records instances and serves them to DevTools clients | Development         |
-| [`@blac/devtools-ui`](/plugins/devtools#2-add-the-in-app-ui-recommended) | In-app overlay and the shared DevTools panel UI                  | Development         |
-| [`@blac/plugin-persist`](/plugins/persistence)                           | Persist state to IndexedDB with automatic hydration             | All                 |
+| Package                                                                    | Purpose                                                          | Typical environment |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------- |
+| [`@blac/logging-plugin`](/plugins/logging)                                 | Console logging, instance monitoring, rapid lifecycle detection  | Development         |
+| [`@blac/devtools-connect`](/plugins/devtools)                              | Agent that records instances and serves them to DevTools clients | Development         |
+| [`@blac/devtools-ui`](/plugins/devtools#2-add-the-in-app-overlay-optional) | In-app overlay and the shared DevTools panel UI                  | Development         |
+| [`@blac/plugin-persist`](/plugins/persistence)                             | Persist state to IndexedDB with automatic hydration              | All                 |
 
 ## Installing a plugin
 

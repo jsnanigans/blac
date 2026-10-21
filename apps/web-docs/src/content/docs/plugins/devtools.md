@@ -9,11 +9,11 @@ DevTools is delivered as a [plugin](/plugins/overview): once installed it observ
 
 ## Packages
 
-| Package                  | What it does                                                           |
-| ------------------------ | ---------------------------------------------------------------------- |
-| `@blac/devtools-connect` | The agent plugin that records instances, and the client that reads it  |
-| `@blac/devtools-ui`      | The panel UI and the in-app overlay                                    |
-| BlaC Chrome Extension    | The same panel as a Chrome DevTools tab                                |
+| Package                  | What it does                                                          |
+| ------------------------ | --------------------------------------------------------------------- |
+| `@blac/devtools-connect` | The agent plugin that records instances, and the client that reads it |
+| `@blac/devtools-ui`      | The panel UI and the in-app overlay                                   |
+| BlaC Chrome Extension    | The same panel as a Chrome DevTools tab                               |
 
 ## Setup
 
@@ -57,7 +57,7 @@ function App() {
 
 ### 3. Chrome extension (optional)
 
-Install the BlaC Chrome Extension from the Chrome Web Store (or build `apps/devtools-extension/`). A **BlaC** tab appears in Chrome DevTools. It attaches to the inspected tab's top frame, follows reloads, and reconnects if the extension's service worker restarts.
+Install the BlaC Chrome Extension from the Chrome Web Store (or build `apps/devtools-extension/`). A **BlaC** tab appears in Chrome DevTools. It attaches to the inspected tab's top frame, follows reloads (keeping the selected instance), and reconnects if the extension's service worker restarts.
 
 ## Agent options
 
@@ -89,7 +89,7 @@ The path list on a history entry is the finest the core reports. While a path-sc
 :::
 
 :::note[Granularity]
-One record is kept per plugin flush — changes made in the same microtask are coalesced by the core. Records are sent to the panel at most once per frame per instance, so an instance that updates many times per frame appears as one entry with the union of its changed paths.
+One record is kept per plugin flush — changes made in the same microtask are coalesced by the core. The inspector's history shows every record; the instance list and the **Log** are updated at most once per frame per instance, so an instance that updates many times per frame appears there as one entry with the union of its changed paths.
 :::
 
 ### Follow the log
