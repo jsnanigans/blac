@@ -16,6 +16,7 @@ import {
   withBlocState,
   withBlocMethod,
   flush,
+  waitForState,
 } from '@blac/core/testing';
 ```
 
@@ -339,6 +340,28 @@ it('propagates async state', async () => {
   data.triggerUpdate();
   await flush();
   expect(data.state.updated).toBe(true);
+});
+```
+
+### `waitForState(bloc, predicate, options?)`
+
+```ts
+function waitForState<B extends StateContainerInstance>(
+  bloc: B,
+  predicate: (state: B['state']) => boolean,
+  options?: { timeout?: number },
+): Promise<B['state']>;
+```
+
+Resolves with the first state that satisfies `predicate`: the current state if it already does, otherwise the first matching change. Rejects after `timeout` ms (default `1000`). Use it instead of polling with `vi.waitFor` or looping on `flush()`.
+
+```ts
+it('finishes loading', async () => {
+  const data = ensure(AsyncDataCubit);
+  void data.load();
+  await expect(
+    waitForState(data, (s) => s.status === 'success'),
+  ).resolves.toMatchObject({ status: 'success' });
 });
 ```
 

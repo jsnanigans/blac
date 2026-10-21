@@ -183,6 +183,11 @@ export function clear<T extends StateContainerConstructor>(BlocClass: T): void;
 // @public (undocumented)
 export function clearAll(): void;
 
+// @public (undocumented)
+export function clearWhere(
+  predicate: (instance: StateContainer<any, any, any>) => boolean,
+): void;
+
 // @public
 export function configureBlac(config: Partial<BlacConfig>): void;
 

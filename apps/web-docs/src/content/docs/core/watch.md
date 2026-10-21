@@ -154,6 +154,21 @@ useEffect(() => {
 
 :::
 
+### Pass an `AbortSignal`
+
+Pass `{ signal }` to stop the watch when the signal aborts, which ties several watches (or fetches, timers, listeners) to one `AbortController`:
+
+```ts
+const controller = new AbortController();
+
+watch(UserCubit, syncToStorage, { signal: controller.signal });
+watch(CartCubit, syncToStorage, { signal: controller.signal });
+
+controller.abort(); // stops both
+```
+
+Aborting is equivalent to calling the returned `stop()`. A signal that is already aborted returns a no-op `stop()` without creating or subscribing to anything.
+
 ## Watching multiple blocs
 
 Pass a `readonly` array to observe several blocs at once — the callback fires when **any** of them changes.

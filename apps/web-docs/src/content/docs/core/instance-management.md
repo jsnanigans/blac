@@ -321,8 +321,19 @@ clear(CounterCubit); // dispose and remove all instances of this class
 clearAll(); // dispose and remove everything
 ```
 
+To dispose a subset of instances, such as everything belonging to a signed-out user, use `clearWhere`. It receives each live instance (with its `args`) and disposes those for which the predicate returns `true`, across all classes and including `keepAlive` instances:
+
+```ts
+import { clearWhere } from '@blac/core';
+
+clearWhere((bloc) => bloc.args?.workspaceId === 'ws-1'); // one workspace
+clearWhere(() => true); // everything, but registered types are kept
+```
+
+`clearAll()` also forgets registered types; `clearWhere(() => true)` does not.
+
 :::caution[`clear` / `clearAll` are teardown tools, not app code]
-`clear` and `clearAll` dispose instances **regardless of ref count**, ignoring `keepAlive`. That is exactly what you want between tests to isolate the registry, but in running app code it will pull state out from under live components. Reach for them in test setup/teardown — see [Testing core logic](/testing/core) — not in feature code.
+`clear`, `clearAll`, and `clearWhere` dispose instances **regardless of ref count**, ignoring `keepAlive`. That is exactly what you want between tests to isolate the registry, but in running app code it will pull state out from under live components. Reach for them in test setup/teardown — see [Testing core logic](/testing/core) — not in feature code.
 :::
 
 ## In React vs outside React
