@@ -290,6 +290,24 @@ importers:
         specifier: ^4.129.0
         version: 4.129.0
 
+  packages/blac-async:
+    devDependencies:
+      '@blac/core':
+        specifier: workspace:*
+        version: link:../blac-core
+      publint:
+        specifier: 'catalog:'
+        version: 0.3.25
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.1.24(@types/node@26.4.1)(esbuild@0.27.3)(happy-dom@20.14.6)(jiti@2.6.1)(jsdom@30.0.1)(publint@0.3.25)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(vite@8.0.3(@types/node@26.4.1)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.9.0))(yaml@2.9.0)
+      vitest:
+        specifier: npm:@voidzero-dev/vite-plus-test@0.1.24
+        version: '@voidzero-dev/vite-plus-test@0.1.24(@types/node@26.4.1)(esbuild@0.27.3)(happy-dom@20.14.6)(jiti@2.6.1)(jsdom@30.0.1)(publint@0.3.25)(terser@5.39.0)(tsx@4.20.6)(typescript@6.0.3)(vite@8.0.3(@types/node@26.4.1)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.9.0))(yaml@2.9.0)'
+
   packages/blac-core:
     dependencies:
       '@dirtytalk/structural':
