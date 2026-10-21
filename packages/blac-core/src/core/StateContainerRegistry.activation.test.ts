@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vite-plus/test';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { StateContainerRegistry } from './StateContainerRegistry';
 import { Cubit } from './Cubit';
+import { onActivated } from './onActivated';
 
 class Tracked extends Cubit<{ n: number }> {
   activations = 0;
@@ -56,5 +57,40 @@ describe('activation lifecycle', () => {
     expect(bloc.$blac.disposed).toBe(true);
     expect(bloc.signals[0].aborted).toBe(true);
     expect(bloc.deactivations).toBe(0);
+  });
+});
+
+describe('onActivated', () => {
+  it('runs on each activation with its signal, and not after unsubscribe', () => {
+    const registry = new StateContainerRegistry();
+    const bloc = registry.acquire(KeptAlive, 'k', { refId: 'a' });
+    const signals: AbortSignal[] = [];
+
+    const stop = onActivated(bloc, (signal) => signals.push(signal));
+    expect(signals).toHaveLength(1);
+
+    registry.release(KeptAlive, 'k', false, 'a');
+    expect(signals[0].aborted).toBe(true);
+    registry.acquire(KeptAlive, 'k', { refId: 'b' });
+    expect(signals).toHaveLength(2);
+
+    stop();
+    registry.release(KeptAlive, 'k', false, 'b');
+    registry.acquire(KeptAlive, 'k', { refId: 'c' });
+    expect(signals).toHaveLength(2);
+  });
+
+  it('registered before activation, fires on the first owner and stops on dispose', () => {
+    const registry = new StateContainerRegistry();
+    const bloc = registry.ensure(Tracked, 'k');
+    const handler = vi.fn();
+    onActivated(bloc, handler);
+    expect(handler).not.toHaveBeenCalled();
+
+    registry.acquire(Tracked, 'k', { refId: 'a' });
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    bloc.dispose();
+    expect(handler.mock.calls[0][0].aborted).toBe(true);
   });
 });

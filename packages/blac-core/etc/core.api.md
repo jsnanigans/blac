@@ -466,6 +466,12 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
                   ? (container: StateContainer<any, any, any>) => void
                   : never;
 
+// @public
+export function onActivated(
+  container: StateContainer<any, any, any>,
+  handler: (signal: AbortSignal) => void,
+): () => void;
+
 export { PathSet };
 
 // @public (undocumented)

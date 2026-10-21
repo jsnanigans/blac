@@ -16,6 +16,7 @@ import type {
 import {
   APPLY_DEPS,
   INIT_CONFIG,
+  ON_ACTIVATED,
   ON_DISPOSE,
   REMOVE_DEPS_OWNER,
   SET_ACTIVE,
@@ -219,6 +220,19 @@ export abstract class StateContainer<
   }
 
   /**
+   * @internal Run `handler` on every activation, and now if already active.
+   * Backs `onActivated()`.
+   */
+  [ON_ACTIVATED](handler: (signal: AbortSignal) => void): () => void {
+    if (this._disposed) return () => {};
+    (this._activationHandlers ??= new Set()).add(handler);
+    if (this._activation) handler(this._activation.signal);
+    return () => {
+      this._activationHandlers?.delete(handler);
+    };
+  }
+
+  /**
    * @internal Drive the 0↔1 ownership transition. Idempotent: repeated calls
    * with the same value are no-ops, so the registry can call it from every
    * acquire/release without tracking edges itself.
@@ -234,7 +248,20 @@ export abstract class StateContainer<
     if (active === (this._activation !== null)) return 'none';
     if (active) {
       this._activation = new AbortController();
-      this.onActivate(this._activation.signal);
+      const { signal } = this._activation;
+      this.onActivate(signal);
+      if (this._activationHandlers) {
+        for (const handler of [...this._activationHandlers]) {
+          try {
+            handler(signal);
+          } catch (error) {
+            console.error(
+              `[${this._name}] Error in onActivated handler:`,
+              error,
+            );
+          }
+        }
+      }
       return { kind: 'activated', signal: this._activation.signal };
     }
     this._abortActivation();
@@ -293,6 +320,7 @@ export abstract class StateContainer<
   private _config: StateContainerConfig = EMPTY_RECORD;
   private _initCalled = false;
   private _activation: AbortController | null = null;
+  private _activationHandlers: Set<(signal: AbortSignal) => void> | null = null;
 
   // Dev-only emit-rate circuit breaker state (see configureBlac.maxEmitsPerSecond).
   private _emitWindowStart = 0;
@@ -573,6 +601,7 @@ export abstract class StateContainer<
     this._abortActivation();
 
     this._systemEventHandlers = null;
+    this._activationHandlers = null;
     this._pendingChange = null;
 
     this._registry.emit('disposed', this);

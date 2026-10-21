@@ -8,6 +8,7 @@ export {
 } from './config';
 
 export { StateContainer } from './core/StateContainer';
+export { onActivated } from './core/onActivated';
 export type {
   HydrationStatus,
   StateContainerConfig,

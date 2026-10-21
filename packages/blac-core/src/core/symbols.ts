@@ -18,6 +18,12 @@ export const REMOVE_DEPS_OWNER = Symbol('blac.removeDepsOwner');
 export const ON_DISPOSE = Symbol('blac.onDispose');
 
 /**
+ * @internal Register a callback that runs on each activation with that
+ * activation's signal. Called by `onActivated()` — not public API.
+ */
+export const ON_ACTIVATED = Symbol('blac.onActivated');
+
+/**
  * @internal Symbol-keyed configuration entry point on `StateContainer`.
  * Writes the instance's identity fields (`_name`/`_debug`/`_instanceId`),
  * resolves per-class equality, emits the registry `created` event, and runs
