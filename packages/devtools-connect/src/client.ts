@@ -132,8 +132,7 @@ export class DevToolsClient {
   private handle(msg: AgentMsg): void {
     if (this.status === 'closed') return;
     if (msg.t === 'ready') return this.hello();
-    if (msg.t === 'bye') return this.reset(undefined);
-    if (this.status === 'incompatible') return;
+    if (msg.t === 'bye') return this.waitForAgent();
 
     if (msg.t === 'welcome') {
       if (msg.protocol !== PROTOCOL_VERSION) {
@@ -143,13 +142,15 @@ export class DevToolsClient {
       }
       return this.adopt(msg.session, msg.seq, msg.instances);
     }
+    if (this.status !== 'connected') return;
     if (msg.t === 'snapshot') {
       return this.adopt(msg.session, msg.seq, msg.instances);
     }
 
-    if (msg.session !== this.session) return this.resync();
     if (this.resyncing) return;
-    if (msg.seq !== this.lastSeq + 1) return this.resync();
+    if (msg.session !== this.session || msg.seq !== this.lastSeq + 1) {
+      return this.resync();
+    }
     this.lastSeq = msg.seq;
     this.apply(msg);
   }
@@ -160,30 +161,30 @@ export class DevToolsClient {
     this.transport.send({ t: 'snapshot' });
   }
 
-  private reset(session: string | undefined): void {
-    this.session = session;
-    this.lastSeq = 0;
-    this.resyncing = false;
-    this.instances.clear();
-    this.selectedId = null;
-    this.history = [];
-    this.log = [];
+  /**
+   * The agent went away (reload, navigation, lost port). Keep everything until
+   * the next `welcome`: the same session resumes, a new one starts over.
+   */
+  private waitForAgent(): void {
     this.status = 'connecting';
     this.agentProtocol = undefined;
+    this.resyncing = false;
     this.touch();
   }
 
+  /** The selection survives a new session so a reload keeps the inspector. */
   private adopt(session: string, seq: number, instances: InstanceMeta[]): void {
-    if (session !== this.session) this.reset(session);
+    if (session !== this.session) {
+      this.session = session;
+      this.history = [];
+      this.log = [];
+    }
     this.lastSeq = seq;
     this.resyncing = false;
     this.status = 'connected';
+    this.agentProtocol = undefined;
     this.instances.clear();
     for (const meta of instances) this.instances.set(meta.id, meta);
-    if (this.selectedId && !this.instances.has(this.selectedId)) {
-      this.selectedId = null;
-      this.history = [];
-    }
     if (this.selectedId) this.watchSelected();
     this.touch();
   }
@@ -193,6 +194,7 @@ export class DevToolsClient {
       case 'created':
         this.instances.set(msg.meta.id, msg.meta);
         this.record('created', msg.meta, msg.meta.createdAt);
+        if (msg.meta.id === this.selectedId) this.watchSelected();
         break;
       case 'changed': {
         const meta = this.instances.get(msg.id);
@@ -200,14 +202,6 @@ export class DevToolsClient {
         const next = { ...meta, version: msg.version, updatedAt: msg.at };
         this.instances.set(msg.id, next);
         this.record('changed', next, msg.at, msg.version, msg.paths);
-        if (msg.id === this.selectedId && msg.state !== undefined) {
-          this.appendHistory({
-            version: msg.version,
-            at: msg.at,
-            paths: msg.paths,
-            state: msg.state,
-          });
-        }
         break;
       }
       case 'disposed': {
@@ -218,23 +212,20 @@ export class DevToolsClient {
         this.record('disposed', next, msg.at);
         break;
       }
+      case 'removed':
+        this.instances.delete(msg.id);
+        break;
       case 'history': {
         if (msg.id !== this.selectedId) return;
-        const last = msg.entries[msg.entries.length - 1]?.version ?? -1;
-        this.history = [
-          ...msg.entries,
-          ...this.history.filter((entry) => entry.version > last),
-        ];
+        const byVersion = new Map(this.history.map((e) => [e.version, e]));
+        for (const entry of msg.entries) byVersion.set(entry.version, entry);
+        this.history = [...byVersion.values()]
+          .sort((a, b) => a.version - b.version)
+          .slice(-this.historySize);
         break;
       }
     }
     this.touch();
-  }
-
-  private appendHistory(entry: HistoryEntry): void {
-    const last = this.history[this.history.length - 1];
-    if (last && last.version >= entry.version) return;
-    this.history = [...this.history, entry].slice(-this.historySize);
   }
 
   private record(

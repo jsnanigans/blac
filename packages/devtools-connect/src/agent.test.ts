@@ -111,7 +111,7 @@ describe('agent + client', () => {
     expect(state.instances[0].disposedAt).toBeTypeOf('number');
   });
 
-  it('streams state and history only for the selected instance', async () => {
+  it('streams every recorded change of the selected instance', async () => {
     const cubit = acquire(CounterCubit);
     cubit.inc();
     const { client } = connect();
@@ -119,11 +119,29 @@ describe('agent + client', () => {
 
     client.select(client.getSnapshot().instances[0].id);
     cubit.inc();
+    await vi.advanceTimersByTimeAsync(1);
+    cubit.inc();
     await frame();
     const state = await snapshot(client);
 
-    expect(state.history.map((h) => h.version)).toEqual([0, 1, 2]);
-    expect(state.history[2].state).toEqual({ count: 2 });
+    expect(state.history.map((h) => h.version)).toEqual([0, 1, 2, 3]);
+    expect(state.history[3].state).toEqual({ count: 3 });
+    expect(state.log.filter((l) => l.kind === 'changed')).toHaveLength(1);
+  });
+
+  it('drops disposed instances the agent no longer keeps', async () => {
+    getPluginManager().clear();
+    agent = new DevToolsAgent({ maxDisposed: 1 });
+    getPluginManager().install(agent);
+    const { client } = connect();
+
+    acquire(CounterCubit);
+    release(CounterCubit);
+    acquire(CounterCubit);
+    release(CounterCubit);
+    await frame();
+
+    expect((await snapshot(client)).instances).toHaveLength(1);
   });
 
   it('skips excluded instances and keeps ids unique across re-creation', async () => {
@@ -161,12 +179,18 @@ describe('agent + client', () => {
     expect(state.instances[0].version).toBe(2);
   });
 
-  it('resets on a new session', async () => {
+  it('keeps data across a reconnect and resets on a new session', async () => {
     const cubit = acquire(CounterCubit);
-    cubit.inc();
     const { client, pair } = connect();
+    cubit.inc();
     await frame();
-    expect((await snapshot(client)).log.length).toBeGreaterThan(0);
+
+    pair.agent.send({ t: 'bye' });
+    expect((await snapshot(client)).status).toBe('connecting');
+    pair.agent.send({ t: 'ready', protocol: PROTOCOL_VERSION });
+    const resumed = await snapshot(client);
+    expect(resumed.status).toBe('connected');
+    expect(resumed.log).toHaveLength(1);
 
     pair.agent.send({
       t: 'welcome',

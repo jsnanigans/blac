@@ -55,9 +55,12 @@ interface Connection {
   active: boolean;
   seq: number;
   watching: string | null;
+  /** Last history version sent for `watching`. */
+  sent: number;
   created: string[];
   changed: Map<string, Paths>;
   disposed: Array<{ id: string; at: number }>;
+  removed: string[];
   off: Array<() => void>;
 }
 
@@ -68,6 +71,13 @@ const mergePaths = (a: Paths | undefined, b: Paths): Paths => {
   if (a === 'all' || b === 'all') return 'all';
   return [...new Set([...a, ...b])];
 };
+
+const toEntry = (change: Change): HistoryEntry => ({
+  version: change.version,
+  at: change.at,
+  paths: change.paths,
+  state: serialize(change.state),
+});
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -220,7 +230,11 @@ export class DevToolsAgent implements BlacPlugin {
     this.disposedOrder.push(entry);
     while (this.disposedOrder.length > this.maxDisposed) {
       const evicted = this.disposedOrder.shift();
-      if (evicted) this.byId.delete(evicted.id);
+      if (!evicted) break;
+      this.byId.delete(evicted.id);
+      for (const conn of this.connections) {
+        if (conn.active) conn.removed.push(evicted.id);
+      }
     }
 
     for (const conn of this.connections) {
@@ -237,9 +251,11 @@ export class DevToolsAgent implements BlacPlugin {
       active: false,
       seq: 0,
       watching: null,
+      sent: 0,
       created: [],
       changed: new Map(),
       disposed: [],
+      removed: [],
       off: [],
     };
     this.connections.add(conn);
@@ -266,39 +282,34 @@ export class DevToolsAgent implements BlacPlugin {
         this.reset(conn, false);
         break;
       case 'watch':
-        if (conn.active) conn.watching = msg.id;
+        if (!conn.active) break;
+        conn.watching = msg.id;
+        conn.sent = (msg.id && this.byId.get(msg.id)?.version) || 0;
         break;
       case 'history': {
         const entry = conn.active ? this.byId.get(msg.id) : undefined;
         if (!entry) break;
-        const entries: HistoryEntry[] = entry.ring.map((c) => ({
-          version: c.version,
-          at: c.at,
-          paths: c.paths,
-          state: serialize(c.state),
-        }));
+        const entries = entry.ring.map(toEntry);
         this.send(conn, { t: 'history', id: msg.id, entries });
         break;
       }
       case 'snapshot':
         if (!conn.active) break;
-        this.reset(conn, true, conn.watching);
+        this.reset(conn, true);
         this.send(conn, { t: 'snapshot', instances: this.allMeta() });
         break;
     }
   }
 
-  private reset(
-    conn: Connection,
-    active: boolean,
-    watching: string | null = null,
-  ) {
+  private reset(conn: Connection, active: boolean) {
     conn.active = active;
     conn.seq = 0;
-    conn.watching = watching;
+    conn.watching = null;
+    conn.sent = 0;
     conn.created = [];
     conn.changed.clear();
     conn.disposed = [];
+    conn.removed = [];
   }
 
   private hasActive(): boolean {
@@ -318,10 +329,11 @@ export class DevToolsAgent implements BlacPlugin {
   private flush(): void {
     for (const conn of this.connections) {
       if (!conn.active) continue;
-      const { created, changed, disposed } = conn;
+      const { created, changed, disposed, removed } = conn;
       conn.created = [];
       conn.changed = new Map();
       conn.disposed = [];
+      conn.removed = [];
 
       for (const id of created) {
         const entry = this.byId.get(id);
@@ -337,14 +349,18 @@ export class DevToolsAgent implements BlacPlugin {
           version: entry.version,
           at: entry.updatedAt,
           paths,
-          ...(conn.watching === id && {
-            state: serialize(entry.ring[entry.ring.length - 1]?.state),
-          }),
         });
+        if (conn.watching !== id) continue;
+        const entries = entry.ring
+          .filter((change) => change.version > conn.sent)
+          .map(toEntry);
+        conn.sent = entry.version;
+        if (entries.length > 0) this.send(conn, { t: 'history', id, entries });
       }
       for (const { id, at } of disposed) {
         this.send(conn, { t: 'disposed', id, at });
       }
+      for (const id of removed) this.send(conn, { t: 'removed', id });
     }
   }
 

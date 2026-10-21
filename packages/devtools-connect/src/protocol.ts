@@ -43,6 +43,7 @@ export interface HistoryEntry {
 
 export type ClientMsg =
   | { t: 'hello'; protocol: number }
+  /** Stream new history entries of this instance (one at a time). */
   | { t: 'watch'; id: string | null }
   | { t: 'history'; id: string }
   | { t: 'snapshot' }
@@ -72,11 +73,16 @@ export type AgentMsg =
       id: string;
       version: number;
       at: number;
+      /** Union of the paths of every change since the last `changed`. */
       paths: Paths;
-      /** Only present for the watched instance. */
-      state?: Wire;
     })
   | (Sequenced & { t: 'disposed'; id: string; at: number })
+  /** A disposed instance the agent no longer keeps. */
+  | (Sequenced & { t: 'removed'; id: string })
+  /**
+   * Recorded changes, oldest first: the whole ring in reply to `history`,
+   * then each new change of the watched instance.
+   */
   | (Sequenced & { t: 'history'; id: string; entries: HistoryEntry[] });
 
 export type SequencedAgentMsg = Extract<AgentMsg, { seq: number }>;
