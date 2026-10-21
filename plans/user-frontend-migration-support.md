@@ -18,29 +18,29 @@ Already in this repo:
 
 Missing:
 
-| Item | Package | Replaces in user-frontend |
-| --- | --- | --- |
-| `clearWhere(predicate)` | core | PMP `BlacEvent` reset bus, user-app `onUserSessionReset` (71 calls), `disposeWorkspaceScopedCubits`, `_id` string matching |
-| `watch(..., { signal })` | core | 12 manual `_observer.subscribe` bridges and their leaks |
-| `waitForState(bloc, predicate, opts)` | core/testing | `vi.waitFor` polling, `flushPromises` (85 hits) |
-| `@blac({ isolated: true })` | core + react | `useId` + `static key` boilerplate on 61 classes |
-| `withBlocs(...)` Storybook decorator | react/testing | duplicated `mockBloc` / `withSeededBloc` in both apps |
-| `renderWithBlocs` / documented multi-override recipe | react/testing | per-class `mockUseBlocNext` stubs, duplicated `mockBlacReact.ts` |
-| Sync web-storage persist adapter | plugin-persist | PMP `persistCubitState` |
-| `@blac/async` | new package | load/mutation template (~250 sites), three loading models, mount-effect triggers, manual invalidation, error-reporting plumbing |
-| `paginated()` (optional) | `@blac/async` | ~22 near-clone list cubits |
+| Item                                                 | Package        | Replaces in user-frontend                                                                                                       |
+| ---------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `clearWhere(predicate)`                              | core           | PMP `BlacEvent` reset bus, user-app `onUserSessionReset` (71 calls), `disposeWorkspaceScopedCubits`, `_id` string matching      |
+| `watch(..., { signal })`                             | core           | 12 manual `_observer.subscribe` bridges and their leaks                                                                         |
+| `waitForState(bloc, predicate, opts)`                | core/testing   | `vi.waitFor` polling, `flushPromises` (85 hits)                                                                                 |
+| `@blac({ isolated: true })`                          | core + react   | `useId` + `static key` boilerplate on 61 classes                                                                                |
+| `withBlocs(...)` Storybook decorator                 | react/testing  | duplicated `mockBloc` / `withSeededBloc` in both apps                                                                           |
+| `renderWithBlocs` / documented multi-override recipe | react/testing  | per-class `mockUseBlocNext` stubs, duplicated `mockBlacReact.ts`                                                                |
+| Sync web-storage persist adapter                     | plugin-persist | PMP `persistCubitState`                                                                                                         |
+| `@blac/async`                                        | new package    | load/mutation template (~250 sites), three loading models, mount-effect triggers, manual invalidation, error-reporting plumbing |
+| `paginated()` (optional)                             | `@blac/async`  | ~22 near-clone list cubits                                                                                                      |
 
 ## Decisions
 
-| # | Decision | Outcome |
-| --- | --- | --- |
-| D1 | `@blac({ isolated: true })` | **Add it.** Update the docs stance with it. |
-| D2 | `@blac/async` shape | **Helper `resource(this, ...)`.** The spike must evaluate how it works and how ergonomic it is (call-site noise, typing, test seeding) against the mixin/subclass alternatives before the full build. |
-| D3 | `clearWhere` and keepAlive | **Yes, clears keepAlive.** Existing `clear(Class)` / `clearAll()` already dispose keepAlive instances; `clearWhere` matches that. Also provide utilities to clear/reset everything (see Phase 1, item 4). |
-| D2a | How `resource(this, ...)` learns about activation | **Public `onActivated(container, cb(signal))`** over an internal `[ON_ACTIVATED]` symbol (same pattern as `[ON_DISPOSE]`). **Done** in core; runs on each activation, and immediately if already active. Field initializers run before `[INIT_CONFIG]`, so args-derived values (tags, keys) in `resource()` must be lazy (`() => ...`). |
-| D5 | `invalidate(tag)` on instances that are not active (keepAlive, no owners) | **Mark stale; reload on next activation.** No eager fetch for unused instances. |
-| D6 | Toasts and `success: 'Saved'` | **`configureAsync({ onSuccess, onError, retryOn })`**; core stays framework-free and the app wires `message.success`. A per-call `onError` can suppress the global one (e.g. 404 skip). |
-| D4 | Persist: second sync adapter interface, or a new plugin class? | **Neither.** The adapter interface now accepts sync or async results; the plugin hydrates synchronously when `get` returns a value. `createWebStoragePersistPlugin` is a factory over it. |
+| #   | Decision                                                                  | Outcome                                                                                                                                                                                                                                                                                                                                 |
+| --- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | `@blac({ isolated: true })`                                               | **Add it.** Update the docs stance with it.                                                                                                                                                                                                                                                                                             |
+| D2  | `@blac/async` shape                                                       | **Helper `resource(this, ...)`.** The spike must evaluate how it works and how ergonomic it is (call-site noise, typing, test seeding) against the mixin/subclass alternatives before the full build.                                                                                                                                   |
+| D3  | `clearWhere` and keepAlive                                                | **Yes, clears keepAlive.** Existing `clear(Class)` / `clearAll()` already dispose keepAlive instances; `clearWhere` matches that. Also provide utilities to clear/reset everything (see Phase 1, item 4).                                                                                                                               |
+| D2a | How `resource(this, ...)` learns about activation                         | **Public `onActivated(container, cb(signal))`** over an internal `[ON_ACTIVATED]` symbol (same pattern as `[ON_DISPOSE]`). **Done** in core; runs on each activation, and immediately if already active. Field initializers run before `[INIT_CONFIG]`, so args-derived values (tags, keys) in `resource()` must be lazy (`() => ...`). |
+| D5  | `invalidate(tag)` on instances that are not active (keepAlive, no owners) | **Mark stale; reload on next activation.** No eager fetch for unused instances.                                                                                                                                                                                                                                                         |
+| D6  | Toasts and `success: 'Saved'`                                             | **`configureAsync({ onSuccess, onError, retryOn })`**; core stays framework-free and the app wires `message.success`. A per-call `onError` can suppress the global one (e.g. 404 skip).                                                                                                                                                 |
+| D4  | Persist: second sync adapter interface, or a new plugin class?            | **Neither.** The adapter interface now accepts sync or async results; the plugin hydrates synchronously when `get` returns a value. `createWebStoragePersistPlugin` is a factory over it.                                                                                                                                               |
 
 ## Phases
 
@@ -74,7 +74,19 @@ Missing:
 
 ### Phase 4: `@blac/async`
 
-**Progress:** D2a, D5 and D6 decided. `onActivated(container, cb(signal))` is implemented and tested in `@blac/core` (not committed yet). Spike not started.
+**Progress:** D2a, D5 and D6 decided. `onActivated(container, cb(signal))` is implemented, tested and committed in `@blac/core` (`6c5b807d`). Spike done (scratch: `apps/examples/src/examples/async-spike/`, 12 tests, `tsc` clean); not committed.
+
+**Spike results**
+
+- `ConsistencyScoreCubit`: the 25-line load template and the mount effect become a 4-line `resource(this, 'score', fn, { auto: true })` plus a 1-line `mutation`. `FeedCubit` (02-async) drops from a 59-line class to 27 lines of body, with the inflight/lifetime/abort plumbing gone.
+- Verified: status union in a user-declared slot, tracked via `useBloc` (reads must happen during render); seedable with `withBlocState` and no service mock; latest-wins with abort; in-flight dedupe; abort on last release and reload on next activation; stale data kept while reloading; works under `RegistryProvider` without leaking into the global registry.
+- Typing: the key is restricted to `AsyncState` slots and `fn` must return the slot's data type (both rejected with `@ts-expect-error` checks). The subclass needs the generics re-declared on each method.
+- **D2 verdict: keep the helper.** Call-site noise is the same as the subclass (`resource(this, 'x', …)` vs `this.resource('x', …)`). The subclass only adds a base-class constraint and duplicated signatures; the helper is the `AsyncCubit` core anyway. Do not ship `AsyncCubit`.
+- Wrinkles for the build:
+  - `this.args!.userId` is noisy because `args` is typed optional.
+  - A keepAlive instance deactivated mid-load keeps `status: 'loading'`; on abort, restore the last settled state (`success` if data, else `idle`).
+  - The spike made `fakeFetch` exported in `02-async/FeedCubit.ts`; revert that when the scratch folder is removed.
+- Not exercised: tags and `invalidate(tag)` (D5 stale-mark), `configureAsync` (D6), `invalidates` on mutations, stale-time against a fake clock.
 
 Build order and estimates: scaffold 0.5d; `resource` 1.5d; `mutation` 0.5d; `invalidate(tag)` with the tag index kept per registry (`WeakMap` keyed on the registry, so `RegistryProvider` scopes stay isolated) 1d; `configureAsync` 0.5d; test seams 0.5d; docs and example 1d; `paginated()` 1–1.5d (optional).
 

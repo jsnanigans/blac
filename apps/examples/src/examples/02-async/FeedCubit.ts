@@ -118,7 +118,7 @@ const ARTICLES: Record<number, Article[]> = {
   ],
 };
 
-async function fakeFetch(
+export async function fakeFetch(
   authorId: number,
   signal: AbortSignal,
 ): Promise<{ author: Author; articles: Article[] }> {
