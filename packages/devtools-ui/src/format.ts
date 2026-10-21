@@ -11,6 +11,22 @@ export const clock = (at: number) => {
   return `${d.toLocaleTimeString([], { hour12: false })}.${ms}`;
 };
 
+/**
+ * An instance's key within its class: `CounterCubit:main` → `main`. Drops the
+ * `#n` the agent appends to keep a re-created instance's id unique.
+ */
+export const instanceKey = ({
+  id,
+  className,
+}: {
+  id: string;
+  className: string;
+}) =>
+  (id.startsWith(`${className}:`)
+    ? id.slice(className.length + 1)
+    : id
+  ).replace(/#\d+$/, '');
+
 const str = (value: Wire | undefined) =>
   typeof value === 'object' ? '' : String(value ?? '');
 

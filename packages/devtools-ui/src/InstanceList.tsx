@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import type { InstanceMeta } from '@blac/devtools-connect/protocol';
+import { instanceKey } from './format';
 
 interface Props {
   instances: InstanceMeta[];
@@ -30,8 +31,10 @@ function Row({
       aria-pressed={selected}
       onClick={() => onSelect(meta.id)}
     >
-      <span className="name">{meta.name}</span>
-      <span className="muted">{meta.id}</span>
+      <span className="name">{instanceKey(meta)}</span>
+      {meta.name !== meta.className && (
+        <span className="muted">{meta.name}</span>
+      )}
       <span
         key={meta.version}
         className={`count ${meta.version !== initial ? 'flash' : ''}`}

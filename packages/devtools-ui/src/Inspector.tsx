@@ -4,7 +4,7 @@ import type {
   InstanceMeta,
 } from '@blac/devtools-connect/protocol';
 import { diff } from './diff';
-import { clock, summary } from './format';
+import { clock, instanceKey, summary } from './format';
 import { PathChips } from './PathChips';
 import { Tree } from './Tree';
 
@@ -15,7 +15,6 @@ interface Props {
   onPick: (version: number | null) => void;
 }
 
-const MAX_SHOWN = 12;
 const clip = (text: string) =>
   text.length > 60 ? `${text.slice(0, 60)}…` : text;
 
@@ -38,18 +37,27 @@ export function Inspector({ meta, history, pickedVersion, onPick }: Props) {
     <div className="inspector scroll">
       <header>
         <h2>{meta.className}</h2>
+        <span className="name">{instanceKey(meta)}</span>
         {meta.name !== meta.className && (
-          <span className="name">{meta.name}</span>
+          <span className="muted">{meta.name}</span>
         )}
-        <span className="muted">{meta.id}</span>
         {meta.disposedAt && <span className="badge disposed">disposed</span>}
         <div className="muted">
           created {clock(meta.createdAt)}
-          {meta.args !== undefined && ` · args ${JSON.stringify(meta.args)}`}
+          {meta.args !== undefined &&
+            ` · args ${clip(JSON.stringify(meta.args))}`}
         </div>
       </header>
 
-      <h3>State{entry && ` · v${entry.version}`}</h3>
+      <h3>
+        State
+        {entry && <span className="ver"> · v{entry.version}</span>}
+        {pickedVersion !== null && entry && (
+          <button type="button" className="link" onClick={() => onPick(null)}>
+            back to latest
+          </button>
+        )}
+      </h3>
       {entry ? (
         <Tree value={entry.state} marks={marks} />
       ) : (
@@ -58,10 +66,12 @@ export function Inspector({ meta, history, pickedVersion, onPick }: Props) {
 
       {entry && previous && (
         <>
-          <h3>Changes vs v{previous.version}</h3>
+          <h3>
+            Changes <span className="ver">vs v{previous.version}</span>
+          </h3>
           {changes.length === 0 && <p className="empty">No differences.</p>}
           <ul className="changes">
-            {changes.slice(0, MAX_SHOWN).map((c) => (
+            {changes.map((c) => (
               <li key={c.path}>
                 <span className={`badge ${c.kind}`}>{c.kind}</span>
                 <span className="key">{c.path}</span>
@@ -75,9 +85,6 @@ export function Inspector({ meta, history, pickedVersion, onPick }: Props) {
               </li>
             ))}
           </ul>
-          {changes.length > MAX_SHOWN && (
-            <p className="muted">+{changes.length - MAX_SHOWN} more</p>
-          )}
         </>
       )}
 

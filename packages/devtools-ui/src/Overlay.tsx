@@ -54,7 +54,7 @@ function Dock({
   };
 
   return (
-    <div className="bd-dock" style={{ height }}>
+    <div className="bd-dock" data-theme={theme} style={{ height }}>
       <div
         className="bd-resize"
         role="separator"
@@ -76,7 +76,8 @@ function Dock({
         <div className="bd" data-theme={theme}>
           <style>{CSS}</style>
           <p className="empty">
-            BlaC DevTools agent not installed — install createDevToolsAgent()
+            No BlaC DevTools agent in this page. Install createDevToolsAgent()
+            and reload.
           </p>
         </div>
       )}

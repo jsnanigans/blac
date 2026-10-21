@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { LogEntry } from '@blac/devtools-connect/client';
-import { clock } from './format';
+import { clock, instanceKey } from './format';
 import { PathChips } from './PathChips';
 
 interface Props {
@@ -26,7 +26,7 @@ export function LogView({ log, onOpen, onClear }: Props) {
     .reverse();
 
   return (
-    <div className="list wide">
+    <div className="list wide log">
       <div className="toolbar">
         <input
           type="search"
@@ -49,9 +49,11 @@ export function LogView({ log, onOpen, onClear }: Props) {
             onClick={() => onOpen(e)}
           >
             <span className={`badge ${e.kind}`}>{e.kind}</span>
-            <span className="muted">{clock(e.at)}</span>
-            <span className="name">{e.className}</span>
-            <span className="muted">{e.name}</span>
+            <span className="muted time">{clock(e.at)}</span>
+            <span className="name">
+              {e.className}
+              <span className="muted">:{instanceKey(e)}</span>
+            </span>
             {e.kind === 'changed' && <PathChips paths={e.paths} />}
           </button>
         ))}

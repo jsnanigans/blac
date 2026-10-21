@@ -31,6 +31,7 @@ export function Panel({ client, theme = 'auto' }: PanelProps) {
   const { status, selectedId } = state;
   const selected = state.instances.find((meta) => meta.id === selectedId);
   const pickedVersion = pick?.id === selectedId ? pick.version : null;
+  const live = state.instances.filter((meta) => !meta.disposedAt).length;
 
   const select = (id: string, version: number | null = null) => {
     client.select(id);
@@ -48,6 +49,13 @@ export function Panel({ client, theme = 'auto' }: PanelProps) {
       <p className="empty">
         agent v{state.agentProtocol} / panel v{PROTOCOL_VERSION} — update one of
         them
+      </p>
+    );
+  } else if (status !== 'connected' && state.instances.length === 0) {
+    body = (
+      <p className="empty">
+        Waiting for a BlaC app. Install createDevToolsAgent() in the page, then
+        reload it.
       </p>
     );
   } else if (tab === 'log') {
@@ -82,7 +90,7 @@ export function Panel({ client, theme = 'auto' }: PanelProps) {
   }
 
   return (
-    <div className="bd" data-theme={theme}>
+    <div className="bd" data-theme={theme} data-status={status}>
       <style>{CSS}</style>
       {status !== 'incompatible' && (
         <nav>
@@ -95,6 +103,9 @@ export function Panel({ client, theme = 'auto' }: PanelProps) {
               onClick={() => setTab(name)}
             >
               {name === 'instances' ? 'Instances' : 'Log'}
+              <span className="muted">
+                {name === 'instances' ? live : state.log.length}
+              </span>
             </button>
           ))}
           <span className="status">
