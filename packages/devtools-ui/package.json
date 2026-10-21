@@ -3,7 +3,7 @@
   "version": "2.0.23",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
-  "description": "DevTools UI components for BlaC state management",
+  "description": "DevTools panel and in-app overlay for BlaC state management",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jsnanigans/blac.git",
@@ -47,28 +47,25 @@
     "clean": "rm -rf dist",
     "test": "vp test run --passWithNoTests",
     "verify": "node ../../scripts/run-workspace-bin.mjs publint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "format": "vp fmt \".\"",
+    "format:check": "vp fmt \".\" --check",
+    "lint": "vp lint src"
   },
   "peerDependencies": {
-    "@blac/core": "workspace:^",
-    "@blac/react": "workspace:^",
+    "@blac/devtools-connect": "workspace:^",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
-    "@blac/core": "workspace:*",
-    "@blac/react": "workspace:*",
+    "@blac/devtools-connect": "workspace:*",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.7",
+    "jsdom": "catalog:",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "typescript": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:"
-  },
-  "dependencies": {
-    "@tanstack/react-virtual": "^3.14.10",
-    "@uiw/react-json-view": "2.0.0-alpha.43",
-    "json-diff-kit": "^1.0.35"
   }
 }

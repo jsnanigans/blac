@@ -1,121 +1,31 @@
 # @blac/devtools-ui
 
-Embeddable DevTools UI for BlaC. Provides in-app state inspection as a draggable overlay or Picture-in-Picture window.
-
-**[Documentation](https://blac-docs.pages.dev/plugins/devtools)** · **[npm](https://www.npmjs.com/package/@blac/devtools-ui)**
-
-> [!WARNING]
-> **BlaC v2 is in pre-release (beta).** While in beta, **breaking API changes may
-> ship in patch releases** without a major version bump. Pin an exact version and
-> check the changelog before upgrading. Strict semver resumes once v2 is officially
-> out of beta.
+DevTools UI for BlaC: a `Panel` that renders any `DevToolsClient`, and an in-app overlay (`BlacDevtoolsUi`) that hosts it.
 
 ## Installation
 
 ```bash
-pnpm add @blac/devtools-ui @blac/devtools-connect @blac/react @blac/core
+pnpm add @blac/devtools-ui @blac/devtools-connect
 ```
 
-## Setup
+## In-app overlay
 
-**1. Register the plugin:**
-
-```ts
-import { getPluginManager } from '@blac/core/plugins';
-import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
-
-getPluginManager().install(
-  createDevToolsBrowserPlugin({ enabled: import.meta.env.DEV }),
-);
-```
-
-**2. Add the UI:**
+Install the agent (see `@blac/devtools-connect`), then render the overlay once:
 
 ```tsx
 import { BlacDevtoolsUi } from '@blac/devtools-ui';
 
-function App() {
-  return (
-    <>
-      {import.meta.env.DEV && <BlacDevtoolsUi />}
-      <YourApp />
-    </>
-  );
-}
+<BlacDevtoolsUi />;
 ```
 
-**3. Toggle with `Alt+D`**
+Toggle with `Alt+D` or `window.dispatchEvent(new CustomEvent('blac-devtools-toggle'))`. The overlay connects only while open and renders inside a Shadow DOM root.
 
-## Components
-
-### BlacDevtoolsUi
-
-Auto-initializing wrapper. Uses Picture-in-Picture when available (Chrome 116+), falls back to draggable overlay.
+## Custom host
 
 ```tsx
-<BlacDevtoolsUi />                  // auto-detect
-<BlacDevtoolsUi mode="overlay" />   // force overlay
-<BlacDevtoolsUi mode="pip" />       // force PiP
+import { Panel } from '@blac/devtools-ui';
+
+<Panel client={client} theme="auto" />;
 ```
 
-### DraggableOverlay
-
-Floating, resizable DevTools window.
-
-```tsx
-import { DraggableOverlay } from '@blac/devtools-ui';
-<DraggableOverlay
-  onMount={(instancesBloc) => {
-    /* ... */
-  }}
-/>;
-```
-
-### DevToolsPanel
-
-Core panel for custom integrations (browser extensions, etc.).
-
-```tsx
-import { DevToolsPanel } from '@blac/devtools-ui';
-<DevToolsPanel
-  onMount={(instancesBloc) => {
-    /* ... */
-  }}
-/>;
-```
-
-## Features
-
-- Instance list with search & filter
-- JSON state viewer
-- State diff between updates
-- Event log (state changes, creation, disposal)
-- Inline state editing
-- Computed getter values in inspector
-
-## Keyboard Shortcuts
-
-| Shortcut | Action          |
-| -------- | --------------- |
-| `Alt+D`  | Toggle DevTools |
-| `Esc`    | Close DevTools  |
-
-## Programmatic Control
-
-```ts
-window.dispatchEvent(new CustomEvent('blac-devtools-toggle'));
-```
-
-## Browser Support
-
-| Browser         | Overlay | Picture-in-Picture |
-| --------------- | ------- | ------------------ |
-| Chrome 116+     | Yes     | Yes                |
-| Chrome < 116    | Yes     | No                 |
-| Firefox         | Yes     | No                 |
-| Safari          | Yes     | No                 |
-| Edge (Chromium) | Yes     | Yes                |
-
-## License
-
-MIT
+`client` is a `DevToolsClient` from `@blac/devtools-connect/client`.
