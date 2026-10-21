@@ -78,6 +78,7 @@ export class BlacMeta<S extends object = any> {
   get id(): string;
   // (undocumented)
   get name(): string;
+  get registry(): StateContainerRegistry;
 }
 
 // @public

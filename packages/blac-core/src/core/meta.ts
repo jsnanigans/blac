@@ -12,6 +12,7 @@ import { generateSimpleId } from '../utils/idGenerator';
 import { getBlacName } from '../utils/static-props';
 import type { HydrationStatus } from './StateContainer';
 import type { StateContainerConstructor } from '../types/utilities';
+import type { StateContainerRegistry } from './StateContainerRegistry';
 
 /**
  * Non-enumerable brand carried on every `$blac` object. Used by the clobber
@@ -39,6 +40,7 @@ interface MetaInternals<S extends object> {
   _debug: boolean;
   _createdAt: number;
   _disposed: boolean;
+  _registry: StateContainerRegistry;
   _hydrationStatus: HydrationStatus;
   _hydrationError: Error | undefined;
   _changedWhileHydrating: boolean;
@@ -144,6 +146,11 @@ export class BlacMeta<S extends object = any> {
 
   get disposed(): boolean {
     return this.#c._disposed;
+  }
+
+  /** The registry that owns this container (the global one for a bare `new`). */
+  get registry(): StateContainerRegistry {
+    return this.#c._registry;
   }
 
   get dependencies(): ReadonlyMap<StateContainerConstructor, string> {

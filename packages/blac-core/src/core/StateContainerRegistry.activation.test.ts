@@ -94,3 +94,11 @@ describe('onActivated', () => {
     expect(handler.mock.calls[0][0].aborted).toBe(true);
   });
 });
+
+describe('$blac.registry', () => {
+  it('is the registry that created the instance', () => {
+    const registry = new StateContainerRegistry();
+    const bloc = registry.ensure(Tracked, 'k');
+    expect(bloc.$blac.registry).toBe(registry);
+  });
+});
