@@ -59,7 +59,7 @@ Missing:
 
 ### Phase 2: react and testing
 
-- 2a. `isolated` (D1 = yes): flag stored by the decorator, read by `useBloc`, which folds `useId()` into the instance key. Update the web-docs sections that currently say per-mount instances must be explicit (`core/tracked.md`, `react/dependency-tracking.mdx`, `testing/core.md`, `guide/troubleshooting.md`, `integrations/ssr.md` mention isolated; review each).
+- 2a. **done** — `isolated` (D1 = yes): flag stored by the decorator, read by `useBloc`, which folds `useId()` into the instance key. Update the web-docs sections that currently say per-mount instances must be explicit (`core/tracked.md`, `react/dependency-tracking.mdx`, `testing/core.md`, `guide/troubleshooting.md`, `integrations/ssr.md` mention isolated; review each).
 - 2b. `withBlocs([[X, { args, state }], ...])` in `@blac/react/testing`: renders the story in its own `RegistryProvider`.
 - 2c. `renderWithBlocs`, or document `renderWithRegistry` with several `registerOverride` calls. Pick whichever is smaller once 2b exists.
 - 2d. Document a "mock `useBloc`" recipe (override + stub) in `apps/web-docs/src/content/docs/testing/`.

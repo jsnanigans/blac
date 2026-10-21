@@ -61,7 +61,7 @@ By default, `useBloc` uses auto-tracking to keep re-renders scoped: the hook wra
 :::tip[These four are the entire option surface]
 `UseBlocOptions` has exactly these keys. Two things people expect that are **not** options here:
 
-- **Per-mount instances** — pass a per-mount unique value in `args` (e.g. `args: { _id: useId() }`) with a matching `static key` on the class so each mount gets its own private instance (see [`args`](#args) and [Passing Inputs](/guide/inputs)).
+- **Per-mount instances** — mark the class `@blac({ isolated: true })` so each mount gets its own private instance (see [`args`](#args) and [Passing Inputs](/guide/inputs)).
 - **Non-serializable handles** (refs, callbacks) are a bloc-level `Deps` concept, not a `useBloc` option; see [Injecting handles (`deps`)](#injecting-handles-deps).
 
 There is no `autoTrack` flag — auto-tracking is the default and you opt out with `select`.
@@ -97,16 +97,14 @@ const [state] = useBloc(UserCardCubit, { args: { userId } });
 
 - **Identity:** different `args` values produce different instances. By default identity is the structural hash of all args. Override with `static key` on the class.
 - **Serializable only** — refs, callbacks, and DOM elements must not go in `args` (they'd produce a new instance every render). Put them in the bloc's `Deps` instead — see [Injecting handles (`deps`)](#injecting-handles-deps).
-- **Per-component private instances** — to give each mount its own instance (disposed on unmount), include a per-mount unique value in `args` and declare `static key` on the class so it becomes the identity key:
+- **Per-component private instances** — to give each mount its own instance (disposed on unmount), mark the class `isolated`. `args` still seed `init(args)`:
 
 ```tsx
-class FormCubit extends Cubit<FormState, { _id: string }> {
-  static key = (a: { _id: string }) => a._id;
-}
+@blac({ isolated: true })
+class FormCubit extends Cubit<FormState, FormArgs> {}
 
 // each mount of this component gets its own FormCubit instance
-const _id = useId();
-const [state, cubit] = useBloc(FormCubit, { args: { ...options, _id } });
+const [state, cubit] = useBloc(FormCubit, { args: options });
 ```
 
 See [Passing Inputs](/guide/inputs) for the full identity model.
@@ -299,30 +297,28 @@ See [Dependency Tracking](/react/dependency-tracking) for the full recording rul
 
 **Cause:** Both mounts resolve to the same instance key (`'default'` when there are no `args`). When the first mount releases, the instance disposes and the remount creates a fresh one — but if `keepAlive` is set, the instance persists and the remount picks it back up.
 
-**Fix:** For one private instance per mount, include a per-mount unique value in `args` and use `static key` to make it the identity key. `useId()` returns a stable-per-mount value:
+**Fix:** For one private instance per mount, mark the class `isolated`:
 
 ```tsx
-class WidgetCubit extends Cubit<WidgetState, { _id: string }> {
-  static key = (a: { _id: string }) => a._id;
-}
+@blac({ isolated: true })
+class WidgetCubit extends Cubit<WidgetState> {}
 
-const _id = useId();
-const [state] = useBloc(WidgetCubit, { args: { _id } });
+const [state] = useBloc(WidgetCubit);
 ```
 
 See [Instance Management](/core/instance-management) and [Passing Inputs](/guide/inputs).
 
-### `autoTrack`, `autoInstance`, `isolated`, or `instanceId` option not found
+### `autoTrack`, `autoInstance`, or `instanceId` option not found
 
-**Symptom:** TypeScript errors or runtime `undefined` when passing `autoTrack`, `autoInstance`, `isolated`, `instanceId`, or `dependencies` to `useBloc`.
+**Symptom:** TypeScript errors or runtime `undefined` when passing `autoTrack`, `autoInstance`, `instanceId`, or `dependencies` to `useBloc`.
 
 **Cause:** None of these are `useBloc` options. `UseBlocOptions` has exactly four keys: `args`, `select`, `onMount`, `onUnmount`.
 
 **Fix:**
 
-| Tried                       | What to use instead                                                                  |
-| --------------------------- | ------------------------------------------------------------------------------------ |
-| `autoTrack`                 | Auto-tracking is the default; opt out with `select`                                  |
-| `autoInstance` / `isolated` | Include a per-mount unique value in `args` with `static key` for per-mount instances |
-| `instanceId`                | Use `args`-derived identity; include a unique value in `args` + `static key`         |
-| `dependencies`              | Use `select`                                                                         |
+| Tried          | What to use instead                                                          |
+| -------------- | ---------------------------------------------------------------------------- |
+| `autoTrack`    | Auto-tracking is the default; opt out with `select`                          |
+| `autoInstance` | Mark the class `@blac({ isolated: true })` for per-mount instances           |
+| `instanceId`   | Use `args`-derived identity; include a unique value in `args` + `static key` |
+| `dependencies` | Use `select`                                                                 |

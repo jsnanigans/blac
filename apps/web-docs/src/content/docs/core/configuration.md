@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Per-class config with the @blac decorator (keepAlive, equality, key, excludeFromDevTools) and global config with configureBlac, including the circuit breakers that catch leaks and emit storms.
+description: Per-class config with the @blac decorator (keepAlive, isolated, equality, key, excludeFromDevTools) and global config with configureBlac, including the circuit breakers that catch leaks and emit storms.
 ---
 
 There are two layers of configuration in BlaC, and it helps to keep them straight:
@@ -62,6 +62,21 @@ class AuthCubit extends Cubit<AuthState> {
 **When to use:** global state that should survive route changes and component churn — authentication, user preferences, app-wide settings, a feature-flag cache.
 
 `keepAlive` is inherited by subclasses. Pass `@blac({ keepAlive: false })` on a subclass to turn it off again.
+
+### `{ isolated: true }`
+
+Gives every `useBloc` mount its own private instance, disposed when that component unmounts.
+
+**Why:** by default components that resolve to the same key share one instance. Form, wizard, and upload state is usually private to one mount; `isolated` says so on the class instead of threading a `useId()` through `args` and a `static key` at every call site.
+
+```ts
+@blac({ isolated: true })
+class FileUploadCubit extends Cubit<UploadState, { endpoint: string }> {}
+
+const [state, cubit] = useBloc(FileUploadCubit, { args: { endpoint } });
+```
+
+`args` still seed `init(args)` and still apply as usual; the mount only adds its own suffix to the instance key. `isolated` affects `useBloc` only: `ensure`, `acquire`, and `borrow` resolve the shared (non-suffixed) key. It is inherited by subclasses; `@blac({ isolated: false })` turns it off. Don't combine it with `keepAlive`, which would keep every mount's instance alive forever.
 
 ### `{ excludeFromDevTools: true }`
 

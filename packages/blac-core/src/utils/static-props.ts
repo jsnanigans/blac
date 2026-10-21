@@ -35,6 +35,17 @@ export function isKeepAliveClass<T extends StateContainerConstructor>(
 }
 
 /**
+ * Whether a class is marked `isolated` (each `useBloc` mount gets its own
+ * instance). Inherited: a subclass keeps a base class's `isolated` unless
+ * overridden.
+ */
+export function isIsolatedClass<T extends StateContainerConstructor>(
+  Type: T,
+): boolean {
+  return getStaticProp<boolean>(Type, BLAC_STATIC_PROPS.ISOLATED) === true;
+}
+
+/**
  * Whether a class is excluded from DevTools (avoids DevTools tracking itself
  * into an infinite loop). Inherited unless overridden by a subclass.
  */

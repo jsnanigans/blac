@@ -11,6 +11,13 @@ export interface BlacOptions {
    * `keepAlive` inherited from a base class.
    */
   keepAlive?: boolean;
+  /**
+   * Give each `useBloc` mount its own private instance, disposed when that
+   * component unmounts. Applies to `useBloc` only; `ensure`/`acquire` still
+   * resolve the shared instance. `false` turns off an `isolated` inherited
+   * from a base class.
+   */
+  isolated?: boolean;
   /** Exclude bloc from DevTools tracking (prevents infinite loops) */
   excludeFromDevTools?: true;
   /**
@@ -62,6 +69,9 @@ export function blac(options: BlacOptions) {
   ): T {
     if (options.keepAlive !== undefined) {
       (target as any)[BLAC_STATIC_PROPS.KEEP_ALIVE] = options.keepAlive;
+    }
+    if (options.isolated !== undefined) {
+      (target as any)[BLAC_STATIC_PROPS.ISOLATED] = options.isolated;
     }
     if (options.excludeFromDevTools) {
       (target as any)[BLAC_STATIC_PROPS.EXCLUDE_FROM_DEVTOOLS] = true;

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import {
+  isIsolatedClass,
   type ExtractArgs,
   type ExtractState,
   type InstanceState,
@@ -44,11 +45,8 @@ let nextConsumerId = 0;
  *   fires *before* the registry releases its ref, so the bloc is still
  *   alive when the callback runs.
  *
- * Per-mount private instance:
- * ```ts
- * const id = useId();
- * const [state, bloc] = useBloc(MyBloc, { args: { _id: id } });
- * ```
+ * Per-mount private instance: mark the class `@blac({ isolated: true })`, or
+ * pass a unique key arg yourself (e.g. `useId()` in `args`).
  *
  * @typeParam T - The state container constructor type (inferred from BlocClass)
  * @param BlocClass - The state container class to connect to
@@ -91,7 +89,10 @@ export function useBloc<
   consumer.ownArgs = (options as { args?: ExtractArgs<T> } | undefined)?.args;
   consumer.providerArgs = useProvidedArgs(BlocClass);
   const effectiveArgs = resolveEffectiveArgs(consumer);
-  const instanceKey = registry.resolveKey(BlocClass, undefined, effectiveArgs);
+  const sharedKey = registry.resolveKey(BlocClass, undefined, effectiveArgs);
+  const instanceKey = isIsolatedClass(BlocClass)
+    ? `${sharedKey}#${consumer.id}`
+    : sharedKey;
 
   // A memo kept on the consumer rather than in `useMemo`: no hook, deps array
   // or factory closure per mount. `rebindNonce` is bumped by the commit when

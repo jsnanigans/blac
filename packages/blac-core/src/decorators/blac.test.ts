@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vite-plus/test';
 import { blac } from './blac';
 import { Cubit } from '../core/Cubit';
 import {
+  isIsolatedClass,
   isKeepAliveClass,
   isExcludedFromDevTools,
 } from '../utils/static-props';
@@ -152,6 +153,29 @@ describe('blac decorator', () => {
       expect(instance.state).toEqual({ count: 0 });
       instance.increment();
       expect(instance.state).toEqual({ count: 1 });
+    });
+  });
+
+  describe('isolated option', () => {
+    @blac({ isolated: true })
+    class IsolatedCubit extends Cubit<{ count: number }> {
+      constructor() {
+        super({ count: 0 });
+      }
+    }
+
+    it('marks the class isolated and is inherited', () => {
+      class Child extends IsolatedCubit {}
+
+      expect(isIsolatedClass(IsolatedCubit)).toBe(true);
+      expect(isIsolatedClass(Child)).toBe(true);
+    });
+
+    it('can be turned off on a subclass', () => {
+      @blac({ isolated: false })
+      class Child extends IsolatedCubit {}
+
+      expect(isIsolatedClass(Child)).toBe(false);
     });
   });
 });

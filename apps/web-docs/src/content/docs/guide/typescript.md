@@ -39,7 +39,7 @@ const AuthCubit = blac({ keepAlive: true })(
 );
 ```
 
-`blac(opts)(class)` is a plain higher-order function — no compiler flag, no syntax proposal. The decorator form is sugar over exactly this. See [Configuration](/core/configuration) for the full options union (`keepAlive`, `equality`, `excludeFromDevTools`, `key`).
+`blac(opts)(class)` is a plain higher-order function — no compiler flag, no syntax proposal. The decorator form is sugar over exactly this. See [Configuration](/core/configuration) for the full options union (`keepAlive`, `isolated`, `equality`, `excludeFromDevTools`, `key`).
 
 :::tip[Match getting-started]
 The tsconfig block above is the same one in [Getting Started](/guide/getting-started). If you change one, change both.

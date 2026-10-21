@@ -81,14 +81,24 @@ const DocumentCubit = blac({ key: (args) => args.docId })(
 );
 ```
 
-See [Configuration](/core/configuration) for the rest of the `blac()` options (`keepAlive`, `equality`, `excludeFromDevTools`) and [Core Concepts](/guide/concepts/) for how `args` and `static key` relate.
+See [Configuration](/core/configuration) for the rest of the `blac()` options (`keepAlive`, `isolated`, `equality`, `excludeFromDevTools`) and [Core Concepts](/guide/concepts/) for how `args` and `static key` relate.
 
 ### Per-component private instances
 
-To give each mount its own instance — disposed on unmount, never shared — include a **per-mount unique value in `args`** and declare a `static key` that uses it. The idiomatic source of a stable-per-mount value is React's `useId()`:
+To give each mount its own instance — disposed on unmount, never shared — mark the class `isolated`:
 
 ```tsx
-// private instance, own lifecycle, seeded with args
+@blac({ isolated: true })
+class FileUploadCubit extends Cubit<UploadState, { endpoint: string }> {}
+
+const [state, cubit] = useBloc(FileUploadCubit, { args: { endpoint } });
+```
+
+`useBloc` adds a per-mount suffix to the instance key, so each mount gets a private bloc that lives and dies with it. `args` still seed `init(args)`. Isolation applies to `useBloc` only; `ensure`/`acquire` still resolve the shared instance. See [`isolated`](/core/configuration) for details.
+
+If the same class must be shared in some places and private in others, skip `isolated` and put a per-mount value such as React's `useId()` in `args`, keyed by a `static key` that reads it:
+
+```tsx
 class FileUploadCubit extends Cubit<
   UploadState,
   { endpoint: string; _id: string }
@@ -100,10 +110,8 @@ const _id = useId();
 const [state, cubit] = useBloc(FileUploadCubit, { args: { ...options, _id } });
 ```
 
-Because `useId()` returns a different value per component instance (and the same value across that component's re-renders), the derived key is unique per mount, so each mount gets a private bloc that lives and dies with it. The other args (`endpoint`) still seed `init(args)` — they ride along without forking instances because only `_id` keys identity.
-
 :::caution[No `instanceId` or `autoInstance` option]
-You might reach for `useBloc(C, { args, instanceId })` or `useBloc(C, { args, autoInstance: true })`. **Neither option exists** — `useBloc` accepts only `args`, `select`, `onMount`, and `onUnmount`. The per-mount idiom is the synthetic-args `static key` shown above. See [useBloc](/react/use-bloc) for the complete option list.
+You might reach for `useBloc(C, { args, instanceId })` or `useBloc(C, { args, autoInstance: true })`. **Neither option exists** — `useBloc` accepts only `args`, `select`, `onMount`, and `onUnmount`. Use `@blac({ isolated: true })` or the `useId()` pattern above. See [useBloc](/react/use-bloc) for the complete option list.
 :::
 
 ### Args must be serializable
@@ -241,7 +249,7 @@ Prefer these patterns, best first:
 - **Non-serializable value in `args`** — a ref, callback, DOM node, or class instance makes the structural hash unstable, so you get a _new instance every render_. Put it in deps instead. (The structural-key hasher throws in dev if it sees a function in `args`.)
 - **Capturing an inline callback in deps** — `{ onComplete: () => doThing() }` freezes the first render's closure. Stabilize with `useCallback`, or invert the callback (option 1 above).
 - **Two consumers writing the same deps key** — last write wins and the value flickers. Give each shared value exactly one owning component.
-- **Reaching for `deps:`, `instanceId:`, or `autoInstance:` as `useBloc` options** — none exist. Wire deps with `useBlocDeps`; key per-mount instances with a synthetic `args` value + `static key` (e.g. `args: { _id: useId() }`).
+- **Reaching for `deps:`, `instanceId:`, or `autoInstance:` as `useBloc` options** — none exist. Wire deps with `useBlocDeps`; mark per-mount classes `@blac({ isolated: true })` (or key them with a synthetic `args` value + `static key`).
   :::
 
 ---
@@ -285,16 +293,16 @@ When `useBloc` resolves which instance to connect to, it consults sources in thi
 | 2        | `<BlocProvider>` context `args`  | same resolution applied to inherited args, when the call passes no own `args` |
 | 3        | `'default'`                      | singleton fallback — no `args`, no `static key`, no provider                  |
 
-`args`-derived identity is the **only** idiom for per-value instances. For an identity that can't be derived from real data — anonymous, opaque, externally managed, or deliberately per-mount — synthesize one by adding a value to `args` (e.g. `_id: useId()`) and keying on it with `static key`.
+`args`-derived identity is the idiom for per-value instances. For per-mount instances, mark the class `@blac({ isolated: true })`. For any other identity that can't be derived from real data — anonymous, opaque, or externally managed — synthesize one by adding a value to `args` (e.g. `_id: useId()`) and keying on it with `static key`.
 
 ### Decision matrix
 
 Two questions decide everything: **is this input identity (set once) or live (changes over the instance's life)?** and **is the instance private to one component or shared?**
 
-|                              | Input defines identity / set once                                                                          | Input is live and changing                                                         |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **Private to one component** | `useBloc(C, { args: { ...data, _id: useId() } })` + `static key` on `_id` — own instance, seeded from args | synthetic per-mount `args` + call `cubit.xChanged(v)` from that component's effect |
-| **Shared across consumers**  | `useBloc(C, { args })` — args key the instance; override race impossible                                   | call `cubit.xChanged(v)` from the **one owning component's** effect                |
+|                              | Input defines identity / set once                                                           | Input is live and changing                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **Private to one component** | `@blac({ isolated: true })` + `useBloc(C, { args: data })` — own instance, seeded from args | `isolated` + call `cubit.xChanged(v)` from that component's effect  |
+| **Shared across consumers**  | `useBloc(C, { args })` — args key the instance; override race impossible                    | call `cubit.xChanged(v)` from the **one owning component's** effect |
 
 Non-serializable handles (refs, callbacks, controllers) sit _outside_ this matrix entirely — they go through the [deps lane](#deps-non-serializable-handles) and never touch identity.
 

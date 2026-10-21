@@ -84,6 +84,7 @@ export class BlacMeta<S extends object = any> {
 export interface BlacOptions {
   equality?: EqualityFn;
   excludeFromDevTools?: true;
+  isolated?: boolean;
   keepAlive?: boolean;
   key?: (args: any) => string;
   name?: string;
@@ -399,6 +400,11 @@ export type InstanceState<
 
 // @public
 export function isExcludedFromDevTools<T extends StateContainerConstructor>(
+  Type: T,
+): boolean;
+
+// @public
+export function isIsolatedClass<T extends StateContainerConstructor>(
   Type: T,
 ): boolean;
 

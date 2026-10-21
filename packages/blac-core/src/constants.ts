@@ -3,6 +3,9 @@ export const BLAC_STATIC_PROPS = {
   /** Mark a bloc to never be auto-disposed (kept alive permanently). */
   KEEP_ALIVE: 'keepAlive',
 
+  /** Give each React `useBloc` mount its own private instance. */
+  ISOLATED: 'isolated',
+
   /** Exclude a bloc from DevTools reporting (prevents infinite loops). */
   EXCLUDE_FROM_DEVTOOLS: '__excludeFromDevTools',
 

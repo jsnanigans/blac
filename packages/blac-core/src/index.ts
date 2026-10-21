@@ -62,6 +62,7 @@ export { blac, type BlacOptions } from './decorators';
 // Static-property feature flags (read by framework adapters)
 export {
   isKeepAliveClass,
+  isIsolatedClass,
   isExcludedFromDevTools,
   getBlacName,
 } from './utils/static-props';
