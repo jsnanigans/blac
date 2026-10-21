@@ -683,6 +683,23 @@ export class StateContainerRegistry {
     instances.clear();
   }
 
+  /** Dispose every live instance, keepAlive included, for which `predicate` is true. */
+  clearWhere(
+    predicate: (instance: StateContainer<any, any, any>) => boolean,
+  ): void {
+    const matches: StateContainer<any, any, any>[] = [];
+    for (const Type of this.types) {
+      for (const entry of this.getInstancesMap(Type).values()) {
+        if (!entry.instance.$blac.disposed && predicate(entry.instance)) {
+          matches.push(entry.instance);
+        }
+      }
+    }
+    for (const instance of matches) {
+      if (!instance.$blac.disposed) instance.dispose();
+    }
+  }
+
   /**
    * Get reference count for an instance (number of active refs).
    *

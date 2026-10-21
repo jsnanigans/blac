@@ -10,5 +10,5 @@ export {
   getAll,
   forEach,
 } from './queries';
-export { clear, clearAll, register } from './management';
+export { clear, clearAll, clearWhere, register } from './management';
 export { getRegistry, setRegistry, getStats } from './config';

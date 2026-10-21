@@ -1,4 +1,5 @@
 import { getRegistry } from './config';
+import type { StateContainer } from '../core/StateContainer';
 import type { StateContainerConstructor } from '../types/utilities';
 
 export function clear<T extends StateContainerConstructor>(BlocClass: T): void {
@@ -7,6 +8,12 @@ export function clear<T extends StateContainerConstructor>(BlocClass: T): void {
 
 export function clearAll(): void {
   getRegistry().clearAll();
+}
+
+export function clearWhere(
+  predicate: (instance: StateContainer<any, any, any>) => boolean,
+): void {
+  getRegistry().clearWhere(predicate);
 }
 
 /**

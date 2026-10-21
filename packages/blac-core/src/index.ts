@@ -33,6 +33,7 @@ export {
   release,
   clear,
   clearAll,
+  clearWhere,
   register,
   hasInstance,
   getRefCount,
