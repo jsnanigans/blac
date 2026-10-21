@@ -1,3 +1,4 @@
+import { ALL_PATHS } from '@dirtytalk/structural';
 import type { Cubit } from './core/Cubit';
 import { getStateChangeCount } from './core/StateContainer';
 import { StateContainerRegistry } from './core/StateContainerRegistry';
@@ -9,6 +10,7 @@ import type {
   ExtractDeps,
   ExtractState,
   StateContainerConstructor,
+  StateContainerInstance,
 } from './types/utilities';
 
 /** Synthetic owner id used by test helpers for pre-wired deps. */
@@ -195,3 +197,35 @@ export async function flush(): Promise<void> {
 }
 
 const MAX_FLUSH_ROUNDS = 100;
+
+/**
+ * Resolves with the first state of `bloc` that satisfies `predicate`: the
+ * current state if it already does, otherwise the first matching change.
+ * Rejects after `timeout` ms (default 1000).
+ */
+export function waitForState<B extends StateContainerInstance>(
+  bloc: B,
+  predicate: (state: B['state']) => boolean,
+  { timeout = 1000 }: { timeout?: number } = {},
+): Promise<B['state']> {
+  if (predicate(bloc.state)) return Promise.resolve(bloc.state);
+
+  return new Promise((resolve, reject) => {
+    const settle = () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
+    const unsubscribe = bloc.channel.subscribe(
+      () => ALL_PATHS,
+      () => {
+        if (!predicate(bloc.state)) return;
+        settle();
+        resolve(bloc.state);
+      },
+    );
+    const timer = setTimeout(() => {
+      settle();
+      reject(new Error(`[blac] waitForState(): timed out after ${timeout}ms`));
+    }, timeout);
+  });
+}

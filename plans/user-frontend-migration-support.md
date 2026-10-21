@@ -47,11 +47,11 @@ Missing:
    - Add a registry method that iterates entries and disposes matches; export it from `registry/management.ts` and `registry/index.ts`.
    - Predicate receives the instance (with `args`); also covers `clear(Class)` use cases that matched on id prefixes.
    - Tests: keepAlive, instances with active owners, args matching, disposal during iteration.
-2. `watch(..., { signal })`
+2. `watch(..., { signal })` — **done**
    - Add `signal?: AbortSignal` to `WatchOptions`; abort calls the returned stop function.
    - Already-aborted signal returns a no-op stop.
    - Tests: abort before and after first callback, combined with `create: false`.
-3. `waitForState(bloc, predicate, { timeout })` in `testing.ts`
+3. `waitForState(bloc, predicate, { timeout })` in `testing.ts` — **done**
    - Check current state first, then resolve on the first matching `stateChanged`; reject on timeout; clean up the subscription either way.
    - Tests: already-true, becomes-true, timeout.
 4. Clear/reset utilities (D3): `clearAll()` already disposes everything but also forgets registered types; decide whether a variant that keeps types, or a per-class-list helper, is needed. Scope after `clearWhere` lands.

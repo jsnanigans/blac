@@ -61,6 +61,17 @@ export function registerOverride<T extends StateContainerConstructor>(
   args?: ExtractArgs<T>,
 ): void;
 
+// @public
+export function waitForState<B extends StateContainerInstance>(
+  bloc: B,
+  predicate: (state: B['state']) => boolean,
+  {
+    timeout,
+  }?: {
+    timeout?: number;
+  },
+): Promise<B['state']>;
+
 // @public (undocumented)
 export function withBlocMethod<T extends StateContainerConstructor>(
   BlocClass: T,
