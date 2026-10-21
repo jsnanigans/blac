@@ -1,18 +1,23 @@
 ---
 title: React Testing
-description: Render React components with controlled bloc state in an isolated registry — renderWithBloc and renderWithRegistry, built on the core testing primitives.
+description: Render React components with controlled bloc state in an isolated registry — renderWithBloc, renderWithBlocs, withBlocs, and renderWithRegistry, built on the core testing primitives.
 ---
 
 The React testing utilities build on top of [`@blac/core/testing`](/testing/core) and `@testing-library/react` to provide a simple way to render components with controlled bloc state. They follow the same principle as the core helpers: render the component into a fresh, isolated [registry](/core/instance-management) so each test starts from a known set of bloc instances.
 
 ```ts
-import { renderWithBloc, renderWithRegistry } from '@blac/react/testing';
+import {
+  renderWithBloc,
+  renderWithBlocs,
+  renderWithRegistry,
+} from '@blac/react/testing';
 ```
 
 :::tip[Which one do I use?]
 
 - **One bloc to control?** Reach for `renderWithBloc` — it stubs and registers a single bloc in one call.
-- **Multiple blocs, or fine-grained setup?** Use `renderWithRegistry` and configure the registry yourself in a callback.
+- **Several blocs to seed?** Use `renderWithBlocs`: one `[BlocClass, options]` entry per bloc.
+- **Fine-grained setup?** Use `renderWithRegistry` and configure the registry yourself in a callback.
 
 Both render into their own registry through a `RegistryProvider` and never change the global registry, so they compose freely with `blacTestSetup()`.
 :::
@@ -216,6 +221,57 @@ it('renders notification list', () => {
   expect(screen.getAllByRole('listitem')).toHaveLength(2);
 });
 ```
+
+## `renderWithBlocs(ui, seeds)`
+
+```ts
+function renderWithBlocs(
+  ui: ReactElement,
+  seeds: Array<[BlocClass, { args?; state?; methods?; deps? }?]>,
+): RenderResult;
+```
+
+Renders a component in a fresh registry holding a stub of every seeded bloc. Each seed takes the same options as `renderWithBloc` (minus `bloc`), checked against that class's state and args. Prefer it over `renderWithRegistry` when you only need to seed stubs:
+
+```tsx
+import { renderWithBlocs } from '@blac/react/testing';
+
+renderWithBlocs(<Dashboard />, [
+  [AuthCubit, { state: { loggedIn: true, name: 'Alice' } }],
+  [CartCubit, { state: { items: [] }, methods: { checkout: vi.fn() } }],
+  [UserCubit, { args: { id: 'u1' }, state: { name: 'Ada' } }],
+]);
+```
+
+### Replacing a hand-written `useBloc` mock
+
+Mocking `useBloc` per class (`vi.mock('@blac/react')` returning a fake tuple) bypasses the registry and the real hook. Seeding stubs keeps the real `useBloc` and swaps only the instance: set `state` for what the component reads and `methods` for the actions it calls, then assert on the `vi.fn()` directly.
+
+## `withBlocs(seeds)` for Storybook
+
+```ts
+function withBlocs(
+  seeds: Array<[BlocClass, { args?; state?; methods?; deps? }?]>,
+): (Story: ComponentType) => ReactElement;
+```
+
+A Storybook decorator that renders each story in its own registry, seeded like `renderWithBlocs`. It replaces per-app `mockBloc` and `withSeededBloc` helpers.
+
+```tsx
+import { withBlocs } from '@blac/react/testing';
+
+export default {
+  component: Dashboard,
+  decorators: [
+    withBlocs([
+      [AuthCubit, { state: { loggedIn: true, name: 'Alice' } }],
+      [CartCubit, { state: { items: [] } }],
+    ]),
+  ],
+};
+```
+
+The registry is created once per story mount, so state changes made while interacting with the story persist across re-renders.
 
 ## Cleanup
 

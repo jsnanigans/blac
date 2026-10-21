@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useState, type ComponentType, type ReactElement } from 'react';
 import type { RenderResult } from '@testing-library/react';
 import type {
   ExtractArgs,
@@ -49,6 +49,62 @@ export function renderWithRegistry(
     return registry;
   });
   return renderInRegistry(ui, registry);
+}
+
+type BlocSeeds<T extends readonly StateContainerConstructor[]> = {
+  [K in keyof T]: [bloc: T[K], options?: CubitStubOptions<T[K]>];
+};
+
+function seedRegistry<T extends readonly StateContainerConstructor[]>(
+  seeds: BlocSeeds<T>,
+): StateContainerRegistry {
+  return withTestRegistry((registry) => {
+    for (const [BlocClass, options] of seeds as ReadonlyArray<
+      [StateContainerConstructor, CubitStubOptions<any>?]
+    >) {
+      registerOverride(
+        BlocClass,
+        createCubitStub(BlocClass, options),
+        options?.args,
+      );
+    }
+    return registry;
+  });
+}
+
+/**
+ * Renders `ui` in a fresh registry holding a stub of each seeded bloc.
+ * Each seed is `[BlocClass, { args, state, methods, deps }?]`.
+ */
+export function renderWithBlocs<
+  const T extends readonly StateContainerConstructor[],
+>(ui: ReactElement, seeds: BlocSeeds<T>): RenderResult {
+  return renderInRegistry(ui, seedRegistry(seeds));
+}
+
+function SeededRegistry({
+  seeds,
+  children,
+}: {
+  seeds: BlocSeeds<readonly StateContainerConstructor[]>;
+  children: ReactElement;
+}): ReactElement {
+  const [registry] = useState(() => seedRegistry(seeds));
+  return <RegistryProvider registry={registry}>{children}</RegistryProvider>;
+}
+
+/**
+ * Storybook decorator: renders each story in its own registry holding a stub
+ * of each seeded bloc. Seeds are `[BlocClass, { args, state, methods, deps }?]`.
+ */
+export function withBlocs<const T extends readonly StateContainerConstructor[]>(
+  seeds: BlocSeeds<T>,
+): (Story: ComponentType) => ReactElement {
+  return (Story) => (
+    <SeededRegistry seeds={seeds}>
+      <Story />
+    </SeededRegistry>
+  );
 }
 
 function renderInRegistry(

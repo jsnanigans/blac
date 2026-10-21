@@ -5,6 +5,7 @@
 ```ts
 import { CubitStubOptions } from '@blac/core/testing';
 import type { ExtractArgs } from '@blac/core';
+import type { ComponentType } from 'react';
 import type { ReactElement } from 'react';
 import type { RenderResult } from '@testing-library/react';
 import type { StateContainerConstructor } from '@blac/core';
@@ -20,11 +21,23 @@ export function renderWithBloc<T extends StateContainerConstructor>(
   bloc: InstanceType<T>;
 };
 
+// Warning: (ae-forgotten-export) The symbol "BlocSeeds" needs to be exported by the entry point testing.d.ts
+//
+// @public
+export function renderWithBlocs<
+  const T extends readonly StateContainerConstructor[],
+>(ui: ReactElement, seeds: BlocSeeds<T>): RenderResult;
+
 // @public (undocumented)
 export function renderWithRegistry(
   ui: ReactElement,
   setup: (registry: StateContainerRegistry) => void,
 ): RenderResult;
+
+// @public
+export function withBlocs<const T extends readonly StateContainerConstructor[]>(
+  seeds: BlocSeeds<T>,
+): (Story: ComponentType) => ReactElement;
 
 // (No @packageDocumentation comment for this package)
 ```
