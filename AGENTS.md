@@ -14,3 +14,7 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
 <!--VITE PLUS END-->
+
+## Plans
+
+- Always record progress in the relevant file under `plans/` as work happens: mark items done, note decisions and open questions, and update status before ending a turn.

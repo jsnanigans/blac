@@ -37,7 +37,9 @@ Missing:
 | D1 | `@blac({ isolated: true })` | **Add it.** Update the docs stance with it. |
 | D2 | `@blac/async` shape | **Helper `resource(this, ...)`.** The spike must evaluate how it works and how ergonomic it is (call-site noise, typing, test seeding) against the mixin/subclass alternatives before the full build. |
 | D3 | `clearWhere` and keepAlive | **Yes, clears keepAlive.** Existing `clear(Class)` / `clearAll()` already dispose keepAlive instances; `clearWhere` matches that. Also provide utilities to clear/reset everything (see Phase 1, item 4). |
-| D2a | How `resource(this, ...)` learns about activation | **Open.** `onActivate` and `onSystemEvent` are `protected` on `StateContainer`, so a helper called from a field initializer cannot hook activation, which `auto: true` and abort-on-deactivate need. Options: (1) a small public activation hook in core, e.g. `onActivated(container, cb(signal))` (recommended; keeps the helper shape and public-API-only rule); (2) a `Cubit` subclass/mixin overriding `onActivate` (no core change, but forces a base class on every site); (3) make `onActivate` public (smallest change, widens every cubit's API). |
+| D2a | How `resource(this, ...)` learns about activation | **Public `onActivated(container, cb(signal))`** over an internal `[ON_ACTIVATED]` symbol (same pattern as `[ON_DISPOSE]`). **Done** in core; runs on each activation, and immediately if already active. Field initializers run before `[INIT_CONFIG]`, so args-derived values (tags, keys) in `resource()` must be lazy (`() => ...`). |
+| D5 | `invalidate(tag)` on instances that are not active (keepAlive, no owners) | **Mark stale; reload on next activation.** No eager fetch for unused instances. |
+| D6 | Toasts and `success: 'Saved'` | **`configureAsync({ onSuccess, onError, retryOn })`**; core stays framework-free and the app wires `message.success`. A per-call `onError` can suppress the global one (e.g. 404 skip). |
 | D4 | Persist: second sync adapter interface, or a new plugin class? | **Neither.** The adapter interface now accepts sync or async results; the plugin hydrates synchronously when `get` returns a value. `createWebStoragePersistPlugin` is a factory over it. |
 
 ## Phases
@@ -72,7 +74,11 @@ Missing:
 
 ### Phase 4: `@blac/async`
 
-Blocked on D2a before the spike starts.
+**Progress:** D2a, D5 and D6 decided. `onActivated(container, cb(signal))` is implemented and tested in `@blac/core` (not committed yet). Spike not started.
+
+Build order and estimates: scaffold 0.5d; `resource` 1.5d; `mutation` 0.5d; `invalidate(tag)` with the tag index kept per registry (`WeakMap` keyed on the registry, so `RegistryProvider` scopes stay isolated) 1d; `configureAsync` 0.5d; test seams 0.5d; docs and example 1d; `paginated()` 1–1.5d (optional).
+
+Spike also writes `ConsistencyScoreCubit` as an `AsyncCubit` subclass (~30 lines) so D2 is judged on real call sites.
 
 Spike (time-boxed, ~1 day), in parallel with Phase 1:
 
