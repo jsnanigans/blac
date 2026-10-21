@@ -8,7 +8,11 @@ export default defineConfig({
     },
   },
   pack: {
-    entry: 'src/index.ts',
+    entry: {
+      index: 'src/index.ts',
+      client: 'src/client.ts',
+      protocol: 'src/protocol.ts',
+    },
     format: ['esm', 'cjs'],
     clean: false,
     dts: false,

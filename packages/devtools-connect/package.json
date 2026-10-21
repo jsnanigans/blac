@@ -3,7 +3,7 @@
   "version": "2.0.23",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
-  "description": "DevTools connection plugin for BlaC state management",
+  "description": "DevTools agent and client for BlaC state management",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jsnanigans/blac.git",
@@ -27,6 +27,26 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./client": {
+      "import": {
+        "types": "./dist/client.d.ts",
+        "default": "./dist/client.js"
+      },
+      "require": {
+        "types": "./dist/client.d.cts",
+        "default": "./dist/client.cjs"
+      }
+    },
+    "./protocol": {
+      "import": {
+        "types": "./dist/protocol.d.ts",
+        "default": "./dist/protocol.js"
+      },
+      "require": {
+        "types": "./dist/protocol.d.cts",
+        "default": "./dist/protocol.cjs"
+      }
     }
   },
   "files": [
@@ -42,8 +62,7 @@
     "blac",
     "devtools",
     "debugging",
-    "state-management",
-    "time-travel"
+    "state-management"
   ],
   "scripts": {
     "dev": "vp pack --watch",

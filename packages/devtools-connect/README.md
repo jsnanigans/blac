@@ -1,6 +1,6 @@
 # @blac/devtools-connect
 
-DevTools connection plugin for BlaC. Exposes a `window.__BLAC_DEVTOOLS__` API that the DevTools UI reads from.
+The BlaC DevTools agent and client. The agent is a plugin that records every state container and serves a typed protocol to DevTools UIs (the in-app overlay or the Chrome extension).
 
 **[Documentation](https://blac-docs.pages.dev/plugins/devtools)** · **[npm](https://www.npmjs.com/package/@blac/devtools-connect)**
 
@@ -20,46 +20,52 @@ pnpm add @blac/devtools-connect
 
 ```ts
 import { getPluginManager } from '@blac/core/plugins';
-import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
+import { createDevToolsAgent } from '@blac/devtools-connect';
 
-getPluginManager().install(
-  createDevToolsBrowserPlugin({
-    enabled: import.meta.env.DEV,
-  }),
-);
+getPluginManager().install(createDevToolsAgent(), {
+  environment: 'development',
+});
 ```
 
-Then add the UI component from [`@blac/devtools-ui`](../devtools-ui/README.md).
+Then add the UI from [`@blac/devtools-ui`](../devtools-ui/README.md) or install the Chrome extension.
 
 ## Options
 
 ```ts
-createDevToolsBrowserPlugin({
-  enabled: true, // default: true
-  maxInstances: 2000, // max tracked instances (default: 2000)
-  maxSnapshots: 20, // state snapshots per instance (default: 20)
+createDevToolsAgent({
+  historySize: 50, // recorded changes kept per instance
+  maxDisposed: 100, // disposed instances kept listed
 });
 ```
 
-## Global API
+## How it works
 
-The plugin exposes `window.__BLAC_DEVTOOLS__`:
+- The agent keeps references only — nothing is serialized, and nothing is posted, until a client sends `hello`. With no client attached the cost is a ring-buffer push per state flush.
+- One record per plugin flush (changes inside one microtask are coalesced by the core). Messages to a client are batched per frame, and state is sent only for the instance the client is watching.
+- Every message carries a `session` and a `seq`; a client that sees a gap asks for a `snapshot`.
+
+## Entry points
+
+| Import                            | Contents                                                            |
+| --------------------------------- | ------------------------------------------------------------------- |
+| `@blac/devtools-connect`          | `createDevToolsAgent`, `serialize`, transports (needs `@blac/core`) |
+| `@blac/devtools-connect/client`   | `DevToolsClient` store, `connectInPage()` (no `@blac/core`)         |
+| `@blac/devtools-connect/protocol` | Message types and `PROTOCOL_VERSION`                                |
+
+## Writing a host
 
 ```ts
-const api = window.__BLAC_DEVTOOLS__;
+import { DevToolsClient } from '@blac/devtools-connect/client';
 
-api.isEnabled();
-api.getInstances();
-api.getEventHistory();
-
-const unsubscribe = api.subscribe((event) => {
-  console.log(event.type, event.data);
-});
+const client = new DevToolsClient(transport); // any ClientTransport
+client.subscribe(render); // useSyncExternalStore-compatible
+client.getSnapshot(); // { status, instances, selectedId, history, log }
+client.select(id); // watch one instance's state + history
 ```
 
 ## Security
 
-Only enable in development — never ship DevTools to production. The plugin includes safe serialization with circular reference handling and depth limits.
+Only install in development — never ship DevTools to production. Serialization caps depth, breadth, string length and total size, and never walks DOM nodes.
 
 ## License
 
