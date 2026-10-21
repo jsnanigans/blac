@@ -12,8 +12,8 @@ BlaC has an official set of plugins for these common needs. All plugins implemen
 | Package                                                                  | Purpose                                                         | Typical environment |
 | ------------------------------------------------------------------------ | --------------------------------------------------------------- | ------------------- |
 | [`@blac/logging-plugin`](/plugins/logging)                               | Console logging, instance monitoring, rapid lifecycle detection | Development         |
-| [`@blac/devtools-connect`](/plugins/devtools)                            | Core plugin for instance tracking and state inspection          | Development         |
-| [`@blac/devtools-ui`](/plugins/devtools#2-add-the-in-app-ui-recommended) | In-app draggable overlay and panel UI components                | Development         |
+| [`@blac/devtools-connect`](/plugins/devtools)                            | Agent that records instances and serves them to DevTools clients | Development         |
+| [`@blac/devtools-ui`](/plugins/devtools#2-add-the-in-app-ui-recommended) | In-app overlay and the shared DevTools panel UI                  | Development         |
 | [`@blac/plugin-persist`](/plugins/persistence)                           | Persist state to IndexedDB with automatic hydration             | All                 |
 
 ## Installing a plugin
@@ -40,7 +40,7 @@ Install as many plugins as you need. They all receive the same lifecycle callbac
 ```ts
 import { getPluginManager } from '@blac/core/plugins';
 import { LoggingPlugin } from '@blac/logging-plugin';
-import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
+import { createDevToolsAgent } from '@blac/devtools-connect';
 import { createIndexedDbPersistPlugin } from '@blac/plugin-persist';
 
 const pm = getPluginManager();
@@ -48,7 +48,7 @@ const pm = getPluginManager();
 pm.install(new LoggingPlugin({ level: 'info' }), {
   environment: 'development',
 });
-pm.install(createDevToolsBrowserPlugin(), { environment: 'development' });
+pm.install(createDevToolsAgent(), { environment: 'development' });
 pm.install(createIndexedDbPersistPlugin());
 ```
 

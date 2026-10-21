@@ -1,115 +1,65 @@
-/**
- * Service Worker - Background Script for BlaC DevTools
- *
- * Handles message routing between content scripts and devtools panels
- */
+import {
+  PROTOCOL_VERSION,
+  type AgentMsg,
+} from '@blac/devtools-connect/protocol';
 
-// Connection management
-interface Connection {
-  port: chrome.runtime.Port;
-  tabId: number;
-}
+// Stateless router: a panel port per tab, spliced to a port into that tab's
+// top-frame content script. Nothing is cached; if this worker is killed the
+// panel's port closes and it reconnects.
+const PANEL_PREFIX = 'blac-panel:';
+const panels = new Map<number, chrome.runtime.Port>();
+const pages = new Map<number, chrome.runtime.Port>();
 
-// Active connections from DevTools panels
-const devToolsConnections = new Map<number, Connection>();
-
-// Cached state for reconnection
-const stateCache = new Map<number, any>();
-
-// Handle connections from DevTools panels
-chrome.runtime.onConnect.addListener((port) => {
-  if (port.name.startsWith('devtools-')) {
-    const tabId = parseInt(port.name.split('-')[1], 10);
-
-    // Store connection
-    devToolsConnections.set(tabId, { port, tabId });
-
-    // Send cached full state if available (panel gets an immediate INITIAL_STATE on reconnect)
-    if (stateCache.has(tabId)) {
-      port.postMessage(stateCache.get(tabId));
-    }
-
-    // Handle messages from DevTools panel
-    port.onMessage.addListener((message) => {
-      // Forward to content script
-      chrome.tabs
-        .sendMessage(tabId, {
-          source: 'blac-devtools-panel',
-          ...message,
-        })
-        .catch(() => {});
-    });
-
-    // Clean up on disconnect
-    port.onDisconnect.addListener(() => {
-      devToolsConnections.delete(tabId);
-    });
+const post = (port: chrome.runtime.Port | undefined, msg: unknown) => {
+  try {
+    port?.postMessage(msg);
+  } catch {
+    // port already gone; its onDisconnect cleans up
   }
+};
+
+const detach = (tabId: number) => {
+  pages.get(tabId)?.disconnect();
+  pages.delete(tabId);
+};
+
+const attach = (tabId: number, panel: chrome.runtime.Port) => {
+  detach(tabId);
+  const page = chrome.tabs.connect(tabId, { name: 'blac-page', frameId: 0 });
+  pages.set(tabId, page);
+  page.onMessage.addListener((msg: AgentMsg) => post(panel, msg));
+  // Fires when the document unloads (reload, navigation) or has no content
+  // script (e.g. chrome:// pages).
+  page.onDisconnect.addListener(() => {
+    void chrome.runtime.lastError;
+    if (pages.get(tabId) !== page) return;
+    pages.delete(tabId);
+    post(panel, { t: 'bye' } satisfies AgentMsg);
+  });
+};
+
+// Same-document (SPA) navigations keep the page port; only a new document
+// needs relinking, after which the panel is nudged to say hello again.
+const onUpdated = (tabId: number, info: { status?: string }) => {
+  const panel = panels.get(tabId);
+  if (!panel || info.status !== 'complete' || pages.has(tabId)) return;
+  attach(tabId, panel);
+  post(panel, { t: 'ready', protocol: PROTOCOL_VERSION } satisfies AgentMsg);
+};
+
+chrome.runtime.onConnect.addListener((panel) => {
+  if (!panel.name.startsWith(PANEL_PREFIX)) return;
+  const tabId = Number(panel.name.slice(PANEL_PREFIX.length));
+
+  if (panels.size === 0) chrome.tabs.onUpdated.addListener(onUpdated);
+  panels.set(tabId, panel);
+  attach(tabId, panel);
+
+  panel.onMessage.addListener((msg) => post(pages.get(tabId), msg));
+  panel.onDisconnect.addListener(() => {
+    if (panels.get(tabId) !== panel) return;
+    panels.delete(tabId);
+    detach(tabId);
+    if (panels.size === 0) chrome.tabs.onUpdated.removeListener(onUpdated);
+  });
 });
-
-// Handle messages from content scripts
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // Only process messages from content scripts
-  if (!sender.tab?.id || message.source !== 'blac-devtools-content') {
-    return;
-  }
-
-  const tabId = sender.tab.id;
-
-  // Handle page unload - clear cache and notify panel
-  if (message.type === 'PAGE_UNLOAD') {
-    // Clear cached state for this tab
-    stateCache.delete(tabId);
-
-    // Notify DevTools panel that page is reloading
-    const connection = devToolsConnections.get(tabId);
-    if (connection) {
-      connection.port.postMessage({
-        type: 'PAGE_RELOAD',
-        payload: { tabId, timestamp: Date.now() },
-      });
-    }
-
-    sendResponse({ received: true });
-    return true;
-  }
-
-  // Cache full state snapshots for reconnecting panels
-  if (message.type === 'INITIAL_STATE') {
-    stateCache.set(tabId, message);
-  }
-
-  // Forward to DevTools panel if connected
-  const connection = devToolsConnections.get(tabId);
-  if (connection) {
-    connection.port.postMessage(message);
-  }
-
-  // Send acknowledgment
-  sendResponse({ received: true });
-  return true; // Keep channel open for async response
-});
-
-// Detect page navigation/reload via tabs.onUpdated (no extra permissions needed)
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.status !== 'loading') return;
-
-  stateCache.delete(tabId);
-
-  const connection = devToolsConnections.get(tabId);
-  if (connection) {
-    connection.port.postMessage({
-      type: 'PAGE_RELOAD',
-      payload: { tabId, timestamp: Date.now() },
-    });
-  }
-});
-
-// Clean up cache when tab is closed
-chrome.tabs.onRemoved.addListener((tabId) => {
-  stateCache.delete(tabId);
-  devToolsConnections.delete(tabId);
-});
-
-// Export for TypeScript
-export {};

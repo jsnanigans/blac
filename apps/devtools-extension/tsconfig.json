@@ -19,11 +19,14 @@
     // Path aliases for cleaner imports
     "paths": {
       "@/*": ["./src/*"],
-      "@blac/core": ["../../packages/blac-core/src/index.ts"],
-      "@blac/core/internal": ["../../packages/blac-core/src/internal.ts"],
-      "@blac/react": ["../../packages/blac-react/src/index.ts"],
       "@blac/devtools-connect": [
         "../../packages/devtools-connect/src/index.ts"
+      ],
+      "@blac/devtools-connect/client": [
+        "../../packages/devtools-connect/src/client.ts"
+      ],
+      "@blac/devtools-connect/protocol": [
+        "../../packages/devtools-connect/src/protocol.ts"
       ],
       "@blac/devtools-ui": ["../../packages/devtools-ui/src/index.tsx"]
     }

@@ -39,6 +39,14 @@ export default defineConfig({
         replacement: src('plugin-persist/src/index.ts'),
       },
       {
+        find: /^@blac\/devtools-connect\/client$/,
+        replacement: src('devtools-connect/src/client.ts'),
+      },
+      {
+        find: /^@blac\/devtools-connect\/protocol$/,
+        replacement: src('devtools-connect/src/protocol.ts'),
+      },
+      {
         find: /^@blac\/devtools-connect$/,
         replacement: src('devtools-connect/src/index.ts'),
       },

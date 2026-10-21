@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "BlaC DevTools",
-  "version": "2.0.5",
+  "version": "3.0.0",
   "description": "Chrome DevTools extension for BlaC state management",
   "icons": {
     "16": "icons/icon-16.png",
@@ -19,7 +19,7 @@
       "matches": ["<all_urls>"],
       "js": ["dist/content/content-script.js"],
       "run_at": "document_start",
-      "all_frames": true
+      "all_frames": false
     }
   ],
   "devtools_page": "dist/src/devtools/devtools.html"

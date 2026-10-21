@@ -1,23 +1,23 @@
 ---
 title: DevTools
-description: A full DevTools suite — in-app overlay, Chrome DevTools panel, and console API — for inspecting live instances, state diffs, event timelines, and time-travel.
+description: Inspect live BlaC instances, their state and change history — in an in-app overlay or the Chrome DevTools panel.
 ---
 
-BlaC ships with a full DevTools suite: an in-app overlay, a Chrome DevTools panel, and a console API. Together they let you inspect live instances, view state diffs, browse event timelines, and time-travel to previous states.
+BlaC DevTools lets you inspect live instances, browse each instance's state and change history, diff any change against the one before it, and follow a global log of created, changed and disposed instances. The same panel runs in an in-app overlay and in a Chrome DevTools tab.
 
-DevTools is delivered as a [plugin](/plugins/overview): once installed, it observes every state container from the outside, so there is nothing to wire up per bloc. Keep it scoped to `environment: 'development'` — it tracks state snapshots and event history, which you do not want in a production bundle.
+DevTools is delivered as a [plugin](/plugins/overview): once installed it observes every state container from the outside, so there is nothing to wire up per bloc. Keep it scoped to `environment: 'development'`.
 
 ## Packages
 
-| Package                  | What it does                                                 |
-| ------------------------ | ------------------------------------------------------------ |
-| `@blac/devtools-connect` | Core plugin that tracks instances and exposes the global API |
-| `@blac/devtools-ui`      | React UI components (floating overlay and panel)             |
-| BlaC Chrome Extension    | Chrome DevTools panel that connects automatically            |
+| Package                  | What it does                                                           |
+| ------------------------ | ---------------------------------------------------------------------- |
+| `@blac/devtools-connect` | The agent plugin that records instances, and the client that reads it  |
+| `@blac/devtools-ui`      | The panel UI and the in-app overlay                                    |
+| BlaC Chrome Extension    | The same panel as a Chrome DevTools tab                                |
 
 ## Setup
 
-### 1. Install the plugin
+### 1. Install the agent
 
 ```bash
 pnpm add @blac/devtools-connect
@@ -25,16 +25,16 @@ pnpm add @blac/devtools-connect
 
 ```ts
 import { getPluginManager } from '@blac/core/plugins';
-import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
+import { createDevToolsAgent } from '@blac/devtools-connect';
 
-getPluginManager().install(createDevToolsBrowserPlugin(), {
+getPluginManager().install(createDevToolsAgent(), {
   environment: 'development',
 });
 ```
 
-This is the minimum setup. The plugin starts tracking all state containers and exposes `window.__BLAC_DEVTOOLS__` for programmatic access.
+This is the minimum setup. The agent records recent history for every container but sends nothing — and serializes nothing — until a DevTools client attaches.
 
-### 2. Add the in-app UI (recommended)
+### 2. Add the in-app overlay (optional)
 
 ```bash
 pnpm add @blac/devtools-ui
@@ -53,21 +53,18 @@ function App() {
 }
 ```
 
-Drop `<BlacDevtoolsUi />` anywhere in your tree. It renders a draggable floating overlay that you toggle with **Alt+D** (or by dispatching a `blac-devtools-toggle` custom event).
+`<BlacDevtoolsUi />` renders a panel docked to the bottom of the page, toggled with **Alt+D** (or by dispatching a `blac-devtools-toggle` event on `window`). Drag its top edge to resize. The overlay connects only while it is open, and it renders in a Shadow DOM so it cannot clash with your app's CSS.
 
 ### 3. Chrome extension (optional)
 
-Install the BlaC Chrome Extension from the Chrome Web Store (or build from `apps/devtools-extension/`). Once installed, a **BlaC** tab appears in Chrome DevTools alongside Elements, Console, etc.
+Install the BlaC Chrome Extension from the Chrome Web Store (or build `apps/devtools-extension/`). A **BlaC** tab appears in Chrome DevTools. It attaches to the inspected tab's top frame, follows reloads, and reconnects if the extension's service worker restarts.
 
-The extension connects automatically when the browser plugin is active — no extra configuration needed. It stays in sync across page reloads.
-
-## Plugin configuration
+## Agent options
 
 ```ts
-createDevToolsBrowserPlugin({
-  enabled: true, // kill switch (default: true)
-  maxInstances: 2000, // max tracked instances before FIFO eviction
-  maxSnapshots: 20, // state snapshots kept per instance
+createDevToolsAgent({
+  historySize: 50, // recorded changes kept per instance
+  maxDisposed: 100, // disposed instances kept listed
 });
 ```
 
@@ -75,70 +72,33 @@ createDevToolsBrowserPlugin({
 
 ### Inspect instances
 
-The Instances tab lists every active state container with everything you need to identify and triage it at a glance:
+The **Instances** view lists every container grouped by class, with a text filter, a toggle for disposed instances, and a change counter that flashes when an instance updates. Select one to open the inspector:
 
-- **Class name + instance ID** with a state preview.
-- **`args`** that keyed the instance — surfaced inline so two instances of the same class with different `args` are easy to tell apart.
-- **Ref holders** (`R:n`) — every active holder of the instance: each `useBloc` mount (which acquires a ref) plus any manual [`acquire()`](/core/instance-management).
-- **Hydration badge** — `HYDRATING` while state is being restored by the persistence plugin, or `ERR` if hydration failed.
-- **Insight pills** — inline warnings when a threshold trips: large state size (≥ 50 KB) or a high update rate (≥ 30 updates / 10 s).
+- the `args` that keyed the instance, so two instances of the same class are easy to tell apart;
+- its current state as a collapsible tree (Maps, Sets, Dates, Errors and other non-JSON values are tagged);
+- its history, newest first, with the paths each change touched.
 
-Click an instance to see its full state tree and a side-by-side diff history.
+State is sent only for the selected instance; everything else sends just metadata, which keeps large apps responsive.
 
-:::tip[Screenshot pending]
-The Instances tab shows every active bloc. Each row displays the class name, a truncated instance ID, the current ref count (`R:2`), and a compact JSON preview of the current state. A yellow insight pill appears on a bloc when its update rate exceeds 30/10 s.
-_A human will capture this from the running examples app and drop the file at `apps/docs/public/devtools-instances.png` (then re-add the `<img>`)._
+### Diff a change
+
+Select a history entry to see its state and a **Changes** list — every path that was added, removed or changed compared with the previous entry, with before and after values.
+
+:::note[Changed paths]
+The path list on a history entry is the finest the core reports. While a path-scoped consumer (such as a `useBloc` mount) is subscribed it is precise; otherwise the agent falls back to the top-level keys that differ. The **Changes** diff is always computed from the two states.
 :::
 
-:::note[Reading `R:n`]
-`R:n` comes straight from the registry's [ref-counting model](/core/instance-management). Every `useBloc` mount acquires a ref, and every manual `acquire()` adds one; the bloc stays alive while the count is above zero. If an instance lingers after all its components have unmounted, a stray `acquire()` without a matching `release()` (or `keepAlive: true`) is the usual cause.
+:::note[Granularity]
+One record is kept per plugin flush — changes made in the same microtask are coalesced by the core. Records are sent to the panel at most once per frame per instance, so an instance that updates many times per frame appears as one entry with the union of its changed paths.
 :::
 
-### View state diffs
+### Follow the log
 
-When you select an instance, the detail panel shows a side-by-side diff of the previous and current state. Each state change is recorded with a timestamp and the call stack that triggered it.
-
-:::tip[Screenshot pending]
-The detail panel shows a side-by-side diff for the selected bloc. The left column (red) is the previous state; the right column (green) is the current state. Changed keys are highlighted, with a timestamp and abbreviated call stack below each diff entry.
-_Drop the file at `apps/docs/public/devtools-state-diff.png` (then re-add the `<img>`)._
-:::
-
-### Browse the event log
-
-The Logs tab shows a timeline of all lifecycle events:
-
-| Event               | When                                                                              |
-| ------------------- | --------------------------------------------------------------------------------- |
-| `instance-created`  | A state container is created                                                      |
-| `instance-updated`  | State changes (coalesced per animation frame — one entry per rAF, not per emit)   |
-| `instance-disposed` | A state container is disposed                                                     |
-| `refs-changed`      | The set of ref holders changes (a `useBloc` mount/unmount or `acquire`/`release`) |
-| `deps-changed`      | The merged `deps` view changes — payload carries `previousDeps` and `currentDeps` |
-
-:::note[`instance-updated` batching]
-State changes are coalesced once per animation frame: if a bloc emits several times before the next rAF tick, the Logs tab records a single `instance-updated` entry with the final state. This keeps the timeline readable during high-frequency updates. The full snapshot history in the detail panel still captures every intermediate state.
-:::
-
-:::tip[Screenshot pending]
-The Logs tab lists events with a type badge, a timestamp, and a collapsible payload. The `refs-changed` event shows the previous and current ref count; `instance-updated` shows the coalesced final state for that frame.
-_Drop the file at `apps/docs/public/devtools-event-log.png` (then re-add the `<img>`)._
-:::
-
-### Time-travel
-
-Click any snapshot in the state history to restore the instance to that point. This calls `emit` on the instance with the stored state, so your components update in real time.
-
-:::caution[Time-travel bypasses your action logic]
-Because time-travel calls `emit` directly with a stored snapshot, it skips the methods that normally produce that state. Anything those methods also do — network requests, writes to other blocs, external side effects — does **not** replay. The bloc's in-memory state jumps, but derived or external systems can desync. Treat time-travel as a UI-debugging aid, not a way to re-run application logic.
-:::
-
-### Search and filter
-
-Use the search bar to filter instances by class name. Useful when you have dozens of active containers.
+The **Log** view is a bounded, global stream of created, changed and disposed events. Click an entry to jump to that instance and history entry.
 
 ## Keyboard shortcut
 
-Press **Alt+D** to toggle the in-app DevTools overlay.
+Press **Alt+D** to toggle the in-app overlay.
 
 ## Excluding instances from DevTools
 
@@ -155,54 +115,28 @@ class AnimationCubit extends Cubit<{ frame: number }> {
 }
 ```
 
-The DevTools plugin skips these instances entirely — no tracking overhead. `excludeFromDevTools` is one of the [`blac()` configuration options](/core/configuration); this page shows it in use, but [Configuration](/core/configuration) documents the full option set.
+The agent skips these instances entirely. `excludeFromDevTools` is one of the [`blac()` configuration options](/core/configuration).
 
-## Console API
+:::tip[Readable names in production builds]
+Instances are listed by class name, which a minifier may mangle. Give a class a stable name with `static blacName = 'Counter'` and DevTools will use it.
+:::
 
-With the plugin installed, `window.__BLAC_DEVTOOLS__` is available in the browser console:
+## Writing your own host
 
-```ts
-// List all active instances
-__BLAC_DEVTOOLS__.getInstances();
+The panel is a plain React component driven by a `DevToolsClient`; a host only supplies a transport.
 
-// Full state dump with snapshot history
-__BLAC_DEVTOOLS__.getFullState();
+```tsx
+import { DevToolsClient } from '@blac/devtools-connect/client';
+import { Panel } from '@blac/devtools-ui';
 
-// Event timeline
-__BLAC_DEVTOOLS__.getEventHistory();
-
-// Subscribe to real-time events
-const unsub = __BLAC_DEVTOOLS__.subscribe((event) => {
-  console.log(event.type, event.data);
-});
-
-// Time-travel an instance to a previous state
-__BLAC_DEVTOOLS__.timeTravel(instanceId, previousState);
-
-// Check plugin version
-__BLAC_DEVTOOLS__.getVersion();
+const client = new DevToolsClient(transport); // any ClientTransport
+render(<Panel client={client} />);
 ```
 
-## Programmatic access
-
-You can also interact with the plugin instance directly in your code:
-
-```ts
-const devtools = createDevToolsBrowserPlugin();
-getPluginManager().install(devtools, { environment: 'development' });
-
-devtools.subscribe((event) => {
-  // { type, timestamp, data }
-});
-
-devtools.getInstances();
-devtools.getFullState();
-devtools.getEventHistory();
-```
+The wire protocol (`@blac/devtools-connect/protocol`) is versioned: every agent message carries a `session` and a `seq`, a client that sees a gap asks for a `snapshot`, and a protocol mismatch is reported in the panel instead of misbehaving.
 
 ## See also
 
 - [Plugin Overview](/plugins/overview) — the plugin catalog and the install API
 - [Logging Plugin](/plugins/logging) — passive console/CI logging; complements DevTools
-- [Instance Management](/core/instance-management) — the ref-counting model behind `R:n`
 - [Configuration](/core/configuration) — `excludeFromDevTools` and the other `blac()` options
