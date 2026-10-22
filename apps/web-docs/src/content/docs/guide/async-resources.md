@@ -101,4 +101,5 @@ Use `resetAsyncConfig()` in `afterEach` when a test calls `configureAsync`.
 ## See also
 
 - [Async](/guide/async/) — the hand-written loading flow this package replaces
+- [Proposals](/proposals/) — list queries, mutation concurrency and retry after token refresh, previewed before they are built
 - [Testing](/testing/overview/) — `withBlocState` and `blacTestSetup`

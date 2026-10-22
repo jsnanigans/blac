@@ -394,13 +394,87 @@ export default defineConfig({
               {
                 label: 'Reference',
                 items: [
-                  { label: 'Getting Started', link: '/react/getting-started/' },
+                  {
+                    label: 'Getting Started',
+                    link: '/react/getting-started/',
+                  },
                   { label: 'useBloc()', link: '/react/use-bloc/' },
                   {
                     label: 'Dependency Tracking',
                     link: '/react/dependency-tracking/',
                   },
                   { label: 'Performance', link: '/react/performance/' },
+                ],
+              },
+            ],
+          },
+          {
+            label: 'Proposals',
+            link: '/proposals/',
+            icon: 'rocket',
+            items: [
+              { label: 'Overview', link: '/proposals/' },
+              {
+                label: 'Core',
+                items: [
+                  {
+                    label: 'Reset by Predicate',
+                    link: '/proposals/clear-where/',
+                  },
+                  {
+                    label: 'Watch With a Signal',
+                    link: '/proposals/watch-signal/',
+                  },
+                  { label: 'Borrow by Key', link: '/proposals/borrow-key/' },
+                ],
+              },
+              {
+                label: 'React and Testing',
+                items: [
+                  {
+                    label: 'Isolated Instances',
+                    link: '/proposals/isolated-instances/',
+                  },
+                  {
+                    label: 'Testing Helpers',
+                    link: '/proposals/testing-helpers/',
+                  },
+                ],
+              },
+              {
+                label: 'Persistence',
+                items: [
+                  {
+                    label: 'Web Storage',
+                    link: '/proposals/web-storage-persist/',
+                  },
+                ],
+              },
+              {
+                label: '@blac/async',
+                items: [
+                  { label: 'List Query', link: '/proposals/list-query/' },
+                  {
+                    label: 'Mutation Concurrency',
+                    link: '/proposals/mutation-concurrency/',
+                  },
+                  {
+                    label: 'Retry After Token Refresh',
+                    link: '/proposals/retry-failed/',
+                  },
+                ],
+              },
+              {
+                label: 'Release and Adoption',
+                items: [
+                  {
+                    label: 'Release Readiness',
+                    link: '/proposals/release-readiness/',
+                  },
+                  {
+                    label: 'Adoption Pilot',
+                    link: '/proposals/adoption-pilot/',
+                  },
                 ],
               },
             ],

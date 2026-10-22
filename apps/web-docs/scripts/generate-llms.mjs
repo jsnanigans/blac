@@ -82,6 +82,7 @@ async function collectDocs(dir) {
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
+      if (entry.name === 'proposals' && dir === DOCS_DIR) continue;
       files.push(...(await collectDocs(full)));
     } else if (/\.mdx?$/.test(entry.name)) {
       files.push(full);

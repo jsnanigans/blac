@@ -6,29 +6,22 @@ Source: `research/` (dated 2026-10-21). Scope: only work in this repo. Work in `
 
 Close the gaps that block migrating `user-frontend` (`apps/pmp`, `apps/user-app`, `packages/shared`) from the vendored legacy blac to `@blac/core` / `@blac/react`, and remove the repeated boilerplate the research found.
 
-## Current state
+## Status
 
-Already in this repo:
+All items are implemented and documented except the optional `paginated()`.
 
-- Core: `ensure`, `borrow`, `borrowSafe`, `hasInstance`, `getAll`, `forEach`, `clear`, `clearAll`, `watch`, `depend`, `onActivate(signal)`.
-- Registry entries store `args` and `argsKey` (`StateContainerRegistry.ts`), which `clearWhere` can match on.
-- `packages/blac-core/src/testing.ts`: `blacTestSetup`, `registerOverride`, `overrideEnsure`, `createCubitStub`, `withBlocState`, `withBlocMethod`, `flush`.
-- `packages/blac-react/src/testing.tsx`: `renderWithBloc`, `renderWithRegistry`.
-- `packages/plugin-persist`: IndexedDB only, async adapter interface.
-
-Missing:
-
-| Item                                                 | Package        | Replaces in user-frontend                                                                                                       |
-| ---------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `clearWhere(predicate)`                              | core           | PMP `BlacEvent` reset bus, user-app `onUserSessionReset` (71 calls), `disposeWorkspaceScopedCubits`, `_id` string matching      |
-| `watch(..., { signal })`                             | core           | 12 manual `_observer.subscribe` bridges and their leaks                                                                         |
-| `waitForState(bloc, predicate, opts)`                | core/testing   | `vi.waitFor` polling, `flushPromises` (85 hits)                                                                                 |
-| `@blac({ isolated: true })`                          | core + react   | `useId` + `static key` boilerplate on 61 classes                                                                                |
-| `withBlocs(...)` Storybook decorator                 | react/testing  | duplicated `mockBloc` / `withSeededBloc` in both apps                                                                           |
-| `renderWithBlocs` / documented multi-override recipe | react/testing  | per-class `mockUseBlocNext` stubs, duplicated `mockBlacReact.ts`                                                                |
-| Sync web-storage persist adapter                     | plugin-persist | PMP `persistCubitState`                                                                                                         |
-| `@blac/async`                                        | new package    | load/mutation template (~250 sites), three loading models, mount-effect triggers, manual invalidation, error-reporting plumbing |
-| `paginated()` (optional)                             | `@blac/async`  | ~22 near-clone list cubits                                                                                                      |
+| Item                                                                   | Package        | Replaces in user-frontend                                                                                                       | Code        | Docs (`apps/web-docs/src/content/docs/`)                                        |
+| ---------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------- |
+| `clearWhere(predicate)`                                                | core           | PMP `BlacEvent` reset bus, user-app `onUserSessionReset` (71 calls), `disposeWorkspaceScopedCubits`, `_id` string matching      | done        | `core/instance-management.md`                                                   |
+| `watch(..., { signal })`                                               | core           | 12 manual `_observer.subscribe` bridges and their leaks                                                                         | done        | `core/watch.md`                                                                 |
+| `waitForState(bloc, predicate, opts)`                                  | core/testing   | `vi.waitFor` polling, `flushPromises` (85 hits)                                                                                 | done        | `testing/core.md`                                                               |
+| `@blac({ isolated: true })`                                            | core + react   | `useId` + `static key` boilerplate on 61 classes                                                                                | done        | mentioned across `core/`, `react/`, `testing/`, `guide/`, `integrations/ssr.md` |
+| `withBlocs(...)` Storybook decorator, `renderWithBlocs`                | react/testing  | duplicated `mockBloc` / `withSeededBloc`, per-class `mockUseBlocNext` stubs, `mockBlacReact.ts`                                 | done        | `testing/react.md`                                                              |
+| Sync web-storage persist adapter                                       | plugin-persist | PMP `persistCubitState`                                                                                                         | done        | `plugins/persistence.md`                                                        |
+| `onActivated(container, cb(signal))`                                   | core           | (enabler for `@blac/async`, D2a)                                                                                                | done        | `core/cubit.md`                                                                 |
+| `$blac.registry`                                                       | core           | (enabler for per-registry invalidation)                                                                                         | done        | `core/cubit.md`                                                                 |
+| `@blac/async` (`resource`, `mutation`, `invalidate`, `configureAsync`) | new package    | load/mutation template (~250 sites), three loading models, mount-effect triggers, manual invalidation, error-reporting plumbing | done        | `guide/async-resources.md`, package README, example `14-async-resources`        |
+| `paginated()` (optional)                                               | `@blac/async`  | ~22 near-clone list cubits                                                                                                      | not started | -                                                                               |
 
 ## Decisions
 
@@ -72,58 +65,52 @@ Missing:
 - Add a `localStorage` / `sessionStorage` adapter with synchronous hydration (no flash at boot for `UserCubit`), debounced write, and flush on `pagehide`.
 - Resolve D4 first. Tests alongside `IndexedDbPersistPlugin.test.ts`.
 
-### Phase 4: `@blac/async`
+### Phase 4: `@blac/async` — **done**, except optional `paginated()`
 
-**Progress:** D2a, D5 and D6 decided. `onActivated(container, cb(signal))` is implemented, tested and committed in `@blac/core` (`6c5b807d`). Spike done and committed (`91c509f1`); the scratch folder is since removed.
+Package: `packages/blac-async` (`resource`, `mutation`, `invalidate`, `configureAsync`, state constructors `idle/loading/success/failure`). 14 package tests plus an example test; `vp check`, `tsc` and `vp run build` clean. Uses public `@blac/core` API only. Commits: `6c5b807d` (`onActivated`), `91c509f1` (spike), `6a3b8ec1` (`$blac.registry`), `352a6768` (package), `42c17d8e` (docs, README, example).
 
-**Build progress** (`packages/blac-async`, 14 tests; `vp check`, `tsc` and `vp run build` clean):
+**Built**
 
-- Done: scaffold; `resource` (status union, latest-wins with abort, in-flight dedupe, `reload`, `staleTime`, `auto`, slot restored on deactivate); `mutation` (`invalidates`, `success`); `invalidate(tag)` with a per-registry tag index (D5: active or already-loaded reloads, otherwise marked stale and loaded on next activation); `configureAsync({ onError, onSuccess, retryOn })` (D6: per-call `onError` returning `false` suppresses the global one; `retryOn` retries once); state constructors `idle/loading/success/failure` as the seeding seam.
-- Core addition: `$blac.registry` (read-only) so mutations and the tag index stay scoped to the owning registry.
-- Done: `resource`/`mutation` callbacks receive the container `args` (no `this.args!`); README; web-docs page `guide/async-resources`; example `14-async-resources` (with a test) replaces the spike scratch folder, and the `fakeFetch` export is reverted.
-- Open: `paginated()` (optional, not started); per-symbol `api:check` for `@blac/async` (no API report configured for the package yet); CHANGELOG comes from `.changeset/blac-async.md`.
+- `resource`: status union in a user-declared state slot (tracked, seedable), latest-wins with abort, in-flight dedupe, `reload()`, `staleTime`, `auto` (load on activation), abort on last release, and the slot restored to its last settled state when a load is cut short by deactivation.
+- `mutation`: own status slot, `invalidates`, `success` message. Failures land in the slot and the global `onError`; the returned promise resolves to `undefined` instead of throwing.
+- `invalidate(tags, registry?)`: tag index kept per registry in a `WeakMap`, so `RegistryProvider` scopes stay isolated. D5: an active or already-loaded resource reloads; any other is marked stale and loads on next activation. Entries are dropped when the instance is disposed.
+- `configureAsync({ onError, onSuccess, retryOn })` (D6): a per-call `onError` returning `false` suppresses the global one; `retryOn` retries a failed call once. `resetAsyncConfig()` for tests.
+- `resource` and `mutation` callbacks receive the container `args` as their last parameter, so no `this.args!` is needed. Tags are evaluated on activation.
+- Core additions: `onActivated` (D2a) and read-only `$blac.registry`.
+- Example `14-async-resources` replaces the spike scratch folder; the temporary `fakeFetch` export in `02-async/FeedCubit.ts` was reverted.
 
-**Spike results**
+**Spike results** (kept as the record behind D2)
 
-- `ConsistencyScoreCubit`: the 25-line load template and the mount effect become a 4-line `resource(this, 'score', fn, { auto: true })` plus a 1-line `mutation`. `FeedCubit` (02-async) drops from a 59-line class to 27 lines of body, with the inflight/lifetime/abort plumbing gone.
-- Verified: status union in a user-declared slot, tracked via `useBloc` (reads must happen during render); seedable with `withBlocState` and no service mock; latest-wins with abort; in-flight dedupe; abort on last release and reload on next activation; stale data kept while reloading; works under `RegistryProvider` without leaking into the global registry.
-- Typing: the key is restricted to `AsyncState` slots and `fn` must return the slot's data type (both rejected with `@ts-expect-error` checks). The subclass needs the generics re-declared on each method.
-- **D2 verdict: keep the helper.** Call-site noise is the same as the subclass (`resource(this, 'x', …)` vs `this.resource('x', …)`). The subclass only adds a base-class constraint and duplicated signatures; the helper is the `AsyncCubit` core anyway. Do not ship `AsyncCubit`.
-- Wrinkles for the build:
-  - `this.args!.userId` is noisy because `args` is typed optional.
-  - A keepAlive instance deactivated mid-load keeps `status: 'loading'`; on abort, restore the last settled state (`success` if data, else `idle`).
-  - The spike made `fakeFetch` exported in `02-async/FeedCubit.ts`; revert that when the scratch folder is removed.
-- Not exercised: tags and `invalidate(tag)` (D5 stale-mark), `configureAsync` (D6), `invalidates` on mutations, stale-time against a fake clock.
+- `ConsistencyScoreCubit`: the 25-line load template and the mount effect became a 4-line `resource(this, 'score', fn, { auto: true })` plus a 1-line `mutation`. `FeedCubit` (02-async) dropped from a 59-line class to 27 lines of body.
+- Typing: the key is restricted to `AsyncState` slots and `fn` must return the slot's data type; the subclass variant had to re-declare the generics on every method.
+- **D2 verdict: keep the helper.** Call-site noise is the same as the subclass (`resource(this, 'x', …)` vs `this.resource('x', …)`); the subclass only adds a base-class constraint and duplicated signatures. `AsyncCubit` is not shipped.
 
-Build order and estimates: scaffold 0.5d; `resource` 1.5d; `mutation` 0.5d; `invalidate(tag)` with the tag index kept per registry (`WeakMap` keyed on the registry, so `RegistryProvider` scopes stay isolated) 1d; `configureAsync` 0.5d; test seams 0.5d; docs and example 1d; `paginated()` 1–1.5d (optional).
+**Open**
 
-Spike also writes `ConsistencyScoreCubit` as an `AsyncCubit` subclass (~30 lines) so D2 is judged on real call sites.
+- `paginated()` (optional, ~1-1.5d, not started). Do it only when migrating the ~22 list cubits makes the need concrete.
+- No `api:check` for `@blac/async`: only `@blac/core` and `@blac/react` have one, and `plugin-persist` has none either.
+- The release notes come from `.changeset/blac-async.md`.
 
-Spike (time-boxed, ~1 day), in parallel with Phase 1:
+### Phase 5: wrap-up — **done** for everything built
 
-- Prototype `resource()` and `mutation()` on one cubit in a scratch example under `apps/examples`.
-- Verify: `idle | loading | success | error` union stored in state (tracked, seedable), latest-wins with `AbortController`, abort on deactivate, `auto: true` via `onActivate(signal)`.
-- Exit criterion: the research's `ConsistencyScoreCubit` sketch compiles and removes the load template and mount effect. Revisit D2 if it does not.
+- Web-docs coverage per API is in the Status table above.
+- Per package: `vp check` and `vp test` ran clean for `blac-core`, `blac-async` and `examples` (the examples app still has `vitest` import errors in `vp check` that predate this work). The docs snippet check (`scripts/check-snippets.mjs`) passes.
+- `api:check` fails on clean main from formatting drift (see memory), so `core.api.md` was edited by hand for `onActivated` and `$blac.registry`.
 
-Build (after the spike and D2):
+## Order (as executed)
 
-- In-flight dedupe, `reload()`, stale time.
-- Tag-based `invalidate(tag)` across blocs.
-- `configureAsync({ onError, onSuccess, retryOn })` for error reporting, toasts, breadcrumbs and the token-refresh retry.
-- Test seams: seed a resource as `success`/`error`; assert on mutations without mocking the service.
-- Optional, last: `paginated()`.
-- Uses public `@blac/core` API only.
+Phase 1, then Phases 2 and 3, the Phase 4 spike, the D2 decision, `onActivated`, the `@blac/async` build, and docs per phase.
 
-### Phase 5: wrap-up
+## Next steps (proposed, not started)
 
-- Web-docs page for each new API.
-- Per package: `vp check` and `vp test`.
-- `api:check` fails on clean main from formatting drift (see memory); verify per symbol.
-- Check the diff against this plan for drift before each commit.
+Proposal pages under `apps/web-docs/src/content/docs/proposals/` (own "Proposals" topic in the docs nav, linked from the Async Resources guide), anonymized, one per area: core (`clear-where`, `watch-signal`, `borrow-key`), react/testing (`isolated-instances`, `testing-helpers`), persistence (`web-storage-persist`), async (`list-query`, `mutation-concurrency`, `retry-failed`), and release/adoption (`release-readiness`, `adoption-pilot`). Built items are labelled adoption previews; the rest await review before any build.
 
-## Order
-
-Phase 1 and the Phase 4 spike start together. Phases 2 and 3 can follow in any order after Phase 1. The Phase 4 build waits on the spike, D2 and Phase 1. Phase 5 runs per phase.
+1. Changesets (`proposals/release-readiness`) for core (`clearWhere`, `watch` signal, `waitForState`, `onActivated`), react (`isolated`, `withBlocs`, `renderWithBlocs`) and plugin-persist (web storage). Only `blac-async.md` exists. Bump level (patch vs minor) is open. ~0.5h.
+2. Pilot the shipped APIs in `user-frontend` (`proposals/adoption-pilot`). Settles the open questions in the async pages below.
+3. `mutation` concurrency: ordered slot plus `exclusive: true` (`proposals/mutation-concurrency`). ~2-3h.
+4. `retryFailed(registry?)` and a `retryOn` recipe (`proposals/retry-failed`). ~3h. Open: whether a `401` surfaces as an `ApiError` with a status.
+5. `listResource` with `setQuery` (`proposals/list-query`), only if the pilot shows the page-reset logic repeating. ~1d. Replaces the full `paginated()` idea.
+6. `api:check` for `@blac/async`, after fixing the formatting drift on `main`. ~2h.
 
 ## Not proposed
 
@@ -134,5 +121,5 @@ Phase 1 and the Phase 4 spike start together. Phases 2 and 3 can follow in any o
 
 - `clearWhere` on keepAlive instances during active owners: define behaviour for owners that still hold a handle (covered in D3 tests).
 - `isolated` reverses a documented stance; docs and examples must change with it.
-- `@blac/async` is the largest piece; the spike protects against building the wrong shape.
+- `@blac/async` has not been used against `user-frontend` yet; expect API adjustments (for example `paginated()`, `retryOn` semantics) once the first real migration lands.
 - Research counts are grep-based estimates; items marked unverified in `research/02-migration-blockers.md` were not re-checked.

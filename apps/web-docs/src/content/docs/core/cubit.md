@@ -342,6 +342,29 @@ class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
 }
 ```
 
+### `onActivated`
+
+```ts
+import { onActivated } from '@blac/core';
+
+onActivated(container: StateContainer, handler: (signal: AbortSignal) => void): () => void
+```
+
+**Behavior.** Subscribes to the same 0→1 activation as `onActivate`, but from outside the class — a helper or a field initializer can hook a container's lifecycle without subclassing. The handler runs on every activation with that span's `AbortSignal`, and immediately if the container is already active. It returns an unsubscribe function, and handlers are dropped when the container is disposed. A throwing handler is logged and does not stop the others.
+
+```ts
+function pollWhileActive(cubit: StateContainer) {
+  return onActivated(cubit, (signal) => {
+    const timer = setInterval(refresh, 30_000);
+    signal.addEventListener('abort', () => clearInterval(timer));
+  });
+}
+```
+
+Called from a field initializer, the handler runs after args and the registry are set (registration itself happens earlier), so read `this.args` inside the handler.
+
+[Async Resources](/guide/async-resources/) is built on this hook.
+
 `init` is **not** deprecated and keeps working exactly as documented above — it's still the right place to seed synchronous state from `args`. Only the recommendation for side effects moves: `onActivate` fires only when something actually owns the instance, so work started there is never wasted on a discarded or SSR-only render.
 
 :::caution[Ordering with `useBlocDeps`]
@@ -544,18 +567,19 @@ These are available inside your Cubit class but not from the outside:
 
 ## Public properties
 
-| Property                     | Type               | Description                                                                                                               |
-| ---------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `state`                      | `Readonly<S>`      | Current state value                                                                                                       |
-| `$blac`                      | `BlacMeta<S>`      | Identity and lifecycle metadata. See the table below.                                                                     |
-| `$blac.name`                 | `string`           | Display name (defaults to class name)                                                                                     |
-| `$blac.id`                   | `string`           | Unique instance identifier                                                                                                |
-| `$blac.createdAt`            | `number`           | Creation timestamp                                                                                                        |
-| `$blac.disposed`             | `boolean`          | Whether the instance has been disposed                                                                                    |
-| `$blac.hydration`            | `BlacHydration<S>` | Hydration lifecycle object. See below.                                                                                    |
-| `$blac.hydration.status`     | `HydrationStatus`  | Current hydration phase (`'idle'` \| `'hydrating'` \| `'hydrated'` \| `'error'`); see [Persistence](/plugins/persistence) |
-| `$blac.hydration.isHydrated` | `boolean`          | Shorthand: `status === 'hydrated'`                                                                                        |
-| `$blac.hydration.wait()`     | `Promise<void>`    | Resolves once hydration settles; see [Persistence](/plugins/persistence)                                                  |
+| Property                     | Type                     | Description                                                                                                               |
+| ---------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `state`                      | `Readonly<S>`            | Current state value                                                                                                       |
+| `$blac`                      | `BlacMeta<S>`            | Identity and lifecycle metadata. See the table below.                                                                     |
+| `$blac.name`                 | `string`                 | Display name (defaults to class name)                                                                                     |
+| `$blac.id`                   | `string`                 | Unique instance identifier                                                                                                |
+| `$blac.createdAt`            | `number`                 | Creation timestamp                                                                                                        |
+| `$blac.disposed`             | `boolean`                | Whether the instance has been disposed                                                                                    |
+| `$blac.registry`             | `StateContainerRegistry` | The registry that owns this instance (the global one for a bare `new`)                                                    |
+| `$blac.hydration`            | `BlacHydration<S>`       | Hydration lifecycle object. See below.                                                                                    |
+| `$blac.hydration.status`     | `HydrationStatus`        | Current hydration phase (`'idle'` \| `'hydrating'` \| `'hydrated'` \| `'error'`); see [Persistence](/plugins/persistence) |
+| `$blac.hydration.isHydrated` | `boolean`                | Shorthand: `status === 'hydrated'`                                                                                        |
+| `$blac.hydration.wait()`     | `Promise<void>`          | Resolves once hydration settles; see [Persistence](/plugins/persistence)                                                  |
 
 ## Async methods
 
