@@ -75,7 +75,7 @@ When many components share a container, computing "what changed" separately for 
 This is not a BlaC-specific trick; it is the core algorithm of the [`@dirtytalk/structural`](/dirtytalk/) engine that BlaC's `StateContainer` extends. For the path-interning, skeleton, and proxy-recorder internals in full, see [How BlaC Works Internally](/guide/internals). The short version of the recording rules:
 
 - **Leaf-only:** `a.b.c` records `a.b.c`, not `a.b`.
-- **Iteration coarsens:** `.map`/`for..of`/`.find` over `state.items` records `items`, not per-index paths. Direct index access (`state.items[2].name`) records the leaf.
+- **Iteration is per-item:** `.map`/`for..of`/`.find` over `state.items` runs against the proxy, recording `items.length` plus whatever leaf paths the callback reads on each item (`items.0.name`, etc.). Identity-search methods (`includes`, `indexOf`, `lastIndexOf`) bind to the raw array and record `items`.
 - **Leaf collection types are not recursed:** `Map`, `Set`, `Date`, and class instances are leaves — a change is seen only as a reference change at that value's own path.
 
 ### Two modes, chosen by presence of `select`
@@ -149,9 +149,58 @@ A related consequence: mutations are **coalesced per microtask**. Several `emit`
 
 ## Honest comparisons
 
-BlaC borrows liberally and differs deliberately. Its distinctive bet is **transparent reactivity (like MobX) over immutable snapshots (like Redux), with no provider and automatic lifecycle (unlike both)** — the granularity of an atom library without managing atoms, the testability of a class without the reducer boilerplate. And when your problem is genuinely a serializable event log, a tree-scoped config value, or a handful of `useState` hooks, the honest answer is that another tool fits better.
+BlaC borrows liberally and differs deliberately. Its core bet is **transparent path-level reactivity (like MobX) over immutable state snapshots (like Redux/Zustand), with no provider tree, class-based encapsulation, and automatic ref-counted lifecycle**.
 
-The full side-by-side — the rubric table, the Zustand/Jotai/BlaC counter written three ways, the "reach for it instead when" column for Redux, MobX, Context, and atoms, plus the decision guide — lives on the [Comparison](/guide/introduction/) page, which is the canonical home for positioning.
+### How BlaC compares to the field
+
+| Library | Core model | How re-renders are scoped | Lifecycle & cleanup | Where BlaC differs |
+| --- | --- | --- | --- | --- |
+| **`useState` + `useContext`** | Hooks inside the component tree | Entire context subtree re-renders unless split by hand | Tied to the provider component's mount | BlaC moves logic out of JSX into a plain class, tracks leaf paths automatically, and needs no `<Provider>` wrapper. |
+| **Zustand** | Module-scoped immutable store + hooks | Manual selectors (`useStore(s => s.count)`) | Manual reset (`store.setState(initial)`); stores live forever by default | BlaC replaces manual selectors with a render-time recording Proxy and automatically disposes instances when the last consumer unmounts. |
+| **Redux Toolkit** | Single store, slices, reducers, thunks | Manual selectors (`useSelector`) + `reselect` | Global store; manual slice cleanup | BlaC collates state, actions, and derived getters into a single `Cubit` class instead of splitting logic across slices, thunks, and selectors. |
+| **MobX** | Observable mutable objects + `observer()` HOC | Automatic runtime observable tracking | Manual or owner-bound | BlaC uses **immutable** state snapshots (`emit`, `patch`, `update`) so history, diffs, and React concurrent rendering work without observable wrappers or `observer()` HOCs. |
+| **Jotai / Signals** | Fine-grained bottom-up atoms | Per-atom subscription | GC'd or scoped to a Provider | Atoms excel at fine-grained independent values; BlaC groups related state, methods, and lifecycle into a cohesive domain class with named workflows. |
+| **TanStack Query** | Server-state cache keyed by `queryKey` | Per-query observer + `notifyOnChangeProps` | Ref-counted cache with `staleTime` / `gcTime` | BlaC's `args` keying and ref-counted registry mirror Query's ergonomics, while [`@blac/async`](/guide/async-resources/) brings `resource()`, `mutation()`, and tag invalidation directly into your Cubits. |
+
+### Same feature, three ways
+
+Consider a cart item counter with a derived total and a discount method:
+
+```ts
+// 1. Zustand — manual selector required in every component to avoid over-rendering
+const useCartStore = create<CartStore>((set, get) => ({
+  items: [],
+  add: (item) => set((s) => ({ items: [...s.items, item] })),
+  total: () => get().items.reduce((sum, i) => sum + i.price, 0),
+}));
+// In React: const items = useCartStore((s) => s.items); // forget the selector → re-renders on everything
+
+// 2. Jotai — split state, derived value, and action across separate atoms
+const itemsAtom = atom<Item[]>([]);
+const totalAtom = atom((get) => get(itemsAtom).reduce((sum, i) => sum + i.price, 0));
+const addItemAtom = atom(null, (get, set, item: Item) => set(itemsAtom, [...get(itemsAtom), item]));
+
+// 3. BlaC — state, actions, and derived getters live in one testable class;
+//    components just read what they render with zero selectors
+class CartCubit extends Cubit<{ items: Item[] }> {
+  constructor() {
+    super({ items: [] });
+  }
+  add = (item: Item) => this.patch({ items: [...this.state.items, item] });
+  get total() {
+    return this.state.items.reduce((sum, i) => sum + i.price, 0);
+  }
+}
+```
+
+### When to reach for another tool instead
+
+- **Local, ephemeral widget state** (an open dropdown flag, a hover state, an uncontrolled input draft that never leaves one component) → plain `useState` is simpler and needs no class.
+- **Static tree-scoped configuration** (theme tokens, locale strings, feature flags injected once at the root) → React Context is built for this.
+- **Pure server-cache heavy apps with pagination, infinite scroll, and optimistic cache normalization across dozens of endpoints** → if your app has very little client domain logic and is mostly a REST/GraphQL cache viewer, TanStack Query (or pairing TanStack Query as the Data layer behind your Cubits) may fit better.
+- **Strict event-sourced audit logs** where every state change must be a serializable JSON action replayed over a pure reducer → Redux Toolkit is purpose-built for serializable action logs.
+
+For the broader architectural reasoning behind separating **UI**, **Logic**, and **Data**, see [Architecture & Philosophy](/guide/philosophy/).
 
 ## The full lifecycle: mount to unmount
 

@@ -1,16 +1,20 @@
 ---
 title: BlaC
-description: Type-safe state management for React with automatic re-render optimization.
+description: Business Logic Components for React & TypeScript — keep components focused on rendering, put business logic in testable classes, and optimize re-renders automatically.
 template: splash
 hero:
   # tagline feeds the Hero override (src/components/overrides/Hero.astro), which
   # sets the <em> phrase as the headline and the rest as the lead.
-  tagline: <em>State, handled.</em> Write a class, read it like a plain object, and only the components that used what changed re-render. No selectors, no reducers.
+  tagline: <em>Components render. Classes think.</em> Separate UI, business logic, and data into clean, testable layers—while proxy auto-tracking re-renders only the exact components whose data changed.
   actions:
     - text: Get started
       link: /guide/getting-started/
       icon: right-arrow
       variant: primary
+    - text: Why BlaC?
+      link: /guide/philosophy/
+      icon: open-book
+      variant: secondary
     - text: View on GitHub
       link: https://github.com/jsnanigans/blac
       icon: external
@@ -20,6 +24,7 @@ hero:
 import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 import Eyebrow from '../../components/brand/Eyebrow.astro';
 import CounterDemo from '../../components/demos/CounterDemo.tsx';
+import DependencyTrackingDemo from '../../components/demos/DependencyTrackingDemo.tsx';
 
 :::caution[Beta]
 BlaC v2 is in beta. Breaking changes may ship in patch releases, so pin exact versions and check the changelog before upgrading.
@@ -29,14 +34,14 @@ BlaC v2 is in beta. Breaking changes may ship in patch releases, so pin exact ve
 
 ## Here. This is all of it.
 
-A class holds your state and the methods that change it. One hook connects it
-to React. No store setup, no provider tree, no action types.
+A `Cubit` class holds your state and the methods that change it. Your React component only reads state to render markup and wires interaction callbacks. No store setup, no `<Provider>` tree, no reducers, no selectors.
 
 ```tsx twoslash
 import React from 'react';
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 
+// 1. LOGIC: Pure TypeScript class — zero React imports, easy to test anywhere
 class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
@@ -44,6 +49,7 @@ class CounterCubit extends Cubit<{ count: number }> {
   increment = () => this.emit({ count: this.state.count + 1 });
 }
 
+// 2. UI: Only renders state and fires callbacks on interaction
 function Counter() {
   const [state, counter] = useBloc(CounterCubit);
   return <button onClick={counter.increment}>Count: {state.count}</button>;
@@ -54,37 +60,57 @@ The same code, running live. The badge counts real renders:
 
 <CounterDemo client:visible />
 
+<Eyebrow>Clean architecture</Eyebrow>
+
+## Three layers, zero tangles
+
+React components are great at turning data into pixels and firing events—they shouldn't also have to be state machines, API clients, and validation engines. BlaC gives every part of your app a single job:
+
+<CardGrid>
+  <Card title="1. UI Layer · Render & fire events" icon="laptop">
+    Components take state, apply templates and styles, and call methods on user interactions (`onClick`, `onChange`). The UI never talks to the Data layer directly—and you can swap React for React Native, Vue, or a CLI without rewriting your logic.
+  </Card>
+  <Card title="2. Logic Layer · The core of your app" icon="puzzle">
+    `Cubit` classes hold state, derived getters, validation rules, and async coordination. Because they are plain TypeScript classes with zero UI dependencies, they run in milliseconds in unit tests with zero DOM mocking.
+  </Card>
+  <Card title="3. Data Layer · Swappable sources" icon="document">
+    REST, GraphQL, IndexedDB, `localStorage`, or in-memory test fakes live behind the Logic layer. Swap a local prototype store for a production API—or attach [`@blac/plugin-persist`](/plugins/persistence/)—without touching a single component.
+  </Card>
+  <Card title="Read the Philosophy" icon="open-book">
+    See how separating **UI → Logic → Data** keeps large codebases fast, portable, and effortless to test. [Architecture & Philosophy →](/guide/philosophy/)
+  </Card>
+</CardGrid>
+
+<Eyebrow>Zero-selector precision</Eyebrow>
+
+## Touch a property, own only its renders
+
+Two sibling components share a single `SensorCubit` below. Neither passes a selector or `useMemo` dependency array—auto-tracking proxies record what each component reads during render and isolate re-renders automatically:
+
+<DependencyTrackingDemo client:visible />
+
 <Eyebrow>Why BlaC</Eyebrow>
 
-## Less wiring, fewer re-renders
+## Built for real-world scale
 
 <CardGrid>
   <Card title="Touch it, you're subscribed" icon="magnifier">
-    Read `state.user.name` and the component re-renders only when that value
-    changes. No selectors, no memoization. [How tracking
-    works](/react/dependency-tracking/)
+    Read `state.user.name` in JSX and the component re-renders only when that leaf value changes. No selectors, no `useMemo`. [How tracking works](/react/dependency-tracking/)
   </Card>
   <Card title="Logic lives in typed classes" icon="pencil">
-    Methods are your actions, `this.state` is the source of truth, and `emit`,
-    `update` and `patch` change it. [Core concepts](/guide/concepts/)
+    Methods are your actions, `this.state` is the source of truth, getters are derived state, and `emit`, `update`, and `patch` change it. [Core concepts](/guide/concepts/)
   </Card>
-  <Card title="Cross-bloc getters" icon="approve-check">
-    A getter can read another bloc's state, and components reading it re-render
-    when either bloc changes. [Bloc communication](/core/bloc-communication/)
+  <Card title="Cross-bloc composition" icon="approve-check">
+    A getter on one bloc can `.track()` another bloc's state, and components reading it re-render when either bloc changes. [Bloc communication](/core/bloc-communication/)
   </Card>
   <Card title="Lifecycle you don't manage" icon="rocket">
-    Instances are shared and ref-counted: the first consumer creates one, the
-    last to unmount disposes it. [Instance
-    management](/core/instance-management/)
+    Instances are shared and ref-counted through a global registry: the first consumer creates one, the last to unmount disposes it. [Instance management](/core/instance-management/)
   </Card>
-  <Card title="Batteries, opt-in" icon="setting">
-    [DevTools](/plugins/devtools/), [persistence](/plugins/persistence/),
-    [logging](/plugins/logging/), [testing utilities](/testing/overview/) and
-    [SSR isolation](/integrations/ssr/) attach without touching your logic.
+  <Card title="Async resources & plugins" icon="setting">
+    [`@blac/async`](/guide/async-resources/), [DevTools](/plugins/devtools/), [persistence](/plugins/persistence/), [logging](/plugins/logging/), and [SSR isolation](/integrations/ssr/) attach cleanly without cluttering your components.
   </Card>
-  <Card title="Works outside React" icon="puzzle">
-    The core is framework-agnostic. `watch()` a bloc from a router, a game loop
-    or a test. [Outside React](/integrations/outside-react/)
+  <Card title="Trivial to test & portable" icon="puzzle">
+    Test business logic with plain `new MyCubit()` or `blacTestSetup()`, and seed component tests in one line with `renderWithBloc`. [Testing guide](/testing/overview/)
   </Card>
 </CardGrid>
 
@@ -92,23 +118,23 @@ The same code, running live. The badge counts real renders:
 
 <CardGrid>
   <LinkCard
+    title="Architecture & Philosophy"
+    description="Why separating UI, Logic, and Data makes apps cleaner, portable, and easy to test."
+    href="/guide/philosophy/"
+  />
+  <LinkCard
     title="Quick Start"
-    description="From install to a working component in about five minutes."
+    description="From install to a working Cubit and React component in about five minutes."
     href="/guide/getting-started/"
   />
   <LinkCard
-    title="Tutorial"
-    description="Build a todo app, all the way to undo and time-travel."
+    title="Tutorial: Todo App + Time Travel"
+    description="Build a complete app step-by-step, finishing with undo, redo, and time travel."
     href="/guide/tutorial/"
   />
   <LinkCard
-    title="@blac/core reference"
-    description="Cubit, the registry, watch, plugins and types."
-    href="/core/cubit/"
-  />
-  <LinkCard
-    title="@blac/react reference"
-    description="useBloc, dependency tracking and performance."
-    href="/react/getting-started/"
+    title="Mental Model & Comparisons"
+    description="How proxy tracking and the registry work, plus honest comparisons to Zustand, Redux, and MobX."
+    href="/guide/mental-model/"
   />
 </CardGrid>

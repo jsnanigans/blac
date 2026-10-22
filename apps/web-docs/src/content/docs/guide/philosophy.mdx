@@ -1,0 +1,221 @@
+---
+title: Architecture & Philosophy
+description: Why BlaC exists — separating UI, Logic, and Data so components only render, business logic stays portable and easy to test, and data sources are swappable.
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+If you've built React apps for a while, you've probably seen components slowly turn into a tangle of `useState`, `useEffect`, `useMemo`, validation rules, and `fetch` calls. A component starts out rendering a button and ends up owning a state machine, a network waterfall, and fifty lines of business rules before the `return (` statement even begins.
+
+BlaC was built around a simple premise: **your UI components shouldn't own your business logic, and your business logic shouldn't depend on your UI framework.**
+
+## The problem with "fat components"
+
+When state, business logic, and data fetching all live inside JSX components or custom hooks:
+
+- **Components do too many jobs.** Instead of taking state and turning it into markup, components have to orchestrate async flows, guard against stale closures, and compute derived flags.
+- **Re-renders become your problem.** You end up sprinkling `useMemo`, `useCallback`, and hand-written selectors everywhere just to keep sibling views from re-rendering.
+- **Testing requires a DOM.** To test a validation rule or a checkout flow, you have to spin up JSDOM, mount a component tree, mock providers, and click virtual buttons.
+- **Your core app is locked into the view library.** Moving a feature from React web to React Native, a CLI tool, or another view library means untangling hooks from the ground up.
+
+## Three distinct layers: UI, Logic, and Data
+
+BlaC encourages splitting an application into three clear layers with strict boundaries about what each layer is allowed to do:
+
+```text
+┌───────────────────────────────────────────────────────────────────┐
+│  1. UI LAYER        React, React Native, Vue, CLI, Canvas         │
+│                     Renders state & fires interaction callbacks   │
+└───────────────────┬───────────────────────────▲───────────────────┘
+          calls     │                           │  reads tracked
+          methods   ▼                           │  state & getters
+┌───────────────────────────────────────────────────────────────────┐
+│  2. LOGIC LAYER     BlaC Cubits (@blac/core)                      │
+│     (The Core)      Business rules, state transitions, derived    │
+│                     values, validation, and data coordination     │
+└───────────────────┬───────────────────────────▲───────────────────┘
+          requests  │                           │  returns raw data
+          & writes  ▼                           │  or streams
+┌───────────────────────────────────────────────────────────────────┐
+│  3. DATA LAYER      REST, GraphQL, WebSockets, IndexedDB,         │
+│                     localStorage, or in-memory test fakes         │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+<CardGrid>
+  <Card title="1. The UI Layer" icon="laptop">
+    **Only renders and forwards interactions.** A component's job is to take state, apply layout and styles, and fire callbacks (`onClick`, `onChange`, `onSubmit`) when the user interacts with it. **The UI layer never talks to the Data layer directly.**
+  </Card>
+  <Card title="2. The Logic Layer (The Core)" icon="puzzle">
+    **Where your application actually lives.** BlaC `Cubit` classes hold state, validate inputs, compute derived getters, coordinate between features, and talk to the Data layer. This layer has **zero dependency on React** or the DOM.
+  </Card>
+  <Card title="3. The Data Layer" icon="document">
+    **External sources and storage.** Whether data comes from a REST endpoint, GraphQL, IndexedDB, `localStorage`, or an in-memory map, the Data layer just moves bytes. The Logic layer doesn't care *how* data is stored, and the UI layer doesn't know the Data layer exists.
+  </Card>
+</CardGrid>
+
+## The one-way rule: UI never touches Data
+
+The most important boundary in this architecture is that **nothing goes from UI to Data (or back) without passing through the Logic layer**.
+
+Compare a typical component-centric flow with the layered flow in BlaC:
+
+```tsx twoslash
+import React from 'react';
+import { Cubit } from '@blac/core';
+import { useBloc } from '@blac/react';
+
+interface OrderItem {
+  id: string;
+  price: number;
+  qty: number;
+}
+
+// ── 3. DATA LAYER: plain functions or clients (REST, GraphQL, memory) ──
+const orderApi = {
+  async submitOrder(items: OrderItem[]): Promise<{ orderId: string }> {
+    return { orderId: 'ord_123' };
+  },
+};
+
+// ── 2. LOGIC LAYER: pure TypeScript class, zero React imports ──
+interface CheckoutState {
+  items: OrderItem[];
+  status: 'idle' | 'submitting' | 'confirmed' | 'error';
+  orderId: string | null;
+}
+
+export class CheckoutCubit extends Cubit<CheckoutState> {
+  constructor(private api = orderApi) {
+    super({ items: [], status: 'idle', orderId: null });
+  }
+
+  get total(): number {
+    return this.state.items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  }
+
+  get canSubmit(): boolean {
+    return this.state.items.length > 0 && this.state.status !== 'submitting';
+  }
+
+  submit = async () => {
+    if (!this.canSubmit) return;
+    this.patch({ status: 'submitting' });
+    try {
+      const { orderId } = await this.api.submitOrder(this.state.items);
+      this.patch({ status: 'confirmed', orderId, items: [] });
+    } catch {
+      this.patch({ status: 'error' });
+    }
+  };
+}
+
+// ── 1. UI LAYER: takes state, renders markup, wires callbacks ──
+export function CheckoutSummary() {
+  const [state, checkout] = useBloc(CheckoutCubit);
+
+  return (
+    <section>
+      <p>Total: ${checkout.total.toFixed(2)}</p>
+      <button disabled={!checkout.canSubmit} onClick={checkout.submit}>
+        {state.status === 'submitting' ? 'Placing order…' : 'Place order'}
+      </button>
+      {state.orderId && <p>Order #{state.orderId} confirmed!</p>}
+    </section>
+  );
+}
+```
+
+Look at `CheckoutSummary` at the bottom:
+
+- It has **zero business logic**—it doesn't calculate the total, check whether submission is allowed, or catch network errors.
+- It has **zero selector boilerplate**—BlaC's render-time proxy tracks that it read `checkout.total`, `checkout.canSubmit`, `state.status`, and `state.orderId`, and wakes it only when those values change.
+- It only knows **how to render** the current state and **which method to call** when clicked.
+
+## Why this pays off
+
+### 1. Replaceable UI: React today, anything tomorrow
+
+Because `@blac/core` has no React dependency, your `Cubit` classes are portable across any environment that runs JavaScript:
+
+- **React Web (`@blac/react`)**: Connect with `useBloc(CheckoutCubit)`.
+- **React Native**: Use the exact same `CheckoutCubit` and `useBloc` hook with `<View>` and `<Pressable>`.
+- **CLI, Node.js, or Worker threads**: Drive the same `CheckoutCubit` with [`acquire()`](/core/instance-management) and [`watch()`](/core/watch)—no UI framework required (see [Using BlaC outside React](/integrations/outside-react)).
+- **Other UI libraries (Vue, Angular, Solid, Canvas)**: Wrap `watch()` or `channel.subscribe()` in a 15-line adapter and keep 100% of your Logic and Data layers intact.
+
+### 2. Replaceable Data: swap APIs or storage without touching logic
+
+Your Logic layer talks to plain TypeScript interfaces or functions—and cross-cutting storage like IndexedDB or `localStorage` can attach from the outside via [Plugins](/plugins/persistence):
+
+- Start prototyping against an in-memory array or `localStorage`.
+- Switch to REST or GraphQL when the backend is ready.
+- Add offline caching with [`@blac/plugin-persist`](/plugins/persistence) without changing a single line inside your components.
+
+### 3. Fast, straightforward testing
+
+When your core application lives in plain classes, testing stops being a chore. You don't need to render React trees, fight `act()` warnings, or wait for a simulated browser just to verify how your app works:
+
+```ts twoslash
+import { Cubit } from '@blac/core';
+
+interface OrderItem {
+  id: string;
+  price: number;
+  qty: number;
+}
+interface CheckoutState {
+  items: OrderItem[];
+  status: 'idle' | 'submitting' | 'confirmed' | 'error';
+  orderId: string | null;
+}
+class CheckoutCubit extends Cubit<CheckoutState> {
+  constructor(
+    private api: { submitOrder(items: OrderItem[]): Promise<{ orderId: string }> },
+  ) {
+    super({ items: [], status: 'idle', orderId: null });
+  }
+  get total(): number {
+    return this.state.items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  }
+  get canSubmit(): boolean {
+    return this.state.items.length > 0 && this.state.status !== 'submitting';
+  }
+  submit = async () => {
+    const { orderId } = await this.api.submitOrder(this.state.items);
+    this.patch({ status: 'confirmed', orderId, items: [] });
+  };
+}
+// ---cut---
+// A complete unit test of the business logic — runs in < 1ms, no DOM needed:
+const fakeApi = {
+  submitOrder: async () => ({ orderId: 'test_99' }),
+};
+
+const checkout = new CheckoutCubit(fakeApi);
+checkout.patch({ items: [{ id: '1', price: 25, qty: 2 }] });
+
+console.assert(checkout.total === 50);
+console.assert(checkout.canSubmit === true);
+
+await checkout.submit();
+
+console.assert(checkout.state.status === 'confirmed');
+console.assert(checkout.state.orderId === 'test_99');
+```
+
+And when you *do* want to test a React component, you can seed the exact state you want to render in one line with [`renderWithBloc`](/testing/react) without mocking `fetch` or replaying five user steps to get there.
+
+## Pragmatism over dogma
+
+Separating UI, Logic, and Data is a tool to keep your codebase clean, not a rigid law:
+
+- **Local UI state is still fine.** Whether a dropdown menu is open or an input field is focused can stay in `useState` if nothing else cares about it.
+- **No ceremony for simple things.** You don't need interfaces, factories, and three files for a simple feature. A single `Cubit` class in the same folder as your feature already gives you the separation of concerns, auto-tracked rendering, and isolated testability.
+- **Grow as needed.** Start with a single `Cubit`. As the feature grows, extract API calls into a data module, compose blocs with [`depend()`](/core/bloc-communication), or attach [`@blac/async`](/guide/async-resources/) for automatic request cancellation and cache invalidation.
+
+## Where to go next
+
+- [What is BlaC?](/guide/introduction/) — A quick overview and side-by-side comparison with other libraries
+- [Quick Start](/guide/getting-started/) — Build your first Cubit and component in five minutes
+- [Mental Model](/guide/mental-model/) — How proxy tracking, the registry, and ref-counted lifecycles work under the hood
+- [Testing Overview](/testing/overview/) — See how fast testing Logic and UI layers in isolation feels in practice

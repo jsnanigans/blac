@@ -1,15 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="4 3 56 56" role="img" aria-label="BlaC">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="BlaC">
   <defs>
-    <path id="blac-b" d="M6 12a6 6 0 0 1 12 0v12.4A18 18 0 1 1 6 38z"/>
-    <clipPath id="blac-b-clip"><use href="#blac-b"/></clipPath>
+    <!-- The 'b' silhouette: vertical pill stem + circular bowl -->
+    <path id="blac-b" d="M6 10a6.5 6.5 0 0 1 13 0v11.2A18.5 18.5 0 1 1 6 39Z" />
+    <clipPath id="blac-b-clip">
+      <use href="#blac-b" />
+    </clipPath>
+    <!-- Mask that carves the 'c' mouth + inner counter -->
     <mask id="blac-c-mask">
-      <rect x="0" y="0" width="64" height="64" fill="#fff"/>
-      <circle cx="57" cy="38" r="11" fill="#000"/>
+      <rect x="0" y="0" width="64" height="64" fill="#fff" />
+      <circle cx="41" cy="39" r="7.5" fill="#000" />
+      <path d="M41 39 L64 24 L64 54 Z" fill="#000" />
+    </mask>
+    <!-- Mask for the 'b' inner counter -->
+    <mask id="blac-b-mask">
+      <rect x="0" y="0" width="64" height="64" fill="#fff" />
+      <circle cx="24.5" cy="39" r="7" fill="#000" />
     </mask>
   </defs>
-  <use href="#blac-b" fill="#2474ae"/>
-  <g mask="url(#blac-c-mask)">
-    <circle cx="40" cy="38" r="18" fill="#e85aa7"/>
-    <circle cx="40" cy="38" r="18" fill="#423382" clip-path="url(#blac-b-clip)"/>
+
+  <!-- Subtle offset shadow block on stem top for Bauhaus depth -->
+  <circle cx="12.5" cy="10" r="6.5" fill="#ffb830" transform="translate(2.5, -2)" opacity="0.9" />
+
+  <!-- 'b' body in electric cobalt -->
+  <g mask="url(#blac-b-mask)">
+    <use href="#blac-b" fill="#2b84d8" />
   </g>
+
+  <!-- 'c' aperture ring in acid rose + ultraviolet overprint where 'b' and 'c' intersect -->
+  <g mask="url(#blac-c-mask)">
+    <circle cx="41" cy="39" r="18.5" fill="#f04e98" />
+    <circle cx="41" cy="39" r="18.5" fill="#5842e3" clip-path="url(#blac-b-clip)" />
+  </g>
+
+  <!-- Inner 'b' counter ring accent -->
+  <circle cx="24.5" cy="39" r="7" fill="none" stroke="#141222" stroke-width="1.5" opacity="0.25" />
+
+  <!-- Solar gold spark inside the 'c' mouth (the tracked state signal) -->
+  <path
+    d="M54 32.5 C54 36.8 55.2 38 59.5 38 C55.2 38 54 39.2 54 43.5 C54 39.2 52.8 38 48.5 38 C52.8 38 54 36.8 54 32.5 Z"
+    fill="#ffb830"
+  />
+
+  <!-- Mint registration node -->
+  <circle cx="45" cy="14" r="3.2" fill="#22c993" />
 </svg>

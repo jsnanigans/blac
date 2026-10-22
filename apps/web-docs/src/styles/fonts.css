@@ -7,12 +7,7 @@
     JetBrains Mono       code      wght 100–800               39 KB
 
   The '* Fallback' faces reshape a system font to the web font's box so the
-  swap causes no layout shift. Metrics measured with fontTools:
-
-    Bricolage (opsz 36, wght 700) avg 0.5198 em, asc 930, desc 270 / Arial Bold 0.5301
-      size-adjust 98.06 %, ascent 94.84 %, descent 27.53 %
-    Hanken Grotesk avg 0.4606 em, asc 1000, desc 303 / Arial 0.4521
-      size-adjust 101.88 %, ascent 98.16 %, descent 29.74 %
+  swap causes no layout shift.
 */
 
 @font-face {

@@ -1,12 +1,12 @@
 ---
 title: What is BlaC?
-description: BlaC is a TypeScript state management library for React that separates business logic into class-based, auto-tracked state containers.
+description: BlaC (Business Logic Components) is a TypeScript state management library that separates UI, business logic, and data into clean, testable layers with automatic re-render optimization.
 ---
 
 import CounterDemo from '../../../components/demos/CounterDemo.tsx';
 import RenderCounterDemo from '../../../components/demos/RenderCounterDemo.tsx';
 
-BlaC (Business Logic Components) is a TypeScript state management library for React. It separates business logic into class-based state containers — [Cubits](/guide/concepts/#state-containers) — that are type-safe, testable, and automatically optimized for minimal re-renders.
+**BlaC** (*Business Logic Components*) is a TypeScript state management library designed to keep your UI components thin, your business logic portable and easy to test, and your re-renders automatically scoped to the exact data each component reads.
 
 A first taste — the whole loop in one screen:
 
@@ -28,50 +28,55 @@ function Counter() {
 }
 ```
 
-No store setup, no provider, no reducer, no selector. The class holds the logic; the hook connects it; re-renders are tracked automatically.
+No store setup, no `<Provider>` wrapper, no reducer, no selector. The `Cubit` class holds the state and the logic that changes it; the component just renders `state` and wires `counter.increment` to `onClick`.
 
-That snippet isn't a screenshot — here it is running, the real `@blac/react` hook driving a real `Cubit`. The badge counts how many times the component has actually rendered:
+That snippet isn't a screenshot — here it is running live, with a badge counting real React renders:
 
 <CounterDemo client:visible />
 
 ## Why BlaC?
 
-Most state management libraries force you to choose between simplicity and power. Simple hooks-based solutions scatter logic across components. Powerful libraries require boilerplate, providers, and context wrappers.
+Most apps start simple and gradually tangle three very different jobs inside the same React components: rendering markup, running business rules, and talking to APIs or storage.
 
-BlaC takes a different approach:
+BlaC is built around a clean separation of responsibilities (read the full story in [Architecture & Philosophy](/guide/philosophy/)):
 
-- **State logic lives in classes, not components.** Define your state shape and mutations in a `Cubit` class. Components just read state and call methods.
-- **No providers or context wrappers.** Import your class, call `useBloc(MyClass)`, and you're connected. The registry handles instance creation and sharing automatically.
-- **Re-renders are precise by default.** Auto-tracking proxies detect which state properties your component reads during render. Only changes to those properties trigger re-renders.
-- **Lifecycle is declarative.** Instances are shared by default. Use `args` (with a `static key`) for named per-component instances or `@blac({ keepAlive: true })` for persistent singletons.
-- **Built for TypeScript.** State types flow from your class definition through the hook return value with zero type annotations needed.
+1. **UI Layer (`@blac/react`, or any view library)**: Components take state, apply layout and styles, and fire callbacks when the user interacts with them. They never talk to APIs or databases directly.
+2. **Logic Layer (`@blac/core` Cubits)**: Plain TypeScript classes hold your state, derived getters, validation, and coordination with external APIs. Because your core logic has zero dependency on React, you can test it in milliseconds with plain assertions—or reuse it in React Native, Vue, or a CLI tool without rewriting a line.
+3. **Data Layer (APIs, IndexedDB, `localStorage`, memory)**: External data sources sit behind the Logic layer (or attach via [Plugins](/plugins/persistence/)), so you can swap local storage for a REST or GraphQL backend without touching your components.
 
-Two components share one bloc — each reads a different field. Increment the count or edit the label: only the component reading the changed field re-renders.
+On top of that architectural clarity, BlaC removes the day-to-day friction of React state management:
+
+- **No providers or context wrappers.** Import your class, call `useBloc(MyClass)`, and you're connected. A reference-counted registry handles instance creation, sharing, and disposal automatically.
+- **Re-renders are precise by default.** A render-time recording Proxy detects which leaf properties your component reads during render. Only changes to those exact paths trigger a re-render.
+- **Lifecycle is declarative.** Instances are shared and auto-disposed when the last consumer unmounts by default. Use `args` for keyed instances, `@blac({ isolated: true })` for private per-mount instances, or `@blac({ keepAlive: true })` for persistent singletons.
+- **Built for TypeScript.** State types, action methods, and `args` flow from your class definition through `useBloc` with zero manual type annotations.
+
+See auto-tracking in action below: two sibling components share one `Cubit`, and each reads a different field. Increment the count or edit the label—only the component reading the changed field re-renders:
 
 <RenderCounterDemo client:visible />
 
-:::note[How does this compare to Redux / Zustand / Jotai / MobX?]
-The short version: BlaC keeps logic in classes (like flutter_bloc), shares instances through a ref-counted registry (no providers), and tracks re-renders with a render-time proxy (no selectors or `useMemo`).
-:::
+## Package architecture
 
-## Architecture
-
-BlaC has two layers:
+BlaC is split into focused packages that mirror the layered architecture:
 
 ```text
-┌─────────────────────────────┐
-│  React        useBloc hook  │  Framework-specific binding,
-│               BlocProvider  │  path-scoped channel subscriptions
-├─────────────────────────────┤
-│  Core         Cubit,        │  State containers, registry,
-│               Registry,     │  plugins, watch, path-based
-│               Plugins       │  dirty tracking
-└─────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  UI Binding      @blac/react          useBloc, BlocProvider,    │
+│                                       RegistryProvider          │
+├─────────────────────────────────────────────────────────────────┤
+│  Logic Core      @blac/core           Cubit, Registry, watch,   │
+│                  @blac/async          resource(), mutation(),   │
+│                                       invalidate()              │
+├─────────────────────────────────────────────────────────────────┤
+│  Data & Tooling  @blac/plugin-persist IndexedDB & Web Storage   │
+│                  @blac/devtools-*     In-app & Chrome DevTools  │
+│                  @blac/logging-plugin Structured console logs   │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Core** (`@blac/core`) provides state containers, a global registry with ref counting, a plugin system, and utilities like `watch`. Proxy-based dependency tracking is built in — no separate adapter package is needed.
-
-**React** (`@blac/react`) provides the `useBloc` hook. It subscribes each component to the bloc's path-scoped channel and re-renders through React's normal update path when a tracked read path changes. The optional `BlocProvider` shown above scopes default `args` to a subtree — most apps never need it (see [useBloc](/react/use-bloc) for when it helps).
+- **`@blac/core`** provides `Cubit`, the reference-counted registry, cross-bloc composition (`this.depend()`), `watch()`, and the plugin system. It has zero React dependencies.
+- **`@blac/react`** provides the `useBloc` hook, connecting components to the registry with per-consumer proxy tracking.
+- **`@blac/async`** packages async data fetching (`resource`, `mutation`, and tag-based `invalidate`) directly into your Cubits' state slots.
 
 <details>
 <summary>Under the hood: the DirtyTalk engine family</summary>
@@ -80,27 +85,34 @@ The "what changed, who cares, when do we tell them" machinery — path-based dir
 
 </details>
 
+## How does BlaC compare?
+
+| Library | Where logic lives | How re-renders are scoped | Lifecycle & sharing |
+| --- | --- | --- | --- |
+| **BlaC** | Typed `Cubit` classes | Automatic render-time Proxy (zero selectors) | Ref-counted registry (shared, keyed, `isolated`, or `keepAlive`) |
+| **Zustand** | Store creator function | Manual selector per hook (`useStore(s => s.x)`) | Module singleton (or manual context store) |
+| **Redux Toolkit** | Slices, reducers, thunks | Manual `useSelector` + `createSelector` | Single global `<Provider store={...}>` |
+| **MobX** | Observable classes | Observable proxies + `observer()` HOC wrapper | Manual instantiation / React Context |
+| **Jotai** | Composed primitive atoms | Per-atom subscription | Provider / WeakMap per atom |
+
+For a deeper side-by-side breakdown and guidance on when another tool is a better fit, see [Mental Model: Honest comparisons](/guide/mental-model/#honest-comparisons).
+
 ## When to use BlaC
 
-BlaC works best when:
+BlaC shines when:
 
-- You have **complex state logic** that benefits from being in a class (validation, derived state, async operations)
-- Multiple components need to **share state** without prop drilling or context providers
-- You want **testable business logic** that can run without React
-- You value **TypeScript inference** and want the compiler to catch state errors
+- You want **thin, declarative UI components** that only render state and fire interaction callbacks
+- You have **meaningful business logic** (validation, multi-step flows, derived getters, cross-feature coordination) that belongs in a testable class rather than scattered across hooks
+- Multiple components need to **share state** without prop drilling or provider pyramids
+- You want **fast unit tests** that exercise your application logic without mounting React or mocking a browser
 
 :::tip[When you probably don't need BlaC]
-If a piece of state lives in exactly one component and never travels, `useState` is the right tool — reach for BlaC when state is _shared_, _complex_, or _worth testing without React_. BlaC adds value as state complexity grows, not at the first `useState`.
+If a piece of ephemeral UI state lives in a single component and has no business rules behind it (like whether a tooltip is hovered), `useState` is the right tool. Reach for BlaC when state is *shared*, carries *business logic*, or is *worth testing outside the UI*.
 :::
 
 ## What's next?
 
-- [Quick Start](/guide/getting-started) — Install BlaC and build your first component
-- [Core Concepts](/guide/concepts) — A quick tour of the mental model
-- [Mental Model](/guide/mental-model) — The deep "why it works this way," plus honest comparisons
-- [useBloc Hook](/react/use-bloc) — Full hook reference
-
-## See also
-
-- [Mental Model](/guide/mental-model) — how auto-tracking, the registry, and batching actually work
-- [Quick Start](/guide/getting-started) — go from install to working component
+- [Architecture & Philosophy](/guide/philosophy/) — Why separating UI, Logic, and Data pays off
+- [Quick Start](/guide/getting-started/) — Install BlaC and build your first component in 5 minutes
+- [Core Concepts](/guide/concepts/) — A quick tour of Cubits, the registry, tracking, and glossary
+- [Mental Model](/guide/mental-model/) — The deep "why it works this way," plus detailed comparisons

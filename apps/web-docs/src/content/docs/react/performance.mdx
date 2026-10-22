@@ -171,9 +171,9 @@ Auto-tracking wakes when one of the getter's tracked source paths changes; `sele
 
 ## List-rendering patterns
 
-Iteration **coarsens**: `.map`/`.find`/`for..of` record the array's entry path (`items`) but not per-index paths, and their callbacks receive raw values. So a component that maps over `state.items` re-renders whenever the array changes — including when a single item's field changes (which produces a new array via immutable update).
+When a component iterates with `.map`, `.find`, or `for..of`, the proxy records `items.length` plus every leaf path the callback reads (`items.0.id`, `items.0.text`, etc.). If the parent component renders each row's fields inline inside `state.items.map(...)`, then changing a single item's `text` or `done` field changes one of the parent's tracked leaf paths (`items.2.done`) and re-renders the entire list component.
 
-For long lists where individual rows update independently, isolate each row in its own component that reads only its own item. There are two idiomatic shapes:
+For long lists where individual rows update independently, let the parent read only `item.id` (so the parent only wakes when items are added, removed, or reordered) and isolate each row in its own component that reads only its own item. There are two idiomatic shapes:
 
 **Map to keys, render rows by id.** The list reads the ids (changes when items are added/removed/reordered); each row reads its own item.
 

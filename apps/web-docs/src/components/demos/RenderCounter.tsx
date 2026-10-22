@@ -30,7 +30,9 @@ export function RenderCounter({ label = 'renders' }: RenderCounterProps) {
   return (
     <span className="blac-demo-render-counter" role="status">
       <span className="blac-demo-render-counter__label">{label}</span>
-      <span className="blac-demo-render-counter__count">{count.current}</span>
+      <span key={count.current} className="blac-demo-render-counter__count">
+        {count.current}
+      </span>
     </span>
   );
 }

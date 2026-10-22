@@ -486,19 +486,23 @@ class DashboardCubit extends Cubit<{ ready: boolean }> {
   }
 
   get currentUser(): string | null {
-    return this.auth.untracked().state.userId; // resolve, then read
+    const [authState] = this.auth.track(); // resolve + track in render
+    return authState.userId;
   }
 }
 ```
 
 Two design points fall out of the source:
 
-- **`depend` does not auto-resubscribe.** It records the dependency (visible via
-  the `dependencies` getter) and returns a handle. It deliberately does **not**
-  bridge the dep's channel into this bloc — a naive auto-bridge would cycle on
-  mutual deps. A consumer that needs reactive updates from a dep subscribes
-  explicitly, which in React means a component `useBloc`s both blocs and the
-  Stage-3 tracker handles each independently.
+- **`depend` separates `.track()` from `.untracked()`.** `this.depend(AuthCubit)`
+  records the dependency (visible via the `dependencies` getter) and returns a
+  `DepHandle`. Inside a method or background action, call `this.auth.untracked()`
+  to resolve the live `AuthCubit` via `ensure()` without registering a render
+  subscription. Inside a getter read during a React render, call
+  `this.auth.track()` — the active `DepSession` opened by `useBloc`'s getter
+  wrapper wraps the dependency in its own tracking proxy and subscribes the
+  consuming component to the exact leaf paths read on `AuthCubit` (without
+  creating a bloc-to-bloc channel cycle).
 - **Per-consumer deps are a separate, owner-keyed mechanism.** The
   `APPLY_DEPS` / `REMOVE_DEPS_OWNER` symbols (from `@blac/core/internal`,
   used by the React adapter) let each _consumer_ inject a slice of deps keyed by an owner id;
@@ -508,19 +512,19 @@ Two design points fall out of the source:
   bloc-to-bloc resolution.
 
 ```
-Stage 4: deps resolve through the registry (no auto-bridge)
+Stage 4: deps resolve through the registry
 
    DashboardCubit                          registry
         │                                      │
         │  this.depend(AuthCubit)              │
         │  ── records dep, returns handle ──►  │
         │                                      │
-        │ auth.untracked() ─ ensure(AuthCubit)►│ ── returns the live
-        │                                      │    AuthCubit instance
+        │ auth.track() / auth.untracked() ────►│ ── ensure(AuthCubit) returns
+        │                                      │    the live AuthCubit instance
         │  ◄──────────── instance ──────────── │
         ▼
-   reads dep.state  (reactivity, if wanted, is the consumer's job
-                     via Stages 1–3 on each bloc independently)
+   reads dep.state  (.track() records leaf paths into the active
+                     useBloc DepSession; .untracked() reads raw state)
 ```
 
 `StateContainer` adds the rest of the lifecycle around these four stages:

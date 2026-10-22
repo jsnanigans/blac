@@ -57,11 +57,6 @@ Groups are collapsed by default — click the `▶` arrow to expand. Switch to `
 
 The simple format truncates state JSON at 50 characters, which keeps CI logs scannable.
 
-:::tip[Screenshot pending]
-The Console panel shows collapsed `[BlaC]` groups — plugin install, instance creation, a state change, and disposal — with the state-change group expanded to reveal the Previous / Current diff.
-_Drop the file at `apps/docs/public/devtools-logging-console.png` (then re-add the `<img>`)._
-:::
-
 ## Configuration
 
 Pass a `LoggingPluginConfig` object to the constructor:

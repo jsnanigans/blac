@@ -1,5 +1,7 @@
-// Syntax themes in the logo palette. Frame and background colours come from
-// Starlight's UI tokens (useStarlightUiThemeColors), so only tokens live here.
+// Syntax themes in the Kinetic Risograph palette. Frame and background colours
+// come from Starlight's UI tokens (useStarlightUiThemeColors), so every token
+// here is tuned for WCAG AA contrast against both dark (#141222) and light
+// (#f2eee6) code wells.
 
 /**
  * @param {'dark' | 'light'} type
@@ -12,7 +14,7 @@ function theme(type, c) {
     colors: {
       'editor.foreground': c.fg,
       'editor.selectionBackground': c.selection,
-      'editorLineNumber.foreground': c.punctuation,
+      'editorLineNumber.foreground': c.lineNumber,
     },
     tokenColors: [
       {
@@ -72,6 +74,10 @@ function theme(type, c) {
         settings: { foreground: c.constant },
       },
       {
+        scope: ['variable.other.property', 'meta.object-literal.key'],
+        settings: { foreground: c.property },
+      },
+      {
         scope: ['support.type.property-name.json'],
         settings: { foreground: c.fn },
       },
@@ -88,25 +94,29 @@ function theme(type, c) {
 }
 
 export const blacDark = theme('dark', {
-  fg: '#dddbe8',
-  selection: '#2474ae55',
-  comment: '#8a87a0',
-  punctuation: '#a6a3ba',
-  keyword: '#f37fbd',
-  fn: '#6bb2e6',
-  type: '#b8acf5',
-  string: '#93d8b0',
-  constant: '#f5b67a',
+  fg: '#e8e5f7',
+  selection: '#2b84d84d',
+  lineNumber: '#7e789c',
+  comment: '#948eb0',
+  punctuation: '#b6b0cf',
+  keyword: '#ff82bf',
+  fn: '#6ec1ff',
+  type: '#b8a8ff',
+  string: '#67e8b8',
+  constant: '#ffc857',
+  property: '#d8d3f0',
 });
 
 export const blacLight = theme('light', {
-  fg: '#24223a',
-  selection: '#2474ae33',
-  comment: '#6b6884',
-  punctuation: '#55526c',
-  keyword: '#b62f7a',
-  fn: '#1d669c',
-  type: '#5a48b8',
-  string: '#1d7a4c',
-  constant: '#9a5410',
+  fg: '#1f1c33',
+  selection: '#2b84d82e',
+  lineNumber: '#6b6585',
+  comment: '#635d7d',
+  punctuation: '#4c4766',
+  keyword: '#b51d67',
+  fn: '#125699',
+  type: '#432ec2',
+  string: '#0d7552',
+  constant: '#945800',
+  property: '#2c2747',
 });

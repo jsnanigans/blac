@@ -14,20 +14,23 @@ import Pagination from '@astrojs/starlight/components/Pagination.astro';
 
   <div class="blac-footer__colophon">
     <p class="blac-footer__llm" aria-label="LLM context files">
-      <span class="blac-footer__label">LLM context</span>
+      <span class="blac-footer__label">LLM Context</span>
       <a href="/llms.txt">llms.txt</a>
       <a href="/llms-blac.txt">@blac/core</a>
       <a href="/llms-blac-react.txt">@blac/react</a>
-      <a href="/llms-dirtytalk.txt">@blac/dirty-talk</a>
+      <a href="/llms-dirtytalk.txt">@dirtytalk/*</a>
       <a href="/llms-full.txt">full corpus</a>
     </p>
     <p class="blac-footer__imprint">
-      <svg viewBox="0 0 18 12" width="18" height="12" aria-hidden="true">
-        <circle cx="6" cy="6" r="5" fill="var(--blac-blue)"></circle>
-        <circle cx="12" cy="6" r="5" fill="var(--blac-pink)"></circle>
-        <path d="M9 2a5 5 0 0 1 0 8a5 5 0 0 1 0-8z" fill="var(--blac-indigo)"></path>
+      <svg viewBox="0 0 24 14" width="22" height="13" aria-hidden="true">
+        <circle cx="6.5" cy="7" r="5" fill="var(--blac-blue)"></circle>
+        <circle cx="12.5" cy="7" r="5" fill="var(--blac-pink)"></circle>
+        <path d="M9.5 3a5 5 0 0 1 0 8a5 5 0 0 1 0-8z" fill="var(--blac-indigo)"></path>
+        <path
+          d="M20 3.5 C20 5.8 20.7 6.5 23 6.5 C20.7 6.5 20 7.2 20 9.5 C20 7.2 19.3 6.5 17 6.5 C19.3 6.5 20 5.8 20 3.5 Z"
+          fill="var(--blac-gold)"></path>
       </svg>
-      Edition 2026, printed with BlaC
+      <span>Edition 2026 · Overprinted with BlaC</span>
     </p>
   </div>
 </footer>
@@ -36,7 +39,7 @@ import Pagination from '@astrojs/starlight/components/Pagination.astro';
   .blac-footer {
     flex-direction: column;
     gap: 2rem;
-    margin-top: 3rem;
+    margin-top: 3.5rem;
   }
 
   .blac-footer__meta {
@@ -44,7 +47,7 @@ import Pagination from '@astrojs/starlight/components/Pagination.astro';
     justify-content: space-between;
     flex-wrap: wrap;
     padding-top: 1.5rem;
-    border-top: 1px solid var(--blac-border);
+    border-top: 1px dashed var(--blac-border-strong);
     font-size: var(--sl-text-sm);
     color: var(--blac-fg-faint);
   }
@@ -58,9 +61,11 @@ import Pagination from '@astrojs/starlight/components/Pagination.astro';
     flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
-    gap: 0.75rem 2rem;
-    padding-block: 1.5rem 1rem;
-    border-top: 1px solid var(--blac-border);
+    gap: 0.9rem 2rem;
+    padding: 1.1rem 1.25rem;
+    border: 1px solid var(--blac-border);
+    border-radius: var(--blac-radius-lg);
+    background-color: var(--blac-surface);
     color: var(--blac-fg-faint);
     font-size: 0.8125rem;
   }
@@ -69,30 +74,46 @@ import Pagination from '@astrojs/starlight/components/Pagination.astro';
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.35rem 0.9rem;
+    gap: 0.4rem 0.65rem;
     margin: 0;
   }
 
   .blac-footer__label {
-    font-weight: 700;
+    padding: 0.18rem 0.55rem;
+    border-radius: 999px;
+    background-color: var(--blac-surface-2);
+    color: var(--blac-fg-strong);
+    font-family: var(--blac-font-display);
+    font-weight: 760;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     font-size: 0.6875rem;
   }
 
   .blac-footer__llm a {
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--blac-radius-sm);
     color: var(--blac-fg-dim);
+    font-family: var(--blac-font-mono);
+    font-size: 0.78rem;
     text-decoration: none;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease;
   }
 
   .blac-footer__llm a:hover {
-    color: var(--blac-link);
+    color: var(--blac-fg-strong);
+    background-color: var(--blac-surface-2);
     text-decoration: underline;
     text-decoration-color: var(--blac-pink);
     text-underline-offset: 0.22em;
   }
 
   .blac-footer__colophon .blac-footer__imprint {
-    gap: 0.5rem;
+    gap: 0.55rem;
+    color: var(--blac-fg-dim);
+    font-family: var(--blac-font-display);
+    font-weight: 600;
   }
 </style>

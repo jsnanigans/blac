@@ -51,12 +51,12 @@ By default, `useBloc` uses auto-tracking to keep re-renders scoped: the hook wra
 
 `useBloc` accepts one optional options object. `UseBlocOptions` has exactly four keys — reach for the one that matches your need:
 
-| Option      | Type                                                      | Required            | Description                                                                                        |
-| ----------- | --------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------- |
-| `args`      | the bloc's `Args` type                                    | when `Args != void` | Typed construction data; derives instance identity. Required when declared, forbidden when `void`. |
-| `select`    | `(state: S, bloc: InstanceReadonlyState<T>) => unknown[]` | no                  | Explicit dependency selector; disables auto-tracking.                                              |
-| `onMount`   | `(bloc: InstanceType<T>) => void`                         | no                  | Called once when the component mounts with the bloc instance.                                      |
-| `onUnmount` | `(bloc: InstanceType<T>) => void`                         | no                  | Called when the component unmounts (bloc still alive at this point).                               |
+| Option      | Type                                                      | Required                           | Description                                                                                                              |
+| ----------- | --------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `args`      | the bloc's `Args` type                                    | no (forbidden when `Args is void`) | Typed construction data; derives instance identity. Allowed when `Args != void` (or inherited from `<BlocProvider>`), forbidden when `void`. |
+| `select`    | `(state: S, bloc: InstanceReadonlyState<T>) => unknown[]` | no                                 | Explicit dependency selector; disables auto-tracking.                                                                    |
+| `onMount`   | `(bloc: InstanceType<T>) => void`                         | no                                 | Called once when the component mounts with the bloc instance.                                                            |
+| `onUnmount` | `(bloc: InstanceType<T>) => void`                         | no                                 | Called when the component unmounts (bloc still alive at this point).                                                     |
 
 :::tip[These four are the entire option surface]
 `UseBlocOptions` has exactly these keys. Two things people expect that are **not** options here:
@@ -70,10 +70,10 @@ There is no `autoTrack` flag — auto-tracking is the default and you opt out wi
 ### `args`
 
 ```ts
-args: ExtractArgs<T>;
+args?: ExtractArgs<T>;
 ```
 
-**Required when the bloc declares `Args != void`; forbidden (type `never`) when `void`.**
+**Typed as `ExtractArgs<T>` when the bloc declares `Args != void` (and may be inherited from `<BlocProvider>`); forbidden (type `never`) when `Args` is `void`.**
 
 **Returns:** `void` (the option feeds the bloc's `init(args)` before the first snapshot).
 
@@ -91,7 +91,7 @@ class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
   }
 }
 
-// args is required and type-checked; omitting it is a compile error
+// args is type-checked against { userId: string }
 const [state] = useBloc(UserCardCubit, { args: { userId } });
 ```
 
@@ -199,12 +199,11 @@ An inline callback (`onComplete={() => …}`) gets a new identity every render, 
 
 ## Identity and keying
 
-This is the canonical instance-identity precedence for `useBloc`. Other pages defer to this list:
+When `useBloc` resolves which instance to connect to, it determines effective `args` first and then derives the instance key. This is the canonical precedence order:
 
-1. **`<BlocProvider>` context args** — inherited from a parent provider when present
-2. **`static key(args)`** — class-supplied key derived from `args`
-3. **Structural hash of `args`** — default when the bloc declares `Args` and no `key` is set
-4. **`'default'`** — singleton fallback when the bloc has no `args`, no key, and no provider
+1. **Own `args` on the `useBloc` call** — `static key(args)` if declared on the class, else the structural hash of `args`
+2. **`<BlocProvider>` context `args`** — same resolution (`static key` or structural hash) applied to inherited `args` when the call site omits `args`
+3. **`'default'`** — singleton fallback when neither call-site `args` nor a `<BlocProvider>` is present
 
 Blocs declare explicit identity via a static property:
 

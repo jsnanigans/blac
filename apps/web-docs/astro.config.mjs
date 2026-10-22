@@ -295,6 +295,10 @@ export default defineConfig({
                 label: 'Getting Started',
                 items: [
                   { label: 'What is BlaC?', link: '/guide/introduction/' },
+                  {
+                    label: 'Architecture & Philosophy',
+                    link: '/guide/philosophy/',
+                  },
                   { label: 'Quick Start', link: '/guide/getting-started/' },
                   { label: 'Core Concepts', link: '/guide/concepts/' },
                   { label: 'Passing Inputs', link: '/guide/inputs/' },
@@ -306,10 +310,6 @@ export default defineConfig({
                 items: [
                   { label: 'Mental Model', link: '/guide/mental-model/' },
                   { label: 'Async', link: '/guide/async/' },
-                  {
-                    label: 'Async Resources',
-                    link: '/guide/async-resources/',
-                  },
                   { label: 'TypeScript', link: '/guide/typescript/' },
                   {
                     label: 'Troubleshooting & FAQ',
@@ -354,6 +354,51 @@ export default defineConfig({
                 items: [
                   { label: 'How BlaC Works', link: '/guide/internals/' },
                   { label: 'DirtyTalk', link: '/dirtytalk/' },
+                ],
+              },
+              {
+                label: 'RFCs & Proposals',
+                collapsed: true,
+                items: [
+                  { label: 'Overview', link: '/proposals/' },
+                  {
+                    label: 'Reset by Predicate',
+                    link: '/proposals/clear-where/',
+                  },
+                  {
+                    label: 'Watch With a Signal',
+                    link: '/proposals/watch-signal/',
+                  },
+                  { label: 'Borrow by Key', link: '/proposals/borrow-key/' },
+                  {
+                    label: 'Isolated Instances',
+                    link: '/proposals/isolated-instances/',
+                  },
+                  {
+                    label: 'Testing Helpers',
+                    link: '/proposals/testing-helpers/',
+                  },
+                  {
+                    label: 'Web Storage',
+                    link: '/proposals/web-storage-persist/',
+                  },
+                  { label: 'List Query', link: '/proposals/list-query/' },
+                  {
+                    label: 'Mutation Concurrency',
+                    link: '/proposals/mutation-concurrency/',
+                  },
+                  {
+                    label: 'Retry After Token Refresh',
+                    link: '/proposals/retry-failed/',
+                  },
+                  {
+                    label: 'Release Readiness',
+                    link: '/proposals/release-readiness/',
+                  },
+                  {
+                    label: 'Adoption Pilot',
+                    link: '/proposals/adoption-pilot/',
+                  },
                 ],
               },
             ],
@@ -409,71 +454,16 @@ export default defineConfig({
             ],
           },
           {
-            label: 'Proposals',
-            link: '/proposals/',
+            label: '@blac/async',
+            link: '/guide/async-resources/',
             icon: 'rocket',
             items: [
-              { label: 'Overview', link: '/proposals/' },
               {
-                label: 'Core',
+                label: 'Reference',
                 items: [
                   {
-                    label: 'Reset by Predicate',
-                    link: '/proposals/clear-where/',
-                  },
-                  {
-                    label: 'Watch With a Signal',
-                    link: '/proposals/watch-signal/',
-                  },
-                  { label: 'Borrow by Key', link: '/proposals/borrow-key/' },
-                ],
-              },
-              {
-                label: 'React and Testing',
-                items: [
-                  {
-                    label: 'Isolated Instances',
-                    link: '/proposals/isolated-instances/',
-                  },
-                  {
-                    label: 'Testing Helpers',
-                    link: '/proposals/testing-helpers/',
-                  },
-                ],
-              },
-              {
-                label: 'Persistence',
-                items: [
-                  {
-                    label: 'Web Storage',
-                    link: '/proposals/web-storage-persist/',
-                  },
-                ],
-              },
-              {
-                label: '@blac/async',
-                items: [
-                  { label: 'List Query', link: '/proposals/list-query/' },
-                  {
-                    label: 'Mutation Concurrency',
-                    link: '/proposals/mutation-concurrency/',
-                  },
-                  {
-                    label: 'Retry After Token Refresh',
-                    link: '/proposals/retry-failed/',
-                  },
-                ],
-              },
-              {
-                label: 'Release and Adoption',
-                items: [
-                  {
-                    label: 'Release Readiness',
-                    link: '/proposals/release-readiness/',
-                  },
-                  {
-                    label: 'Adoption Pilot',
-                    link: '/proposals/adoption-pilot/',
+                    label: 'Async Resources',
+                    link: '/guide/async-resources/',
                   },
                 ],
               },

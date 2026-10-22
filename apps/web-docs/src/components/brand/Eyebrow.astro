@@ -1,34 +1,51 @@
 ---
-// Small section label: the logo's overlapping discs, a label, a hairline.
+// Section eyebrow marker: the overprint discs + solar spark, a pill label, and a registration hairline.
 ---
 
 <p class="blac-eyebrow not-content">
-  <svg viewBox="0 0 18 12" width="18" height="12" aria-hidden="true">
-    <circle cx="6" cy="6" r="5" fill="var(--blac-blue)"></circle>
-    <circle cx="12" cy="6" r="5" fill="var(--blac-pink)"></circle>
-    <path d="M9 2a5 5 0 0 1 0 8a5 5 0 0 1 0-8z" fill="var(--blac-indigo)"></path>
-  </svg>
-  <span><slot /></span>
+  <span class="blac-eyebrow__badge">
+    <svg viewBox="0 0 24 14" width="22" height="13" aria-hidden="true">
+      <circle cx="6.5" cy="7" r="5" fill="var(--blac-blue)"></circle>
+      <circle cx="12.5" cy="7" r="5" fill="var(--blac-pink)"></circle>
+      <path d="M9.5 3a5 5 0 0 1 0 8a5 5 0 0 1 0-8z" fill="var(--blac-indigo)"></path>
+      <path
+        d="M20 3.5 C20 5.8 20.7 6.5 23 6.5 C20.7 6.5 20 7.2 20 9.5 C20 7.2 19.3 6.5 17 6.5 C19.3 6.5 20 5.8 20 3.5 Z"
+        fill="var(--blac-gold)"></path>
+    </svg>
+    <span><slot /></span>
+  </span>
 </p>
 
 <style>
   .blac-eyebrow {
     display: flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: 0.75rem;
     margin-block: 4rem 0;
-    color: var(--blac-fg-dim);
-    font-size: 0.8125rem;
-    font-weight: 700;
+    color: var(--blac-fg-strong);
+    font-family: var(--blac-font-display);
+    font-size: 0.78rem;
+    font-weight: 760;
     letter-spacing: 0.08em;
     line-height: 1;
     text-transform: uppercase;
   }
 
+  .blac-eyebrow__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--blac-border-strong);
+    border-radius: 999px;
+    background-color: var(--blac-surface);
+    box-shadow: 2px 2px 0 var(--blac-pink);
+  }
+
   .blac-eyebrow::after {
     content: '';
     flex: 1;
-    border-top: 1px solid var(--blac-border);
+    border-top: 1px dashed var(--blac-border-strong);
   }
 
   .blac-eyebrow svg {
@@ -36,6 +53,6 @@
   }
 
   :global(.sl-markdown-content) .blac-eyebrow + :global(*) {
-    margin-top: 1rem;
+    margin-top: 1.15rem;
   }
 </style>

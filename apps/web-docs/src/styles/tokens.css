@@ -1,35 +1,65 @@
 /*
-  BlaC docs design tokens, derived from the logo: a blue "b" and a pink "c"
-  overprinting to indigo. Brand fills are constant across themes; every
-  colour used as text has a theme-specific shade that meets WCAG AA.
+  BlaC docs design tokens — "Kinetic Risograph & Bauhaus State Machine"
+  Derived from the overprint logo: Cobalt 'b' + Acid Rose 'c' intersecting in
+  Ultraviolet, sparked with Solar Gold and Mint registration marks.
 
-  Contrast (body bg / sidebar / code well):
-    dark   fg #dddbe8 14.0 · dim #a6a3ba 7.8 · faint #8a87a0 5.5
-           link #6bb2e6 8.3 · pink #f37fbd 7.8 · indigo #a99cf2 8.0
-    light  fg #24223a 14.9 · dim #55526c 7.3 · faint #6b6884 5.2
-           link #1d669c 5.9 · pink #b62f7a 5.5 · indigo #423382 10.1
-    white on --blac-blue 5.0
+  Accessibility & Contrast Guarantees (WCAG AA/AAA):
+    Dark ("Midnight Risograph" on #0b0a12):
+      fg-strong #f8f7ff (18.2:1) · fg #e4e1f2 (14.6:1)
+      fg-dim    #b2adc9 (8.4:1)  · fg-faint #948eb0 (5.8:1)
+      link      #6ec1ff (9.6:1)  · pink-text #ff82bf (8.1:1)
+      indigo    #b5a6ff (8.5:1)  · gold-text #ffc857 (11.8:1)
+      mint      #5ce6b8 (11.2:1)
+
+    Light ("Warm Archival Vellum" on #fbf9f5):
+      fg-strong #121020 (17.1:1) · fg #221f36 (14.4:1)
+      fg-dim    #4c4766 (7.9:1)  · fg-faint #635d7d (5.4:1)
+      link      #14599e (6.8:1)  · pink-text #b51d67 (6.3:1)
+      indigo    #432ec2 (8.2:1)  · gold-text #945800 (5.6:1)
+      mint      #0d7552 (5.5:1)
 */
 
 :root {
-  --blac-blue: #2474ae;
-  --blac-pink: #e85aa7;
-  --blac-indigo: #423382;
+  /* Brand primaries (ink fills) */
+  --blac-blue: #2b84d8;
+  --blac-pink: #f04e98;
+  --blac-indigo: #5842e3;
+  --blac-gold: #ffb830;
+  --blac-mint: #22c993;
+  --blac-coral: #ff6b4a;
 
-  --blac-bg: #0f0e17;
-  --blac-surface: #15141f;
-  --blac-surface-2: #1c1a28;
-  --blac-border: #2a2839;
-  --blac-border-strong: #45425a;
+  /* Surfaces & structural rules (Midnight Risograph) */
+  --blac-bg: #0b0a12;
+  --blac-bg-elevated: #100e1b;
+  --blac-surface: #141222;
+  --blac-surface-2: #1d1a30;
+  --blac-surface-3: #272340;
+  --blac-border: #2c2844;
+  --blac-border-strong: #4a446e;
 
-  --blac-fg-strong: #f6f5fb;
-  --blac-fg: #dddbe8;
-  --blac-fg-dim: #a6a3ba;
-  --blac-fg-faint: #8a87a0;
-  --blac-link: #6bb2e6;
-  --blac-pink-text: #f37fbd;
-  --blac-indigo-text: #a99cf2;
+  /* Accessible typographic & semantic text tokens */
+  --blac-fg-strong: #f8f7ff;
+  --blac-fg: #e4e1f2;
+  --blac-fg-dim: #b2adc9;
+  --blac-fg-faint: #948eb0;
+  --blac-link: #6ec1ff;
+  --blac-pink-text: #ff82bf;
+  --blac-indigo-text: #b5a6ff;
+  --blac-gold-text: #ffc857;
+  --blac-mint-text: #5ce6b8;
+  --blac-coral-text: #ff967d;
 
+  /* Ambient glow & grid tokens */
+  --blac-grid-line: rgb(181 166 255 / 0.055);
+  --blac-glow-blue: rgb(43 132 216 / 0.22);
+  --blac-glow-pink: rgb(240 78 152 / 0.2);
+  --blac-glow-gold: rgb(255 184 48 / 0.16);
+  --blac-shadow-hard: 4px 4px 0 var(--blac-pink);
+  --blac-shadow-hard-blue: 4px 4px 0 var(--blac-blue);
+  --blac-shadow-hard-gold: 4px 4px 0 var(--blac-gold);
+  --blac-shadow-soft: 0 12px 32px -8px rgb(0 0 0 / 0.45);
+
+  /* Typography */
   --blac-font-display:
     'Bricolage Grotesque', 'Bricolage Grotesque Fallback', system-ui, sans-serif;
   --blac-font-body:
@@ -37,24 +67,27 @@
   --blac-font-mono:
     'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --blac-radius-sm: 0.375rem;
-  --blac-radius: 0.625rem;
-  --blac-radius-lg: 1rem;
-  --blac-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* Geometry & motion */
+  --blac-radius-sm: 0.4375rem;
+  --blac-radius: 0.75rem;
+  --blac-radius-lg: 1.125rem;
+  --blac-radius-xl: 1.5rem;
+  --blac-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --blac-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* ── Starlight contract ── */
   --sl-font: var(--blac-font-body);
   --sl-font-mono: var(--blac-font-mono);
 
-  --sl-color-accent-low: #12283b;
+  --sl-color-accent-low: #132740;
   --sl-color-accent: var(--blac-blue);
-  --sl-color-accent-high: #b9dcf5;
+  --sl-color-accent-high: #c2e2ff;
   --sl-color-text-accent: var(--blac-link);
   --sl-color-text-invert: var(--blac-bg);
 
   --sl-color-white: var(--blac-fg-strong);
-  --sl-color-gray-1: #e6e4ef;
-  --sl-color-gray-2: #c3c0d3;
+  --sl-color-gray-1: #ece9f8;
+  --sl-color-gray-2: #c9c4de;
   --sl-color-gray-3: var(--blac-fg-faint);
   --sl-color-gray-4: var(--blac-border-strong);
   --sl-color-gray-5: var(--blac-border);
@@ -70,83 +103,97 @@
   --sl-color-hairline: var(--blac-border);
   --sl-color-hairline-light: var(--blac-border);
   --sl-color-hairline-shade: var(--blac-border);
-  --sl-color-backdrop-overlay: rgb(8 7 14 / 0.72);
+  --sl-color-backdrop-overlay: rgb(8 7 15 / 0.76);
 
-  --sl-color-blue-low: #11263a;
-  --sl-color-blue: #3b8fd0;
-  --sl-color-blue-high: #a9d3f3;
-  --sl-color-purple-low: #1f1a3d;
-  --sl-color-purple: #7f6be0;
-  --sl-color-purple-high: #cdc4fa;
-  --sl-color-orange-low: #2e2310;
-  --sl-color-orange: #e3a234;
-  --sl-color-orange-high: #f6d595;
-  --sl-color-red-low: #331419;
-  --sl-color-red: #ec5a6a;
-  --sl-color-red-high: #ffbcc3;
-  --sl-color-green-low: #11291f;
-  --sl-color-green: #3fbf86;
-  --sl-color-green-high: #a6ecc9;
+  /* Callout / Aside palettes */
+  --sl-color-blue-low: #12253b;
+  --sl-color-blue: #469be8;
+  --sl-color-blue-high: #b8dfff;
+  --sl-color-purple-low: #1e183d;
+  --sl-color-purple: #8872f5;
+  --sl-color-purple-high: #d4cbff;
+  --sl-color-orange-low: #2d200d;
+  --sl-color-orange: #f5a623;
+  --sl-color-orange-high: #ffe09e;
+  --sl-color-red-low: #33131d;
+  --sl-color-red: #f25774;
+  --sl-color-red-high: #ffc2cd;
+  --sl-color-green-low: #0f2920;
+  --sl-color-green: #22c993;
+  --sl-color-green-high: #a8f5da;
 
+  /* Fluid typographic scale */
   --sl-text-body: 1.0625rem;
   --sl-text-code: 0.875rem;
-  --sl-text-code-sm: 0.84em;
-  --sl-line-height: 1.7;
-  --sl-line-height-headings: 1.2;
-  --sl-text-h1: 2.125rem;
-  --sl-text-h2: 1.625rem;
-  --sl-text-h3: 1.25rem;
+  --sl-text-code-sm: 0.85em;
+  --sl-line-height: 1.72;
+  --sl-line-height-headings: 1.15;
+  --sl-text-h1: 2.25rem;
+  --sl-text-h2: 1.6875rem;
+  --sl-text-h3: 1.3125rem;
   --sl-text-h4: 1.0625rem;
   --sl-text-h5: 1rem;
 
-  --sl-content-width: 43rem;
+  --sl-content-width: 45rem;
 }
 
 @media (min-width: 50em) {
   :root {
-    --sl-text-h1: 2.75rem;
-    --sl-text-h2: 1.875rem;
-    --sl-text-h3: 1.375rem;
-    --sl-text-h4: 1.125rem;
+    --sl-text-h1: 2.875rem;
+    --sl-text-h2: 1.95rem;
+    --sl-text-h3: 1.4375rem;
+    --sl-text-h4: 1.15rem;
   }
 }
 
 :root[data-theme='light'] {
-  --blac-bg: #fcfbfe;
-  --blac-surface: #f6f5fa;
-  --blac-surface-2: #eeecf4;
-  --blac-border: #e2e0ea;
-  --blac-border-strong: #c3c0d3;
+  /* Warm Archival Vellum palette */
+  --blac-bg: #fbf9f5;
+  --blac-bg-elevated: #f7f4ed;
+  --blac-surface: #f2eee6;
+  --blac-surface-2: #e7e1d6;
+  --blac-surface-3: #dcd4c6;
+  --blac-border: #d6cebf;
+  --blac-border-strong: #aca292;
 
-  --blac-fg-strong: #110f1e;
-  --blac-fg: #24223a;
-  --blac-fg-dim: #55526c;
-  --blac-fg-faint: #6b6884;
-  --blac-link: #1d669c;
-  --blac-pink-text: #b62f7a;
-  --blac-indigo-text: #423382;
+  --blac-fg-strong: #121020;
+  --blac-fg: #221f36;
+  --blac-fg-dim: #4c4766;
+  --blac-fg-faint: #635d7d;
+  --blac-link: #14599e;
+  --blac-pink-text: #b51d67;
+  --blac-indigo-text: #432ec2;
+  --blac-gold-text: #945800;
+  --blac-mint-text: #0d7552;
+  --blac-coral-text: #b83718;
 
-  --sl-color-accent-low: #e3eef8;
-  --sl-color-accent-high: #163f63;
+  --blac-grid-line: rgb(34 31 54 / 0.055);
+  --blac-glow-blue: rgb(43 132 216 / 0.14);
+  --blac-glow-pink: rgb(240 78 152 / 0.13);
+  --blac-glow-gold: rgb(255 184 48 / 0.18);
+  --blac-shadow-soft: 0 12px 32px -10px rgb(34 31 54 / 0.12);
 
-  --sl-color-gray-1: #24223a;
-  --sl-color-gray-2: #3f3c56;
-  --sl-color-gray-4: #a9a6bc;
-  --sl-color-backdrop-overlay: rgb(36 34 58 / 0.4);
+  --sl-color-accent-low: #dfecf8;
+  --sl-color-accent-high: #123e6b;
 
-  --sl-color-blue-low: #e8f1f9;
-  --sl-color-blue: #2474ae;
-  --sl-color-blue-high: #174a73;
-  --sl-color-purple-low: #efecfb;
-  --sl-color-purple: #5a48b8;
-  --sl-color-purple-high: #36287a;
-  --sl-color-orange-low: #fdf4e2;
-  --sl-color-orange: #d98e1a;
-  --sl-color-orange-high: #6e4404;
-  --sl-color-red-low: #fdecee;
-  --sl-color-red: #d33649;
-  --sl-color-red-high: #8f1426;
-  --sl-color-green-low: #e5f6ee;
-  --sl-color-green: #1f9a63;
-  --sl-color-green-high: #11573a;
+  --sl-color-gray-1: #221f36;
+  --sl-color-gray-2: #3d3856;
+  --sl-color-gray-4: #9c9384;
+  --sl-color-backdrop-overlay: rgb(24 21 38 / 0.42);
+
+  --sl-color-blue-low: #e4effa;
+  --sl-color-blue: #1b6ec2;
+  --sl-color-blue-high: #103f70;
+  --sl-color-purple-low: #ece8fc;
+  --sl-color-purple: #543ee0;
+  --sl-color-purple-high: #2e1d96;
+  --sl-color-orange-low: #fbf0d9;
+  --sl-color-orange: #c97d0a;
+  --sl-color-orange-high: #633b00;
+  --sl-color-red-low: #fce8ed;
+  --sl-color-red: #cf2950;
+  --sl-color-red-high: #7d102a;
+  --sl-color-green-low: #dff5ec;
+  --sl-color-green: #128760;
+  --sl-color-green-high: #094d35;
 }

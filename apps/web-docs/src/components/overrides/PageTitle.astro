@@ -1,18 +1,65 @@
 ---
-// Same contract as Starlight's PageTitle (single <h1 id="_top">), set in the display face.
+// Same contract as Starlight's PageTitle (single <h1 id="_top">), set in the
+// Bricolage Grotesque display face with a Bauhaus tri-tone registration rule.
 ---
 
-<h1 id="_top" class="page-title">{Astro.locals.starlightRoute.entry.data.title}</h1>
+<div class="blac-page-title-wrap">
+  <h1 id="_top" class="page-title">{Astro.locals.starlightRoute.entry.data.title}</h1>
+  <div class="blac-page-title-rule" aria-hidden="true">
+    <span class="blac-page-title-rule__seg blac-page-title-rule__seg--blue"></span>
+    <span class="blac-page-title-rule__seg blac-page-title-rule__seg--pink"></span>
+    <span class="blac-page-title-rule__seg blac-page-title-rule__seg--gold"></span>
+    <span class="blac-page-title-rule__line"></span>
+  </div>
+</div>
 
 <style>
-  .page-title {
+  .blac-page-title-wrap {
     margin-top: 1.5rem;
+  }
+
+  .page-title {
+    margin: 0;
     color: var(--blac-fg-strong);
     font-family: var(--blac-font-display);
     font-size: var(--sl-text-h1);
     font-weight: 800;
+    font-variation-settings: 'opsz' 72;
     letter-spacing: -0.035em;
-    line-height: 1.08;
+    line-height: 1.06;
     text-wrap: balance;
+  }
+
+  .blac-page-title-rule {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.9rem;
+  }
+
+  .blac-page-title-rule__seg {
+    height: 4px;
+    border-radius: 999px;
+  }
+
+  .blac-page-title-rule__seg--blue {
+    width: 1.75rem;
+    background-color: var(--blac-blue);
+  }
+
+  .blac-page-title-rule__seg--pink {
+    width: 1rem;
+    background-color: var(--blac-pink);
+  }
+
+  .blac-page-title-rule__seg--gold {
+    width: 0.5rem;
+    background-color: var(--blac-gold);
+  }
+
+  .blac-page-title-rule__line {
+    flex: 1;
+    height: 1px;
+    background-color: var(--blac-border);
   }
 </style>
