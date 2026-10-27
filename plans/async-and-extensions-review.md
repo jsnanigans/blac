@@ -2,7 +2,7 @@
 
 Date: 2026-10-27. Sources: `packages/blac-async/src`, `apps/web-docs/src/content/docs/proposals/`, `research/`, and two new surveys of `user-frontend` `release` (`b6e9e0ce0d`). Paths starting with `apps/pmp`, `apps/user-app` or `packages/shared` are in user-frontend. Counts come from grep and are estimates.
 
-Status: review only, nothing built. Fact-checked 2026-10-27 against blac `main` and user-frontend `b6e9e0ce0d`. Each item needs a decision before work starts.
+Status: A1, A2 and A6–A10 built 2026-10-27; the rest is review only. Fact-checked 2026-10-27 against blac `main` and user-frontend `b6e9e0ce0d`. Each item needs a decision before work starts.
 
 ## 1. Fixes and refinements to the shipped `@blac/async`
 
@@ -119,19 +119,19 @@ Each of these replaces a part of AutoForm or the cubits around it, and is useful
 
 ## 4. Suggested order
 
-1. Before anything is published: A2 (settled result) and A8 (remove `retryOn`) are breaking; A7 is a bug fix; A1 is docs only. ~0.5d.
-2. A3 + A4 (concurrency, keyed mutations), A5 (state-derived input), A6 (`set`), A10 (`enabled`). ~1.5d.
+1. ~~Before anything is published: A2, A8, A7, A1.~~ Done 2026-10-27.
+2. A3 + A4 (concurrency, keyed mutations), A5 (state-derived input). ~1d. (A6, A10 done.)
 3. B2 (lifecycle hooks) and B3 (timers): small, and they remove the most copy-paste. ~0.5d.
 4. Release readiness, then the adoption pilot with the two extra slices.
 5. B1 (realtime), shaped by the pilot's `EncounterDetailCubit` slice. ~1–1.5d.
-6. `retryFailed`, A9 (optimistic), B7 helpers.
+6. `retryFailed`, B7 helpers. (A9 done.)
 7. B4 `ask()`, B5 `normalizeError`, then the AutoForm adapter in user-frontend; B6 recipe.
 
 ## Open questions
 
 - A1: are flat tags plus a two-level convention enough, or are tuple keys needed? Decide after the pilot.
 - A5: should `input` changes while inactive mark the resource stale, or be ignored until activation (where `input` is re-read anyway)?
-- A8: remove `retryOn`, or keep it with the abort check?
+- A6: should `set` abort a load in flight? Built without: aborting would drop an initial load when a pushed patch arrives first. Revisit if the pilot hits a slow read overwriting a fresh write.
 - B5: does `normalizeError` belong in `configureAsync`, or as a per-call option too? How is the normalized `error` typed: module augmentation of one app-wide type, or a generic on `AsyncState`?
 
 ## Decisions
@@ -139,3 +139,4 @@ Each of these replaces a part of AutoForm or the cubits around it, and is useful
 - 2026-10-27: dialogs and forms are not explicit goals. Offer primitives (B4 `ask`, B5) and build them in the apps. Enhance AutoForm, don't retire it. Retiring react-hook-form is allowed but not a goal.
 - 2026-10-27: published to web-docs `proposals/` for team review, worded generically (no app or company names): new `async-refinements` (A1, A2, A6–A10), `resource-input` (A5, replaces `list-query`, deleted), `lifecycle-hooks` (B2), `activation-timers` (B3), `realtime-refetch` (B1), `ask` (B4), `form-primitives` (B5), `step-machine` (B6); A4 folded into `mutation-concurrency`; `retry-failed` drops the `retryOn` recipe; `borrow-key` closed; `clear-where` gains the typed overload; B7 and "not proposed" on the index. A1 convention applied to the async guide, README and example 14.
 - 2026-10-27: graduated the five built proposal pages (clear-where, watch-signal, isolated-instances, testing-helpers, web-storage-persist) into the reference docs as "before and after" migration sections, and deleted them. The typed `clearWhere(Class, …)` overload moved to a new `typed-clear-where` proposal; the proposals index lists the shipped features under "Shipped".
+- 2026-10-27: built A2 (mutation resolves its settled `AsyncState`), A6 (`resource.set(updater)`), A7 (deactivation restores the state from before the call), A8 (`retryOn` and `callWithRetry` removed), A9 (`mutation({ optimistic: { target, apply } })`, rollback only if the target's slot is still the optimistic write, by identity), A10 (`enabled: (state, args) => boolean`, checked on every load, reload, `auto` and invalidate). `DataOf` made non-distributive, so a loader returning `undefined` for a non-optional slot is now a type error. Documented in `guide/async-resources.md`; the `async-refinements` proposal page was deleted and listed under "Shipped".

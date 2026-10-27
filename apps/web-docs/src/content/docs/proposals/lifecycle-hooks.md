@@ -172,6 +172,6 @@ Effort: about 2 hours. High payoff, small surface.
 ## Open questions
 
 - **Superseded and aborted calls.** A `resource` load that is aborted by a newer one does not write the slot. Should `onSettled` skip it, or report `status: 'aborted'`? Skipping keeps `status` to two values; reporting makes cancelled work visible.
-- **What "settled" means.** [Mutation concurrency](/proposals/mutation-concurrency/) lets an older call finish without writing the slot. Should it still fire `onSettled`? Probably yes, since the request happened. (If `retryOn` is kept, see [async refinements](/proposals/async-refinements/#4-remove-retryon), a retried call counts as one call.)
+- **What "settled" means.** [Mutation concurrency](/proposals/mutation-concurrency/) lets an older call finish without writing the slot. Should it still fire `onSettled`? Probably yes, since the request happened.
 - **`meta` typing.** `unknown` with a cast in the adapter, or module augmentation of one app-wide `AsyncMeta` interface?
 - **Cached resource hits.** A `staleTime` hit starts no request. Proposed: it fires no hooks. Is a "cache hit" event useful for metrics?

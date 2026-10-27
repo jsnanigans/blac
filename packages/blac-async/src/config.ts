@@ -10,8 +10,6 @@ export interface AsyncConfig {
   onError?: (error: unknown, ctx: AsyncContext) => void;
   /** Runs after a mutation that set `success`. */
   onSuccess?: (message: string, ctx: AsyncContext & { data: unknown }) => void;
-  /** Return `true` to retry a failed call once, e.g. after a token refresh. */
-  retryOn?: (error: unknown, ctx: AsyncContext) => boolean | Promise<boolean>;
 }
 
 let config: AsyncConfig = {};
@@ -25,18 +23,6 @@ export function resetAsyncConfig(): void {
 }
 
 export const getAsyncConfig = (): AsyncConfig => config;
-
-export async function callWithRetry<T>(
-  call: () => Promise<T>,
-  ctx: AsyncContext,
-): Promise<T> {
-  try {
-    return await call();
-  } catch (error) {
-    if (!(await config.retryOn?.(error, ctx))) throw error;
-    return call();
-  }
-}
 
 export function reportError(
   error: unknown,

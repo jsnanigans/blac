@@ -13,7 +13,7 @@ This is a process proposal, not an API. See the [proposals index](/proposals/) f
 
 ## When
 
-After the [async refinements](/proposals/async-refinements/), [mutation concurrency](/proposals/mutation-concurrency/), [resource input](/proposals/resource-input/), [lifecycle hooks](/proposals/lifecycle-hooks/) and [activation-scoped timers](/proposals/activation-timers/). Those change the shape of code the pilot would otherwise migrate twice. The larger proposals, [realtime refetch](/proposals/realtime-refetch/) and [`ask()`](/proposals/ask/), come after it and are shaped by what it finds.
+After [mutation concurrency](/proposals/mutation-concurrency/), [resource input](/proposals/resource-input/), [lifecycle hooks](/proposals/lifecycle-hooks/) and [activation-scoped timers](/proposals/activation-timers/). Those change the shape of code the pilot would otherwise migrate twice. The larger proposals, [realtime refetch](/proposals/realtime-refetch/) and [`ask()`](/proposals/ask/), come after it and are shaped by what it finds.
 
 ## Scope
 

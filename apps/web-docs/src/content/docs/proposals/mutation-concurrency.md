@@ -28,7 +28,7 @@ A second gap: a mutation has **one** slot. Toggling row A and then row B shares 
 
 ## Proposed behavior
 
-Three changes, one of them API-free. They assume a mutation resolves its settled `AsyncState` ([async refinements](/proposals/async-refinements/#2-mutations-resolve-their-result)).
+Three changes, one of them API-free. They build on a mutation resolving its settled `AsyncState` ([Mutation](/guide/async-resources/#mutation)).
 
 ### 1. The slot follows the latest call (default, no API)
 

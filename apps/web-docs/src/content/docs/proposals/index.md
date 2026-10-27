@@ -22,23 +22,21 @@ Pages are grouped by the package they change, the same as the sidebar. **Also to
 
 ## `@blac/async`
 
-| Page                                                     | Status   | Also touches                        | Adds                                                      | Replaces                                                       | Effort |
-| -------------------------------------------------------- | -------- | ----------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------- | ------ |
-| [Async refinements](/proposals/async-refinements/)       | Proposed |                                     | Settled mutation result, `set`, `enabled`, tag convention | Ambiguous `void` results, in-place list patches, guard ifs     | ~0.5d  |
-| [Mutation concurrency](/proposals/mutation-concurrency/) | Proposed |                                     | Ordered slot, `exclusive`, keyed mutations                | `isSubmitting` guards and per-row loading-id sets              | ~0.5d  |
-| [Resource input](/proposals/resource-input/)             | Proposed |                                     | `input: (state) => …`, `debounce`                         | Manual `reload()` after filter changes, request-id guards      | ~4h    |
-| [Lifecycle hooks](/proposals/lifecycle-hooks/)           | Proposed | Plugins (DevTools)                  | `configureAsync({ onStart, onSettled })`, `meta`          | Copy-pasted breadcrumbs and duration metrics                   | ~2h    |
-| [Realtime refetch](/proposals/realtime-refetch/)         | Proposed |                                     | Event sources, `refetchOn`, `refetchInterval`             | Socket watchers, coalescing flags, polling and focus listeners | 1–1.5d |
-| [Retry after token refresh](/proposals/retry-failed/)    | Proposed |                                     | `retryFailed(registry?)`                                  | An app-wide token-refresh event and per-container last params  | ~3h    |
-| [`ask()`](/proposals/ask/)                               | Proposed |                                     | An awaitable request the UI answers                       | Dialog callbacks and hand-wrapped promises                     | ~2h    |
-| [Form primitives](/proposals/form-primitives/)           | Proposed | `@blac/core`, Plugins (Persistence) | `configureAsync({ normalizeError })`                      | Form-ready flags, toast-only server validation                 | ~2h    |
+| Page                                                     | Status   | Also touches                        | Adds                                             | Replaces                                                       | Effort |
+| -------------------------------------------------------- | -------- | ----------------------------------- | ------------------------------------------------ | -------------------------------------------------------------- | ------ |
+| [Mutation concurrency](/proposals/mutation-concurrency/) | Proposed |                                     | Ordered slot, `exclusive`, keyed mutations       | `isSubmitting` guards and per-row loading-id sets              | ~0.5d  |
+| [Resource input](/proposals/resource-input/)             | Proposed |                                     | `input: (state) => …`, `debounce`                | Manual `reload()` after filter changes, request-id guards      | ~4h    |
+| [Lifecycle hooks](/proposals/lifecycle-hooks/)           | Proposed | Plugins (DevTools)                  | `configureAsync({ onStart, onSettled })`, `meta` | Copy-pasted breadcrumbs and duration metrics                   | ~2h    |
+| [Realtime refetch](/proposals/realtime-refetch/)         | Proposed |                                     | Event sources, `refetchOn`, `refetchInterval`    | Socket watchers, coalescing flags, polling and focus listeners | 1–1.5d |
+| [Retry after token refresh](/proposals/retry-failed/)    | Proposed |                                     | `retryFailed(registry?)`                         | An app-wide token-refresh event and per-container last params  | ~3h    |
+| [`ask()`](/proposals/ask/)                               | Proposed |                                     | An awaitable request the UI answers              | Dialog callbacks and hand-wrapped promises                     | ~2h    |
+| [Form primitives](/proposals/form-primitives/)           | Proposed | `@blac/core`, Plugins (Persistence) | `configureAsync({ normalizeError })`             | Form-ready flags, toast-only server validation                 | ~2h    |
 
 The earlier **list query** proposal (`listResource`) is superseded by [resource input](/proposals/resource-input/): with an `input` derived from state, a list container is a query slot plus one resource.
 
 ### Later
 
 - **`all(a, b, …)`**: combine several `AsyncState` slots into one status (loading if any is loading, error if any failed), for screens with three loading flags and one spinner. ~1h.
-- **Optimistic updates** on top of `set`, with the library owning write versions. See [async refinements](/proposals/async-refinements/#7-later-optimistic-updates).
 - **Persisted resource cache**: the persist plugin on a resource slot plus `staleTime` gives stale-while-revalidate across sessions.
 - **DevTools**: show async slots, their tags and the invalidation log, once [lifecycle hooks](/proposals/lifecycle-hooks/) exist.
 
@@ -68,6 +66,7 @@ These started as proposals and are now documented in the reference, each with a 
 - `isolated`: [`useBloc()`](/react/use-bloc/#args), replacing a per-mount `useId` plus `static key`.
 - `waitForState`, `renderWithBlocs`, `withBlocs`: [Core Testing](/testing/core/#waitforstatebloc-predicate-options) and [React Testing](/testing/react/#replacing-a-hand-written-usebloc-mock), replacing polling, `useBloc` mocks and per-app Storybook decorators.
 - Web storage persistence: [Persistence](/plugins/persistence/#localstorage--sessionstorage), replacing hand-written `localStorage` helpers.
+- Async refinements: [Async Resources](/guide/async-resources/). A mutation resolves its settled `AsyncState`, `resource.set` writes locally, `enabled` gates a resource, `optimistic` writes with rollback, a deactivated load restores the exact previous state, and `retryOn` is removed. Tags follow a two-level convention (`['user', 'user:42']`).
 
 ## Release and adoption (all packages)
 
@@ -78,13 +77,12 @@ These started as proposals and are now documented in the reference, each with a 
 
 ## Suggested order
 
-1. **Before the first release:** the [async refinements](/proposals/async-refinements/). Two are breaking (settled mutation result, removing `retryOn`), one is a bug fix and the tag convention is docs only. ~0.5d.
-2. [Mutation concurrency](/proposals/mutation-concurrency/), [resource input](/proposals/resource-input/), and `set` and `enabled` from the refinements. ~1.5d.
-3. [Lifecycle hooks](/proposals/lifecycle-hooks/) and [activation-scoped timers](/proposals/activation-timers/): small, and they remove the most copy-paste. ~0.5d.
-4. [Release readiness](/proposals/release-readiness/), then the [adoption pilot](/proposals/adoption-pilot/).
-5. [Realtime refetch](/proposals/realtime-refetch/), shaped by the pilot's socket-driven container. 1–1.5d.
-6. [Retry after token refresh](/proposals/retry-failed/), optimistic updates and the smaller helpers.
-7. [`ask()`](/proposals/ask/), [form primitives](/proposals/form-primitives/), then the [step machine](/proposals/step-machine/) recipe.
+1. [Mutation concurrency](/proposals/mutation-concurrency/) and [resource input](/proposals/resource-input/). ~1d.
+2. [Lifecycle hooks](/proposals/lifecycle-hooks/) and [activation-scoped timers](/proposals/activation-timers/): small, and they remove the most copy-paste. ~0.5d.
+3. [Release readiness](/proposals/release-readiness/), then the [adoption pilot](/proposals/adoption-pilot/).
+4. [Realtime refetch](/proposals/realtime-refetch/), shaped by the pilot's socket-driven container. 1–1.5d.
+5. [Retry after token refresh](/proposals/retry-failed/) and the smaller helpers.
+6. [`ask()`](/proposals/ask/), [form primitives](/proposals/form-primitives/), then the [step machine](/proposals/step-machine/) recipe.
 
 ## About the examples
 

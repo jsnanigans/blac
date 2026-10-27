@@ -75,4 +75,32 @@ describe('resource', () => {
     expect(p.state.slot.status).toBe('error');
     expect(p.state.slot.data).toBe(1);
   });
+
+  it('restores an error left before the reload when deactivated mid-load', async () => {
+    const { acquire, release } = setup();
+    const p = acquire();
+    p.calls[0].d.reject(new Error('boom'));
+    await p.r.load();
+    void p.r.reload();
+    release();
+    expect(p.state.slot.status).toBe('error');
+  });
+
+  it('set writes success without starting a load', () => {
+    const p = setup({ auto: false }).acquire();
+    p.r.set((n = 0) => n + 1);
+    expect(p.state.slot).toEqual({ status: 'success', data: 1 });
+    expect(p.calls).toHaveLength(0);
+  });
+
+  it('ignores load and reload while disabled', async () => {
+    let on = false;
+    const p = setup({ enabled: () => on }).acquire();
+    await p.r.reload();
+    expect(p.calls).toHaveLength(0);
+    expect(p.state.slot.status).toBe('idle');
+    on = true;
+    void p.r.load();
+    expect(p.calls).toHaveLength(1);
+  });
 });

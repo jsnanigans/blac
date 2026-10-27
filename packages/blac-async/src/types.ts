@@ -19,7 +19,7 @@ export const failure = <T>(error: unknown, data?: T): AsyncState<T> => ({
   data,
 });
 
-export type DataOf<A> = A extends AsyncState<infer T> ? T : never;
+export type DataOf<A> = [A] extends [AsyncState<infer T>] ? T : never;
 
 /** Keys of `S` whose value is an {@link AsyncState}. */
 export type SlotKey<S> = {

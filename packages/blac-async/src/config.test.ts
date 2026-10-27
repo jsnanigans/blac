@@ -42,7 +42,7 @@ describe('configureAsync', () => {
     const error = new Error('no');
     store.put.mockRejectedValue(error);
 
-    await expect(store.save('x')).resolves.toBeUndefined();
+    await expect(store.save('x')).resolves.toEqual({ status: 'error', error });
 
     expect(store.state.save.status).toBe('error');
     expect(onError).toHaveBeenCalledWith(
@@ -61,18 +61,6 @@ describe('configureAsync', () => {
 
     expect(store.skipLoadError).toHaveBeenCalled();
     expect(onError).not.toHaveBeenCalled();
-  });
-
-  it('retries once when retryOn allows it', async () => {
-    const retryOn = vi.fn().mockResolvedValue(true);
-    configureAsync({ retryOn });
-    const { store } = make();
-    store.put.mockRejectedValueOnce(new Error('401')).mockResolvedValue('ok');
-
-    await expect(store.save('x')).resolves.toBe('ok');
-
-    expect(store.put).toHaveBeenCalledTimes(2);
-    expect(retryOn).toHaveBeenCalledTimes(1);
   });
 
   it('calls onSuccess with the message, and invalidates tags after a mutation', async () => {

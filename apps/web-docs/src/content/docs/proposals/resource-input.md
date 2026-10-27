@@ -158,7 +158,7 @@ What goes away: the request counter and its three checks, the debounce wiring an
 
 Behavior differences to review:
 
-- A short term resolves to `[]` through the loader, so the slot briefly goes `loading` then `success`. Before, it cleared the list at once. With `enabled` from [Async refinements](/proposals/async-refinements/), a short term could keep the resource idle instead.
+- A short term resolves to `[]` through the loader, so the slot briefly goes `loading` then `success`. Before, it cleared the list at once. With [`enabled`](/guide/async-resources/#gating-with-enabled), a short term could keep the resource idle instead.
 - Clearing the input within the debounce window still cancels the pending search, but the previous results stay until the debounced load runs (and returns `[]`). Before, the list cleared on the keystroke.
 - A stale failure is still not reported: an aborted call never reports, which is what the id check on the error branch did by hand.
 
@@ -442,4 +442,4 @@ Effort: about 4 hours.
 - **Input changes while inactive.** Should they mark the resource stale, or be ignored until activation, where `input` is re-read anyway? Marking stale would make a later `load()` reload even within `staleTime`. Ignoring is simpler.
 - **Equality.** Shallow equality covers primitives and flat query objects, but not nested `filters`. Is that enough, or should `input` accept `{ equals }` for a custom comparison?
 - **Debounce scope.** Proposed: input changes only, never an explicit `reload()`. Confirm, and whether the first load on activation should skip the debounce (proposed: yes).
-- **Short-circuit.** Should a typeahead return `[]` from the loader, or rely on `enabled`? Depends on [Async refinements](/proposals/async-refinements/).
+- **Short-circuit.** Should a typeahead return `[]` from the loader, or rely on [`enabled`](/guide/async-resources/#gating-with-enabled)?

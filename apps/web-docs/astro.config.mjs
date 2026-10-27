@@ -354,10 +354,6 @@ export default defineConfig({
                     label: '@blac/async',
                     items: [
                       {
-                        label: 'Async Refinements',
-                        link: '/proposals/async-refinements/',
-                      },
-                      {
                         label: 'Mutation Concurrency',
                         link: '/proposals/mutation-concurrency/',
                       },
@@ -490,10 +486,6 @@ export default defineConfig({
               {
                 label: 'RFCs & Proposals',
                 items: [
-                  {
-                    label: 'Async Refinements',
-                    link: '/proposals/async-refinements/',
-                  },
                   {
                     label: 'Mutation Concurrency',
                     link: '/proposals/mutation-concurrency/',

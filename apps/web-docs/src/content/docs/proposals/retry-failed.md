@@ -18,7 +18,7 @@ Each data container stores its last parameters just for this, and the retry work
 
 There are two kinds of refresh, and only one needs the library:
 
-- **On demand** (`401` → refresh → retry). This belongs in the fetch layer, because every request needs it. A typical client already queues concurrent `401`s behind one refresh and retries each request once. The production codebase behind these proposals does this, so the earlier idea of a `retryOn` recipe is dropped, and [`retryOn` itself is proposed for removal](/proposals/async-refinements/#4-remove-retryon). A request that still fails after the refresh rejects like any other error.
+- **On demand** (`401` → refresh → retry). This belongs in the fetch layer, because every request needs it. A typical client already queues concurrent `401`s behind one refresh and retries each request once. The production codebase behind these proposals does this, so the earlier idea of a `retryOn` recipe is dropped, and `retryOn` itself has been removed. A request that still fails after the refresh rejects like any other error.
 - **Scheduled** (a timer refreshes the token before it expires). Requests that failed in the meantime, for example while the device was offline or the old token was rejected, stay failed. Nothing retries them, which is what the event above is for.
 
 `invalidate(tag)` reloads errored resources, but only those that declared a tag, and the caller must know the tags. So the event has no replacement for "a refresh just succeeded, reload everything that failed".

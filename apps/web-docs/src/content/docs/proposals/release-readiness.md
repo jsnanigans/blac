@@ -20,7 +20,7 @@ Most of the shipped features have no changeset, so the next release would omit t
 
 ## When
 
-After the breaking [async refinements](/proposals/async-refinements/) (a mutation resolves its settled state, `retryOn` removed), so the first published `@blac/async` has its final shape. Additive proposals can follow in minor releases.
+Now: the breaking async changes (a mutation resolves its settled state, `retryOn` removed) are built, so the first published `@blac/async` has its final shape. Additive proposals can follow in minor releases.
 
 ## Proposal
 
