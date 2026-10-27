@@ -42,6 +42,7 @@ Redesign and polish `apps/web-docs` with a whimsical, colorful, abstract aesthet
 - [x] 6. Polish `src/components/demos/demos.css`, `src/components/demos/RenderCounter.tsx`, and `src/content/docs/index.mdx`.
 - [x] 7. Validate with `astro check` (`pnpm --filter @blac/web-docs run typecheck`).
 - [x] 8. Fix `vite:oxc` parse error in `Hero.astro` `<script>` by removing TypeScript-only annotations from inline `.astro` script tag (Rolldown/oxc parses `.astro?astro&type=script` as plain JS).
+- [x] 9. Tables: force `display: table` so they fill the content width (Starlight's `display: block` shrink-wrapped them); add a 5-step, 6% rainbow row tint (pink, coral, gold, mint, blue) in `content.css`.
 
 ## Status
 

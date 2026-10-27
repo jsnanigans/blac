@@ -269,6 +269,7 @@ body {
 /* ── Tables ── */
 
 .sl-markdown-content table:not(:where(.not-content *)) {
+  display: table;
   width: 100%;
   border: 1px solid var(--blac-border);
   border-radius: var(--blac-radius);
@@ -299,6 +300,30 @@ body {
 
 .sl-markdown-content tr:last-child > td:not(:where(.not-content *)) {
   border-bottom: 0;
+}
+
+.sl-markdown-content tbody tr:nth-child(5n + 1):not(:where(.not-content *)) {
+  --row-tint: var(--blac-pink);
+}
+
+.sl-markdown-content tbody tr:nth-child(5n + 2):not(:where(.not-content *)) {
+  --row-tint: var(--blac-coral);
+}
+
+.sl-markdown-content tbody tr:nth-child(5n + 3):not(:where(.not-content *)) {
+  --row-tint: var(--blac-gold);
+}
+
+.sl-markdown-content tbody tr:nth-child(5n + 4):not(:where(.not-content *)) {
+  --row-tint: var(--blac-mint);
+}
+
+.sl-markdown-content tbody tr:nth-child(5n + 5):not(:where(.not-content *)) {
+  --row-tint: var(--blac-blue);
+}
+
+.sl-markdown-content tbody tr:not(:where(.not-content *)) {
+  background-color: color-mix(in srgb, var(--row-tint) 6%, transparent);
 }
 
 .sl-markdown-content tbody tr:hover > td:not(:where(.not-content *)) {
