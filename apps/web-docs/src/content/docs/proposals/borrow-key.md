@@ -3,8 +3,8 @@ title: 'Proposal: Borrow by Key'
 description: Preview of borrow(Class, { key }), an optional shortcut for call sites that know an instance key but not its full args.
 ---
 
-:::caution[Proposal — not built, and not recommended yet]
-Nothing on this page exists in `@blac/core`. It is optional and should wait for a concrete need. See the [proposals index](/proposals/) for the other pages.
+:::caution[Proposal — closed]
+Nothing on this page exists in `@blac/core`, and it is not planned. A survey of a large production codebase found no call site that needs it. Reopen it if one appears. See the [proposals index](/proposals/) for the other pages.
 :::
 
 ## Problem
@@ -57,5 +57,5 @@ Effort if built: about 1 hour of code and tests, plus a docs paragraph.
 
 ## Open questions
 
-- Is there a real call site that cannot build its args? If not, close this proposal.
+- ~~Is there a real call site that cannot build its args?~~ None found, so the proposal is closed.
 - Should `key` be typed as a branded string produced by the class, so a raw string cannot be passed?

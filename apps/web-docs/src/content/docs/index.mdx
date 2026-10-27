@@ -68,16 +68,26 @@ React components are great at turning data into pixels and firing events—they 
 
 <CardGrid>
   <Card title="1. UI Layer · Render & fire events" icon="laptop">
-    Components take state, apply templates and styles, and call methods on user interactions (`onClick`, `onChange`). The UI never talks to the Data layer directly—and you can swap React for React Native, Vue, or a CLI without rewriting your logic.
+    Components take state, apply templates and styles, and call methods on user
+    interactions (`onClick`, `onChange`). The UI never talks to the Data layer
+    directly—and you can swap React for React Native, Vue, or a CLI without
+    rewriting your logic.
   </Card>
   <Card title="2. Logic Layer · The core of your app" icon="puzzle">
-    `Cubit` classes hold state, derived getters, validation rules, and async coordination. Because they are plain TypeScript classes with zero UI dependencies, they run in milliseconds in unit tests with zero DOM mocking.
+    `Cubit` classes hold state, derived getters, validation rules, and async
+    coordination. Because they are plain TypeScript classes with zero UI
+    dependencies, they run in milliseconds in unit tests with zero DOM mocking.
   </Card>
   <Card title="3. Data Layer · Swappable sources" icon="document">
-    REST, GraphQL, IndexedDB, `localStorage`, or in-memory test fakes live behind the Logic layer. Swap a local prototype store for a production API—or attach [`@blac/plugin-persist`](/plugins/persistence/)—without touching a single component.
+    REST, GraphQL, IndexedDB, `localStorage`, or in-memory test fakes live
+    behind the Logic layer. Swap a local prototype store for a production API—or
+    attach [`@blac/plugin-persist`](/plugins/persistence/)—without touching a
+    single component.
   </Card>
   <Card title="Read the Philosophy" icon="open-book">
-    See how separating **UI → Logic → Data** keeps large codebases fast, portable, and effortless to test. [Architecture & Philosophy →](/guide/philosophy/)
+    See how separating **UI → Logic → Data** keeps large codebases fast,
+    portable, and effortless to test. [Architecture & Philosophy
+    →](/guide/philosophy/)
   </Card>
 </CardGrid>
 
@@ -95,22 +105,35 @@ Two sibling components share a single `SensorCubit` below. Neither passes a sele
 
 <CardGrid>
   <Card title="Touch it, you're subscribed" icon="magnifier">
-    Read `state.user.name` in JSX and the component re-renders only when that leaf value changes. No selectors, no `useMemo`. [How tracking works](/react/dependency-tracking/)
+    Read `state.user.name` in JSX and the component re-renders only when that
+    leaf value changes. No selectors, no `useMemo`. [How tracking
+    works](/react/dependency-tracking/)
   </Card>
   <Card title="Logic lives in typed classes" icon="pencil">
-    Methods are your actions, `this.state` is the source of truth, getters are derived state, and `emit`, `update`, and `patch` change it. [Core concepts](/guide/concepts/)
+    Methods are your actions, `this.state` is the source of truth, getters are
+    derived state, and `emit`, `update`, and `patch` change it. [Core
+    concepts](/guide/concepts/)
   </Card>
   <Card title="Cross-bloc composition" icon="approve-check">
-    A getter on one bloc can `.track()` another bloc's state, and components reading it re-render when either bloc changes. [Bloc communication](/core/bloc-communication/)
+    A getter on one bloc can `.track()` another bloc's state, and components
+    reading it re-render when either bloc changes. [Bloc
+    communication](/core/bloc-communication/)
   </Card>
   <Card title="Lifecycle you don't manage" icon="rocket">
-    Instances are shared and ref-counted through a global registry: the first consumer creates one, the last to unmount disposes it. [Instance management](/core/instance-management/)
+    Instances are shared and ref-counted through a global registry: the first
+    consumer creates one, the last to unmount disposes it. [Instance
+    management](/core/instance-management/)
   </Card>
   <Card title="Async resources & plugins" icon="setting">
-    [`@blac/async`](/guide/async-resources/), [DevTools](/plugins/devtools/), [persistence](/plugins/persistence/), [logging](/plugins/logging/), and [SSR isolation](/integrations/ssr/) attach cleanly without cluttering your components.
+    [`@blac/async`](/guide/async-resources/), [DevTools](/plugins/devtools/),
+    [persistence](/plugins/persistence/), [logging](/plugins/logging/), and [SSR
+    isolation](/integrations/ssr/) attach cleanly without cluttering your
+    components.
   </Card>
   <Card title="Trivial to test & portable" icon="puzzle">
-    Test business logic with plain `new MyCubit()` or `blacTestSetup()`, and seed component tests in one line with `renderWithBloc`. [Testing guide](/testing/overview/)
+    Test business logic with plain `new MyCubit()` or `blacTestSetup()`, and
+    seed component tests in one line with `renderWithBloc`. [Testing
+    guide](/testing/overview/)
   </Card>
 </CardGrid>
 

@@ -60,7 +60,7 @@ function ActivityCard({ userId }: { userId: string }) {
         <RenderCounter name="ActivityCard" />
         <p className="text-small text-muted">
           status: <code>{activity.status}</code> — reloaded by the{' '}
-          <code>user</code> tag when a rename succeeds
+          <code>{'user:<id>'}</code> tag when a rename succeeds
         </p>
         <ul>
           {activity.data?.map((line, i) => (

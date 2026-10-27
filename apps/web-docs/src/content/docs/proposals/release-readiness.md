@@ -18,6 +18,10 @@ Most of the shipped features have no changeset, so the next release would omit t
 | `@blac/plugin-persist` | Web storage plugin with synchronous hydration                    | None                                        |
 | `@blac/async`          | New package                                                      | Present                                     |
 
+## When
+
+After the breaking [async refinements](/proposals/async-refinements/) (a mutation resolves its settled state, `retryOn` removed), so the first published `@blac/async` has its final shape. Additive proposals can follow in minor releases.
+
 ## Proposal
 
 ### 1. Changesets

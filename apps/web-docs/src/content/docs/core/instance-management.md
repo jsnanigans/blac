@@ -332,9 +332,41 @@ clearWhere(() => true); // everything, but registered types are kept
 
 `clearAll()` also forgets registered types; `clearWhere(() => true)` does not.
 
-:::caution[`clear` / `clearAll` are teardown tools, not app code]
-`clear`, `clearAll`, and `clearWhere` dispose instances **regardless of ref count**, ignoring `keepAlive`. That is exactly what you want between tests to isolate the registry, but in running app code it will pull state out from under live components. Reach for them in test setup/teardown — see [Testing core logic](/testing/core) — not in feature code.
+:::caution[Disposal ignores ref counts]
+`clear`, `clearAll`, and `clearWhere` dispose instances **regardless of ref count**, ignoring `keepAlive`. Between tests that is exactly what you want (see [Testing core logic](/testing/core)). In app code, use them only at a real boundary where the data must go — sign-out, a workspace or account switch — never to "refresh" state that live components still show.
 :::
+
+### Replacing reset events
+
+Without a registry-level primitive, apps build a reset bus: a global event that every container listens for, each deciding by matching a substring of its instance id whether the reset applies to it.
+
+```ts title="Before — a reset bus"
+eventBus.dispatch(new AppEvent(SESSION_RESET_EVENT, { workspaceId, userId }));
+
+// in every container that holds user data
+_onEvent(event: AppEvent) {
+  if (event.type !== SESSION_RESET_EVENT) return;
+  const { workspaceId, userId } = event.detail ?? {};
+  const id = String(this._id ?? '');
+  if (!event.detail || id.includes(`${workspaceId}:${userId}`)) this.resetData();
+}
+```
+
+```ts title="After — one call at the boundary"
+clearWhere(
+  (bloc) =>
+    bloc.args?.workspaceId === workspaceId && bloc.args?.userId === userId,
+);
+
+clearWhere(() => true); // sign out
+```
+
+The event constant, the per-container handler and the id-format convention go away. Two differences to check when migrating:
+
+- **Dispose, not reset in place.** The bus reset a live instance; `clearWhere` disposes it. Components re-acquire a fresh instance, but code holding a direct reference keeps the disposed one.
+- **The scope must be in `args`.** The predicate only sees `args`, so a container keyed by a bare id with no `workspaceId` in its args cannot be selected by workspace.
+
+A typed overload, `clearWhere(Class, predicate)`, is [proposed](/proposals/typed-clear-where/).
 
 ## In React vs outside React
 

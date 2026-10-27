@@ -1,10 +1,10 @@
 ---
 title: 'Proposal: Retry After Token Refresh'
-description: Preview of retryFailed() and a retryOn recipe for @blac/async, replacing an app-wide token-refresh event.
+description: Preview of retryFailed() for @blac/async, replacing an app-wide token-refresh event that reloads every failed container.
 ---
 
 :::caution[Proposal — not built]
-Nothing on this page exists in `@blac/async` yet, apart from `retryOn`, which is described as it works today. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/proposals/) for the other pages.
+Nothing on this page exists in `@blac/async` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/proposals/) for the other pages.
 :::
 
 ## Problem
@@ -16,18 +16,16 @@ A common way to recover from an expired token is an app-wide event:
 
 Each data container stores its last parameters just for this, and the retry works for keepAlive instances with no owners.
 
-`@blac/async` has two partial answers:
+There are two kinds of refresh, and only one needs the library:
 
-- `configureAsync({ retryOn })` retries a failed call **once, right away** when the callback resolves `true`. It fits an on-demand refresh (`401` → refresh → retry), but not a proactive, scheduled refresh that runs on a timer.
-- `invalidate(tag)` reloads errored resources, but only those that declared a tag, and the caller must know the tags.
+- **On demand** (`401` → refresh → retry). This belongs in the fetch layer, because every request needs it. A typical client already queues concurrent `401`s behind one refresh and retries each request once. The production codebase behind these proposals does this, so the earlier idea of a `retryOn` recipe is dropped, and [`retryOn` itself is proposed for removal](/proposals/async-refinements/#4-remove-retryon). A request that still fails after the refresh rejects like any other error.
+- **Scheduled** (a timer refreshes the token before it expires). Requests that failed in the meantime, for example while the device was offline or the old token was rejected, stay failed. Nothing retries them, which is what the event above is for.
 
-So the event has no replacement for "a refresh just succeeded, reload everything that failed".
-
-Whether a `401` from your API client reaches the app with a status code decides whether the first recipe below applies. Check that first.
+`invalidate(tag)` reloads errored resources, but only those that declared a tag, and the caller must know the tags. So the event has no replacement for "a refresh just succeeded, reload everything that failed".
 
 ## Proposal
 
-### 1. `retryFailed(registry?)` (new API)
+### `retryFailed(registry?)` (new API)
 
 ```ts
 import { retryFailed } from '@blac/async';
@@ -43,23 +41,6 @@ Re-runs every **resource** in the `error` state:
 - Resources that are `idle`, `loading` or `success` are untouched, and **mutations are never retried**, since replaying a side effect is unsafe.
 
 It needs a per-registry set of every resource, next to the existing tag index in `invalidate.ts`. No tags are required. About 15 lines.
-
-### 2. A `retryOn` recipe (docs only)
-
-For an on-demand refresh, the app owns a single-flight refresh function and hands it to `retryOn`:
-
-```ts
-let refreshing: Promise<boolean> | null = null;
-const refreshOnce = () =>
-  (refreshing ??= session.refreshToken().finally(() => (refreshing = null)));
-
-configureAsync({
-  retryOn: async (error) =>
-    error instanceof ApiError && error.status === 401 && (await refreshOnce()),
-});
-```
-
-Concurrent `401`s share one refresh, and each failed call retries once after it. No library change is needed. This page only proposes documenting it, once it is confirmed that the client surfaces `401`s.
 
 ## Use
 
@@ -170,12 +151,11 @@ The tests around the event become tests of the mapping in the app, not of the ev
 - `invalidate.ts`: a per-registry `Set` of resources, filled and cleared next to the tag index.
 - `resource.ts`: the entry exposes `failed()`.
 - Tests: active and inactive errored resources, scope isolation across registries, mutations untouched.
-- Docs: a section in `guide/async-resources.md`, and the `retryOn` recipe once confirmed.
+- Docs: a section in `guide/async-resources.md`.
 
 Effort: about 3 hours.
 
 ## Open questions
 
-- **Does a `401` reach the app as an error with a status?** That decides whether recipe 2 is real or only recipe 1 is needed.
 - **Name.** `retryFailed` vs `reloadFailed` vs `invalidate('*')`. A wildcard tag avoids a new export, but makes `invalidate`'s contract looser.
-- **Mutations.** Excluded by design. Is there a case where a failed mutation should replay after a refresh? `retryOn` already covers the one-shot case.
+- **Mutations.** Excluded by design. Is there a case where a failed mutation should replay after a refresh? The fetch layer already retries a request once after an on-demand refresh.

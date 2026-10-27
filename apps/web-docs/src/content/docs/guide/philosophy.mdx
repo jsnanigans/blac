@@ -44,13 +44,22 @@ BlaC encourages splitting an application into three clear layers with strict bou
 
 <CardGrid>
   <Card title="1. The UI Layer" icon="laptop">
-    **Only renders and forwards interactions.** A component's job is to take state, apply layout and styles, and fire callbacks (`onClick`, `onChange`, `onSubmit`) when the user interacts with it. **The UI layer never talks to the Data layer directly.**
+    **Only renders and forwards interactions.** A component's job is to take
+    state, apply layout and styles, and fire callbacks (`onClick`, `onChange`,
+    `onSubmit`) when the user interacts with it. **The UI layer never talks to
+    the Data layer directly.**
   </Card>
   <Card title="2. The Logic Layer (The Core)" icon="puzzle">
-    **Where your application actually lives.** BlaC `Cubit` classes hold state, validate inputs, compute derived getters, coordinate between features, and talk to the Data layer. This layer has **zero dependency on React** or the DOM.
+    **Where your application actually lives.** BlaC `Cubit` classes hold state,
+    validate inputs, compute derived getters, coordinate between features, and
+    talk to the Data layer. This layer has **zero dependency on React** or the
+    DOM.
   </Card>
   <Card title="3. The Data Layer" icon="document">
-    **External sources and storage.** Whether data comes from a REST endpoint, GraphQL, IndexedDB, `localStorage`, or an in-memory map, the Data layer just moves bytes. The Logic layer doesn't care *how* data is stored, and the UI layer doesn't know the Data layer exists.
+    **External sources and storage.** Whether data comes from a REST endpoint,
+    GraphQL, IndexedDB, `localStorage`, or an in-memory map, the Data layer just
+    moves bytes. The Logic layer doesn't care *how* data is stored, and the UI
+    layer doesn't know the Data layer exists.
   </Card>
 </CardGrid>
 
@@ -170,7 +179,9 @@ interface CheckoutState {
 }
 class CheckoutCubit extends Cubit<CheckoutState> {
   constructor(
-    private api: { submitOrder(items: OrderItem[]): Promise<{ orderId: string }> },
+    private api: {
+      submitOrder(items: OrderItem[]): Promise<{ orderId: string }>;
+    },
   ) {
     super({ items: [], status: 'idle', orderId: null });
   }
@@ -203,7 +214,7 @@ console.assert(checkout.state.status === 'confirmed');
 console.assert(checkout.state.orderId === 'test_99');
 ```
 
-And when you *do* want to test a React component, you can seed the exact state you want to render in one line with [`renderWithBloc`](/testing/react) without mocking `fetch` or replaying five user steps to get there.
+And when you _do_ want to test a React component, you can seed the exact state you want to render in one line with [`renderWithBloc`](/testing/react) without mocking `fetch` or replaying five user steps to get there.
 
 ## Pragmatism over dogma
 

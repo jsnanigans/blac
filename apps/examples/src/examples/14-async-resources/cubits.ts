@@ -19,14 +19,18 @@ export class ProfileCubit extends Cubit<
     this,
     'profile',
     (signal, { userId }) => api.getProfile(userId, signal),
-    { auto: true, staleTime: 10_000, tags: ({ userId }) => ['user', userId] },
+    {
+      auto: true,
+      staleTime: 10_000,
+      tags: ({ userId }) => ['user', `user:${userId}`],
+    },
   );
 
   rename = mutation(
     this,
     'rename',
     (name: string, { userId }) => api.rename(userId, name),
-    { invalidates: () => ['user'] },
+    { invalidates: (_name, _data, { userId }) => [`user:${userId}`] },
   );
 }
 
@@ -44,6 +48,6 @@ export class ActivityCubit extends Cubit<
     this,
     'activity',
     (signal, { userId }) => api.getActivity(userId, signal),
-    { auto: true, tags: ({ userId }) => ['user', userId] },
+    { auto: true, tags: ({ userId }) => ['user', `user:${userId}`] },
   );
 }

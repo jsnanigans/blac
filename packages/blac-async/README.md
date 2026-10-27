@@ -33,7 +33,7 @@ class ProfileCubit extends Cubit<
     this,
     'profile',
     (signal, { userId }) => api.getProfile(userId, signal),
-    { auto: true, tags: ({ userId }) => ['user', userId] },
+    { auto: true, tags: ({ userId }) => ['user', `user:${userId}`] },
   );
 }
 ```

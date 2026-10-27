@@ -353,7 +353,7 @@ function waitForState<B extends StateContainerInstance>(
 ): Promise<B['state']>;
 ```
 
-Resolves with the first state that satisfies `predicate`: the current state if it already does, otherwise the first matching change. Rejects after `timeout` ms (default `1000`). Use it instead of polling with `vi.waitFor` or looping on `flush()`.
+Resolves with the first state that satisfies `predicate`: the current state if it already does, otherwise the first matching change. Rejects after `timeout` ms (default `1000`). Use it instead of polling with `vi.waitFor(() => expect(cubit.state.status).toBe('success'))` or looping on a `flushPromises` helper: it fails fast and names the state it waited for. Unlike `flushPromises`, a timeout fails the test, so slow tests may need an explicit `timeout`.
 
 ```ts
 it('finishes loading', async () => {

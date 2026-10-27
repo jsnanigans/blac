@@ -1,6 +1,6 @@
 ---
 title: 'Proposal: Mutation Concurrency'
-description: Preview of ordered mutation slots and an exclusive option for @blac/async, replacing hand-written isSubmitting guards.
+description: Preview of ordered mutation slots, an exclusive option and per-item (keyed) mutations for @blac/async, replacing hand-written isSubmitting guards and loading-id sets.
 ---
 
 :::caution[Proposal — not built]
@@ -24,16 +24,18 @@ Nothing on this page exists in `@blac/async` yet. The API, names and behavior ar
 
 Forms avoid this today with a hand-written guard: an `if (this.state.isSubmitting) return;` at the top of the submit method, plus a `patch({ isSubmitting })` before and after the call. Every container with a submit repeats it.
 
+A second gap: a mutation has **one** slot. Toggling row A and then row B shares one status, so a list cannot show a spinner on the row being saved. Containers hand-roll a `Set<string>` or `string[]` of loading ids, or prefix a loading key per item (`startLoading(\`select-${id}\`)`).
+
 ## Proposed behavior
 
-Two changes, one of them API-free.
+Three changes, one of them API-free. They assume a mutation resolves its settled `AsyncState` ([async refinements](/proposals/async-refinements/#2-mutations-resolve-their-result)).
 
 ### 1. The slot follows the latest call (default, no API)
 
 Each call takes a sequence number. Only the latest started call writes the slot. An older call that finishes later still:
 
 - runs `invalidates` and `success`, because the request really happened,
-- resolves its promise with its own data,
+- resolves its promise with its own settled state,
 - reports its failure to the global `onError`,
 
 but it does not write the slot. The slot is `loading` until the latest call settles.
@@ -47,6 +49,31 @@ mutation(this, 'submit', fn, { exclusive: true });
 ```
 
 While a call is in flight, further calls are dropped and return the in-flight promise. Use it for submit buttons, where the second click should be ignored. Leave it off for calls with different inputs that must all run (toggling item A, then item B).
+
+### 3. Keyed mutations (opt-in)
+
+```ts
+toggles = mutation(
+  this,
+  'toggles',
+  (input: { id: string; on: boolean }) => api.setEnabled(input.id, input.on),
+  { key: (input) => input.id },
+);
+```
+
+With `key`, the slot is a `Record<string, AsyncState<R>>` instead of one `AsyncState<R>`. Each key has its own status, and ordering and `exclusive` apply per key: toggling A twice drops or orders the second A call, while B runs independently.
+
+```tsx
+const [{ toggles }, cubit] = useBloc(FeatureListCubit);
+
+<Switch
+  checked={item.enabled}
+  loading={toggles[item.id]?.status === 'loading'}
+  onChange={(on) => cubit.toggles({ id: item.id, on })}
+/>;
+```
+
+Entries stay in the record after they settle, so a row can show its last error. Open question below on clearing them.
 
 ### Not proposed
 
@@ -77,7 +104,7 @@ const [a, b] = await Promise.all([settings.save(input), settings.save(input)]);
 ```
 
 ```tsx
-const { save } = useBloc(SettingsCubit).state;
+const [{ save }, settings] = useBloc(SettingsCubit);
 
 <Button
   disabled={save.status === 'loading'}
@@ -149,7 +176,8 @@ private submit = mutation(
 
 private finishTask = async (taskPath: string, status: TaskStatus, trackEvent: string) => {
   this.patch({ isSkipConfirmationOpen: false });
-  if (!(await this.submit({ taskPath, status }))) return;
+  const result = await this.submit({ taskPath, status });
+  if (result.status !== 'success') return;
   analytics.track(trackEvent, { type: 'complete', data: { taskPath, status } });
   popups.close();
 };
@@ -181,14 +209,16 @@ The "before" test is a typical shape, not copied from a real suite.
 
 ## Library change
 
-- `mutation.ts`: a per-mutation counter and an in-flight promise, about 10 lines.
-- Tests: out-of-order completion, an older failure not overwriting a newer success, `exclusive` returning the same promise, and `exclusive` releasing after a failure.
+- `mutation.ts`: a per-mutation (or per-key) counter and in-flight promise, about 10 lines, plus the keyed slot, about 20 lines.
+- Types: a keyed overload whose slot key must hold `Record<string, AsyncState<R>>`.
+- Tests: out-of-order completion, an older failure not overwriting a newer success, `exclusive` returning the same promise, `exclusive` releasing after a failure, and keys staying independent.
 - Docs: one paragraph in `guide/async-resources.md`.
 
-Effort: about 2–3 hours.
+Effort: about 2–3 hours for ordering and `exclusive`, plus about 2 hours for keyed mutations.
 
 ## Open questions
 
 - **Is the slot rule too quiet?** An older call that fails after a newer one succeeded reports to `onError` only. Is a toast without a slot change enough?
 - **`exclusive` default.** Opt-in keeps current behavior for multi-input calls. Defaulting to exclusive would match most forms but break toggle-style calls silently.
+- **Clearing keyed entries.** Keep settled entries until the container is disposed, or drop `success` entries after they settle?
 - **Signal for mutation functions.** Not proposed here. It would let `fn` stop on deactivation, but it changes the `fn(input, args)` signature.

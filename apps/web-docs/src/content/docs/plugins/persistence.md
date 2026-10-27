@@ -150,6 +150,27 @@ getPluginManager().install(persist);
 
 Writes are debounced per `debounceMs`. Pending writes are flushed on `pagehide`, so a quick tab close does not lose the last change; call `persist.flush()` to do the same on demand (for example before a redirect). Storage errors such as a full quota reach the registration's `onError`.
 
+It replaces the hand-written helper that reads `localStorage` in a constructor and writes on every change:
+
+```ts title="Before — a helper per container"
+export function persistCubitState<S>(cubit: Cubit<S>, key: string) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) cubit.emit(JSON.parse(raw));
+  } catch {}
+  cubit.subscribe((state) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(state)); // every change, no debounce
+    } catch {}
+  });
+}
+```
+
+With the plugin, containers carry no persistence code, writes are debounced and flushed on tab close, and errors are reported. When migrating:
+
+- **Early writes win.** A write that lands before hydration finishes wins over the stored snapshot, so a container that writes in its constructor can hide persisted state. Gate early writes on `$blac.hydration.isHydrated`.
+- **Storage keys change.** The plugin uses its own `prefix`. Read the old key once, or accept one reset.
+
 ## Custom storage adapter
 
 Implement the `IndexedDbPersistAdapter` interface to use a different storage backend. Methods may return values directly instead of promises; a synchronous `get` hydrates synchronously, as in the web storage plugin:

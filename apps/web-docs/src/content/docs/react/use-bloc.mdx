@@ -51,12 +51,12 @@ By default, `useBloc` uses auto-tracking to keep re-renders scoped: the hook wra
 
 `useBloc` accepts one optional options object. `UseBlocOptions` has exactly four keys — reach for the one that matches your need:
 
-| Option      | Type                                                      | Required                           | Description                                                                                                              |
-| ----------- | --------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Option      | Type                                                      | Required                           | Description                                                                                                                                  |
+| ----------- | --------------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `args`      | the bloc's `Args` type                                    | no (forbidden when `Args is void`) | Typed construction data; derives instance identity. Allowed when `Args != void` (or inherited from `<BlocProvider>`), forbidden when `void`. |
-| `select`    | `(state: S, bloc: InstanceReadonlyState<T>) => unknown[]` | no                                 | Explicit dependency selector; disables auto-tracking.                                                                    |
-| `onMount`   | `(bloc: InstanceType<T>) => void`                         | no                                 | Called once when the component mounts with the bloc instance.                                                            |
-| `onUnmount` | `(bloc: InstanceType<T>) => void`                         | no                                 | Called when the component unmounts (bloc still alive at this point).                                                     |
+| `select`    | `(state: S, bloc: InstanceReadonlyState<T>) => unknown[]` | no                                 | Explicit dependency selector; disables auto-tracking.                                                                                        |
+| `onMount`   | `(bloc: InstanceType<T>) => void`                         | no                                 | Called once when the component mounts with the bloc instance.                                                                                |
+| `onUnmount` | `(bloc: InstanceType<T>) => void`                         | no                                 | Called when the component unmounts (bloc still alive at this point).                                                                         |
 
 :::tip[These four are the entire option surface]
 `UseBlocOptions` has exactly these keys. Two things people expect that are **not** options here:
@@ -106,6 +106,22 @@ class FormCubit extends Cubit<FormState, FormArgs> {}
 // each mount of this component gets its own FormCubit instance
 const [state, cubit] = useBloc(FormCubit, { args: options });
 ```
+
+This replaces the per-mount `useId()` passed into `args` plus a `static key` that reads it, which silently shares one instance across mounts when the `static key` is forgotten:
+
+```tsx title="Before"
+class FormCubit extends Cubit<
+  FormState,
+  { _id: string; options: FormOptions }
+> {
+  static key = (args: FormCubit['args']) => args._id;
+}
+
+const id = useId();
+const [state, cubit] = useBloc(FormCubit, { args: { _id: id, options } });
+```
+
+An isolated class can never be shared between components. Keep args-derived keys for shared state, and `isolated` for private state.
 
 See [Passing Inputs](/guide/inputs) for the full identity model.
 
@@ -233,7 +249,7 @@ See [Passing Inputs](/guide/inputs) for the full decision matrix.
 :::caution[Common mistakes]
 
 - **Putting non-serializable values in `args`.** Refs, callbacks, and DOM nodes change identity every render, so a fresh `args` object produces a brand-new instance each time (and `args` must be JSON-serializable). Use the bloc's `Deps` for handles — see [Injecting handles (`deps`)](#injecting-handles-deps).
-- **Expecting an `autoTrack`, `autoInstance`, or `instanceId` option.** None of these exist. Opt out of tracking with `select`; get per-mount instances by including a per-mount unique value in `args` with a matching `static key`.
+- **Expecting an `autoTrack`, `autoInstance`, or `instanceId` option.** None of these exist. Opt out of tracking with `select`; get per-mount instances with `@blac({ isolated: true })`.
   :::
 
 ## Lifecycle

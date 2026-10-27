@@ -153,14 +153,14 @@ BlaC borrows liberally and differs deliberately. Its core bet is **transparent p
 
 ### How BlaC compares to the field
 
-| Library | Core model | How re-renders are scoped | Lifecycle & cleanup | Where BlaC differs |
-| --- | --- | --- | --- | --- |
-| **`useState` + `useContext`** | Hooks inside the component tree | Entire context subtree re-renders unless split by hand | Tied to the provider component's mount | BlaC moves logic out of JSX into a plain class, tracks leaf paths automatically, and needs no `<Provider>` wrapper. |
-| **Zustand** | Module-scoped immutable store + hooks | Manual selectors (`useStore(s => s.count)`) | Manual reset (`store.setState(initial)`); stores live forever by default | BlaC replaces manual selectors with a render-time recording Proxy and automatically disposes instances when the last consumer unmounts. |
-| **Redux Toolkit** | Single store, slices, reducers, thunks | Manual selectors (`useSelector`) + `reselect` | Global store; manual slice cleanup | BlaC collates state, actions, and derived getters into a single `Cubit` class instead of splitting logic across slices, thunks, and selectors. |
-| **MobX** | Observable mutable objects + `observer()` HOC | Automatic runtime observable tracking | Manual or owner-bound | BlaC uses **immutable** state snapshots (`emit`, `patch`, `update`) so history, diffs, and React concurrent rendering work without observable wrappers or `observer()` HOCs. |
-| **Jotai / Signals** | Fine-grained bottom-up atoms | Per-atom subscription | GC'd or scoped to a Provider | Atoms excel at fine-grained independent values; BlaC groups related state, methods, and lifecycle into a cohesive domain class with named workflows. |
-| **TanStack Query** | Server-state cache keyed by `queryKey` | Per-query observer + `notifyOnChangeProps` | Ref-counted cache with `staleTime` / `gcTime` | BlaC's `args` keying and ref-counted registry mirror Query's ergonomics, while [`@blac/async`](/guide/async-resources/) brings `resource()`, `mutation()`, and tag invalidation directly into your Cubits. |
+| Library                       | Core model                                    | How re-renders are scoped                              | Lifecycle & cleanup                                                      | Where BlaC differs                                                                                                                                                                                         |
+| ----------------------------- | --------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`useState` + `useContext`** | Hooks inside the component tree               | Entire context subtree re-renders unless split by hand | Tied to the provider component's mount                                   | BlaC moves logic out of JSX into a plain class, tracks leaf paths automatically, and needs no `<Provider>` wrapper.                                                                                        |
+| **Zustand**                   | Module-scoped immutable store + hooks         | Manual selectors (`useStore(s => s.count)`)            | Manual reset (`store.setState(initial)`); stores live forever by default | BlaC replaces manual selectors with a render-time recording Proxy and automatically disposes instances when the last consumer unmounts.                                                                    |
+| **Redux Toolkit**             | Single store, slices, reducers, thunks        | Manual selectors (`useSelector`) + `reselect`          | Global store; manual slice cleanup                                       | BlaC collates state, actions, and derived getters into a single `Cubit` class instead of splitting logic across slices, thunks, and selectors.                                                             |
+| **MobX**                      | Observable mutable objects + `observer()` HOC | Automatic runtime observable tracking                  | Manual or owner-bound                                                    | BlaC uses **immutable** state snapshots (`emit`, `patch`, `update`) so history, diffs, and React concurrent rendering work without observable wrappers or `observer()` HOCs.                               |
+| **Jotai / Signals**           | Fine-grained bottom-up atoms                  | Per-atom subscription                                  | GC'd or scoped to a Provider                                             | Atoms excel at fine-grained independent values; BlaC groups related state, methods, and lifecycle into a cohesive domain class with named workflows.                                                       |
+| **TanStack Query**            | Server-state cache keyed by `queryKey`        | Per-query observer + `notifyOnChangeProps`             | Ref-counted cache with `staleTime` / `gcTime`                            | BlaC's `args` keying and ref-counted registry mirror Query's ergonomics, while [`@blac/async`](/guide/async-resources/) brings `resource()`, `mutation()`, and tag invalidation directly into your Cubits. |
 
 ### Same feature, three ways
 
@@ -177,8 +177,12 @@ const useCartStore = create<CartStore>((set, get) => ({
 
 // 2. Jotai — split state, derived value, and action across separate atoms
 const itemsAtom = atom<Item[]>([]);
-const totalAtom = atom((get) => get(itemsAtom).reduce((sum, i) => sum + i.price, 0));
-const addItemAtom = atom(null, (get, set, item: Item) => set(itemsAtom, [...get(itemsAtom), item]));
+const totalAtom = atom((get) =>
+  get(itemsAtom).reduce((sum, i) => sum + i.price, 0),
+);
+const addItemAtom = atom(null, (get, set, item: Item) =>
+  set(itemsAtom, [...get(itemsAtom), item]),
+);
 
 // 3. BlaC — state, actions, and derived getters live in one testable class;
 //    components just read what they render with zero selectors

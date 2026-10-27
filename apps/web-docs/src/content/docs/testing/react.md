@@ -245,7 +245,30 @@ renderWithBlocs(<Dashboard />, [
 
 ### Replacing a hand-written `useBloc` mock
 
-Mocking `useBloc` per class (`vi.mock('@blac/react')` returning a fake tuple) bypasses the registry and the real hook. Seeding stubs keeps the real `useBloc` and swaps only the instance: set `state` for what the component reads and `methods` for the actions it calls, then assert on the `vi.fn()` directly.
+Mocking `useBloc` per class bypasses the registry and the real hook, and every class needs its own copy:
+
+```tsx title="Before"
+vi.mock('@blac/react', () => ({
+  useBloc: (Class) =>
+    Class === AuthCubit
+      ? [{ loggedIn: true, name: 'Alice' }, { logout: vi.fn() }]
+      : [{ items: [] }, {}],
+}));
+```
+
+```tsx title="After"
+const logout = vi.fn();
+
+renderWithBlocs(<Dashboard />, [
+  [
+    AuthCubit,
+    { state: { loggedIn: true, name: 'Alice' }, methods: { logout } },
+  ],
+  [CartCubit, { state: { items: [] } }],
+]);
+```
+
+Seeding stubs keeps the real `useBloc` and swaps only the instance: set `state` for what the component reads and `methods` for the actions it calls, then assert on the `vi.fn()` directly. Stubs are not real instances; a test that needs real behavior uses `withBlocState` or a real instance.
 
 ## `withBlocs(seeds)` for Storybook
 

@@ -169,6 +169,49 @@ controller.abort(); // stops both
 
 Aborting is equivalent to calling the returned `stop()`. A signal that is already aborted returns a no-op `stop()` without creating or subscribing to anything.
 
+Inside a container, combine it with [`onActivated`](/core/cubit/#onactivated) to scope a watch to the container's activation. This replaces the hand-written bridge, where an unsubscribe function is stored in a field and must be called on every teardown path:
+
+```ts title="Before — a manual bridge"
+class SidebarCubit extends Cubit<SidebarState> {
+  private unsubscribe?: () => void;
+
+  constructor() {
+    super({ open: false });
+    this.unsubscribe = getBloc(CartCubit).subscribe((cart) => {
+      if (cart.items.length === 0) this.patch({ open: false });
+    });
+  }
+
+  dispose() {
+    this.unsubscribe?.(); // easy to miss on a second teardown path
+    super.dispose();
+  }
+}
+```
+
+```ts title="After — scoped to activation"
+class SidebarCubit extends Cubit<SidebarState> {
+  constructor() {
+    super({ open: false });
+    onActivated(this, (signal) => {
+      watch(
+        CartCubit,
+        (cart) => {
+          if (cart.state.items.length === 0) this.patch({ open: false });
+        },
+        { signal },
+      );
+    });
+  }
+}
+```
+
+Differences from the manual bridge:
+
+- **Activation, not construction.** The watch lives while the container has owners and is recreated on reactivation (relevant for `keepAlive` containers).
+- **Immediate first call.** `watch` calls back once with the current instance, then on every change. Ignore the first call if only changes matter.
+- **No ref held.** `watch` does not keep the watched container alive.
+
 ## Watching multiple blocs
 
 Pass a `readonly` array to observe several blocs at once — the callback fires when **any** of them changes.

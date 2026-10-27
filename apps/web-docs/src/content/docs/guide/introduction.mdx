@@ -6,7 +6,7 @@ description: BlaC (Business Logic Components) is a TypeScript state management l
 import CounterDemo from '../../../components/demos/CounterDemo.tsx';
 import RenderCounterDemo from '../../../components/demos/RenderCounterDemo.tsx';
 
-**BlaC** (*Business Logic Components*) is a TypeScript state management library designed to keep your UI components thin, your business logic portable and easy to test, and your re-renders automatically scoped to the exact data each component reads.
+**BlaC** (_Business Logic Components_) is a TypeScript state management library designed to keep your UI components thin, your business logic portable and easy to test, and your re-renders automatically scoped to the exact data each component reads.
 
 A first taste — the whole loop in one screen:
 
@@ -87,13 +87,13 @@ The "what changed, who cares, when do we tell them" machinery — path-based dir
 
 ## How does BlaC compare?
 
-| Library | Where logic lives | How re-renders are scoped | Lifecycle & sharing |
-| --- | --- | --- | --- |
-| **BlaC** | Typed `Cubit` classes | Automatic render-time Proxy (zero selectors) | Ref-counted registry (shared, keyed, `isolated`, or `keepAlive`) |
-| **Zustand** | Store creator function | Manual selector per hook (`useStore(s => s.x)`) | Module singleton (or manual context store) |
-| **Redux Toolkit** | Slices, reducers, thunks | Manual `useSelector` + `createSelector` | Single global `<Provider store={...}>` |
-| **MobX** | Observable classes | Observable proxies + `observer()` HOC wrapper | Manual instantiation / React Context |
-| **Jotai** | Composed primitive atoms | Per-atom subscription | Provider / WeakMap per atom |
+| Library           | Where logic lives        | How re-renders are scoped                       | Lifecycle & sharing                                              |
+| ----------------- | ------------------------ | ----------------------------------------------- | ---------------------------------------------------------------- |
+| **BlaC**          | Typed `Cubit` classes    | Automatic render-time Proxy (zero selectors)    | Ref-counted registry (shared, keyed, `isolated`, or `keepAlive`) |
+| **Zustand**       | Store creator function   | Manual selector per hook (`useStore(s => s.x)`) | Module singleton (or manual context store)                       |
+| **Redux Toolkit** | Slices, reducers, thunks | Manual `useSelector` + `createSelector`         | Single global `<Provider store={...}>`                           |
+| **MobX**          | Observable classes       | Observable proxies + `observer()` HOC wrapper   | Manual instantiation / React Context                             |
+| **Jotai**         | Composed primitive atoms | Per-atom subscription                           | Provider / WeakMap per atom                                      |
 
 For a deeper side-by-side breakdown and guidance on when another tool is a better fit, see [Mental Model: Honest comparisons](/guide/mental-model/#honest-comparisons).
 
@@ -107,7 +107,7 @@ BlaC shines when:
 - You want **fast unit tests** that exercise your application logic without mounting React or mocking a browser
 
 :::tip[When you probably don't need BlaC]
-If a piece of ephemeral UI state lives in a single component and has no business rules behind it (like whether a tooltip is hovered), `useState` is the right tool. Reach for BlaC when state is *shared*, carries *business logic*, or is *worth testing outside the UI*.
+If a piece of ephemeral UI state lives in a single component and has no business rules behind it (like whether a tooltip is hovered), `useState` is the right tool. Reach for BlaC when state is _shared_, carries _business logic_, or is _worth testing outside the UI_.
 :::
 
 ## What's next?

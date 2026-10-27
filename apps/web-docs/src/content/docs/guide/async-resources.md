@@ -58,7 +58,7 @@ rename = mutation(
   'rename',
   (name: string, { userId }) => api.rename(userId, name),
   {
-    invalidates: (_name, _data, { userId }) => ['user', userId],
+    invalidates: (_name, _data, { userId }) => [`user:${userId}`],
     success: 'Saved',
   },
 );
@@ -70,6 +70,15 @@ rename = mutation(
 
 - A resource that is active, or already loaded, reloads immediately.
 - One that is not active (for example a `keepAlive` instance with no owners) is marked stale and loads on its next activation.
+- Tags are flat strings, and a resource matches if it declared any of the tags passed. Declare both a kind and an instance tag, so callers can target either:
+
+  ```ts
+  tags: (({ userId }) => ['user', `user:${userId}`], invalidate(`user:${id}`)); // one user
+  invalidate('user'); // every user
+  ```
+
+  Avoid a bare id as a tag (`['user', userId]`): it matches anything else tagged with the same id.
+
 - Tags are indexed per registry, so a `RegistryProvider` subtree only invalidates its own instances. Without a registry argument, `invalidate` targets the global one.
 
 ## Global handlers
@@ -101,5 +110,5 @@ Use `resetAsyncConfig()` in `afterEach` when a test calls `configureAsync`.
 ## See also
 
 - [Async](/guide/async/) — the hand-written loading flow this package replaces
-- [Proposals](/proposals/) — list queries, mutation concurrency and retry after token refresh, previewed before they are built
+- [Proposals](/proposals/) — planned changes to this package (settled mutation results, ordering, state-derived input, realtime refetch, lifecycle hooks, `ask()`), previewed for review before they are built
 - [Testing](/testing/overview/) — `withBlocState` and `blacTestSetup`

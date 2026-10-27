@@ -338,17 +338,6 @@ export default defineConfig({
                 ],
               },
               {
-                label: 'Plugins',
-                collapsed: true,
-                items: [
-                  { label: 'Overview', link: '/plugins/overview/' },
-                  { label: 'Logging', link: '/plugins/logging/' },
-                  { label: 'DevTools', link: '/plugins/devtools/' },
-                  { label: 'Persistence', link: '/plugins/persistence/' },
-                  { label: 'Recipes', link: '/plugins/recipes/' },
-                ],
-              },
-              {
                 label: 'Internals',
                 collapsed: true,
                 items: [
@@ -362,42 +351,73 @@ export default defineConfig({
                 items: [
                   { label: 'Overview', link: '/proposals/' },
                   {
-                    label: 'Reset by Predicate',
-                    link: '/proposals/clear-where/',
+                    label: '@blac/async',
+                    items: [
+                      {
+                        label: 'Async Refinements',
+                        link: '/proposals/async-refinements/',
+                      },
+                      {
+                        label: 'Mutation Concurrency',
+                        link: '/proposals/mutation-concurrency/',
+                      },
+                      {
+                        label: 'Resource Input',
+                        link: '/proposals/resource-input/',
+                      },
+                      {
+                        label: 'Lifecycle Hooks',
+                        link: '/proposals/lifecycle-hooks/',
+                      },
+                      {
+                        label: 'Realtime Refetch',
+                        link: '/proposals/realtime-refetch/',
+                      },
+                      {
+                        label: 'Retry After Token Refresh',
+                        link: '/proposals/retry-failed/',
+                      },
+                      { label: 'ask()', link: '/proposals/ask/' },
+                      {
+                        label: 'Form Primitives',
+                        link: '/proposals/form-primitives/',
+                      },
+                    ],
                   },
                   {
-                    label: 'Watch With a Signal',
-                    link: '/proposals/watch-signal/',
-                  },
-                  { label: 'Borrow by Key', link: '/proposals/borrow-key/' },
-                  {
-                    label: 'Isolated Instances',
-                    link: '/proposals/isolated-instances/',
-                  },
-                  {
-                    label: 'Testing Helpers',
-                    link: '/proposals/testing-helpers/',
-                  },
-                  {
-                    label: 'Web Storage',
-                    link: '/proposals/web-storage-persist/',
-                  },
-                  { label: 'List Query', link: '/proposals/list-query/' },
-                  {
-                    label: 'Mutation Concurrency',
-                    link: '/proposals/mutation-concurrency/',
-                  },
-                  {
-                    label: 'Retry After Token Refresh',
-                    link: '/proposals/retry-failed/',
+                    label: '@blac/core',
+                    items: [
+                      {
+                        label: 'Activation-Scoped Timers',
+                        link: '/proposals/activation-timers/',
+                      },
+                      {
+                        label: 'Typed Step Machine',
+                        link: '/proposals/step-machine/',
+                      },
+                      {
+                        label: 'Typed clearWhere',
+                        link: '/proposals/typed-clear-where/',
+                      },
+                      {
+                        label: 'Borrow by Key',
+                        link: '/proposals/borrow-key/',
+                        badge: { text: 'Closed', variant: 'caution' },
+                      },
+                    ],
                   },
                   {
-                    label: 'Release Readiness',
-                    link: '/proposals/release-readiness/',
-                  },
-                  {
-                    label: 'Adoption Pilot',
-                    link: '/proposals/adoption-pilot/',
+                    label: 'Release & Adoption',
+                    items: [
+                      {
+                        label: 'Release Readiness',
+                        link: '/proposals/release-readiness/',
+                      },
+                      {
+                        label: 'Adoption Pilot',
+                        link: '/proposals/adoption-pilot/',
+                      },
+                    ],
                   },
                 ],
               },
@@ -465,6 +485,59 @@ export default defineConfig({
                     label: 'Async Resources',
                     link: '/guide/async-resources/',
                   },
+                ],
+              },
+              {
+                label: 'RFCs & Proposals',
+                items: [
+                  {
+                    label: 'Async Refinements',
+                    link: '/proposals/async-refinements/',
+                  },
+                  {
+                    label: 'Mutation Concurrency',
+                    link: '/proposals/mutation-concurrency/',
+                  },
+                  {
+                    label: 'Resource Input',
+                    link: '/proposals/resource-input/',
+                  },
+                  {
+                    label: 'Lifecycle Hooks',
+                    link: '/proposals/lifecycle-hooks/',
+                  },
+                  {
+                    label: 'Realtime Refetch',
+                    link: '/proposals/realtime-refetch/',
+                  },
+                  {
+                    label: 'Retry After Token Refresh',
+                    link: '/proposals/retry-failed/',
+                  },
+                  { label: 'ask()', link: '/proposals/ask/' },
+                  {
+                    label: 'Form Primitives',
+                    link: '/proposals/form-primitives/',
+                  },
+                  { label: 'All Proposals', link: '/proposals/' },
+                ],
+              },
+            ],
+          },
+          {
+            label: 'Plugins',
+            link: '/plugins/overview/',
+            icon: 'puzzle',
+            items: [
+              {
+                label: 'Reference',
+                items: [
+                  { label: 'Overview', link: '/plugins/overview/' },
+                  { label: 'Logging', link: '/plugins/logging/' },
+                  { label: 'DevTools', link: '/plugins/devtools/' },
+                  { label: 'Persistence', link: '/plugins/persistence/' },
+                  { label: 'Recipes', link: '/plugins/recipes/' },
+                  { label: 'Authoring Plugins', link: '/core/plugins/' },
                 ],
               },
             ],

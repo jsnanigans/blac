@@ -149,19 +149,19 @@ Official plugins: [Logging](/plugins/logging), [DevTools](/plugins/devtools), [P
 
 ## Glossary
 
-| Term | Meaning |
-| --- | --- |
-| **`Cubit`** | The concrete class you subclass to hold typed state, actions (methods), and derived state (getters). |
-| **`StateContainer`** | The abstract base class underneath `Cubit`. `Cubit` makes `emit`, `update`, and `patch` public; `StateContainer` keeps them protected. |
-| **Bloc** | Colloquial shorthand in the docs and hooks (`useBloc`) for any `Cubit` or `StateContainer` instance. (There is no separate `Bloc` class.) |
-| **Registry** | The global singleton (`StateContainerRegistry`) that creates, shares, ref-counts, and disposes container instances. |
-| **`args`** | Serializable construction data passed via `{ args }` that both keys the instance identity and runs `init(args)` before the first render. |
-| **`deps`** | Non-serializable per-consumer handles (DOM refs, controller instances) contributed via `useBlocDeps` and read lazily on `this.deps`. Never affects instance identity. |
-| **Auto-tracking** | The default `useBloc` mode: a render-time `Proxy` records every leaf property path read during render and wakes the component only when one of those paths changes. |
-| **`select`** | An optional callback on `useBloc` (`select: (state, bloc) => [...]`) that opts out of auto-tracking and re-renders only when the returned array changes per-index (`Object.is`). |
-| **`isolated`** | Class option (`@blac({ isolated: true })`) that gives each `useBloc` mount its own private instance instead of sharing. |
-| **`keepAlive`** | Class option (`@blac({ keepAlive: true })`) that prevents auto-disposal when an instance's ref count drops to zero. |
-| **Plugin** | An object implementing `BlacPlugin` installed on `getPluginManager()` to observe creation, state changes, hydration, and disposal across all instances. |
+| Term                 | Meaning                                                                                                                                                                          |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`Cubit`**          | The concrete class you subclass to hold typed state, actions (methods), and derived state (getters).                                                                             |
+| **`StateContainer`** | The abstract base class underneath `Cubit`. `Cubit` makes `emit`, `update`, and `patch` public; `StateContainer` keeps them protected.                                           |
+| **Bloc**             | Colloquial shorthand in the docs and hooks (`useBloc`) for any `Cubit` or `StateContainer` instance. (There is no separate `Bloc` class.)                                        |
+| **Registry**         | The global singleton (`StateContainerRegistry`) that creates, shares, ref-counts, and disposes container instances.                                                              |
+| **`args`**           | Serializable construction data passed via `{ args }` that both keys the instance identity and runs `init(args)` before the first render.                                         |
+| **`deps`**           | Non-serializable per-consumer handles (DOM refs, controller instances) contributed via `useBlocDeps` and read lazily on `this.deps`. Never affects instance identity.            |
+| **Auto-tracking**    | The default `useBloc` mode: a render-time `Proxy` records every leaf property path read during render and wakes the component only when one of those paths changes.              |
+| **`select`**         | An optional callback on `useBloc` (`select: (state, bloc) => [...]`) that opts out of auto-tracking and re-renders only when the returned array changes per-index (`Object.is`). |
+| **`isolated`**       | Class option (`@blac({ isolated: true })`) that gives each `useBloc` mount its own private instance instead of sharing.                                                          |
+| **`keepAlive`**      | Class option (`@blac({ keepAlive: true })`) that prevents auto-disposal when an instance's ref count drops to zero.                                                              |
+| **Plugin**           | An object implementing `BlacPlugin` installed on `getPluginManager()` to observe creation, state changes, hydration, and disposal across all instances.                          |
 
 ## What's next?
 
