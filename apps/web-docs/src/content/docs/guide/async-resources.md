@@ -63,7 +63,7 @@ renameProject = async (id: string, name: string) => {
 };
 ```
 
-`set` leaves freshness alone and does not abort a call in flight, so a load that started before the write can still overwrite it.
+`set` aborts a call in flight, so a load that started before the write cannot overwrite it, and leaves freshness alone. Call `reload()` afterwards if the aborted load is still needed.
 
 ### Gating with `enabled`
 
