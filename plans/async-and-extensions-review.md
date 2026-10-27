@@ -1,0 +1,138 @@
+# Review: `@blac/async`, open proposals, and what to build next
+
+Date: 2026-10-27. Sources: `packages/blac-async/src`, `apps/web-docs/src/content/docs/proposals/`, `research/`, and two new surveys of `user-frontend` `release` (`b6e9e0ce0d`). Paths starting with `apps/pmp`, `apps/user-app` or `packages/shared` are in user-frontend. Counts come from grep and are estimates.
+
+Status: review only, nothing built. Each item needs a decision before work starts.
+
+## 1. Fixes and refinements to the shipped `@blac/async`
+
+Ordered by how likely each is to cause a bug or rework during migration.
+
+| #   | Issue                                                                                                                                                                                                                                                                                                         | Suggestion                                                                                                                                                                                                                                                                                                         | Effort |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| A1  | **Tags are flat strings, matched with OR.** The README and docs use `tags: ({ userId }) => ['user', userId]` and `invalidates: … ['user', userId]`. That indexes two tags, so the mutation reloads every `'user'` resource plus anything tagged with the bare id (a `userId` can collide with another entity's id). | **Undecided.** Leaning: keep flat tags and fix the docs, README and example to tag both levels: `tags: ({ userId }) => ['user', \`user:${userId}\`]`, then `invalidate(\`user:${id}\`)` for one user or `invalidate('user')` for all. No code change. Revisit tuple keys with prefix matching, or typed `tag()` builders in the apps, only if the pilot shows typos or drift. | ~0.5h  |
+| A2  | **`mutation` resolves `undefined` on failure.** For `void` APIs (most updates) success and failure look the same, and the proposal sample `if (!(await this.submit(...))) return;` breaks for them.                                                                                                                  | Resolve the settled `AsyncState` instead: `const r = await save(x); if (r.status !== 'success') return;`. It is the same type as the slot, so nothing new to learn.                                                                                                                                           | ~1h    |
+| A3  | **Mutation race** (proposal: mutation concurrency).                                                                                                                                                                                                                                                         | Build as proposed: only the latest call writes the slot, plus opt-in `exclusive`. Keep `exclusive` opt-in.                                                                                                                                                                                                    | 2–3h   |
+| A4  | **No per-item mutations.** One slot per mutation, so toggling row A and row B share a status. The apps hand-roll `Set<string>` / `string[]` / `startLoading(\`select-${id}\`)` (`AppointmentProviderCubit.ts:22`, `ConnectiveHealthCubit.ts:10`, `EncounterFolderAdminCubit.ts:74`).                       | `mutation(this, 'toggles', fn, { key: (input) => input.id })` with slot type `Record<string, AsyncState<R>>`. Ordering and `exclusive` apply per key.                                                                                                                                                              | ~2h    |
+| A5  | **Resources can't depend on state.** `fn` only sees fixed `args`. Anything driven by a filter, search term, date range or selected tab needs a manual `reload()` after every `patch`, and the hand-rolled request-id guards (`AddMedicationCubit.ts:63`, `UserListCubit.ts:356`) survive the migration.       | `resource(this, 'list', fn, { input: (state) => state.query, debounce?: 300 })`. While active, a change to `input` (shallow equality) reloads, latest-wins; `fn(signal, input, args)`. Typeaheads, filtered lists and dependent loads become declarative. **This replaces most of the list-query proposal** (see §2). | ~4h    |
+| A6  | **No way to write resource data locally.** WebSocket patches (`TaskManagementBloc.ts:736`), replacing an item in a list (~9 `id === x ? updated : item` maps), and optimistic updates all need it.                                                                                                                | `resource.set(updater)`: writes `success` with new data and leaves freshness alone. Covers patch-in-place now, and gives optimistic updates (A9) something to build on.                                                                                                                                          | ~1h    |
+| A7  | **Deactivation restore is lossy.** A load cut short while the slot held `error` + data is restored to `success`.                                                                                                                                                                                              | Remember the last settled state and restore exactly that.                                                                                                                                                                                                                                                          | 0.5h   |
+| A8  | **`retryOn` runs on aborted calls.** `callWithRetry` doesn't check the signal, so an `AbortError` from a superseded call reaches the app's `retryOn`.                                                                                                                                                       | Skip the retry when the signal is aborted.                                                                                                                                                                                                                                                                          | 0.5h   |
+| A9  | **Optimistic updates** are rare but subtle. `UserPreferencesCubit.ts:405-440` has per-key write versions, so a failed older write never reverts a newer one and a slow read never clobbers a fresh write.                                                                                                          | Later: `mutation({ optimistic: { target: this.prefs, apply } })` on top of A6, rolling back only if no newer write landed. The library should own the versioning, since that is the part that is easy to get wrong.                                                                                                     | ~0.5d  |
+| A10 | **`enabled` gating.** Feature-flag and capability checks inside loaders (`LabValuesExtractionCubit.ts:93`), and "poll only while the socket is down".                                                                                                                                                       | `enabled: (state, args) => boolean`. A disabled resource stays `idle` and doesn't load. With A5, a flag flipping on loads it.                                                                                                                                                                                       | ~1h    |
+
+Not recommended: generic retry with backoff (only 3 call sites; 401s are handled in the fetch layer, see §2), or a per-resource `onSuccess` (use `watch` on the slot).
+
+## 2. Verdicts on the open proposals
+
+| Proposal                 | Verdict                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mutation concurrency     | **Build**, with A2 and A4 folded in.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Retry after token refresh | **Open question answered:** both apps' `ApiController` already does a single-flight refresh and a retry on `401` (`packages/shared/src/lib/ApiController/ApiController.ts:593-640`), so **drop the `retryOn` recipe**. A retry that still fails after the refresh rejects with a plain `Error` that has no status. `retryFailed()` is still needed for PMP's scheduled refresh (`apps/pmp/src/state/UserCubit.ts:199` dispatches `AUTH_TOKEN_REFRESHED_EVENT`) and for WebSocket reconnects (§3, B1). Build it as `invalidate({ failed: true })` or `retryFailed()`; it is the same index walk either way. |
+| List query               | **Replace with A5.** With an `input` derived from state, a list cubit is a `query` slot plus one resource. The page-reset rule (`page → 0` unless `page` changed) is a 3-line `setQuery` helper or a recipe. Keep `listResource` only if the pilot shows that helper repeating. No cursor APIs were found. "Load more" appears in about 5 places (`NotificationsCubit.ts:266`, `MealInsightsCubit.ts:106`), and `encounterListHelpers.ts:22` fetches every page. An `infinite` variant can wait. |
+| Borrow by key            | **Close.** Still no call site that needs it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Reset by predicate       | Fine. The typed overload `clearWhere(Class, (b) => …)` is worth the ~10 lines. Most migrated predicates will be class-scoped, and the overload avoids `args?.` chains.                                                                                                                                                                                                                                                                                                                                                                                       |
+| Release readiness        | Fine. Do it after the breaking changes in §1 (A1, A2), so the first published `@blac/async` has the right shape.                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Adoption pilot           | Still first after A1/A2/A5. **Add two slices:** a WebSocket-driven cubit (`EncounterDetailCubit` with `WebSocketEncounterUpdateSource`) and one `confirmWithDialog` flow. Together they cover the two biggest areas below.                                                                                                                                                                                                                                                                                                                              |
+
+## 3. New extensions, ranked by payoff in user-frontend
+
+### B1. Realtime invalidation (in `@blac/async`)
+
+- **Today:** pushed events mostly mean "something changed, refetch":
+  - PMP's `ObservedEventWatcher.ts:25` has `start(matches, onMatch)` and also calls `onMatch` on reconnect, authenticated and observeRecovered, because the wire has no sequence numbers.
+  - Consumers hand-roll coalescing: the `isRefreshing` / `pendingRefresh` pair in `EncounterDetailCubit.ts:309`, plus debounced reloads (`TimelineCubit.ts:145`, `UserJourneyBloc.tsx:654`). There are about 51 hand-written debounce or coalesce guards.
+  - Polling is the fallback while the socket is down (`WebSocketEncounterUpdateSource.ts:77`, 45s), plus refetch on `online` and `visibilitychange`.
+- **Proposal:**
+  - A source adapter, `{ subscribe(cb): unsubscribe; onRecover(cb): unsubscribe }`, wired once in `configureAsync({ sources })`.
+  - Per resource: `refetchOn: { event: (e) => boolean }`, `refetchOnRecover: true`, and `refetchOn: ['focus', 'online']`. The triggers are pluggable, so user-app can add Capacitor `appStateChange` (9 `onAppActive` uses).
+  - Reloads coalesce: one in flight plus one trailing rerun, the GET-safe version of latest-wins. Events that arrive while inactive mark the resource stale (same as D5).
+  - `refetchInterval` with `enabled` (A10) gives "poll only while the socket is unhealthy".
+- **Replaces:** the watcher/handler plumbing, the coalescing flags, most data polls and the focus/online listeners.
+- **Effort:** ~1–1.5d.
+
+### B2. Lifecycle hooks for instrumentation (in `@blac/async`)
+
+- **Today:**
+  - 95 copy-pasted "Tracker Breadcrumb" blocks in PMP (open, close and success, in every `handle*` action and in `confirmWithDialog`).
+  - 638 `handleReportError` / `reportErrorSentry` calls.
+  - `BaseCubitNext` records Sentry duration metrics today. Migrating off it loses them unless the library offers a hook.
+- **Proposal:** `configureAsync({ onStart, onSettled })` receiving `{ kind, key, host name, args, duration, status }`, plus an optional per-call `meta` (for example `meta: { track: 'Update program' }`) passed through to the hooks.
+- **Result:** breadcrumbs, metrics and analytics become one adapter in each app.
+- **Effort:** ~2h. High payoff, small surface.
+
+### B3. Activation-scoped timers (in `@blac/core`)
+
+- **Today:** about 82 hand-managed `setTimeout` fields and 19 `setInterval`s in cubits, two ref-counted start/stop implementations, and 9 `lodash.debounce` instances held in components (`MedicationSearchField.tsx:101`).
+- **Proposal:** tiny helpers bound to the `onActivated` signal: `every(host, ms, fn)`, `debounced(host, fn, ms)` (returns a callable with `.cancel` and `.flush`), and `after(host, ms, fn)`. They are cleared on deactivation and dispose automatically.
+- **Result:** debounce moves from components into cubits, where it can be tested with fake timers.
+- **Effort:** ~3h.
+
+> **Decision (2026-10-27):** dialogs and forms are not goals in themselves. Offer primitives that make them ergonomic to build in the apps. Enhance AutoForm instead of retiring it; react-hook-form may go, but that is not a goal. B4 and B5 below are reframed to match.
+
+### B4. `ask()`: an awaitable request answered by the UI (in `@blac/async`)
+
+- **Problem:** cubits that need user input mid-flow (confirm, pick, MFA, permission prompt) pass `onSuccess` / `closeDialog` props around and wrap `new Promise(resolve => …)` by hand. There are 91 PMP `new Dialog` call sites, 28 `confirmWithDialog` callers and 60 user-app `openPopup` calls, plus about 25 `useState(false)` open flags.
+- **Primitive:** `confirm = ask<Payload, Answer>(this, 'confirm')`.
+  - The slot holds `{ open: false } | { open: true, payload }`.
+  - `await this.confirm.ask(payload)` opens it.
+  - The UI calls `cubit.confirm.answer(value)` or `cubit.confirm.dismiss()`; dismiss resolves `undefined`.
+  - Deactivation dismisses it.
+- **In the apps:** the dialog component renders from the slot. `confirmWithDialog` becomes `if (await this.confirm.ask(opts)) await this.save(input)`, about 3 lines in the app on top of `ask` and `mutation`. Tests answer it without rendering.
+- **Effort:** ~2h. No React host and no UI in the library.
+
+### B5. Primitives that enhance AutoForm (reusable outside forms)
+
+Each of these replaces a part of AutoForm or the cubits around it, and is useful elsewhere too.
+
+| Primitive                                                                                                                                                                                                  | Replaces in AutoForm cubits                                                                           | Reuse elsewhere                                    |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Initial values from a resource: the form waits on `state.profile.status` (or B7 `all()`)                                                                                                                   | The `formReady` / `initialFormValues` / `setFormReady` triple (~16 cubits)                            | Any view gated on loaded data                      |
+| `mutation` for submit (A2–A4)                                                                                                                                                                              | `isSubmitting`, double-submit guards, the toast/report template                                       | Every write                                        |
+| `configureAsync({ normalizeError })`: one app function turns raw errors into `{ message?, fields?: Record<path, string>, status? }`, stored on `error` slots                                                | Missing today: 400s are only toasted. AutoForm reads `fields` from the submit slot into `setError`   | 404 skips, toasts and Sentry filtering in one place |
+| B3 `debounced(host, fn, ms)`                                                                                                                                                                               | Debounced async validation (for example "email taken")                                                | Search, autosave                                   |
+| plugin-persist on a slice (already built)                                                                                                                                                                  | The bespoke draft service, where its shape fits                                                       | Any draft or preferences state                     |
+
+- **AutoForm work:** in user-frontend, AutoForm gains an adapter `bindSubmit(controls, cubit.save)` that maps `fields` errors and disables on `loading`.
+- **Out of scope:** a form package in blac.
+
+### B6. Typed step machine (recipe first, helper later)
+
+- **Today:** about 26 step/stage enums and about 103 direct `patch({ step })` writes. Nothing blocks illegal transitions; guards are ad hoc ifs (`InitialLabsBloc.ts:191`), and step logic is mixed with polling timers. 11 class-per-status states are checked with `instanceof`.
+- **Proposal:**
+  - First, a docs recipe: a discriminated-union slot plus one `transition(event)` method.
+  - Then, if the pilot shows repetition, `machine(this, 'flow', { initial, states: { form: { on: { submit: 'confirming' }, enter: (signal) => … } } })` with `can(event)` for the UI. Enter effects get a signal, so B3's timers clean up per state.
+- **Effort:** recipe ~2h; helper ~1d.
+
+### B7. Smaller items
+
+- **`all(a, b, …)` for `AsyncState`:** a pure helper combining slots into one status (loading if any is loading, error if any failed). It covers the "three loading flags, one spinner" shape in `UserJourneyBloc` (9 `Promise.all`s). ~1h.
+- **Persisted resource cache:** plugin-persist on a resource slot plus `staleTime` gives stale-while-revalidate across sessions. The Dexie entity sync in PMP (`apps/pmp/src/lib/db/sync/entitySync.ts`) diffs by `updatedAt`, which is too specific to generalize now. Later.
+- **Devtools:** show async slots, their tags and the invalidation log. Cheap once B2's hooks exist.
+
+### Not proposed
+
+- A normalized entity cache: no cubit shares an id map today.
+- Suspense.
+- Generic undo: only the rich-text editor needs it.
+- A declarative `requires: { flag, capability }`: `enabled` (A10) plus `depend()` covers it without a new concept.
+
+## 4. Suggested order
+
+1. Breaking refinements before anything is published: A1 (tags), A2 (settled result), A7, A8. ~0.5d.
+2. A3 + A4 (concurrency, keyed mutations), A5 (state-derived input), A6 (`set`), A10 (`enabled`). ~1.5d.
+3. B2 (lifecycle hooks) and B3 (timers): small, and they remove the most copy-paste. ~0.5d.
+4. Release readiness, then the adoption pilot with the two extra slices.
+5. B1 (realtime), shaped by the pilot's `EncounterDetailCubit` slice. ~1–1.5d.
+6. `retryFailed`, A9 (optimistic), B7 helpers.
+7. B4 `ask()`, B5 `normalizeError`, then the AutoForm adapter in user-frontend; B6 recipe.
+
+## Open questions
+
+- A1: are flat tags plus a two-level convention enough, or are tuple keys needed? Decide after the pilot.
+- A5: should `input` changes while inactive mark the resource stale, or be ignored until activation (where `input` is re-read anyway)?
+- B5: does `normalizeError` belong in `configureAsync`, or as a per-call option too?
+
+## Decisions
+
+- 2026-10-27: dialogs and forms are not explicit goals. Offer primitives (B4 `ask`, B5) and build them in the apps. Enhance AutoForm, don't retire it. Retiring react-hook-form is allowed but not a goal.
