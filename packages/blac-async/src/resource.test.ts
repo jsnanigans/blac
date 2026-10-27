@@ -93,6 +93,15 @@ describe('resource', () => {
     expect(p.calls).toHaveLength(0);
   });
 
+  it('set aborts a load in flight and keeps its own write', async () => {
+    const p = setup().acquire();
+    p.r.set(() => 5);
+    expect(p.calls[0].signal.aborted).toBe(true);
+    p.calls[0].d.resolve(1);
+    await p.calls[0].d.promise;
+    expect(p.state.slot).toEqual({ status: 'success', data: 5 });
+  });
+
   it('ignores load and reload while disabled', async () => {
     let on = false;
     const p = setup({ enabled: () => on }).acquire();

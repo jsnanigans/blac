@@ -21,7 +21,7 @@ export interface Resource<T = unknown> {
   load(): Promise<void>;
   /** Aborts any call in flight and loads again. */
   reload(): Promise<void>;
-  /** Writes `success` with the updated data; freshness and calls in flight are left alone. */
+  /** Aborts any call in flight and writes `success` with the updated data; freshness is left alone. */
   set(updater: (data: T | undefined) => T): void;
 }
 
@@ -101,6 +101,8 @@ export function resource<
 
   const write: Write<T> = (updater) => {
     const prev = slot();
+    inflight?.controller.abort(new DOMException('Superseded', 'AbortError'));
+    inflight = null;
     set({ status: 'success', data: updater(prev.data) });
     const written = slot();
     return () => {
