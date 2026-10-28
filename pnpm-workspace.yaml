@@ -22,6 +22,8 @@ catalog:
   vitest: npm:@voidzero-dev/vite-plus-test@0.1.24
 
 overrides:
+  '@dirtytalk/engine': link:../dirtytalk/packages/engine
+  '@dirtytalk/structural': link:../dirtytalk/packages/structural
   vite: npm:@voidzero-dev/vite-plus-core@0.1.24
   vitest: npm:@voidzero-dev/vite-plus-test@0.1.24
 
