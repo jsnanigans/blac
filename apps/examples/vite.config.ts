@@ -55,14 +55,6 @@ export default defineConfig({
         find: /^@blac\/devtools-ui$/,
         replacement: src('devtools-ui/src/index.tsx'),
       },
-      {
-        find: /^@dirtytalk\/spatial$/,
-        replacement: src('dirtytalk-spatial/src/index.ts'),
-      },
-      {
-        find: /^@dirtytalk\/engine$/,
-        replacement: src('dirtytalk-engine/src/index.ts'),
-      },
     ],
   },
   server: {

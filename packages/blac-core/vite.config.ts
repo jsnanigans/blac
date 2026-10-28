@@ -11,13 +11,6 @@ export default defineConfig({
         __dirname,
         '../devtools-connect/src',
       ),
-      // Resolve structural to source so tests see live tracker features
-      // instead of the stale built dist (matches blac-react/vite.config.ts).
-      '@dirtytalk/structural': path.resolve(
-        __dirname,
-        '../dirtytalk-structural/src',
-      ),
-      '@dirtytalk/engine': path.resolve(__dirname, '../dirtytalk-engine/src'),
     },
   },
   pack: {

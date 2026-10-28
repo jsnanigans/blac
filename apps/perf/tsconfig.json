@@ -18,11 +18,7 @@
     "paths": {
       "@blac/core": ["../../packages/blac-core/src/index.ts"],
       "@blac/core/internal": ["../../packages/blac-core/src/internal.ts"],
-      "@blac/react": ["../../packages/blac-react/src/index.ts"],
-      "@dirtytalk/structural": [
-        "../../packages/dirtytalk-structural/src/index.ts"
-      ],
-      "@dirtytalk/engine": ["../../packages/dirtytalk-engine/src/index.ts"]
+      "@blac/react": ["../../packages/blac-react/src/index.ts"]
     },
     "types": ["vite/client"]
   },

@@ -19,8 +19,8 @@
   "dependencies": {
     "@blac/core": "workspace:*",
     "@blac/react": "workspace:*",
-    "@dirtytalk/engine": "workspace:*",
-    "@dirtytalk/structural": "workspace:*",
+    "@dirtytalk/engine": "^0.2.2",
+    "@dirtytalk/structural": "^0.1.4",
     "@reduxjs/toolkit": "^2.12.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

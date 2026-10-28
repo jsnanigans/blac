@@ -70,7 +70,7 @@ pnpm changeset pre exit         # back to stable
 ## How "only what changed" works
 
 - A changeset names which packages changed; `release:version` bumps **only those + their dependents**.
-- `updateInternalDependencies: "patch"` cascades bumps down the dependency graph automatically (e.g. an `@dirtytalk/engine` change patch-bumps `structural`/`spatial`, which patch-bumps `@blac/core`/`@blac/react`).
+- `updateInternalDependencies: "patch"` cascades bumps down the dependency graph automatically (e.g. a `@blac/core` change patch-bumps `@blac/react`).
 - `release:publish` compares each version to the registry and skips anything already published.
 
 No manual diffing required.
@@ -87,5 +87,5 @@ No manual diffing required.
 | `pnpm release`         | Interactive menu for all of the above             |
 
 - Config: `.changeset/config.json` (`baseBranch: main`, `access: public`).
-- All `@blac/*` and `@dirtytalk/*` packages under `packages/*` publish publicly. Everything in `apps/*` is `private` **and** listed in the changeset `ignore` array, so it is never versioned or published to npm.
-- Requires npm auth with publish rights to the `@blac` and `@dirtytalk` scopes.
+- All `@blac/*` packages under `packages/*` publish publicly. Everything in `apps/*` is `private` **and** listed in the changeset `ignore` array, so it is never versioned or published to npm.
+- Requires npm auth with publish rights to the `@blac` scope.

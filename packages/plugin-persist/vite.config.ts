@@ -5,10 +5,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@blac/core': path.resolve(__dirname, '../blac-core/src'),
-      '@dirtytalk/structural': path.resolve(
-        __dirname,
-        '../dirtytalk-structural/src',
-      ),
     },
   },
   pack: {

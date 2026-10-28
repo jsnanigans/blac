@@ -19,11 +19,6 @@ export default defineConfig({
       // Source, not dist, so the benchmark always measures the working tree.
       { find: '@blac/core', replacement: src('blac-core') },
       { find: '@blac/react', replacement: src('blac-react') },
-      {
-        find: '@dirtytalk/structural',
-        replacement: src('dirtytalk-structural'),
-      },
-      { find: '@dirtytalk/engine', replacement: src('dirtytalk-engine') },
       // The profiling build keeps React.Profiler timings in production.
       { find: /^react-dom\/client$/, replacement: 'react-dom/profiling' },
     ],

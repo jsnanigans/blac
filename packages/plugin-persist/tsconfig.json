@@ -4,8 +4,7 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@blac/core": ["../blac-core/dist/index.d.ts"],
-      "@dirtytalk/structural": ["../dirtytalk-structural/dist/index.d.ts"]
+      "@blac/core": ["../blac-core/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*"],

@@ -34,8 +34,7 @@
       "@blac/devtools-connect": [
         "../../packages/devtools-connect/src/index.ts"
       ],
-      "@blac/devtools-ui": ["../../packages/devtools-ui/src/index.tsx"],
-      "@dirtytalk/engine": ["../../packages/dirtytalk-engine/src/index.ts"]
+      "@blac/devtools-ui": ["../../packages/devtools-ui/src/index.tsx"]
     }
   },
   "include": ["src", "main.tsx", "vite.config.ts"]
