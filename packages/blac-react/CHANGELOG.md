@@ -1,5 +1,13 @@
 # @blac/react
 
+## 2.1.3
+
+### Patch Changes
+
+- Patch release.
+- Updated dependencies [42c17d8]
+  - @blac/core@2.1.2
+
 ## 2.1.2
 
 ### Patch Changes

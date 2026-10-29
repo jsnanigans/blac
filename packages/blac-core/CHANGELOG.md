@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.1.2
+
+### Patch Changes
+
+- 42c17d8: Add `@blac/async` (`resource`, `mutation`, `invalidate`, `configureAsync`) and expose the owning registry as `$blac.registry`.
+
 ## 2.1.1
 
 ### Minor Changes

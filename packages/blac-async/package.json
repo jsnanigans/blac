@@ -1,6 +1,6 @@
 {
   "name": "@blac/async",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "Async resources and mutations for BlaC state containers",

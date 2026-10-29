@@ -1,5 +1,13 @@
 # @blac/logging-plugin
 
+## 2.0.22
+
+### Patch Changes
+
+- Patch release.
+- Updated dependencies [42c17d8]
+  - @blac/core@2.1.2
+
 ## 2.0.21
 
 ### Patch Changes

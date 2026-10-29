@@ -1,5 +1,13 @@
 # @blac/plugin-persist
 
+## 0.0.17
+
+### Patch Changes
+
+- Patch release.
+- Updated dependencies [42c17d8]
+  - @blac/core@2.1.2
+
 ## 0.0.16
 
 ### Patch Changes
