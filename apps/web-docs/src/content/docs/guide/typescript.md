@@ -5,7 +5,7 @@ description: How state shape, action signatures, args, deps, and select all flow
 
 BlaC is written in TypeScript and assumes you are too. Almost everything you need — state shape, action signatures, the args a consumer must pass — flows from a single class declaration, so most of this page is about _reading_ the inference rather than writing annotations.
 
-This is the discoverable, example-driven tour. For the exhaustive list of exported type utilities (`ExtractState`, `ExtractArgs`, `ExtractDeps`, `InstanceReadonlyState`, and friends), see [Core Types](/core/types).
+This is the discoverable, example-driven tour. For the exhaustive list of exported type utilities (`ExtractState`, `ExtractArgs`, `ExtractDeps`, `InstanceReadonlyState`, and friends), see [Core Types](/docs/core/types).
 
 ## Compiler posture
 
@@ -39,10 +39,10 @@ const AuthCubit = blac({ keepAlive: true })(
 );
 ```
 
-`blac(opts)(class)` is a plain higher-order function — no compiler flag, no syntax proposal. The decorator form is sugar over exactly this. See [Configuration](/core/configuration) for the full options union (`keepAlive`, `isolated`, `equality`, `excludeFromDevTools`, `key`).
+`blac(opts)(class)` is a plain higher-order function — no compiler flag, no syntax proposal. The decorator form is sugar over exactly this. See [Configuration](/docs/core/configuration) for the full options union (`keepAlive`, `isolated`, `equality`, `excludeFromDevTools`, `key`).
 
 :::tip[Match getting-started]
-The tsconfig block above is the same one in [Getting Started](/guide/getting-started). If you change one, change both.
+The tsconfig block above is the same one in [Getting Started](/docs/guide/getting-started). If you change one, change both.
 :::
 
 ## The three generics
@@ -166,7 +166,7 @@ class CartCubit extends Cubit<CartState> {
 ```
 
 :::tip[Getters track in render]
-Reading `cart.total` directly in render is reactive: the `bloc` returned by `useBloc` is proxied, and `this.state` inside the getter records through the current state proxy. Use [`select`](#typing-select) (`select: (state, bloc) => [bloc.total]`) only when the getter's return value should be the explicit re-render boundary. This is a _runtime_ tracking rule, not a type rule — the types let you read `cart.total` anywhere. See [Dependency Tracking](/react/dependency-tracking).
+Reading `cart.total` directly in render is reactive: the `bloc` returned by `useBloc` is proxied, and `this.state` inside the getter records through the current state proxy. Use [`select`](#typing-select) (`select: (state, bloc) => [bloc.total]`) only when the getter's return value should be the explicit re-render boundary. This is a _runtime_ tracking rule, not a type rule — the types let you read `cart.total` anywhere. See [Dependency Tracking](/docs/react/dependency-tracking).
 :::
 
 ## Discriminated unions and narrowing
@@ -399,7 +399,7 @@ function cartTotal(): number {
 }
 ```
 
-`state` is `Readonly`, so `select` can't accidentally mutate it; that's also why reading a getter here (`bloc.total`) is the supported way to make a derived value drive re-renders. See [useBloc](/react/use-bloc#select).
+`state` is `Readonly`, so `select` can't accidentally mutate it; that's also why reading a getter here (`bloc.total`) is the supported way to make a derived value drive re-renders. See [useBloc](/docs/react/use-bloc#select).
 
 ## Conditional `args`
 
@@ -598,12 +598,12 @@ function useTodos(): [TodoState, TodoBloc] {
 }
 ```
 
-These utilities, plus `ExtractArgs`, `ExtractDeps`, and the rest, are documented in full in [Core Types](/core/types).
+These utilities, plus `ExtractArgs`, `ExtractDeps`, and the rest, are documented in full in [Core Types](/docs/core/types).
 
 ## See also
 
-- [Core Types](/core/types) — the exhaustive reference for every exported type utility
-- [Cubit](/core/cubit) — `emit` / `update` / `patch`, `init`, getters, and lifecycle
-- [useBloc](/react/use-bloc) — the hook, its option surface, and `select`
-- [Passing Inputs](/guide/inputs) — the `args` / `deps` / events model in depth
-- [Dependency Tracking](/react/dependency-tracking) — how getter reads participate in auto-tracking
+- [Core Types](/docs/core/types) — the exhaustive reference for every exported type utility
+- [Cubit](/docs/core/cubit) — `emit` / `update` / `patch`, `init`, getters, and lifecycle
+- [useBloc](/docs/react/use-bloc) — the hook, its option surface, and `select`
+- [Passing Inputs](/docs/guide/inputs) — the `args` / `deps` / events model in depth
+- [Dependency Tracking](/docs/react/dependency-tracking) — how getter reads participate in auto-tracking

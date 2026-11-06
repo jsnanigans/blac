@@ -3,7 +3,7 @@ title: Async Resources
 description: Load data and run mutations with @blac/async — a status slot in state, abort on release, latest-wins, and tag-based invalidation across containers.
 ---
 
-[Async](/guide/async/) shows the hand-written loading flow. `@blac/async` packages that flow so a container only declares _what_ to fetch: the status union, abort, request ordering, dedupe and refetch are handled for you.
+[Async](/docs/guide/async/) shows the hand-written loading flow. `@blac/async` packages that flow so a container only declares _what_ to fetch: the status union, abort, request ordering, dedupe and refetch are handled for you.
 
 ```bash
 pnpm add @blac/async
@@ -177,6 +177,6 @@ Use `resetAsyncConfig()` in `afterEach` when a test calls `configureAsync`.
 
 ## See also
 
-- [Async](/guide/async/) — the hand-written loading flow this package replaces
-- [Proposals](/proposals/) — planned changes to this package (ordering, state-derived input, realtime refetch, lifecycle hooks, `ask()`), previewed for review before they are built
-- [Testing](/testing/overview/) — `withBlocState` and `blacTestSetup`
+- [Async](/docs/guide/async/) — the hand-written loading flow this package replaces
+- [Proposals](/rfcs/) — planned changes to this package (ordering, state-derived input, realtime refetch, lifecycle hooks, `ask()`), previewed for review before they are built
+- [Testing](/docs/testing/overview/) — `withBlocState` and `blacTestSetup`

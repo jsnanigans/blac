@@ -43,7 +43,7 @@ release ───▶  ref count 0   ─┬─ keepAlive?  yes ─▶ stays alive
 ```
 
 :::note[When does disposal actually happen?]
-Disposal is **synchronous** with the `release` call that drops the count to zero — there is no idle delay or timer. The very next `acquire` of that key (e.g. a new component mounting) creates a **fresh** instance with fresh state. If you need state to persist across that gap, use [`keepAlive`](/core/configuration).
+Disposal is **synchronous** with the `release` call that drops the count to zero — there is no idle delay or timer. The very next `acquire` of that key (e.g. a new component mounting) creates a **fresh** instance with fresh state. If you need state to persist across that gap, use [`keepAlive`](/docs/core/configuration).
 :::
 
 ## Registry functions
@@ -278,7 +278,7 @@ const [s] = useBloc(UserCardCubit, { args: { userId } });
 
 Identity precedence: own `args` (via `static key(args)`, else structural hash of `args`) > `<BlocProvider>` context args > `'default'`.
 
-The resolved key is the registry's single source of truth — `acquire` and `release` both run their `args` through the same resolution, so a ref taken under a given args key is dropped under the same key. See [Passing Inputs](/guide/inputs) for the full model and [Configuration](/core/configuration#-key-args--string-) for `static key`.
+The resolved key is the registry's single source of truth — `acquire` and `release` both run their `args` through the same resolution, so a ref taken under a given args key is dropped under the same key. See [Passing Inputs](/docs/guide/inputs) for the full model and [Configuration](/docs/core/configuration#-key-args--string-) for `static key`.
 
 ## Querying the registry
 
@@ -333,7 +333,7 @@ clearWhere(() => true); // everything, but registered types are kept
 `clearAll()` also forgets registered types; `clearWhere(() => true)` does not.
 
 :::caution[Disposal ignores ref counts]
-`clear`, `clearAll`, and `clearWhere` dispose instances **regardless of ref count**, ignoring `keepAlive`. Between tests that is exactly what you want (see [Testing core logic](/testing/core)). In app code, use them only at a real boundary where the data must go — sign-out, a workspace or account switch — never to "refresh" state that live components still show.
+`clear`, `clearAll`, and `clearWhere` dispose instances **regardless of ref count**, ignoring `keepAlive`. Between tests that is exactly what you want (see [Testing core logic](/docs/testing/core)). In app code, use them only at a real boundary where the data must go — sign-out, a workspace or account switch — never to "refresh" state that live components still show.
 :::
 
 ### Replacing reset events
@@ -366,7 +366,7 @@ The event constant, the per-container handler and the id-format convention go aw
 - **Dispose, not reset in place.** The bus reset a live instance; `clearWhere` disposes it. Components re-acquire a fresh instance, but code holding a direct reference keeps the disposed one.
 - **The scope must be in `args`.** The predicate only sees `args`, so a container keyed by a bare id with no `workspaceId` in its args cannot be selected by workspace.
 
-A typed overload, `clearWhere(Class, predicate)`, is [proposed](/proposals/typed-clear-where/).
+A typed overload, `clearWhere(Class, predicate)`, is [proposed](/rfcs/typed-clear-where/).
 
 ## In React vs outside React
 
@@ -393,14 +393,14 @@ release(CounterCubit);
 
 ## See also
 
-- [Configuration](/core/configuration) — `keepAlive`, `static key`, and the circuit breakers that catch leaks
-- [Passing Inputs](/guide/inputs) — `args` and the full instance-identity model
-- [System Events](/core/system-events) — the `dispose` event that fires when an instance is torn down
-- [Testing core logic](/testing/core) — using `clear`/`clearAll` to isolate the registry between tests
+- [Configuration](/docs/core/configuration) — `keepAlive`, `static key`, and the circuit breakers that catch leaks
+- [Passing Inputs](/docs/guide/inputs) — `args` and the full instance-identity model
+- [System Events](/docs/core/system-events) — the `dispose` event that fires when an instance is torn down
+- [Testing core logic](/docs/testing/core) — using `clear`/`clearAll` to isolate the registry between tests
 
 ## Troubleshooting
 
-For the full FAQ see [Troubleshooting](/guide/troubleshooting). Below are the instance-management-specific problems.
+For the full FAQ see [Troubleshooting](/docs/guide/troubleshooting). Below are the instance-management-specific problems.
 
 ### State unexpectedly resets on remount
 
@@ -425,7 +425,7 @@ class SessionCubit extends Cubit<SessionState> {
 }
 ```
 
-`keepAlive` instances are never auto-disposed at ref count 0 — tear them down explicitly with `release(Class, { forceDispose: true })` or `clear(Class)` in teardown. See [Configuration](/core/configuration#-keepalive-true-).
+`keepAlive` instances are never auto-disposed at ref count 0 — tear them down explicitly with `release(Class, { forceDispose: true })` or `clear(Class)` in teardown. See [Configuration](/docs/core/configuration#-keepalive-true-).
 
 ### Instance never disposed / memory leak
 
@@ -464,4 +464,4 @@ function readOnce() {
 
 **Cause:** Almost always a leak — an unstable instance key (non-serializable `args`) spawning endless instances, or a missing `release` accumulating refs. The limit is not too low; the leak is real.
 
-**Fix:** Find and fix the leak before raising the limit. Common causes: non-serializable values in `args` (fix: move to `deps`), `acquire` without `release` (fix: pair them), args that differ structurally each render (fix: normalise types). See [Configuration: circuit breakers](/core/configuration#circuit-breakers) and [Troubleshooting](/guide/troubleshooting#instance-identity-too-many--too-few).
+**Fix:** Find and fix the leak before raising the limit. Common causes: non-serializable values in `args` (fix: move to `deps`), `acquire` without `release` (fix: pair them), args that differ structurally each render (fix: normalise types). See [Configuration: circuit breakers](/docs/core/configuration#circuit-breakers) and [Troubleshooting](/docs/guide/troubleshooting#instance-identity-too-many--too-few).

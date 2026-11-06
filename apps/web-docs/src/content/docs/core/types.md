@@ -5,7 +5,7 @@ description: The complete type toolkit exported from @blac/core — utilities to
 
 The complete type toolkit exported from `@blac/core`. These utilities let you derive the state, args, deps, and instance shapes of a container class without hand-writing them, and the branded-ID helpers give you nominal `InstanceId` strings. Every signature on this page is quoted verbatim from source.
 
-For a task-oriented walkthrough of typing blocs (generic parameters, inference, common pitfalls) see [TypeScript](/guide/typescript). This page is the reference: one heading per export, the exact signature, what it does, and a small example.
+For a task-oriented walkthrough of typing blocs (generic parameters, inference, common pitfalls) see [TypeScript](/docs/guide/typescript). This page is the reference: one heading per export, the exact signature, what it does, and a small example.
 
 :::note[Where these come from]
 The extraction and instance utilities live in `@blac/core`'s `types/utilities` module; the branded-ID helpers live in `types/branded`. Both are re-exported from the package root, so you import everything from `@blac/core` directly.
@@ -102,7 +102,7 @@ export type ExtractArgs<T> = T extends new () => StateContainer<
   : void;
 ```
 
-Extracts the `Args` type — the serializable data a bloc is constructed/identified with (see [Passing Inputs](/guide/inputs)). Falls back to `void` when the class declares no args. Note the match is against a zero-argument constructor shape (`new () =>`), which is how container subclasses are written.
+Extracts the `Args` type — the serializable data a bloc is constructed/identified with (see [Passing Inputs](/docs/guide/inputs)). Falls back to `void` when the class declares no args. Note the match is against a zero-argument constructor shape (`new () =>`), which is how container subclasses are written.
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -353,8 +353,8 @@ const id: InstanceId = instanceId('user-42');
 
 ## See also
 
-- [TypeScript](/guide/typescript) — typing blocs end to end: generics, inference, and pitfalls
-- [Cubit](/core/cubit) — the class these utilities extract types from
-- [Instance Management](/core/instance-management) — `acquire` / `borrow` / `release` and the registry surface
-- [Passing Inputs](/guide/inputs) — the args / deps identity model that `ExtractArgs` and `ExtractDeps` read
-- [useBloc](/react/use-bloc) — where `ExtractState` shows up as the hook's return type
+- [TypeScript](/docs/guide/typescript) — typing blocs end to end: generics, inference, and pitfalls
+- [Cubit](/docs/core/cubit) — the class these utilities extract types from
+- [Instance Management](/docs/core/instance-management) — `acquire` / `borrow` / `release` and the registry surface
+- [Passing Inputs](/docs/guide/inputs) — the args / deps identity model that `ExtractArgs` and `ExtractDeps` read
+- [useBloc](/docs/react/use-bloc) — where `ExtractState` shows up as the hook's return type

@@ -5,7 +5,7 @@ description: The lowest-level way to observe a bloc — register a callback on a
 
 The lowest-level way to observe a bloc. Every container owns a `channel` — a `DirtyChannel<PathSet>` from the DirtyTalk engine — and `channel.subscribe(interest, cb)` registers a callback that fires when the channel flushes a dirty region that overlaps your declared interest.
 
-Almost no application code needs this. It exists for plugins, devtools, and infrastructure that must compose path-scoped subscriptions directly on a container. If you are inside a React component, use [`useBloc`](/react/use-bloc); if you are outside React, use [`watch`](/core/watch). `watch` is itself a thin wrapper around `channel.subscribe(() => ALL_PATHS, ...)`.
+Almost no application code needs this. It exists for plugins, devtools, and infrastructure that must compose path-scoped subscriptions directly on a container. If you are inside a React component, use [`useBloc`](/docs/react/use-bloc); if you are outside React, use [`watch`](/docs/core/watch). `watch` is itself a thin wrapper around `channel.subscribe(() => ALL_PATHS, ...)`.
 
 :::note[Where this sits in the stack]
 `channel` is inherited from `StructuralContainer` (the structural layer under every `Cubit`). The same `subscribe` shape is also exposed one level up as a pass-through `container.subscribe(...)` (which internally delegates to `container.channel.subscribe(...)`). This page documents the channel method directly, because that is the surface plugins compose against.
@@ -52,11 +52,11 @@ A `PathSet` is either:
 - the **`ALL_PATHS`** sentinel — "every path", i.e. wake on any change; or
 - a `Set<PathId>` of interned path ids — a specific set of fields.
 
-`PathId`s are interned per container **class** by an internal `PathInterner`; you do not construct them by hand, and the interner is not part of the public `@blac/core` surface. Because of that, the portable interest from application/plugin code is `ALL_PATHS`. The `Set<PathId>` form is what `useBloc`'s render tracker assembles internally to get fine-grained re-renders — see [Tracking](/core/tracked).
+`PathId`s are interned per container **class** by an internal `PathInterner`; you do not construct them by hand, and the interner is not part of the public `@blac/core` surface. Because of that, the portable interest from application/plugin code is `ALL_PATHS`. The `Set<PathId>` form is what `useBloc`'s render tracker assembles internally to get fine-grained re-renders — see [Tracking](/docs/core/tracked).
 
 ## The callback contract
 
-- **Coalesced, asynchronous.** The channel uses a microtask scheduler by default, so several synchronous `emit`/`patch`/`update` calls fold into a **single** flush. Your callback does not fire once per mutation; it fires once per flush, after the current tick. See [System Events](/core/system-events) for the batching model.
+- **Coalesced, asynchronous.** The channel uses a microtask scheduler by default, so several synchronous `emit`/`patch`/`update` calls fold into a **single** flush. Your callback does not fire once per mutation; it fires once per flush, after the current tick. See [System Events](/docs/core/system-events) for the batching model.
 - **Interest is a thunk, re-run each flush.** The channel calls `interest()` lazily on every non-empty flush, then delivers only if `intersects(interest(), dirty)` is true. It is not captured once at subscribe time.
 - **No immediate fire.** Unlike `watch`, `channel.subscribe` does **not** invoke the callback once on setup. It only runs on the next flush after a matching change. If you need the current value immediately, read `container.state` yourself.
 - **Errors are collected, not swallowed silently.** A throw from your callback (or your interest thunk) is recorded; after all subscribers run, a single error re-throws as-is, and multiple throw as an `AggregateError`.
@@ -98,7 +98,7 @@ unsubscribe(); // safe no-op
 ```
 
 :::caution[No JSX here]
-This is the vanilla, outside-React surface. Do not reach for `channel.subscribe` inside a component — use [`useBloc`](/react/use-bloc), which builds a path-scoped interest for you and re-renders only on the fields you read.
+This is the vanilla, outside-React surface. Do not reach for `channel.subscribe` inside a component — use [`useBloc`](/docs/react/use-bloc), which builds a path-scoped interest for you and re-renders only on the fields you read.
 :::
 
 ## Inside React vs outside React
@@ -107,15 +107,15 @@ This is the vanilla, outside-React surface. Do not reach for `channel.subscribe`
 
 | Where you are                                       | Use                          | What you get                                                             |
 | --------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------ |
-| Inside a React component                            | [`useBloc`](/react/use-bloc) | Auto-tracked, path-scoped re-renders; lifecycle tied to mount.           |
-| Outside React (logging, sync, imperative UI, tests) | [`watch`](/core/watch)       | The bloc **instance**, fires once immediately, multi-bloc, `watch.STOP`. |
+| Inside a React component                            | [`useBloc`](/docs/react/use-bloc) | Auto-tracked, path-scoped re-renders; lifecycle tied to mount.           |
+| Outside React (logging, sync, imperative UI, tests) | [`watch`](/docs/core/watch)       | The bloc **instance**, fires once immediately, multi-bloc, `watch.STOP`. |
 | Building a plugin / devtools / infra                | `channel.subscribe`          | Raw `PathSet` deltas, no instance sugar, no immediate fire.              |
 
 In short: **inside React → `useBloc`; outside React → `watch`** for almost everything, and **`channel.subscribe`** only when you are composing on the channel itself. `watch` exists precisely so you rarely touch the channel directly — it is `channel.subscribe(() => ALL_PATHS, ...)` plus instance resolution, an immediate fire, and a `STOP` sentinel.
 
 ## See also
 
-- [watch](/core/watch) — the outside-React wrapper around this method; prefer it unless you need raw channel access
-- [Tracking](/core/tracked) — how `useBloc` builds a fine-grained `Set<PathId>` interest so it re-renders only on the fields you read
-- [System Events](/core/system-events) — the microtask flush and coalescing model behind every channel callback
-- [DirtyTalk](/dirtytalk/) — the underlying channel and the `Space`/`Scheduler` model it is built on
+- [watch](/docs/core/watch) — the outside-React wrapper around this method; prefer it unless you need raw channel access
+- [Tracking](/docs/core/tracked) — how `useBloc` builds a fine-grained `Set<PathId>` interest so it re-renders only on the fields you read
+- [System Events](/docs/core/system-events) — the microtask flush and coalescing model behind every channel callback
+- [DirtyTalk](https://dirtytalk.42.dog/) — the underlying channel and the `Space`/`Scheduler` model it is built on

@@ -5,10 +5,10 @@ description: Use depend() to let one Cubit read another bloc's state or call its
 
 Real apps are made of several focused blocs — a cart, a shipping calculator, an auth session — that need to read each other's state or trigger each other's behavior. The naive fix is to merge them into one giant Cubit, but that destroys the very separation that makes each piece testable and reusable.
 
-`depend()` is the answer: it lets one [Cubit](/core/cubit) declare a dependency on another and read its state (or call its methods) **without holding a hard reference and without the two classes importing each other's instances**. The dependency is resolved lazily from the [registry](/core/instance-management), so each bloc stays decoupled from how the other is created or keyed.
+`depend()` is the answer: it lets one [Cubit](/docs/core/cubit) declare a dependency on another and read its state (or call its methods) **without holding a hard reference and without the two classes importing each other's instances**. The dependency is resolved lazily from the [registry](/docs/core/instance-management), so each bloc stays decoupled from how the other is created or keyed.
 
 :::note[Mental model]
-Think of `depend()` as "I need to know about that bloc, but I don't own it." It records an intent ("CartCubit depends on ShippingCubit") and hands you a handle that fetches the live instance on demand — `.untracked()` for a plain read or method call, `.track()` to subscribe the reading component reactively. Ownership and lifetime still flow through the registry's [ref counting](/core/instance-management) — see [Lifecycle: who keeps the dependency alive?](#lifecycle-who-keeps-the-dependency-alive) below for the gotcha this creates.
+Think of `depend()` as "I need to know about that bloc, but I don't own it." It records an intent ("CartCubit depends on ShippingCubit") and hands you a handle that fetches the live instance on demand — `.untracked()` for a plain read or method call, `.track()` to subscribe the reading component reactively. Ownership and lifetime still flow through the registry's [ref counting](/docs/core/instance-management) — see [Lifecycle: who keeps the dependency alive?](#lifecycle-who-keeps-the-dependency-alive) below for the gotcha this creates.
 :::
 
 ## `depend(Type)`
@@ -25,14 +25,14 @@ protected depend<T extends StateContainerConstructor>(
 | Parameter     | Type                                  | Required | Description                                                                                                                                                                |
 | ------------- | ------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Type`        | `T extends StateContainerConstructor` | yes      | The state-container class to depend on.                                                                                                                                    |
-| `defaultArgs` | `ExtractArgs<T>`                      | no       | The `args` that identify which [keyed instance](/core/instance-management) to resolve when an accessor is called without its own `args`. Defaults to the default instance. |
+| `defaultArgs` | `ExtractArgs<T>`                      | no       | The `args` that identify which [keyed instance](/docs/core/instance-management) to resolve when an accessor is called without its own `args`. Defaults to the default instance. |
 
 **Returns:** a [`DepHandle<T>`](#what-track-returns) — a branded handle with two methods:
 
 - **`handle.untracked(options?)`** resolves the live instance from the registry lazily, on each call. Use it for imperative method calls (`this.shipping.untracked().recalc()`) and one-off state reads that should _not_ subscribe the reader.
 - **`handle.track(options?)`** resolves the same instance and, inside a React render, opts the current consumer into automatic cross-bloc re-renders — see [Auto-tracking with `.track()`](#auto-tracking-with-track).
 
-Both accept an optional `{ args }` to resolve a specific [keyed instance](/core/instance-management) at call time (overriding `defaultArgs`), so the resolved instance can derive from current state. The handle is returned immediately at declaration time; resolution happens each time you call an accessor.
+Both accept an optional `{ args }` to resolve a specific [keyed instance](/docs/core/instance-management) at call time (overriding `defaultArgs`), so the resolved instance can derive from current state. The handle is returned immediately at declaration time; resolution happens each time you call an accessor.
 
 :::tip[This is the part most state libraries can't do]
 A getter on one bloc can read **another bloc's** state (and its getters) and, via `.track()`, the React component reading that getter wakes when _either_ bloc changes — with no `useBloc(Other)`, no selectors, and no provider wiring. Jump to [Auto-tracking with `.track()`](#auto-tracking-with-track) for the whole story.
@@ -43,7 +43,7 @@ A getter on one bloc can read **another bloc's** state (and its getters) and, vi
 :::caution[`depend()` does not auto-subscribe]
 `depend()` only records the dependency and resolves the instance — it does **not** wire up a reactive subscription between the two blocs. Inside the bloc, `this.shipping.untracked().state.rate` is a plain read; it returns the current value but does not cause `CartCubit` to re-emit when shipping changes.
 
-Reactivity is supplied by the consumer that reads the derived value: a React component via the [auto-tracking proxy](/react/dependency-tracking), or non-React code via [`watch()`](/core/watch). If you need a bloc itself to react to a dependency's changes, subscribe explicitly (e.g. `watch(...)`) and tear it down in [`dispose`](/core/system-events). This is deliberate — a naive auto-bridge would loop forever on mutual dependencies.
+Reactivity is supplied by the consumer that reads the derived value: a React component via the [auto-tracking proxy](/docs/react/dependency-tracking), or non-React code via [`watch()`](/docs/core/watch). If you need a bloc itself to react to a dependency's changes, subscribe explicitly (e.g. `watch(...)`) and tear it down in [`dispose`](/docs/core/system-events). This is deliberate — a naive auto-bridge would loop forever on mutual dependencies.
 :::
 
 ```ts twoslash
@@ -77,13 +77,13 @@ class CartCubit extends Cubit<{ items: CartItem[] }> {
 ### How `depend()` works
 
 1. `this.depend(ShippingCubit)` records the dependency (`ShippingCubit` → instance key) and returns a `DepHandle<ShippingCubit>`.
-2. Calling `.untracked()` (or `.track()`) resolves the instance via [`ensure()`](/core/instance-management) from the registry — creating it if it does not exist yet.
+2. Calling `.untracked()` (or `.track()`) resolves the instance via [`ensure()`](/docs/core/instance-management) from the registry — creating it if it does not exist yet.
 3. The dependency is resolved **lazily on every call**, not when you declare it. This keeps `CartCubit` immune to dep-instance churn: if the depended-on instance is disposed and recreated, the next `shipping.untracked()` call simply returns the new one.
 4. When a React component reads `cart.total`, reactivity comes from the render-time tracker. Plain `this.shipping.untracked().state.rate` reads a live (untracked) instance — the component re-renders only if it is also subscribed to `ShippingCubit` via `useBloc`. To opt into automatic cross-bloc subscriptions without a second `useBloc` call, use [`.track()`](#auto-tracking-with-track) on the handle.
 
 ### Named instance dependencies
 
-By default, `depend(Type)` targets the `'default'` instance key. To depend on a specific [named instance](/core/instance-management), pass the `defaultArgs` that identify it (or override per call with `.track({ args })` / `.untracked({ args })`):
+By default, `depend(Type)` targets the `'default'` instance key. To depend on a specific [named instance](/docs/core/instance-management), pass the `defaultArgs` that identify it (or override per call with `.track({ args })` / `.untracked({ args })`):
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -104,7 +104,7 @@ class ReviewCubit extends Cubit<{ approved: boolean }> {
 }
 ```
 
-The `args` passed here must resolve to the same key the target instance is acquired under (via its `static key` or structural hash). Mismatched args resolve a _different_ instance — see [Inputs and identity](/guide/inputs) for how keys are derived.
+The `args` passed here must resolve to the same key the target instance is acquired under (via its `static key` or structural hash). Mismatched args resolve a _different_ instance — see [Inputs and identity](/docs/guide/inputs) for how keys are derived.
 
 ## Alternatives
 
@@ -151,11 +151,11 @@ class NotificationCubit extends Cubit<NotificationState> {
 
 > A bloc you `depend()` on is not kept alive _by you_. If nothing else holds a reference to it, the registry may dispose it the moment its own ref count hits zero.
 
-In practice this is usually fine, because the depended-on bloc is also mounted somewhere (a component holds a ref via [`useBloc`](/react/use-bloc)). But it is a real gotcha when the dependency is a "pure derived" service that no component renders directly.
+In practice this is usually fine, because the depended-on bloc is also mounted somewhere (a component holds a ref via [`useBloc`](/docs/react/use-bloc)). But it is a real gotcha when the dependency is a "pure derived" service that no component renders directly.
 
 There are two clean ways to guarantee a dependency stays alive:
 
-- **`keepAlive`** — mark the dependency class with `@blac({ keepAlive: true })` so the registry never auto-disposes it. See [Configuration](/core/configuration).
+- **`keepAlive`** — mark the dependency class with `@blac({ keepAlive: true })` so the registry never auto-disposes it. See [Configuration](/docs/core/configuration).
 - **The cascade does the right thing on teardown.** When a bloc that _created_ its dependencies (via `ensure`) is itself disposed and reaches zero refs, the registry cascades disposal to those deps if they too have zero refs and are not `keepAlive`. So a `depend()`-only dependency graph tears itself down cleanly without leaking.
 
 <details>
@@ -175,7 +175,7 @@ Two cross-bloc patterns reliably cause bugs. Both are easy to avoid once you kno
 **Mutual `depend()` between two blocs.** `A` depends on `B` and `B` depends on `A`. Declaration alone is safe (resolution is lazy), but if you also wire explicit subscriptions both ways, a change in one re-emits the other forever. The channel's same-tick coalescing limits the blast radius, but a true mutual reactive cycle is a design smell — extract the shared concern into a third bloc that both depend on, with the dependency arrows pointing one way.
 :::
 
-When you find yourself wanting a cycle, it usually signals that two blocs are really one concern, or that a piece of shared state belongs in a third, lower-level bloc. See [Core Concepts](/guide/concepts/) for when cross-bloc coupling is a smell versus a sound dependency.
+When you find yourself wanting a cycle, it usually signals that two blocs are really one concern, or that a piece of shared state belongs in a third, lower-level bloc. See [Core Concepts](/docs/guide/concepts/) for when cross-bloc coupling is a smell versus a sound dependency.
 
 ## Calling methods on dependencies
 
@@ -235,7 +235,7 @@ class ChannelCubit extends Cubit<ChannelState> {
 This keeps notification logic in `NotificationCubit` while letting `ChannelCubit` coordinate when it fires.
 
 :::tip[Reading state vs calling methods]
-These behave differently with respect to re-renders. **Reading** a dependency's `state` via `.track()` inside a getter subscribes the consuming component to that path (via the [auto-tracking proxy](/react/dependency-tracking)). **Calling a method** on a dependency through `.untracked()` — like `incrementUnread()` above — does not subscribe to anything; it just triggers a side effect in the other bloc. A component that only triggers actions on a dependency will not re-render when that dependency's state changes, which is exactly what you want for action-only coordination.
+These behave differently with respect to re-renders. **Reading** a dependency's `state` via `.track()` inside a getter subscribes the consuming component to that path (via the [auto-tracking proxy](/docs/react/dependency-tracking)). **Calling a method** on a dependency through `.untracked()` — like `incrementUnread()` above — does not subscribe to anything; it just triggers a side effect in the other bloc. A component that only triggers actions on a dependency will not re-render when that dependency's state changes, which is exactly what you want for action-only coordination.
 :::
 
 ## Derived getters across blocs
@@ -276,7 +276,7 @@ class DashboardCubit extends Cubit<Record<string, never>> {
 ```
 
 :::caution[A coordinating bloc with empty state is a smell]
-`Cubit<{}>` here holds no state of its own — it exists purely to compose other blocs' state. That is fine for a small read-only aggregator, but if it grows methods and starts coordinating writes across many blocs, it tends to become a god-bloc that re-couples everything `depend()` was meant to decouple. Prefer reading derived values directly in the component (or a small focused bloc per view) over one central dashboard bloc. See [Core Concepts](/guide/concepts/).
+`Cubit<{}>` here holds no state of its own — it exists purely to compose other blocs' state. That is fine for a small read-only aggregator, but if it grows methods and starts coordinating writes across many blocs, it tends to become a god-bloc that re-couples everything `depend()` was meant to decouple. Prefer reading derived values directly in the component (or a small focused bloc per view) over one central dashboard bloc. See [Core Concepts](/docs/guide/concepts/).
 :::
 
 ## Auto-tracking with `.track()`
@@ -495,5 +495,5 @@ Use `borrowSafe` over `borrow` when the instance may not exist yet. `borrow` thr
 
 ## See also
 
-- [Instance Management](/core/instance-management) — the registry, ref counting, and `ensure`/`borrow`/`acquire`
-- [Inputs and identity](/guide/inputs) — how `args` and `static key` resolve the instance a `depend()` targets
+- [Instance Management](/docs/core/instance-management) — the registry, ref counting, and `ensure`/`borrow`/`acquire`
+- [Inputs and identity](/docs/guide/inputs) — how `args` and `static key` resolve the instance a `depend()` targets

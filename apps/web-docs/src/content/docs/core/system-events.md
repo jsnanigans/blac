@@ -5,7 +5,7 @@ description: Lifecycle hooks inside a single state container instance — react 
 
 System events are lifecycle hooks **inside a single state container instance**. Use them to react to that instance's own state changes, disposal, or hydration status — from within the class, without any external wiring. Every signature on this page is quoted from the `@blac/core` source.
 
-**Why they exist:** sometimes a bloc needs to do something in response to its own lifecycle — tear down a timer when it's disposed, kick off a derived computation when its state settles, log a transition. `onSystemEvent` is the in-class hook for exactly that. It is the per-instance counterpart to [plugins](/core/plugins), which observe the same kinds of events but across _every_ instance (see [the comparison below](#system-events-vs-plugins)).
+**Why they exist:** sometimes a bloc needs to do something in response to its own lifecycle — tear down a timer when it's disposed, kick off a derived computation when its state settles, log a transition. `onSystemEvent` is the in-class hook for exactly that. It is the per-instance counterpart to [plugins](/docs/core/plugins), which observe the same kinds of events but across _every_ instance (see [the comparison below](#system-events-vs-plugins)).
 
 ## Available events
 
@@ -82,7 +82,7 @@ Fired once per **microtask flush** after state changes via `emit`, `update`, or 
 | `previousState` | `S`  | The state before any mutations in this flush. |
 
 :::note[Why once-per-flush?]
-A single user action often triggers several `emit`/`patch` calls in a row. If `stateChanged` fired on each one, every handler (and every subscriber and plugin downstream) would run multiple times for one logical change, with `previousState` pointing at transient in-between values nobody cares about. BlaC instead **coalesces** all synchronous mutations into one flush on the next microtask: `previousState` is the state before the _first_ mutation, `state` is the state after the _last_. That keeps handlers cheap and consistent, and it's the same batching model plugins' `onStateChange` and [`watch`](/core/watch) callbacks ride on. The trade-off: your handler runs **asynchronously**, just after the current synchronous code finishes — not inside the `emit` call.
+A single user action often triggers several `emit`/`patch` calls in a row. If `stateChanged` fired on each one, every handler (and every subscriber and plugin downstream) would run multiple times for one logical change, with `previousState` pointing at transient in-between values nobody cares about. BlaC instead **coalesces** all synchronous mutations into one flush on the next microtask: `previousState` is the state before the _first_ mutation, `state` is the state after the _last_. That keeps handlers cheap and consistent, and it's the same batching model plugins' `onStateChange` and [`watch`](/docs/core/watch) callbacks ride on. The trade-off: your handler runs **asynchronously**, just after the current synchronous code finishes — not inside the `emit` call.
 :::
 
 ```ts twoslash
@@ -110,7 +110,7 @@ Fired when the instance is disposed (ref count reaches zero or `dispose()` is ca
 **Payload:** `void` — no payload; the instance is already disposed when this fires.
 
 :::tip[The dispose hook is your `componentWillUnmount`]
-If a bloc starts a `setInterval`, opens a WebSocket, or subscribes to something external in its constructor/`init`, the `dispose` event is where you stop it. The registry disposes the instance the moment its last consumer releases (see [Instance Management](/core/instance-management)); without a `dispose` handler, those external resources keep running after the bloc is gone.
+If a bloc starts a `setInterval`, opens a WebSocket, or subscribes to something external in its constructor/`init`, the `dispose` event is where you stop it. The registry disposes the instance the moment its last consumer releases (see [Instance Management](/docs/core/instance-management)); without a `dispose` handler, those external resources keep running after the bloc is gone.
 :::
 
 ```ts twoslash
@@ -138,7 +138,7 @@ class PollingCubit extends Cubit<{ data: string | null }> {
 
 ### `hydrationChanged`
 
-Fired when the hydration status changes. Relevant when using the [Persistence plugin](/plugins/persistence).
+Fired when the hydration status changes. Relevant when using the [Persistence plugin](/docs/plugins/persistence).
 
 | Payload field           | Type                   | Description                                                             |
 | ----------------------- | ---------------------- | ----------------------------------------------------------------------- |
@@ -149,7 +149,7 @@ Fired when the hydration status changes. Relevant when using the [Persistence pl
 
 **Returns:** `void`.
 
-`changedWhileHydrating` is the signal that the bloc emitted real state _while_ async hydration was in flight — the persistence layer uses it to decide whether the just-loaded persisted state is stale and should be discarded. See [Persistence](/plugins/persistence) for the full hydration lifecycle.
+`changedWhileHydrating` is the signal that the bloc emitted real state _while_ async hydration was in flight — the persistence layer uses it to decide whether the just-loaded persisted state is stale and should be discarded. See [Persistence](/docs/plugins/persistence) for the full hydration lifecycle.
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -209,7 +209,7 @@ Both observe lifecycle, and they share the same coalesced-flush model — the di
 | **Access**   | Inside the class (`this.onSystemEvent`) | Global via `getPluginManager()`            |
 | **Use case** | Instance-specific side effects          | Cross-cutting concerns (logging, devtools) |
 
-Use system events for cleanup logic, derived computations, or side effects that belong to **one specific instance**. Use [plugins](/core/plugins) for behavior that applies **across all** state containers.
+Use system events for cleanup logic, derived computations, or side effects that belong to **one specific instance**. Use [plugins](/docs/core/plugins) for behavior that applies **across all** state containers.
 
 A useful way to see the relationship: a `stateChanged` system handler and a plugin's `onStateChange` hook fire off the _same_ underlying flush. The system event is the narrow, in-class view (this instance only, payload `{ state, previousState }`); the plugin hook is the broad, external view (every instance, plus the changed `paths` and a rich `PluginContext`). Reach for whichever scope matches the job — don't install a plugin to do one instance's cleanup, and don't try to make a system handler observe the whole app.
 
@@ -223,7 +223,7 @@ A useful way to see the relationship: a `stateChanged` system handler and a plug
 
 ## See also
 
-- [Plugins](/core/plugins) — the same lifecycle hooks observed across all instances
-- [watch](/core/watch) — observe a bloc's changes from outside the class (rides the same flush)
-- [Instance Management](/core/instance-management) — what triggers the `dispose` event
-- [Persistence](/plugins/persistence) — the real-world consumer of `hydrationChanged`
+- [Plugins](/docs/core/plugins) — the same lifecycle hooks observed across all instances
+- [watch](/docs/core/watch) — observe a bloc's changes from outside the class (rides the same flush)
+- [Instance Management](/docs/core/instance-management) — what triggers the `dispose` event
+- [Persistence](/docs/plugins/persistence) — the real-world consumer of `hydrationChanged`

@@ -5,7 +5,7 @@ description: Inspect live BlaC instances, their state and change history — in 
 
 BlaC DevTools lets you inspect live instances, browse each instance's state and change history, diff any change against the one before it, and follow a global log of created, changed and disposed instances. The same panel runs in an in-app overlay and in a Chrome DevTools tab.
 
-DevTools is delivered as a [plugin](/plugins/overview): once installed it observes every state container from the outside, so there is nothing to wire up per bloc. Keep it scoped to `environment: 'development'`.
+DevTools is delivered as a [plugin](/docs/plugins/overview): once installed it observes every state container from the outside, so there is nothing to wire up per bloc. Keep it scoped to `environment: 'development'`.
 
 ## Packages
 
@@ -115,7 +115,7 @@ class AnimationCubit extends Cubit<{ frame: number }> {
 }
 ```
 
-The agent skips these instances entirely. `excludeFromDevTools` is one of the [`blac()` configuration options](/core/configuration).
+The agent skips these instances entirely. `excludeFromDevTools` is one of the [`blac()` configuration options](/docs/core/configuration).
 
 :::tip[Readable names in production builds]
 Instances are listed by class name, which a minifier may mangle. Give a class a stable name with `static blacName = 'Counter'` and DevTools will use it.
@@ -137,6 +137,6 @@ The wire protocol (`@blac/devtools-connect/protocol`) is versioned: every agent 
 
 ## See also
 
-- [Plugin Overview](/plugins/overview) — the plugin catalog and the install API
-- [Logging Plugin](/plugins/logging) — passive console/CI logging; complements DevTools
-- [Configuration](/core/configuration) — `excludeFromDevTools` and the other `blac()` options
+- [Plugin Overview](/docs/plugins/overview) — the plugin catalog and the install API
+- [Logging Plugin](/docs/plugins/logging) — passive console/CI logging; complements DevTools
+- [Configuration](/docs/core/configuration) — `excludeFromDevTools` and the other `blac()` options

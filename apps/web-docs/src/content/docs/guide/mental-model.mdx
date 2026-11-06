@@ -5,7 +5,7 @@ description: The deep reasoning behind BlaC — the reactivity model, the per-co
 
 import RenderCounterDemo from '../../../components/demos/RenderCounterDemo.tsx';
 
-This is the page for understanding _why_ BlaC works the way it does. If you want a fast orientation — the names of things and a one-screen tour — read [Core Concepts](/guide/concepts) first; it is the quick tour. This page is the deep version: the reactivity model end to end, the design choices behind it, honest comparisons to other libraries, and the full data-flow lifecycle from mount to unmount.
+This is the page for understanding _why_ BlaC works the way it does. If you want a fast orientation — the names of things and a one-screen tour — read [Core Concepts](/docs/guide/concepts) first; it is the quick tour. This page is the deep version: the reactivity model end to end, the design choices behind it, honest comparisons to other libraries, and the full data-flow lifecycle from mount to unmount.
 
 Most of the surprising-at-first behavior in BlaC falls out of a single idea: **a component declares what it depends on by reading it, and BlaC wakes that component only when one of those exact reads would now produce a different value.** Everything else — proxies, path sets, ref counting, the registry — exists to make that one sentence true, cheaply, without you writing selectors.
 
@@ -72,7 +72,7 @@ The proxy and tracker are created per `useBloc` call and torn down with it. Ther
 
 When many components share a container, computing "what changed" separately for each one re-does the same equality checks N times — quadratic in consumer count exactly when you have the most consumers. BlaC inverts it: maintain one **skeleton** (the union of every live consumer's interest), diff the change once bounded to that skeleton, then settle each consumer with a set intersection. One walk plus N cheap intersections.
 
-This is not a BlaC-specific trick; it is the core algorithm of the [`@dirtytalk/structural`](/dirtytalk/) engine that BlaC's `StateContainer` extends. For the path-interning, skeleton, and proxy-recorder internals in full, see [How BlaC Works Internally](/guide/internals). The short version of the recording rules:
+This is not a BlaC-specific trick; it is the core algorithm of the [`@dirtytalk/structural`](https://dirtytalk.42.dog/) engine that BlaC's `StateContainer` extends. For the path-interning, skeleton, and proxy-recorder internals in full, see [How BlaC Works Internally](/docs/guide/internals). The short version of the recording rules:
 
 - **Leaf-only:** `a.b.c` records `a.b.c`, not `a.b`.
 - **Iteration is per-item:** `.map`/`for..of`/`.find` over `state.items` runs against the proxy, recording `items.length` plus whatever leaf paths the callback reads on each item (`items.0.name`, etc.). Identity-search methods (`includes`, `indexOf`, `lastIndexOf`) bind to the raw array and record `items`.
@@ -87,7 +87,7 @@ There is no `autoTrack` flag. A consumer is in one of two modes, decided purely 
 | **Auto-track** (default, `select` omitted) | Proxy records the paths you read in render                | A read path's value changes                            |
 | **`select` provided**                      | You return an array; subscription interest is `ALL_PATHS` | The returned array differs per-index (via `Object.is`) |
 
-`select` is the deliberate opt-out: you trade automatic per-path tracking for an explicit array, useful when you want to depend on a computed value or narrow a noisy read. See [Dependency Tracking](/react/dependency-tracking) for the decision guide and [useBloc](/react/use-bloc) for the full option list.
+`select` is the deliberate opt-out: you trade automatic per-path tracking for an explicit array, useful when you want to depend on a computed value or narrow a noisy read. See [Dependency Tracking](/docs/react/dependency-tracking) for the decision guide and [useBloc](/docs/react/use-bloc) for the full option list.
 
 ## Why these design choices
 
@@ -126,7 +126,7 @@ Two components calling `useBloc(CartCubit)` get the same instance because the re
 
 If instances live in a global registry, who frees them? A naive global store leaks: instances accumulate and never die. BlaC solves this with **reference counting**. Every `useBloc` call increments a ref on mount and releases it on unmount. When the count hits zero, the instance is **automatically disposed** and dropped from the registry — and disposal cascades to `ensure`-created dependencies that now also have zero refs.
 
-This is the lifecycle most context-free stores make you manage by hand. You only override it deliberately: `@blac({ keepAlive: true })` opts an instance out of auto-disposal so it survives at refcount zero (an app-wide singleton like auth or theme). Full registry-verb table lives in [Instance Management](/core/instance-management).
+This is the lifecycle most context-free stores make you manage by hand. You only override it deliberately: `@blac({ keepAlive: true })` opts an instance out of auto-disposal so it survives at refcount zero (an app-wide singleton like auth or theme). Full registry-verb table lives in [Instance Management](/docs/core/instance-management).
 
 ### The args / deps separation
 
@@ -135,14 +135,14 @@ Inputs to a bloc come in two flavors with opposite requirements, and conflating 
 - **`args`** is _serializable identity data_ — the user id whose data this bloc holds. It is forwarded to `init(args)` and used to compute the instance key, so two `useBloc(UserCubit, { args: { id: 7 } })` calls share one instance and a different id gets a different instance. Because it keys identity, `args` **must be serializable** (a function in `args` throws — put it in deps).
 - **`deps`** is _non-serializable, per-consumer handles_ — callbacks, API clients, refs. These must **not** affect identity (a shared instance can't have one identity per callback), so they are merged per consumer rather than baked into the key.
 
-Keeping these lanes separate is what lets a single shared instance accept per-consumer wiring without an override race (two consumers fighting over one value). The `args` lane is a first-class `useBloc` option and the sole source of instance identity; the `deps` runtime mechanism on `StateContainer` is currently internal and not exposed as a `useBloc` option in the React surface. The motivation and full mechanics live in [Inputs: args and deps](/guide/inputs).
+Keeping these lanes separate is what lets a single shared instance accept per-consumer wiring without an override race (two consumers fighting over one value). The `args` lane is a first-class `useBloc` option and the sole source of instance identity; the `deps` runtime mechanism on `StateContainer` is currently internal and not exposed as a `useBloc` option in the React surface. The motivation and full mechanics live in [Inputs: args and deps](/docs/guide/inputs).
 
 ### Immutable emit
 
 Change detection in step 3 relies on reference comparison — a path is "dirty" when its value is no longer `Object.is`-equal to before, and an _unchanged_ subtree is recognized by keeping its reference. That contract only holds if state is replaced immutably. So every mutator (`emit`, `patch`, `update`) installs a **new** value; none mutates in place, and there is no primitive that does.
 
 :::caution[In-place mutation is invisible]
-`this.state.items.push(x)` wakes no one. The array reference did not change, so its path is not dirty. Always replace: `this.patch({ items: [...this.state.items, x] })` or `this.update(s => ({ ...s, items: [...s.items, x] }))`. This is the single most common cause of "my component isn't updating" — see [Troubleshooting](/guide/troubleshooting).
+`this.state.items.push(x)` wakes no one. The array reference did not change, so its path is not dirty. Always replace: `this.patch({ items: [...this.state.items, x] })` or `this.update(s => ({ ...s, items: [...s.items, x] }))`. This is the single most common cause of "my component isn't updating" — see [Troubleshooting](/docs/guide/troubleshooting).
 :::
 
 A related consequence: mutations are **coalesced per microtask**. Several `emit`/`patch` calls in the same tick produce one flush — `prev` snapshotted at the first change, `next` at flush time — so consumers and plugins see one consistent transition instead of intermediate frames. This is a batching-for-consistency choice, not just performance: nobody observes a half-applied multi-field update.
@@ -160,7 +160,7 @@ BlaC borrows liberally and differs deliberately. Its core bet is **transparent p
 | **Redux Toolkit**             | Single store, slices, reducers, thunks        | Manual selectors (`useSelector`) + `reselect`          | Global store; manual slice cleanup                                       | BlaC collates state, actions, and derived getters into a single `Cubit` class instead of splitting logic across slices, thunks, and selectors.                                                             |
 | **MobX**                      | Observable mutable objects + `observer()` HOC | Automatic runtime observable tracking                  | Manual or owner-bound                                                    | BlaC uses **immutable** state snapshots (`emit`, `patch`, `update`) so history, diffs, and React concurrent rendering work without observable wrappers or `observer()` HOCs.                               |
 | **Jotai / Signals**           | Fine-grained bottom-up atoms                  | Per-atom subscription                                  | GC'd or scoped to a Provider                                             | Atoms excel at fine-grained independent values; BlaC groups related state, methods, and lifecycle into a cohesive domain class with named workflows.                                                       |
-| **TanStack Query**            | Server-state cache keyed by `queryKey`        | Per-query observer + `notifyOnChangeProps`             | Ref-counted cache with `staleTime` / `gcTime`                            | BlaC's `args` keying and ref-counted registry mirror Query's ergonomics, while [`@blac/async`](/guide/async-resources/) brings `resource()`, `mutation()`, and tag invalidation directly into your Cubits. |
+| **TanStack Query**            | Server-state cache keyed by `queryKey`        | Per-query observer + `notifyOnChangeProps`             | Ref-counted cache with `staleTime` / `gcTime`                            | BlaC's `args` keying and ref-counted registry mirror Query's ergonomics, while [`@blac/async`](/docs/guide/async-resources/) brings `resource()`, `mutation()`, and tag invalidation directly into your Cubits. |
 
 ### Same feature, three ways
 
@@ -204,7 +204,7 @@ class CartCubit extends Cubit<{ items: Item[] }> {
 - **Pure server-cache heavy apps with pagination, infinite scroll, and optimistic cache normalization across dozens of endpoints** → if your app has very little client domain logic and is mostly a REST/GraphQL cache viewer, TanStack Query (or pairing TanStack Query as the Data layer behind your Cubits) may fit better.
 - **Strict event-sourced audit logs** where every state change must be a serializable JSON action replayed over a pure reducer → Redux Toolkit is purpose-built for serializable action logs.
 
-For the broader architectural reasoning behind separating **UI**, **Logic**, and **Data**, see [Architecture & Philosophy](/guide/philosophy/).
+For the broader architectural reasoning behind separating **UI**, **Logic**, and **Data**, see [Architecture & Philosophy](/docs/guide/philosophy/).
 
 ## The full lifecycle: mount to unmount
 
@@ -249,7 +249,7 @@ Two details worth internalizing:
 
 ## See also
 
-- [Core Concepts](/guide/concepts) — the quick tour this page goes deep on
-- [Dependency Tracking](/react/dependency-tracking) — auto-track vs `select` in practice
-- [Inputs: args and deps](/guide/inputs) — the input lanes and identity precedence
-- [DirtyTalk](/dirtytalk/) — the path-tracking engine BlaC is built on
+- [Core Concepts](/docs/guide/concepts) — the quick tour this page goes deep on
+- [Dependency Tracking](/docs/react/dependency-tracking) — auto-track vs `select` in practice
+- [Inputs: args and deps](/docs/guide/inputs) — the input lanes and identity precedence
+- [DirtyTalk](https://dirtytalk.42.dog/) — the path-tracking engine BlaC is built on

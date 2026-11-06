@@ -27,15 +27,15 @@ class Cubit<
 
 ## Why a class? (and why "Cubit", not "Bloc")
 
-BlaC has exactly two base types: `StateContainer` (the abstract engine) and `Cubit` (the concrete class you extend). There is **no `Bloc` class** — if you are coming from `flutter_bloc`, the closest equivalent is `Cubit`. We use the name "bloc" colloquially to mean "any state-container instance," but the only thing you ever extend is `Cubit`. See [Core Concepts](/guide/concepts/) for the full StateContainer / Cubit / bloc / instance hierarchy.
+BlaC has exactly two base types: `StateContainer` (the abstract engine) and `Cubit` (the concrete class you extend). There is **no `Bloc` class** — if you are coming from `flutter_bloc`, the closest equivalent is `Cubit`. We use the name "bloc" colloquially to mean "any state-container instance," but the only thing you ever extend is `Cubit`. See [Core Concepts](/docs/guide/concepts/) for the full StateContainer / Cubit / bloc / instance hierarchy.
 
 The state lives in a **class** for three concrete reasons:
 
 - **State and the logic that changes it live together.** Methods like `addItem` sit next to the state they mutate, so an action is a method call, not a reducer plus an action-type constant plus a dispatch.
 - **Derived values are just getters.** A `get total()` is computed on read and tracked automatically — no selector library, no memo wiring (see [Getters](#getters-derived-state)).
-- **Instances have identity and a lifecycle.** The registry can create, key, ref-count, and dispose instances. That is what makes shared-vs-scoped state, `args`, and `deps` possible (see [Instance Management](/core/instance-management)).
+- **Instances have identity and a lifecycle.** The registry can create, key, ref-count, and dispose instances. That is what makes shared-vs-scoped state, `args`, and `deps` possible (see [Instance Management](/docs/core/instance-management)).
 
-For the deeper rationale (why proxy tracking over selectors, why microtask batching, how this compares to Redux/Zustand/MobX), see the [Mental Model](/guide/mental-model).
+For the deeper rationale (why proxy tracking over selectors, why microtask batching, how this compares to Redux/Zustand/MobX), see the [Mental Model](/docs/guide/mental-model).
 
 ## Constructor
 
@@ -86,7 +86,7 @@ Notice `addItem` and `setFilter` are defined as arrow-function class fields, not
 State in BlaC is **immutable from the outside**: you never assign to `this.state.x`. Instead you hand the container a _new_ state and it diffs the change, marks which paths moved, and wakes only the consumers that read those paths. The three methods below are three ways to produce that next state.
 
 :::note[Why immutable?]
-The diffing that powers smart re-renders (see [Dependency Tracking](/react/dependency-tracking)) needs a previous value and a next value to compare. Mutating in place would leave nothing to compare against, so a mutation would either re-render everything or nothing. Producing a new value on every change is what lets BlaC wake exactly the right consumers.
+The diffing that powers smart re-renders (see [Dependency Tracking](/docs/react/dependency-tracking)) needs a previous value and a next value to compare. Mutating in place would leave nothing to compare against, so a mutation would either re-render everything or nothing. Producing a new value on every change is what lets BlaC wake exactly the right consumers.
 :::
 
 ### `emit(next)`
@@ -103,7 +103,7 @@ emit(next: S): void
 
 **Returns:** `void`.
 
-**Behavior.** `emit` is a no-op when the next state is equal to the current one: it short-circuits if `prev === next` by reference, or if the configured equality function (default: shallow per-key `Object.is`) reports them equal. So emitting an object that happens to match the current state will not wake any consumers. Equality is configurable per class via `blac({ equality })` and globally via `configureBlac` — see [Configuration](/core/configuration).
+**Behavior.** `emit` is a no-op when the next state is equal to the current one: it short-circuits if `prev === next` by reference, or if the configured equality function (default: shallow per-key `Object.is`) reports them equal. So emitting an object that happens to match the current state will not wake any consumers. Equality is configurable per class via `blac({ equality })` and globally via `configureBlac` — see [Configuration](/docs/core/configuration).
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -219,7 +219,7 @@ Getters are how you model **derived state** — values computed from other state
 A getter has no signature fence of its own — it is plain TypeScript on your subclass. In React render, it participates in auto-tracking:
 
 :::tip[Getters auto-track in render]
-Reading a getter from the `bloc` returned by `useBloc` (`bloc.total`) records the `this.state` paths the getter touches. Name the getter in `select` only when the getter's return value should be the explicit re-render boundary: `useBloc(CartCubit, { select: (state, bloc) => [bloc.total] })`. See [Dependency Tracking](/react/dependency-tracking).
+Reading a getter from the `bloc` returned by `useBloc` (`bloc.total`) records the `this.state` paths the getter touches. Name the getter in `select` only when the getter's return value should be the explicit re-render boundary: `useBloc(CartCubit, { select: (state, bloc) => [bloc.total] })`. See [Dependency Tracking](/docs/react/dependency-tracking).
 :::
 
 ```ts twoslash
@@ -282,7 +282,7 @@ protected init(args: Args): void
 
 **Returns:** `void`.
 
-**Behavior.** A protected lifecycle method — not callable from outside the class. The framework calls it **once per instance**, synchronously after `new Type()` and before the first state snapshot is read. It replaces the old `setConfig`/`setProps` patterns. When `useBloc` is called with `{ args }`, those args are required at the call site (type error if omitted when `Args != void`), used to derive the instance identity (different args ⇒ different instance), and available synchronously in `init` before any consumer sees state. See [Passing Inputs](/guide/inputs) for the full args/identity model.
+**Behavior.** A protected lifecycle method — not callable from outside the class. The framework calls it **once per instance**, synchronously after `new Type()` and before the first state snapshot is read. It replaces the old `setConfig`/`setProps` patterns. When `useBloc` is called with `{ args }`, those args are required at the call site (type error if omitted when `Args != void`), used to derive the instance identity (different args ⇒ different instance), and available synchronously in `init` before any consumer sees state. See [Passing Inputs](/docs/guide/inputs) for the full args/identity model.
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -363,12 +363,12 @@ function pollWhileActive(cubit: StateContainer) {
 
 Called from a field initializer, the handler runs after args and the registry are set (registration itself happens earlier), so read `this.args` inside the handler.
 
-[Async Resources](/guide/async-resources/) is built on this hook.
+[Async Resources](/docs/guide/async-resources/) is built on this hook.
 
 `init` is **not** deprecated and keeps working exactly as documented above — it's still the right place to seed synchronous state from `args`. Only the recommendation for side effects moves: `onActivate` fires only when something actually owns the instance, so work started there is never wasted on a discarded or SSR-only render.
 
 :::caution[Ordering with `useBlocDeps`]
-In `@blac/react`, `onActivate` fires in a layout effect, before the first `useBlocDeps` slice is applied (which happens in a passive effect). A bloc reading `this.deps.x` inside `onActivate` sees `undefined` on first activation. Use `onDepsChanged` for deps-driven work instead — see [Passing Inputs](/guide/inputs).
+In `@blac/react`, `onActivate` fires in a layout effect, before the first `useBlocDeps` slice is applied (which happens in a passive effect). A bloc reading `this.deps.x` inside `onActivate` sees `undefined` on first activation. Use `onDepsChanged` for deps-driven work instead — see [Passing Inputs](/docs/guide/inputs).
 :::
 
 ### `static key`: explicit identity declaration
@@ -510,12 +510,12 @@ class CanvasRendererCubit extends Cubit<
 - **Two consumers writing the same `deps` key.** Deps are merged per consumer into one view. If two `useBloc` call sites both supply `deps.controller`, the bloc sees one of them (last writer for that key) — decide a single owner.
 - **Reading `this.deps.x` without guarding.** A dep may legitimately be `undefined` (no consumer has supplied it yet, or it unmounted). Always use optional chaining, as in `this.deps.inputRef?.current`.
 
-See [Passing Inputs](/guide/inputs) for the full identity/merge model and [Core Concepts](/guide/concepts/) for the judgment on which lane to reach for.
+See [Passing Inputs](/docs/guide/inputs) for the full identity/merge model and [Core Concepts](/docs/guide/concepts/) for the judgment on which lane to reach for.
 :::
 
 ## `depend(Type)`
 
-Declare a cross-bloc dependency. See [Bloc Communication](/core/bloc-communication) for the full pattern.
+Declare a cross-bloc dependency. See [Bloc Communication](/docs/core/bloc-communication) for the full pattern.
 
 ```ts
 protected depend<T extends StateContainerConstructor>(
@@ -529,7 +529,7 @@ protected depend<T extends StateContainerConstructor>(
 | `Type`        | `T extends StateContainerConstructor` | yes      | The state-container class to depend on.                                                             |
 | `defaultArgs` | `ExtractArgs<T>`                      | no       | Args identifying which keyed instance to resolve when an accessor is called without its own `args`. |
 
-**Returns:** a `DepHandle<T>` with two accessors — `handle.untracked()` resolves the dep against the registry lazily on each call (`this.user.untracked()`), and `handle.track()` does the same _plus_ subscribes the reading React consumer. Both take an optional `{ args }` to override `defaultArgs` per call. See [Auto-tracking with `.track()`](/core/bloc-communication#auto-tracking-with-track).
+**Returns:** a `DepHandle<T>` with two accessors — `handle.untracked()` resolves the dep against the registry lazily on each call (`this.user.untracked()`), and `handle.track()` does the same _plus_ subscribes the reading React consumer. Both take an optional `{ args }` to override `defaultArgs` per call. See [Auto-tracking with `.track()`](/docs/core/bloc-communication#auto-tracking-with-track).
 
 **Behavior.** Records the dependency, then returns the handle. Resolving on every call keeps the surface immune to dep-instance churn. Note: `.untracked()` does **not** auto-resubscribe to the dep's channel — consumers that need reactive updates use `.track()` (or subscribe explicitly via `useBloc`'s tracker). A naive always-on auto-bridge would cycle on mutual deps, which is why tracking is opt-in.
 
@@ -562,8 +562,8 @@ These are available inside your Cubit class but not from the outside:
 - `this.state` — read the current state.
 - [`this.init(args)`](#init-args) — lifecycle called once before first snapshot (override when `Args` is declared).
 - [`this.onDepsChanged(next, prev)`](#ondepschanged-next-prev) — lifecycle called after each `deps` merge (override when `Deps` is declared).
-- `this.onSystemEvent(event, handler)` — listen to lifecycle events (see [System Events](/core/system-events)).
-- [`this.depend(OtherClass)`](#depend-type) — declare a dependency on another state container (see [Bloc Communication](/core/bloc-communication)).
+- `this.onSystemEvent(event, handler)` — listen to lifecycle events (see [System Events](/docs/core/system-events)).
+- [`this.depend(OtherClass)`](#depend-type) — declare a dependency on another state container (see [Bloc Communication](/docs/core/bloc-communication)).
 
 ## Public properties
 
@@ -577,9 +577,9 @@ These are available inside your Cubit class but not from the outside:
 | `$blac.disposed`             | `boolean`                | Whether the instance has been disposed                                                                                    |
 | `$blac.registry`             | `StateContainerRegistry` | The registry that owns this instance (the global one for a bare `new`)                                                    |
 | `$blac.hydration`            | `BlacHydration<S>`       | Hydration lifecycle object. See below.                                                                                    |
-| `$blac.hydration.status`     | `HydrationStatus`        | Current hydration phase (`'idle'` \| `'hydrating'` \| `'hydrated'` \| `'error'`); see [Persistence](/plugins/persistence) |
+| `$blac.hydration.status`     | `HydrationStatus`        | Current hydration phase (`'idle'` \| `'hydrating'` \| `'hydrated'` \| `'error'`); see [Persistence](/docs/plugins/persistence) |
 | `$blac.hydration.isHydrated` | `boolean`                | Shorthand: `status === 'hydrated'`                                                                                        |
-| `$blac.hydration.wait()`     | `Promise<void>`          | Resolves once hydration settles; see [Persistence](/plugins/persistence)                                                  |
+| `$blac.hydration.wait()`     | `Promise<void>`          | Resolves once hydration settles; see [Persistence](/docs/plugins/persistence)                                                  |
 
 ## Async methods
 
@@ -656,12 +656,12 @@ class FormCubit extends Cubit<{ email: string; password: string }> {
 
 ## See also
 
-- [Mental Model](/guide/mental-model) — why class-based containers, proxy tracking, and microtask batching
-- [Passing Inputs](/guide/inputs) — the full args / deps identity model
+- [Mental Model](/docs/guide/mental-model) — why class-based containers, proxy tracking, and microtask batching
+- [Passing Inputs](/docs/guide/inputs) — the full args / deps identity model
 
 ## Troubleshooting
 
-For the full FAQ see [Troubleshooting](/guide/troubleshooting). Below are the Cubit-specific problems.
+For the full FAQ see [Troubleshooting](/docs/guide/troubleshooting). Below are the Cubit-specific problems.
 
 ### `emit` silently drops fields
 
@@ -715,4 +715,4 @@ useBloc(UploadCubit, { args: { endpoint: '/upload' } });
 // (wire the callback via deps — see Cubit Deps and Passing Inputs)
 ```
 
-See [Deps: non-serializable handles](#deps-non-serializable-handles) and [Troubleshooting: instance identity](/guide/troubleshooting#instance-identity-too-many--too-few).
+See [Deps: non-serializable handles](#deps-non-serializable-handles) and [Troubleshooting: instance identity](/docs/guide/troubleshooting#instance-identity-too-many--too-few).

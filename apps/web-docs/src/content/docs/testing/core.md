@@ -3,7 +3,7 @@ title: Core Testing API
 description: The full @blac/core/testing helper reference — registry isolation, state seeding, stubs, overrides, and async helpers.
 ---
 
-All core testing utilities are imported from `@blac/core/testing`. They work with any test runner and have no framework-specific dependencies — only the test globals (`describe`/`it`/`expect`/`vi`) come from your runner, which in this project is [`vite-plus`](/testing/overview#why-registry-isolation-matters).
+All core testing utilities are imported from `@blac/core/testing`. They work with any test runner and have no framework-specific dependencies — only the test globals (`describe`/`it`/`expect`/`vi`) come from your runner, which in this project is [`vite-plus`](/docs/testing/overview#why-registry-isolation-matters).
 
 ```ts
 import {
@@ -208,7 +208,7 @@ Creates a real instance with optional pre-set state and method overrides. Works 
 | `state`   | Seeds starting state. Merged via `patch()` for object state (provide only the fields you care about); replaced via `emit()` for non-object state. |
 | `methods` | Replaces specific methods on the instance. Everything else stays real.                                                                            |
 | `args`    | Passed to `init(args)`. Only allowed when the bloc declares a non-`void` `Args`; omitting it calls `init(undefined)`, as the registry would.      |
-| `deps`    | Pre-wires a [`deps`](/guide/inputs) slice so `onDepsChanged` fires during the test.                                                               |
+| `deps`    | Pre-wires a [`deps`](/docs/guide/inputs) slice so `onDepsChanged` fires during the test.                                                               |
 
 The options apply in source order: `args` runs `init` first, then `state` overrides on top, then `methods` are swapped, then `deps` are wired (which may itself emit via `onDepsChanged`).
 
@@ -264,7 +264,7 @@ it('reacts to a wired dependency', () => {
 `args` and `deps` can be combined with `state` and `methods` in the same call.
 
 :::tip
-`createCubitStub` is the only place `deps` enter the testing API. The registry helpers (`withBlocState`, `withBlocMethod`, `registerOverride`, `overrideEnsure`) take an optional trailing `args` argument — it both keys the instance and seeds `init(args)` — but none of them accept `deps`. For a deps-wired instance, build it with `createCubitStub({ args, deps })` and inject it with `registerOverride`. See [Inputs](/guide/inputs) for the `args`/`deps` model.
+`createCubitStub` is the only place `deps` enter the testing API. The registry helpers (`withBlocState`, `withBlocMethod`, `registerOverride`, `overrideEnsure`) take an optional trailing `args` argument — it both keys the instance and seeds `init(args)` — but none of them accept `deps`. For a deps-wired instance, build it with `createCubitStub({ args, deps })` and inject it with `registerOverride`. See [Inputs](/docs/guide/inputs) for the `args`/`deps` model.
 :::
 
 Stubs are commonly paired with `registerOverride` to inject them into the registry for use by dependent code or React components.
@@ -370,7 +370,7 @@ it('finishes loading', async () => {
 :::
 
 :::caution[`flush()` drains microtasks, not timers]
-`flush()` awaits the microtask queue. If your code schedules work with `setTimeout`/`setInterval`, drive it with `vi.useFakeTimers()` + `vi.advanceTimersByTime()` instead — `flush()` will not advance real or fake timers. This is the mirror image of the once-per-flush batching described in [System Events](/core/system-events).
+`flush()` awaits the microtask queue. If your code schedules work with `setTimeout`/`setInterval`, drive it with `vi.useFakeTimers()` + `vi.advanceTimersByTime()` instead — `flush()` will not advance real or fake timers. This is the mirror image of the once-per-flush batching described in [System Events](/docs/core/system-events).
 :::
 
 ## Combining helpers
@@ -457,12 +457,12 @@ it('includes shipping in total', () => {
 });
 ```
 
-The stub is a real `ShippingCubit` instance, so `cart`'s `.shipping.untracked()` resolves it exactly as it would in production — no special mocking framework needed. (For the production-side picture of how `depend()` resolves from the registry, see [Bloc Communication](/core/bloc-communication).)
+The stub is a real `ShippingCubit` instance, so `cart`'s `.shipping.untracked()` resolves it exactly as it would in production — no special mocking framework needed. (For the production-side picture of how `depend()` resolves from the registry, see [Bloc Communication](/docs/core/bloc-communication).)
 
 :::danger[Common mistakes]
 
 - **Overriding a dependency _after_ the dependent bloc has already read it.** `depend()` resolves lazily on each call, but if your dependent bloc cached a value in `init()` from the dependency, register the override _before_ you `ensure` the dependent bloc.
-- **Forgetting that `depend()` uses `ensure` (no ref).** Within a test the registry is isolated, so this rarely bites — but in app code a depended-on bloc can be disposed if nothing holds a ref. See [Bloc Communication](/core/bloc-communication).
+- **Forgetting that `depend()` uses `ensure` (no ref).** Within a test the registry is isolated, so this rarely bites — but in app code a depended-on bloc can be disposed if nothing holds a ref. See [Bloc Communication](/docs/core/bloc-communication).
   :::
 
 ## Testing keyed instances
@@ -486,8 +486,8 @@ it('manages independent editor instances', () => {
 
 ## See also
 
-- [Testing Overview](/testing/overview) — why registry isolation matters and the import convention
-- [React Testing](/testing/react) — `renderWithBloc` / `renderWithRegistry`, built on these primitives
-- [Instance Management](/core/instance-management) — the registry, `ensure`, and ref counting these helpers isolate
-- [Bloc Communication](/core/bloc-communication) — the canonical `depend()` / cross-bloc example
-- [System Events](/core/system-events) — the once-per-flush batching that `flush()` drains
+- [Testing Overview](/docs/testing/overview) — why registry isolation matters and the import convention
+- [React Testing](/docs/testing/react) — `renderWithBloc` / `renderWithRegistry`, built on these primitives
+- [Instance Management](/docs/core/instance-management) — the registry, `ensure`, and ref counting these helpers isolate
+- [Bloc Communication](/docs/core/bloc-communication) — the canonical `depend()` / cross-bloc example
+- [System Events](/docs/core/system-events) — the once-per-flush batching that `flush()` drains

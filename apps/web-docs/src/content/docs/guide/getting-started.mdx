@@ -1,9 +1,10 @@
 ---
 title: Quick Start
-description: Install BlaC and build your first Cubit-powered React component.
+description: Install BlaC, write a Cubit, use it from React, share it between components and load data. About ten minutes.
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+import Tabs from '../../../components/kit/Tabs.astro';
+import TabItem from '../../../components/kit/TabItem.astro';
 
 :::caution[Beta]
 BlaC v2 is in beta. Breaking changes may ship in patch releases, so pin exact versions and check the changelog before upgrading.
@@ -35,12 +36,12 @@ yarn add @blac/core @blac/react
   </TabItem>
 </Tabs>
 
-BlaC requires React 18+ and TypeScript is strongly recommended.
+BlaC needs React 18 or 19. TypeScript is optional, but recommended: state and method types flow from your class into `useBloc`.
 
 <details>
 <summary>Recommended `tsconfig.json`</summary>
 
-BlaC works with a standard strict React setup. The `@blac()` decorator (used for `keepAlive`, `static key`, and other options) works as either a legacy (`experimentalDecorators`) or a TC39/stage-3 decorator — enable decorator support in your tsconfig to use the `@blac(...)` syntax. Or skip decorators entirely with the functional form — `blac({ ... })(class extends Cubit { ... })` — which needs no extra compiler flags.
+A standard strict React setup works. The `@blac(...)` decorator (for options like `keepAlive` and `isolated`) works as a legacy (`experimentalDecorators`) or a TC39 decorator. To skip decorators, call it as a function instead: `blac({ keepAlive: true })(MyCubit)`, which needs no compiler flags.
 
 ```jsonc
 {
@@ -58,7 +59,7 @@ BlaC works with a standard strict React setup. The `@blac()` decorator (used for
 
 ## Step 1: Define a Cubit
 
-A Cubit is a class that holds state and exposes methods to change it.
+A Cubit is a class that holds state and has methods that change it.
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -92,7 +93,7 @@ Every method here is an arrow-function class field (`increment = () => …`), no
 
 ## Step 2: Use it in React
 
-The `useBloc` hook connects your component to a Cubit.
+`useBloc` connects a component to a Cubit.
 
 ```tsx
 import { useBloc } from '@blac/react';
@@ -113,12 +114,12 @@ function Counter() {
 
 `useBloc` returns a tuple:
 
-- `state` — the current state snapshot (tracked for re-renders)
-- `counter` — the Cubit instance (call methods on it)
+- `state`: the current state. The values the component reads from it decide when it re-renders.
+- `counter`: the Cubit instance. Call its methods.
 
 ## Step 3: Share state across components
 
-By default, every component that calls `useBloc(CounterCubit)` gets the **same instance**. State is automatically shared.
+Every component that calls `useBloc(CounterCubit)` gets the **same instance**, so state is shared by default.
 
 ```tsx
 function CounterDisplay() {
@@ -141,11 +142,11 @@ function App() {
 }
 ```
 
-When `CounterControls` calls `increment`, `CounterDisplay` re-renders with the new count. No providers, no context, no prop drilling.
+When `CounterControls` calls `increment`, `CounterDisplay` re-renders with the new count. `CounterControls` never reads `state`, so it doesn't re-render at all. No provider, context or prop drilling is involved.
 
 ## Step 4: Add business logic
 
-Keep logic in the class, not in the component.
+Rules belong in the class. The component stays a view.
 
 ```ts
 class TodoCubit extends Cubit<{ items: string[]; input: string }> {
@@ -175,7 +176,7 @@ class TodoCubit extends Cubit<{ items: string[]; input: string }> {
 
 Notice the two write styles: `addTodo` uses `update` and lists _both_ keys (replacing the whole state), while `removeTodo` uses `patch` and mentions _only_ `items` (merging into the rest). Both are correct — the difference is exactly the replace-vs-merge rule from Step 1.
 
-Getters like `isEmpty` derive a value on every read, so they can never drift from `items`. When a component reads `todo.isEmpty` during render, auto-tracking records the getter's underlying `this.state.items.length` read through the proxy. Use `select` only when you want the getter's return value to be the explicit re-render boundary. The full rule is in [Dependency Tracking](/react/dependency-tracking). For async work (loading flags, fetches, request guards), see [Async](/guide/async).
+Getters like `isEmpty` compute their value on every read, so they can't drift from `items`. When a component reads `todo.isEmpty` during render, tracking records what the getter read (`items.length`), and the component re-renders when that changes. [Dependency Tracking](/docs/react/dependency-tracking) has the full rules.
 
 :::caution[Component not re-rendering?]
 The two most common first-time causes:
@@ -183,12 +184,12 @@ The two most common first-time causes:
 1. **Reading raw state off the bloc instead of the `state` proxy.** Auto-tracking records reads on the destructured `state` value and on getters read from the returned `bloc` proxy during render. It does not track `counter.state.count`, because that reads raw state directly. Read through `state` in render, or expose a getter that reads `this.state`.
 2. **Expecting `emit`/`update` to merge.** They _replace_ the whole state, so any key you omit is dropped. Use `patch` to merge, or spread the previous state.
 
-The full symptom list is in [Troubleshooting & FAQ](/guide/troubleshooting).
+The full symptom list is in [Troubleshooting & FAQ](/docs/guide/troubleshooting).
 :::
 
 ## Step 5: Fetch something
 
-An async action is just a method that `await`s and emits as it goes. Model the lifecycle as a `status` union so the view can render loading and error states, and use a request-id guard so a slow response can never overwrite a newer one.
+An async action is a method that `await`s and updates state as it goes. Model the lifecycle as a `status` union so the view can render loading and error states, and guard with a request id so a slow response can't overwrite a newer one.
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -227,31 +228,23 @@ class UserCubit extends Cubit<UserState> {
 }
 ```
 
-The view switches on `state.status` and TypeScript narrows each branch. Derived loading flags, the loadable surface, cancellation with `AbortController`, and why BlaC does _not_ use React Suspense are all in the [Async guide](/guide/async).
+The view switches on `state.status`, and TypeScript narrows each branch. For real apps, [`@blac/async`](/docs/guide/async-resources) packages this pattern: a status slot in state, the latest request wins, and requests abort when the bloc is released. The [Async guide](/docs/guide/async) covers cancellation and why BlaC doesn't use Suspense.
 
 ## What just happened?
 
 When you call `useBloc(CounterCubit)`:
 
-1. The **registry** checks if an instance of `CounterCubit` already exists
-2. If not, it creates one and stores it. If yes, it returns the existing one
-3. A **ref count** is incremented (tracking how many components use this instance)
-4. The hook subscribes to state changes using **auto-tracking** — a Proxy wraps the state and records which properties your render function accesses
-5. On re-render, only changes to those specific properties trigger an update
-6. When the component unmounts, the ref count decrements. At zero, the instance is disposed
+1. The **registry** looks for an existing `CounterCubit` instance, and creates one if there is none.
+2. It increments the instance's **ref count**: how many components are using it.
+3. During render, `state` is a **proxy** that records which values the component reads.
+4. When state changes, the component re-renders only if one of the values it read changed.
+5. On unmount, the ref count goes down. At zero, the instance is disposed.
 
-Each of these steps has a "why" worth understanding once your app grows — why a proxy beats selectors, why disposal is automatic, why updates batch on a microtask. That deep version lives in the [Mental Model](/guide/mental-model).
+The [Mental Model](/docs/guide/mental-model) explains why each step works this way: why a proxy instead of selectors, why disposal is automatic, why updates batch on a microtask.
 
-## What's next?
+## Next
 
-- [Core Concepts](/guide/concepts) — A quick tour of registry, tracking, and lifecycle
-- [Mental Model](/guide/mental-model) — The deep version of "what just happened?"
-- [Cubit](/core/cubit) — Full Cubit API
-- [useBloc](/react/use-bloc) — Hook options and tracking modes
-
-## See also
-
-- [Core Concepts](/guide/concepts) — the quick conceptual tour
-- [Cubit](/core/cubit) — `emit` / `update` / `patch` in full
-- [useBloc](/react/use-bloc) — every hook option and both tracking modes
-- [DevTools](/plugins/devtools) — inspect state and re-renders in real time
+- [Chapter 01: Touch it, you're subscribed](/learn/touch-it/): watch tracking run, step by step.
+- [Core Concepts](/docs/guide/concepts): the registry, tracking and lifecycle on one page.
+- [Tutorial](/docs/guide/tutorial): build a todo app with undo and time travel.
+- [useBloc](/docs/react/use-bloc): every hook option.

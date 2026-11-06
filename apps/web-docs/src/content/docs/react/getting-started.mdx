@@ -3,11 +3,12 @@ title: React Getting Started
 description: Install BlaC and connect a React component to a Cubit with useBloc, getting from install to a working counter and todo list.
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+import Tabs from '../../../components/kit/Tabs.astro';
+import TabItem from '../../../components/kit/TabItem.astro';
 
-BlaC's mental model is one line: **state lives in a class (a Cubit), and `useBloc` connects a component to it, re-rendering only when the data that component actually reads changes.** No providers to wire up, no reducers, no selectors required. For the full reasoning behind that design, see [Mental Model](/guide/mental-model).
+BlaC's mental model is one line: **state lives in a class (a Cubit), and `useBloc` connects a component to it, re-rendering only when the data that component actually reads changes.** No providers to wire up, no reducers, no selectors required. For the full reasoning behind that design, see [Mental Model](/docs/guide/mental-model).
 
-This page gets you from install to a working counter and todo list. For the framework-agnostic introduction to Cubits, see [Getting Started](/guide/getting-started); this page focuses on the React binding.
+This page gets you from install to a working counter and todo list. For the framework-agnostic introduction to Cubits, see [Getting Started](/docs/guide/getting-started); this page focuses on the React binding.
 
 ## Installation
 
@@ -88,7 +89,7 @@ A Cubit exposes three mutation methods. Most code uses `emit`; reach for the oth
 <details>
 <summary>Where does the state live?</summary>
 
-The instance is held in a global registry and reference-counted by `useBloc`. The "what just happened" details — acquire on mount, release on unmount, automatic disposal at zero refs — are covered in [Instance Management](/core/instance-management), and the reasoning behind the design is in [Mental Model](/guide/mental-model).
+The instance is held in a global registry and reference-counted by `useBloc`. The "what just happened" details — acquire on mount, release on unmount, automatic disposal at zero refs — are covered in [Instance Management](/docs/core/instance-management), and the reasoning behind the design is in [Mental Model](/docs/guide/mental-model).
 
 </details>
 
@@ -102,7 +103,7 @@ Auto-tracking is on by default and needs no configuration. The only knob is per 
 | Manual select | `select: (s) => [s.count]` | A selected value changes (per-index `Object.is`) |
 
 :::tip[There is no `autoTrack` flag and no required config]
-Tracking is automatic and structural — driven by a render-time proxy, not by decorating fields or flipping a switch. Use `select` only when a computed value or explicit dependency list should drive re-renders. See [Dependency Tracking](/react/dependency-tracking) for the full model.
+Tracking is automatic and structural — driven by a render-time proxy, not by decorating fields or flipping a switch. Use `select` only when a computed value or explicit dependency list should drive re-renders. See [Dependency Tracking](/docs/react/dependency-tracking) for the full model.
 :::
 
 ## Instance modes at a glance
@@ -116,7 +117,7 @@ By default all components calling `useBloc(SameCubit)` share one instance. You c
 | Per-args (custom key)   | `{ args: { id } }` + `static key = (a) => a.id` | Only the keyed field forks instances; others ride along |
 | Per-mount               | `@blac({ isolated: true })` on the class        | Each component mount gets a private instance            |
 
-See [Passing Inputs](/guide/inputs) for the full identity model and precedence.
+See [Passing Inputs](/docs/guide/inputs) for the full identity model and precedence.
 
 ## Scoping to a registry
 
@@ -131,7 +132,7 @@ import { RegistryProvider } from '@blac/react';
 </RegistryProvider>;
 ```
 
-Descendant `useBloc` calls acquire from that registry instead of the global one, so the subtree shares nothing with the rest of the page. Use it for test isolation, per-request isolation on the server, and micro-frontends embedded in a host app. See [SSR & per-request isolation](/integrations/ssr).
+Descendant `useBloc` calls acquire from that registry instead of the global one, so the subtree shares nothing with the rest of the page. Use it for test isolation, per-request isolation on the server, and micro-frontends embedded in a host app. See [SSR & per-request isolation](/docs/integrations/ssr).
 
 The plain `@blac/core` helpers (`acquire`, `ensure`, `borrow`, `watch`, …) can't see React context, so they always use the global registry (`getRegistry()`), even inside a `RegistryProvider`. To work with the provider's registry from a component, get it with `useRegistry()` and call its methods:
 
@@ -148,13 +149,13 @@ function CountersDebug() {
 
 Once the counter works, the natural next steps are reading state efficiently and giving blocs input:
 
-- [useBloc](/react/use-bloc) — Full hook reference, options, and identity rules
-- [Dependency Tracking](/react/dependency-tracking) — How smart re-renders work and their limits
-- [Passing Inputs](/guide/inputs) — `args`, per-mount instances, and identity keying
+- [useBloc](/docs/react/use-bloc) — Full hook reference, options, and identity rules
+- [Dependency Tracking](/docs/react/dependency-tracking) — How smart re-renders work and their limits
+- [Passing Inputs](/docs/guide/inputs) — `args`, per-mount instances, and identity keying
 
 ## See also
 
-- [Mental Model](/guide/mental-model) — Why BlaC works the way it does
-- [Cubit](/core/cubit) — The state container: `emit`, `update`, `patch`, lifecycle
-- [Performance](/react/performance) — Patterns and anti-patterns
-- [Getting Started](/guide/getting-started) — Framework-agnostic introduction
+- [Mental Model](/docs/guide/mental-model) — Why BlaC works the way it does
+- [Cubit](/docs/core/cubit) — The state container: `emit`, `update`, `patch`, lifecycle
+- [Performance](/docs/react/performance) — Patterns and anti-patterns
+- [Getting Started](/docs/guide/getting-started) — Framework-agnostic introduction

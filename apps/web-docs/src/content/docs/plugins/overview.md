@@ -3,7 +3,7 @@ title: Plugins
 description: A plugin observes all bloc instances from the outside — the right tool for cross-cutting concerns like logging, inspection, and persistence.
 ---
 
-A plugin is a single object that taps into the registry's lifecycle — every instance created, every state change, every disposal flows through it. Where [system events](/core/system-events) let one bloc react to its _own_ lifecycle from the inside, a plugin observes _all_ instances from the outside. That makes plugins the right tool for cross-cutting concerns: logging, inspection, persistence — anything you want to apply uniformly without editing each bloc.
+A plugin is a single object that taps into the registry's lifecycle — every instance created, every state change, every disposal flows through it. Where [system events](/docs/core/system-events) let one bloc react to its _own_ lifecycle from the inside, a plugin observes _all_ instances from the outside. That makes plugins the right tool for cross-cutting concerns: logging, inspection, persistence — anything you want to apply uniformly without editing each bloc.
 
 BlaC has an official set of plugins for these common needs. All plugins implement the `BlacPlugin` interface and are installed once, at startup, via `getPluginManager().install()`.
 
@@ -11,10 +11,10 @@ BlaC has an official set of plugins for these common needs. All plugins implemen
 
 | Package                                                                    | Purpose                                                          | Typical environment |
 | -------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------- |
-| [`@blac/logging-plugin`](/plugins/logging)                                 | Console logging, instance monitoring, rapid lifecycle detection  | Development         |
-| [`@blac/devtools-connect`](/plugins/devtools)                              | Agent that records instances and serves them to DevTools clients | Development         |
-| [`@blac/devtools-ui`](/plugins/devtools#2-add-the-in-app-overlay-optional) | In-app overlay and the shared DevTools panel UI                  | Development         |
-| [`@blac/plugin-persist`](/plugins/persistence)                             | Persist state to IndexedDB with automatic hydration              | All                 |
+| [`@blac/logging-plugin`](/docs/plugins/logging)                                 | Console logging, instance monitoring, rapid lifecycle detection  | Development         |
+| [`@blac/devtools-connect`](/docs/plugins/devtools)                              | Agent that records instances and serves them to DevTools clients | Development         |
+| [`@blac/devtools-ui`](/docs/plugins/devtools#2-add-the-in-app-overlay-optional) | In-app overlay and the shared DevTools panel UI                  | Development         |
+| [`@blac/plugin-persist`](/docs/plugins/persistence)                             | Persist state to IndexedDB with automatic hydration              | All                 |
 
 ## Installing a plugin
 
@@ -54,10 +54,10 @@ pm.install(createIndexedDbPersistPlugin());
 
 ## Building your own
 
-See [Plugin Authoring](/core/plugins) for the full `BlacPlugin` interface, the hook firing model, and the `PluginContext` API.
+See [Plugin Authoring](/docs/core/plugins) for the full `BlacPlugin` interface, the hook firing model, and the `PluginContext` API.
 
 ## See also
 
-- [Plugin Authoring](/core/plugins) — the `BlacPlugin` interface and how to write your own
-- [System Events](/core/system-events) — per-instance lifecycle hooks, and when to use them instead of a plugin
-- [Logging Plugin](/plugins/logging) · [DevTools](/plugins/devtools) · [Persistence](/plugins/persistence) — the official plugins in detail
+- [Plugin Authoring](/docs/core/plugins) — the `BlacPlugin` interface and how to write your own
+- [System Events](/docs/core/system-events) — per-instance lifecycle hooks, and when to use them instead of a plugin
+- [Logging Plugin](/docs/plugins/logging) · [DevTools](/docs/plugins/devtools) · [Persistence](/docs/plugins/persistence) — the official plugins in detail

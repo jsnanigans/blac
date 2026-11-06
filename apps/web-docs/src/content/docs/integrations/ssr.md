@@ -70,7 +70,7 @@ setRegistry(globalRegistry);
 A fresh `StateContainerRegistry` starts empty: no registered types, no instances, no refs. Bloc classes are not pre-registered against a registry — the first `acquire`/`ensure` of a class against whichever registry is active registers and creates the instance there. So once `setRegistry(requestRegistry)` runs, the very first `acquire(SessionCubit)` in that request creates a brand-new `SessionCubit` **inside `requestRegistry`**, isolated from every other request.
 
 :::note[There is no `registry.dispose()`]
-A `StateContainerRegistry` has no whole-registry teardown method. To dispose the blocs inside one, call `registry.clearAll()` (disposes and removes every instance it holds, ignoring ref counts and `keepAlive`). If you simply drop all references to a per-request registry instead, it — and the blocs it holds — become eligible for garbage collection along with the request. Verify the surface in [Instance Management](/core/instance-management).
+A `StateContainerRegistry` has no whole-registry teardown method. To dispose the blocs inside one, call `registry.clearAll()` (disposes and removes every instance it holds, ignoring ref counts and `keepAlive`). If you simply drop all references to a per-request registry instead, it — and the blocs it holds — become eligible for garbage collection along with the request. Verify the surface in [Instance Management](/docs/core/instance-management).
 :::
 
 ## The pattern: scope the render with `RegistryProvider`
@@ -110,7 +110,7 @@ Because the registry travels through context rather than a module variable, two 
 
 On the client there is one registry for the whole tab, so isolation is a non-issue — do **not** call `setRegistry` in browser code. Client `useBloc` calls resolve against `globalRegistry` (the default the slot points at until something swaps it), exactly as in a non-SSR app.
 
-That means the registries on the two sides are independent: the server's per-request registry produced the HTML string, and the client's `globalRegistry` rehydrates from scratch on mount. BlaC does not serialize the server registry into the client — blocs re-create from their constructors during hydration. If a bloc needs server-computed data to render identically on both sides, pass that data in as [`args`](/guide/inputs) (or serialize it into the page and feed it to the bloc's `init`), the same way you would seed any client-side state for hydration.
+That means the registries on the two sides are independent: the server's per-request registry produced the HTML string, and the client's `globalRegistry` rehydrates from scratch on mount. BlaC does not serialize the server registry into the client — blocs re-create from their constructors during hydration. If a bloc needs server-computed data to render identically on both sides, pass that data in as [`args`](/docs/guide/inputs) (or serialize it into the page and feed it to the bloc's `init`), the same way you would seed any client-side state for hydration.
 
 ## A note on Vite / dev SSR
 
@@ -118,8 +118,8 @@ Under Vite's dev SSR (`vite-node`, `ssrLoadModule`) each request goes through th
 
 ## See also
 
-- [Instance Management](/core/instance-management) — the registry, ref counting, `clearAll`, and the lending-library model
-- [Passing Inputs](/guide/inputs) — `args` and instance identity, the seam for feeding server data into hydration
-- [Configuration](/core/configuration) — `keepAlive` (which makes cross-request persistence worse) and the circuit breakers
-- [watch](/core/watch) — observing blocs outside React, and how it resolves through the active registry
-- [Testing core logic](/testing/core) — `clearAll` for isolating the registry between tests, the same primitive you use per request
+- [Instance Management](/docs/core/instance-management) — the registry, ref counting, `clearAll`, and the lending-library model
+- [Passing Inputs](/docs/guide/inputs) — `args` and instance identity, the seam for feeding server data into hydration
+- [Configuration](/docs/core/configuration) — `keepAlive` (which makes cross-request persistence worse) and the circuit breakers
+- [watch](/docs/core/watch) — observing blocs outside React, and how it resolves through the active registry
+- [Testing core logic](/docs/testing/core) — `clearAll` for isolating the registry between tests, the same primitive you use per request

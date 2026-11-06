@@ -3,7 +3,7 @@ title: React Testing
 description: Render React components with controlled bloc state in an isolated registry — renderWithBloc, renderWithBlocs, withBlocs, and renderWithRegistry, built on the core testing primitives.
 ---
 
-The React testing utilities build on top of [`@blac/core/testing`](/testing/core) and `@testing-library/react` to provide a simple way to render components with controlled bloc state. They follow the same principle as the core helpers: render the component into a fresh, isolated [registry](/core/instance-management) so each test starts from a known set of bloc instances.
+The React testing utilities build on top of [`@blac/core/testing`](/docs/testing/core) and `@testing-library/react` to provide a simple way to render components with controlled bloc state. They follow the same principle as the core helpers: render the component into a fresh, isolated [registry](/docs/core/instance-management) so each test starts from a known set of bloc instances.
 
 ```ts
 import {
@@ -23,7 +23,7 @@ Both render into their own registry through a `RegistryProvider` and never chang
 :::
 
 :::note[Test globals]
-As elsewhere in this project, import `describe`/`it`/`expect`/`vi` from [`vite-plus/test`](/testing/overview#why-registry-isolation-matters). The examples below also use `userEvent`, which comes from `@testing-library/user-event`.
+As elsewhere in this project, import `describe`/`it`/`expect`/`vi` from [`vite-plus/test`](/docs/testing/overview#why-registry-isolation-matters). The examples below also use `userEvent`, which comes from `@testing-library/user-event`.
 :::
 
 :::tip
@@ -54,7 +54,7 @@ Renders a React component with a single bloc pre-configured in an isolated regis
 
 The returned object is the standard `RenderResult` from Testing Library, plus a `bloc` property containing the stub instance.
 
-Aside from `bloc`, the options are exactly the [`createCubitStub`](/testing/core#createcubitstubblocclass-options) options — including `args` (to run `init()`) and `deps` (to fire `onDepsChanged`). See [Inputs](/guide/inputs) for what those lanes mean.
+Aside from `bloc`, the options are exactly the [`createCubitStub`](/docs/testing/core#createcubitstubblocclass-options) options — including `args` (to run `init()`) and `deps` (to fire `onDepsChanged`). See [Inputs](/docs/guide/inputs) for what those lanes mean.
 
 ### Basic usage
 
@@ -132,7 +132,7 @@ it('renders the correct editor', () => {
 ```
 
 :::caution[Match the resolved instance key]
-The `args` you pass must resolve to the same key your component's `useBloc` resolves to — `renderWithBloc` runs them through the same `static key`/structural-hash resolution. There is no separate string-key option; identity always flows through `args`. See [Inputs](/guide/inputs) for how identity is resolved.
+The `args` you pass must resolve to the same key your component's `useBloc` resolves to — `renderWithBloc` runs them through the same `static key`/structural-hash resolution. There is no separate string-key option; identity always flows through `args`. See [Inputs](/docs/guide/inputs) for how identity is resolved.
 :::
 
 ### `args`- and `deps`-based blocs
@@ -407,7 +407,7 @@ The getter runs against real state, so you test real logic — not a mocked retu
 
 ## See also
 
-- [Core Testing API](/testing/core) — the stub/override/seeding primitives these helpers wrap
-- [Testing Overview](/testing/overview) — registry isolation and the import convention
-- [useBloc](/react/use-bloc) — the hook your components use, and how it resolves instance identity
-- [Inputs](/guide/inputs) — the `args` / `deps` lanes you seed in tests
+- [Core Testing API](/docs/testing/core) — the stub/override/seeding primitives these helpers wrap
+- [Testing Overview](/docs/testing/overview) — registry isolation and the import convention
+- [useBloc](/docs/react/use-bloc) — the hook your components use, and how it resolves instance identity
+- [Inputs](/docs/guide/inputs) — the `args` / `deps` lanes you seed in tests

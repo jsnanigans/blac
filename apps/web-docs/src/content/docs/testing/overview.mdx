@@ -3,7 +3,8 @@ title: Testing
 description: First-party testing utilities for fast, isolated tests of your cubits and the components that use them.
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+import Tabs from '../../../components/kit/Tabs.astro';
+import TabItem from '../../../components/kit/TabItem.astro';
 
 BlaC provides first-party testing utilities so you can write fast, isolated tests for your cubits and the components that use them. The utilities live in two entry points:
 
@@ -76,7 +77,7 @@ yarn add -D @testing-library/react
 
 ## Why registry isolation matters
 
-BlaC stores every bloc instance in a single global [registry](/core/instance-management). That is what lets any component call `useBloc(CounterCubit)` and reach the _same_ instance without prop drilling. In tests, that same shared-by-default behavior works against you: a bloc created or mutated in one test is still in the registry when the next test runs, so tests leak state into each other and fail depending on execution order.
+BlaC stores every bloc instance in a single global [registry](/docs/core/instance-management). That is what lets any component call `useBloc(CounterCubit)` and reach the _same_ instance without prop drilling. In tests, that same shared-by-default behavior works against you: a bloc created or mutated in one test is still in the registry when the next test runs, so tests leak state into each other and fail depending on execution order.
 
 The mental model for testing BlaC is therefore simple: **give every test its own registry.** Once each test starts from an empty registry, the shared-instance model becomes a feature again — you seed exactly the instances a test needs and nothing carries over.
 
@@ -158,12 +159,12 @@ Tests still run if you import bare globals, but linting fails. If you use a diff
 
 :::danger[Common mistakes]
 
-- **Forgetting `blacTestSetup()`** (or another isolation helper). Without it, a bloc mutated in one test survives into the next and you get order-dependent, flaky failures — exactly the problem isolation exists to prevent. See [Core Testing API](/testing/core) for the lower-level alternatives.
-- **Asserting on async state too early.** State changes are flushed on a microtask, so a value set inside an async action may not be visible on the very next line. `await flush()` (or React Testing Library's `findBy*` queries) before asserting. See [System Events](/core/system-events) for the batching model.
+- **Forgetting `blacTestSetup()`** (or another isolation helper). Without it, a bloc mutated in one test survives into the next and you get order-dependent, flaky failures — exactly the problem isolation exists to prevent. See [Core Testing API](/docs/testing/core) for the lower-level alternatives.
+- **Asserting on async state too early.** State changes are flushed on a microtask, so a value set inside an async action may not be visible on the very next line. `await flush()` (or React Testing Library's `findBy*` queries) before asserting. See [System Events](/docs/core/system-events) for the batching model.
   :::
 
 ## See also
 
-- [Core Testing API](/testing/core) — the full helper reference (`blacTestSetup`, stubs, overrides, seeding)
-- [React Testing API](/testing/react) — rendering components with controlled bloc state
-- [Instance Management](/core/instance-management) — the registry these helpers isolate
+- [Core Testing API](/docs/testing/core) — the full helper reference (`blacTestSetup`, stubs, overrides, seeding)
+- [React Testing API](/docs/testing/react) — rendering components with controlled bloc state
+- [Instance Management](/docs/core/instance-management) — the registry these helpers isolate

@@ -6,7 +6,7 @@ description: Observe one or more blocs outside React and run a callback whenever
 `useBloc` connects a bloc to a React component. But state often needs to reach code that has no component to render: a logger, an analytics pipeline, a `localStorage` sync, a `<canvas>` driven by an imperative library, or a test assertion. `watch` is the escape hatch for those cases — it observes one or more blocs **outside of React** and runs a callback whenever their state changes.
 
 :::note[watch fires on every change, not only on what you read]
-Unlike `useBloc`, `watch` does **not** auto-track which properties your callback reads. It subscribes to the bloc's full state and invokes your callback on _every_ change (and once immediately). If you need to react only to a specific field, compare it yourself inside the callback, or use the lower-level `channel.subscribe(interest, cb)` API. Auto-tracking is a React render-time feature — see [Tracking](/core/tracked).
+Unlike `useBloc`, `watch` does **not** auto-track which properties your callback reads. It subscribes to the bloc's full state and invokes your callback on _every_ change (and once immediately). If you need to react only to a specific field, compare it yourself inside the callback, or use the lower-level `channel.subscribe(interest, cb)` API. Auto-tracking is a React render-time feature — see [Tracking](/docs/core/tracked).
 :::
 
 ## `watch(bloc, callback)`
@@ -169,7 +169,7 @@ controller.abort(); // stops both
 
 Aborting is equivalent to calling the returned `stop()`. A signal that is already aborted returns a no-op `stop()` without creating or subscribing to anything.
 
-Inside a container, combine it with [`onActivated`](/core/cubit/#onactivated) to scope a watch to the container's activation. This replaces the hand-written bridge, where an unsubscribe function is stored in a field and must be called on every teardown path:
+Inside a container, combine it with [`onActivated`](/docs/core/cubit/#onactivated) to scope a watch to the container's activation. This replaces the hand-written bridge, where an unsubscribe function is stored in a field and must be called on every teardown path:
 
 ```ts title="Before — a manual bridge"
 class SidebarCubit extends Cubit<SidebarState> {
@@ -244,7 +244,7 @@ const stop = watch([UserCubit, SettingsCubit] as const, ([user, settings]) => {
 
 | Scenario                                             | Use                                         |
 | ---------------------------------------------------- | ------------------------------------------- |
-| A React component needs state                        | [`useBloc`](/react/use-bloc)                |
+| A React component needs state                        | [`useBloc`](/docs/react/use-bloc)                |
 | Non-React side effects (logging, analytics, syncing) | `watch`                                     |
 | Bridging a bloc to imperative / non-React UI         | `watch`                                     |
 | Test assertions on state over time                   | `watch`                                     |
@@ -349,6 +349,6 @@ const stop = watch(UserCubit, (u) => {
 
 ## See also
 
-- [System Events](/core/system-events) — the microtask flush and coalescing model behind `watch`
-- [Tracking](/core/tracked) — why `watch` does not auto-track, and how `useBloc` does
-- [Dependency Tracking](/react/dependency-tracking) — the React side of selective re-renders
+- [System Events](/docs/core/system-events) — the microtask flush and coalescing model behind `watch`
+- [Tracking](/docs/core/tracked) — why `watch` does not auto-track, and how `useBloc` does
+- [Dependency Tracking](/docs/react/dependency-tracking) — the React side of selective re-renders

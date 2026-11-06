@@ -3,7 +3,7 @@ title: Persistence Plugin
 description: Automatically saves state to IndexedDB and restores it when instances are created, driven by the registry lifecycle and the hydration API.
 ---
 
-The persistence plugin automatically saves state to IndexedDB and restores it when instances are created. It is a [plugin](/plugins/overview) like any other — installed once at startup — but with one extra step: you tell it _which_ classes to persist by calling `.persist()`. Everything else (saving on change, hydrating on create, status tracking) happens through the registry lifecycle, driving the same [hydration API](/core/system-events#hydrationchanged) that any plugin can use.
+The persistence plugin automatically saves state to IndexedDB and restores it when instances are created. It is a [plugin](/docs/plugins/overview) like any other — installed once at startup — but with one extra step: you tell it _which_ classes to persist by calling `.persist()`. Everything else (saving on change, hydrating on create, status tracking) happens through the registry lifecycle, driving the same [hydration API](/docs/core/system-events#hydrationchanged) that any plugin can use.
 
 ## Installation
 
@@ -104,7 +104,7 @@ hydrated → saving → saved
 
 If state changes before hydration completes (e.g., the user interacts with the component immediately), the persisted state is **discarded**. The user's changes take priority — stale data from disk should never clobber something the user just did.
 
-You can detect this via the `changedWhileHydrating` field on the [`hydrationChanged` system event](/core/system-events#hydrationchanged). That event is the other side of this same mechanism: the persistence plugin reads the flag to decide whether to apply the loaded state, and you can observe the same flag to react in your own code.
+You can detect this via the `changedWhileHydrating` field on the [`hydrationChanged` system event](/docs/core/system-events#hydrationchanged). That event is the other side of this same mechanism: the persistence plugin reads the flag to decide whether to apply the loaded state, and you can observe the same flag to react in your own code.
 
 ## Status monitoring
 
@@ -236,6 +236,6 @@ The plugin automatically checks IndexedDB availability on install and disables i
 
 ## See also
 
-- [Plugin Overview](/plugins/overview) — the plugin catalog and the install API
-- [System Events](/core/system-events#hydrationchanged) — the `hydrationChanged` event behind the dirty-state logic
-- [Cubit](/core/cubit#public-properties) — `$blac.hydration.status`, `$blac.hydration.isHydrated`, and `$blac.hydration.wait()` on the container
+- [Plugin Overview](/docs/plugins/overview) — the plugin catalog and the install API
+- [System Events](/docs/core/system-events#hydrationchanged) — the `hydrationChanged` event behind the dirty-state logic
+- [Cubit](/docs/core/cubit#public-properties) — `$blac.hydration.status`, `$blac.hydration.isHydrated`, and `$blac.hydration.wait()` on the container

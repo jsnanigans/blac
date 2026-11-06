@@ -5,13 +5,13 @@ description: A quick conceptual tour of state containers, the registry, instance
 
 import RenderCounterDemo from '../../../components/demos/RenderCounterDemo.tsx';
 
-This is the quick conceptual tour — one screen per idea, enough to start making good decisions about how to structure your state. For the deep "why it works this way" (the reactivity model, the per-consumer tracker, batching and ref-counting rationale, and honest comparisons to other libraries), read the [Mental Model](/guide/mental-model).
+One short section per idea: enough to make good decisions about how to structure state. The [Mental Model](/docs/guide/mental-model) has the deeper reasoning behind each one.
 
 ## State Containers
 
 A state container is a class that holds a typed state value and notifies listeners when it changes.
 
-Think of it like a mini-store scoped to one concern. An `AuthCubit` holds auth state. A `CartCubit` holds cart state. Each is a self-contained unit with its own state type, methods, and lifecycle.
+Each one covers one concern. An `AuthCubit` holds auth state, a `CartCubit` holds cart state, and each has its own state type, methods and lifecycle.
 
 **Cubit** is the concrete class you'll extend. It gives you three ways to change state:
 
@@ -33,11 +33,11 @@ class AuthCubit extends Cubit<{ user: User | null; loading: boolean }> {
 }
 ```
 
-State containers are framework-agnostic — they work without React. You can instantiate them in a test, call methods, and assert on `state` directly. No DOM, no hooks, no providers needed.
+State containers don't depend on React. A test can construct one, call methods and check `state` directly, with no DOM, hooks or providers.
 
 ## Registry
 
-The registry is a global singleton that manages state container instances. When you call `useBloc(CounterCubit)` in two different components, they both get the **same** `CounterCubit` instance. The registry makes this happen.
+The registry is a global singleton that holds state container instances. When two components call `useBloc(CounterCubit)`, the registry gives both the **same** instance.
 
 It maps each class (and optional instance key) to a single instance, plus a ref count tracking how many consumers are using it:
 
@@ -50,7 +50,7 @@ Registry
 
 ### Ref counting
 
-Every `useBloc` call increments the ref count on mount and decrements it on unmount. When the count hits zero, the instance is **automatically disposed** — its resources are cleaned up and it's removed from the registry. This means you don't need to worry about memory leaks from forgotten state containers.
+Each `useBloc` increments the ref count on mount and decrements it on unmount. When the count reaches zero, the instance is **disposed**: its resources are cleaned up and it leaves the registry. Unused containers don't pile up.
 
 If you want an instance to survive even when nothing is using it, mark it with `@blac({ keepAlive: true })`.
 
@@ -65,7 +65,7 @@ In React, `useBloc` handles the registry for you. Outside React (tests, scripts,
 | `borrow(Class)`  | No       | No change | Instance must already exist (throws if not)     |
 | `release(Class)` | No       | -1        | Done with your reference                        |
 
-This is the quick version. The complete function table (including `borrowSafe`, `getRefCount`, `clear`, and the keying rules) lives in [Instance Management](/core/instance-management).
+This is the quick version. The complete function table (including `borrowSafe`, `getRefCount`, `clear`, and the keying rules) lives in [Instance Management](/docs/core/instance-management).
 
 ## Instance Modes
 
@@ -91,16 +91,16 @@ With `@blac({ keepAlive: true })`, the instance survives even when all component
 
 ## Inputs: args and deps
 
-Components rarely need a blank container — they need one seeded with data. BlaC keeps that data in two separate lanes so a shared instance with many consumers never races:
+Components often need a container seeded with data. BlaC keeps that data in two separate lanes, so a shared instance with many consumers never gets conflicting input:
 
 - **`args`** — serializable data that _identifies_ an instance (e.g. a document id). Same args resolve to the same instance; identity is derived from args alone.
 - **`deps`** — non-serializable handles (callbacks, services) injected per consumer, never used for identity.
 
-This is just the teaser; the full model, the precedence rules, and the failure modes live in [Inputs](/guide/inputs).
+This is just the teaser; the full model, the precedence rules, and the failure modes live in [Inputs](/docs/guide/inputs).
 
 ## Dependency Tracking
 
-This is BlaC's key performance feature — the quick tour here, with the full mechanism and its edge cases in [Dependency Tracking](/react/dependency-tracking). When you call `useBloc`, the returned `state` is wrapped in a Proxy that records which properties your component actually reads during render:
+`useBloc` returns `state` wrapped in a proxy that records which values the component reads during render. [Dependency Tracking](/docs/react/dependency-tracking) has the full mechanism and edge cases.
 
 ```tsx
 function UserName() {
@@ -109,7 +109,7 @@ function UserName() {
 }
 ```
 
-If `state.email` changes but `state.name` doesn't, this component **won't re-render**. This happens automatically — no selectors, no `useMemo`, no `React.memo`.
+If `state.email` changes and `state.name` doesn't, this component **doesn't re-render**. You don't write a selector for this. (A re-render of the parent still re-renders it, as in any React component.)
 
 See it live: `CountReader` tracks `state.count`; `LabelReader` tracks `state.label`. Each component's render badge increments only when its own field changes.
 
@@ -120,7 +120,7 @@ The tracking also works for:
 - Nested properties: `state.user.profile.name` (records the leaf path)
 - Array access: `state.items.length`, `state.items[0]`
 
-Getter reads participate too: the `bloc` returned by `useBloc` is proxied, so reading `bloc.total` during render records the `this.state` paths the getter touches. Use `select` when you want a getter's return value, rather than its source paths, to decide re-renders. See [Dependency Tracking](/react/dependency-tracking).
+Getter reads participate too: the `bloc` returned by `useBloc` is proxied, so reading `bloc.total` during render records the `this.state` paths the getter touches. Use `select` when you want a getter's return value, rather than its source paths, to decide re-renders. See [Dependency Tracking](/docs/react/dependency-tracking).
 
 There are two tracking modes, chosen by whether you pass a `select` option — there is no separate on/off flag:
 
@@ -129,7 +129,7 @@ There are two tracking modes, chosen by whether you pass a `select` option — t
 | **Auto-tracking** (default) | Proxy records property access during render              | Most components                       |
 | **`select`** (manual)       | You return an array; re-render when it changes per-index | Complex conditions or computed values |
 
-A component that only calls methods and never displays state needs no special option: do not read from `state`, and auto-tracking records nothing to wake it. See [Dependency Tracking](/react/dependency-tracking) for the full story, including the conditional-read caveat.
+A component that only calls methods and never displays state needs no special option: do not read from `state`, and auto-tracking records nothing to wake it. See [Dependency Tracking](/docs/react/dependency-tracking) for the full story, including the conditional-read caveat.
 
 ## Plugins
 
@@ -145,7 +145,7 @@ const plugin: BlacPlugin = {
 getPluginManager().install(plugin);
 ```
 
-Official plugins: [Logging](/plugins/logging), [DevTools](/plugins/devtools), [Persistence](/plugins/persistence).
+Official plugins: [Logging](/docs/plugins/logging), [DevTools](/docs/plugins/devtools), [Persistence](/docs/plugins/persistence).
 
 ## Glossary
 
@@ -163,16 +163,9 @@ Official plugins: [Logging](/plugins/logging), [DevTools](/plugins/devtools), [P
 | **`keepAlive`**      | Class option (`@blac({ keepAlive: true })`) that prevents auto-disposal when an instance's ref count drops to zero.                                                              |
 | **Plugin**           | An object implementing `BlacPlugin` installed on `getPluginManager()` to observe creation, state changes, hydration, and disposal across all instances.                          |
 
-## What's next?
+## Next
 
-- [Architecture & Philosophy](/guide/philosophy) — How Cubits fit into the UI, Logic, and Data layers
-- [Mental Model](/guide/mental-model) — The deep "why" behind everything on this page
-- [Inputs](/guide/inputs) — args, deps, and instance identity in full
-- [Cubit](/core/cubit) — Full Cubit API reference
-- [useBloc](/react/use-bloc) — Hook options and tracking modes
-
-## See also
-
-- [Mental Model](/guide/mental-model) — the deep version of this tour
-- [Instance Management](/core/instance-management) — the complete registry function reference
-- [Dependency Tracking](/react/dependency-tracking) — auto-tracking in depth
+- [Inputs](/docs/guide/inputs): `args`, `deps` and instance identity in full.
+- [Instance Management](/docs/core/instance-management): every registry function.
+- [Dependency Tracking](/docs/react/dependency-tracking): tracking in depth.
+- [Mental Model](/docs/guide/mental-model): the reasoning behind this page.

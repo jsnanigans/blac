@@ -11,7 +11,7 @@ import {
 
 This is the long way round — one app, built in seven numbered steps, each a small diff on the last. We start with an empty Cubit and finish with full **undo / redo and time travel**, all from the same state primitives you meet in the first step. No new APIs appear at the end; the payoff is that BlaC's plain-immutable-state model makes undo fall out almost for free.
 
-If you have not read [Quick Start](/guide/getting-started) and [Core Concepts](/guide/concepts) yet, skim them first — this page assumes you know what `emit`/`update`/`patch` do and that `useBloc` returns a `[state, bloc]` tuple. Everything else is built up here.
+If you have not read [Quick Start](/docs/guide/getting-started) and [Core Concepts](/docs/guide/concepts) yet, skim them first — this page assumes you know what `emit`/`update`/`patch` do and that `useBloc` returns a `[state, bloc]` tuple. Everything else is built up here.
 
 There are two interactive checkpoints: one when the app first becomes usable, one at the end with time travel. The code blocks in between are type-checked against the real published API by the docs build, so they compile exactly as written.
 
@@ -62,7 +62,7 @@ export class TodoCubit extends Cubit<TodoState> {
 }
 ```
 
-Two things to notice, both from [Quick Start](/guide/getting-started):
+Two things to notice, both from [Quick Start](/docs/guide/getting-started):
 
 - `add` is an **arrow-function field**, not a method, so `this` stays bound when you pass `todo.add` straight to an event handler.
 - We build the next array with a spread (`[...this.state.todos, …]`) rather than `push`. State is treated as immutable; you always hand `patch`/`emit` a fresh value. That immutability is exactly what makes Step 7 possible.
@@ -245,7 +245,7 @@ Open `/TodoCubit.ts` in the sandbox — that one class is the entire app's logic
 
 Real apps load their initial todos. An async action is just a method that `await`s and emits as it goes — BlaC has no special async primitive. We model the load lifecycle as state so the view can render "loading" and "error" instead of guessing.
 
-We will track the load status alongside the todos. A request-id guard makes a slow response unable to clobber a newer one — the full reasoning is in the [Async guide](/guide/async); here is the shape applied to our Cubit:
+We will track the load status alongside the todos. A request-id guard makes a slow response unable to clobber a newer one — the full reasoning is in the [Async guide](/docs/guide/async); here is the shape applied to our Cubit:
 
 ```ts twoslash
 import { Cubit } from '@blac/core';
@@ -305,7 +305,7 @@ function App() {
 }
 ```
 
-There is no Suspense boundary here, by design — the loading branch of this `if` _is_ the fallback, written by hand and fully type-checked. The [Async guide](/guide/async#suspense) explains why BlaC models loading as explicit state rather than throwing promises.
+There is no Suspense boundary here, by design — the loading branch of this `if` _is_ the fallback, written by hand and fully type-checked. The [Async guide](/docs/guide/async#suspense) explains why BlaC models loading as explicit state rather than throwing promises.
 
 :::tip[Loading-status state is also "view" state]
 Like `filter`, the transient `status` describes how to render, not the durable todo data. When we add history next, we will record only the todos — not `status`, not `filter` — so an undo never accidentally rewinds you into a stale "loading" screen.
@@ -520,16 +520,16 @@ Open `/TodoCubit.ts` and compare it with the Step 4 version above. The diff that
 ## What you learned
 
 - **One Cubit, many thin consumers.** Each component reads only its slice via `useBloc`; action-only components read nothing and never re-render.
-- **`patch` for the data path; the replace-vs-merge rule from [Quick Start](/guide/getting-started).** State is always handed over as a fresh immutable value, never mutated in place.
+- **`patch` for the data path; the replace-vs-merge rule from [Quick Start](/docs/guide/getting-started).** State is always handed over as a fresh immutable value, never mutated in place.
 - **Derived getters over stored duplicates.** `visible`, `remaining`, `canUndo` recompute on read and cannot drift; auto-tracking records getter reads in render, and `select` can gate on getter results.
 - **View state lives apart from durable data.** `filter` and load `status` describe rendering, so they stay out of the history that records the todos.
 - **A single mutation funnel makes cross-cutting features cheap.** Once every change flowed through `commit`, undo/redo/time-travel was an afternoon, not a rewrite.
-- **Async is just methods that emit.** A request-id guard and an explicit status union replace Suspense — see the [Async guide](/guide/async).
+- **Async is just methods that emit.** A request-id guard and an explicit status union replace Suspense — see the [Async guide](/docs/guide/async).
 
 ## Where to go next
 
-- [Mental Model](/guide/mental-model) — _why_ the per-consumer tracking and immutable-state model work the way they do.
-- [Dependency Tracking](/react/dependency-tracking) — the full rules behind auto-tracking and `select`.
-- [Async](/guide/async) — the loadable surface, cancellation, and the Suspense rationale in depth.
-- [Bloc Communication](/core/bloc-communication) — composing blocs with `depend()`.
-- [Persistence](/plugins/persistence) — make your todos (or their history) survive a reload.
+- [Mental Model](/docs/guide/mental-model) — _why_ the per-consumer tracking and immutable-state model work the way they do.
+- [Dependency Tracking](/docs/react/dependency-tracking) — the full rules behind auto-tracking and `select`.
+- [Async](/docs/guide/async) — the loadable surface, cancellation, and the Suspense rationale in depth.
+- [Bloc Communication](/docs/core/bloc-communication) — composing blocs with `depend()`.
+- [Persistence](/docs/plugins/persistence) — make your todos (or their history) survive a reload.

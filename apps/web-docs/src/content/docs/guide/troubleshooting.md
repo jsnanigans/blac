@@ -3,10 +3,10 @@ title: Troubleshooting & FAQ
 description: A symptom-to-fix lookup table for the most common BlaC problems, with links into the reference pages that own each explanation.
 ---
 
-This page is a fast lookup table for the problems that actually bite. Each entry is **symptom → cause → fix**, with a link into the reference page that owns the full explanation. If you are new and want the _why_ behind these behaviours, read the [Mental Model](/guide/mental-model) first — this page assumes you just want the answer.
+This page is a fast lookup table for the problems that actually bite. Each entry is **symptom → cause → fix**, with a link into the reference page that owns the full explanation. If you are new and want the _why_ behind these behaviours, read the [Mental Model](/docs/guide/mental-model) first — this page assumes you just want the answer.
 
 :::tip[How to use this page]
-Scan the **Symptom** column for the thing you are seeing, expand the matching detail block, apply the fix, and follow the link if you need depth. Nothing here invents new API — every fix uses the surface documented in [`useBloc`](/react/use-bloc), [Instance management](/core/instance-management), and [Configuration](/core/configuration).
+Scan the **Symptom** column for the thing you are seeing, expand the matching detail block, apply the fix, and follow the link if you need depth. Nothing here invents new API — every fix uses the surface documented in [`useBloc`](/docs/react/use-bloc), [Instance management](/docs/core/instance-management), and [Configuration](/docs/core/configuration).
 :::
 
 ## Common problems
@@ -19,7 +19,7 @@ Scan the **Symptom** column for the thing you are seeing, expand the matching de
 | Component never re-renders                    | State was **destructured/copied before** the tracked read          | Read leaf properties off the live `state` proxy during render                            |
 | Component never re-renders                    | A `select` selector is present and never returns the changed value | Add the value to the selector array (or remove `select` to auto-track)                   |
 | Component never re-renders                    | State was **mutated in place** instead of replaced                 | Use `emit` / `update` / `patch` so a new reference is published                          |
-| Component re-renders too often                | Reading a coarse path (whole array/object) instead of the leaf     | Read the specific leaf you render; see [dependency tracking](/react/dependency-tracking) |
+| Component re-renders too often                | Reading a coarse path (whole array/object) instead of the leaf     | Read the specific leaf you render; see [dependency tracking](/docs/react/dependency-tracking) |
 
 <details>
 <summary>"My component does not re-render" — full walk-through</summary>
@@ -79,12 +79,12 @@ update((s) => ({ ...s, count: s.count + 1 }));
 patch({ count: this.state.count + 1 });
 ```
 
-Owner page: [Dependency tracking](/react/dependency-tracking). Mechanism: [Mental Model](/guide/mental-model).
+Owner page: [Dependency tracking](/docs/react/dependency-tracking). Mechanism: [Mental Model](/docs/guide/mental-model).
 
 </details>
 
 :::caution[Map / Set / Date / class instances are leaves]
-The tracker wraps **plain objects and arrays** only. A `Map`, `Set`, `Date`, or class instance in state is treated as a single leaf value — a change is detected as a **reference change at that path**, never as a change to something inside it. Replace the whole value (`emit(new Map(prev).set(k, v))`) rather than mutating it in place. See [dependency tracking limitations](/react/dependency-tracking).
+The tracker wraps **plain objects and arrays** only. A `Map`, `Set`, `Date`, or class instance in state is treated as a single leaf value — a change is detected as a **reference change at that path**, never as a change to something inside it. Replace the whole value (`emit(new Map(prev).set(k, v))`) rather than mutating it in place. See [dependency tracking limitations](/docs/react/dependency-tracking).
 :::
 
 ---
@@ -132,7 +132,7 @@ const [, bloc] = useBloc(CounterCubit);
 return <button onClick={bloc.logCount}>log</button>;
 ```
 
-If you must pass a callback **into** a bloc, route it through the `deps` lane (a non-serializable, per-consumer handle) rather than `args` — and keep the handle referentially stable so it does not re-key. Putting a fresh inline arrow in `deps` every render is the classic stale-closure trap. See [Passing inputs](/guide/inputs#deps-non-serializable-handles).
+If you must pass a callback **into** a bloc, route it through the `deps` lane (a non-serializable, per-consumer handle) rather than `args` — and keep the handle referentially stable so it does not re-key. Putting a fresh inline arrow in `deps` every render is the classic stale-closure trap. See [Passing inputs](/docs/guide/inputs#deps-non-serializable-handles).
 
 </details>
 
@@ -166,7 +166,7 @@ Common causes of an unexpected split:
   }
   ```
 
-`args` is memoised internally on `JSON.stringify(args)`, so a fresh object literal each render is fine **as long as its contents are equal**. Owner page: [Passing inputs](/guide/inputs#args-construction-data-that-keys-the-instance).
+`args` is memoised internally on `JSON.stringify(args)`, so a fresh object literal each render is fine **as long as its contents are equal**. Owner page: [Passing inputs](/docs/guide/inputs#args-construction-data-that-keys-the-instance).
 
 </details>
 
@@ -179,7 +179,7 @@ If `args` contains a **function** (or other non-serializable value), the structu
 [blac] args must be serializable; put refs/callbacks in `deps`
 ```
 
-In production the hash will differ each render and you get a brand-new instance constantly. The fix is always the same: **`args` is for serializable identity data only.** Refs, callbacks, and live handles go in the [`deps`](/guide/inputs#deps-non-serializable-handles) lane.
+In production the hash will differ each render and you get a brand-new instance constantly. The fix is always the same: **`args` is for serializable identity data only.** Refs, callbacks, and live handles go in the [`deps`](/docs/guide/inputs#deps-non-serializable-handles) lane.
 
 ```tsx
 // ✗ callback in args — throws in dev, new instance in prod
@@ -217,7 +217,7 @@ useBloc(RowCubit, { args: { row: row.id } });
 useBloc(WidgetCubit);
 ```
 
-An `isolated` instance always resolves to its own key, never the shared key from the args supplied by an ancestor [`BlocProvider`](/react/use-bloc), so each mount stays private. Owner page: [Instance management](/core/instance-management).
+An `isolated` instance always resolves to its own key, never the shared key from the args supplied by an ancestor [`BlocProvider`](/docs/react/use-bloc), so each mount stays private. Owner page: [Instance management](/docs/core/instance-management).
 
 </details>
 
@@ -265,7 +265,7 @@ const job = acquire(JobCubit, { refId });
 release(JobCubit, { refId });
 ```
 
-`keepAlive` instances are never auto-disposed at refcount 0; tear them down explicitly with `release(C, { forceDispose: true })` or `clear(Class)` (a test/teardown utility — see [testing core](/testing/core)). Owner page: [Instance management](/core/instance-management); see also [Configuration](/core/configuration#-keepalive-true-).
+`keepAlive` instances are never auto-disposed at refcount 0; tear them down explicitly with `release(C, { forceDispose: true })` or `clear(Class)` (a test/teardown utility — see [testing core](/docs/testing/core)). Owner page: [Instance management](/docs/core/instance-management); see also [Configuration](/docs/core/configuration#-keepalive-true-).
 
 </details>
 
@@ -301,7 +301,7 @@ useBloc(CounterCubit, { args: {} }); // ✗ 'args' does not exist on type
 useBloc(CounterCubit); // ✓
 ```
 
-If you genuinely need to pass data to a `void`-args bloc, give the bloc an `Args` type. Owner page: [Passing inputs](/guide/inputs).
+If you genuinely need to pass data to a `void`-args bloc, give the bloc an `Args` type. Owner page: [Passing inputs](/docs/guide/inputs).
 
 </details>
 
@@ -337,7 +337,7 @@ class NoiseCubit extends Cubit<NoiseState> {
 }
 ```
 
-If you want this bloc visible, drop that option. The option is documented in [Configuration](/core/configuration); usage lives in [the DevTools plugin](/plugins/devtools).
+If you want this bloc visible, drop that option. The option is documented in [Configuration](/docs/core/configuration); usage lives in [the DevTools plugin](/docs/plugins/devtools).
 
 </details>
 
@@ -357,10 +357,10 @@ If you want this bloc visible, drop that option. The option is documented in [Co
 A few facts that matter when rendering on the server:
 
 - **First snapshot is synchronous.** `args` are forwarded to `init(args)` **once, before the first state snapshot**, so a bloc keyed by `args` renders identical initial state on server and client — no flash, no mismatch — provided the `args` are the same on both sides.
-- **`useBloc` does not fight React for SSR id slots.** Internally it uses a plain module counter for its consumer id (a `useId()` slot is reserved but unused), so it will not desync SSR-streamed ids. `isolated` instances use that counter for their key, so it is not stable across server/client either. For identity that must be **stable across server/client**, derive it from stable `args` or a [`BlocProvider`](/react/use-bloc); do not rely on auto-generated ids.
-- **State hydration is a guarded lifecycle.** `$blac.hydration.begin()` → `$blac.hydration.apply(next)` → `$blac.hydration.finish()`. `apply` returns `false` (and skips) if the bloc was disposed, is not hydrating, or **`changedWhileHydrating`** — i.e. a normal write landed mid-hydration, so the live state wins and the persisted snapshot is discarded. If persisted state seems to be ignored, you almost certainly wrote to the bloc before hydration finished. Observe transitions via the [`hydrationChanged`](/core/system-events) system event and gate writes on `$blac.hydration.isHydrated`.
+- **`useBloc` does not fight React for SSR id slots.** Internally it uses a plain module counter for its consumer id (a `useId()` slot is reserved but unused), so it will not desync SSR-streamed ids. `isolated` instances use that counter for their key, so it is not stable across server/client either. For identity that must be **stable across server/client**, derive it from stable `args` or a [`BlocProvider`](/docs/react/use-bloc); do not rely on auto-generated ids.
+- **State hydration is a guarded lifecycle.** `$blac.hydration.begin()` → `$blac.hydration.apply(next)` → `$blac.hydration.finish()`. `apply` returns `false` (and skips) if the bloc was disposed, is not hydrating, or **`changedWhileHydrating`** — i.e. a normal write landed mid-hydration, so the live state wins and the persisted snapshot is discarded. If persisted state seems to be ignored, you almost certainly wrote to the bloc before hydration finished. Observe transitions via the [`hydrationChanged`](/docs/core/system-events) system event and gate writes on `$blac.hydration.isHydrated`.
 
-See [Persistence](/plugins/persistence) for the full hydration story and [System events](/core/system-events) for `hydrationChanged`.
+See [Persistence](/docs/plugins/persistence) for the full hydration story and [System events](/docs/core/system-events) for `hydrationChanged`.
 
 </details>
 
@@ -371,55 +371,55 @@ See [Persistence](/plugins/persistence) for the full hydration story and [System
 <details>
 <summary>Is there a `Bloc` class?</summary>
 
-No. The only base classes are `StateContainer` (abstract) and [`Cubit`](/core/cubit) (abstract, extends `StateContainer`). "Bloc" is colloquial shorthand for any container instance — see the [Core Concepts](/guide/concepts/).
+No. The only base classes are `StateContainer` (abstract) and [`Cubit`](/docs/core/cubit) (abstract, extends `StateContainer`). "Bloc" is colloquial shorthand for any container instance — see the [Core Concepts](/docs/guide/concepts/).
 
 </details>
 
 <details>
 <summary>How do I track a value without decorating it? Where is `@tracked`?</summary>
 
-There is no `@tracked` decorator and no `autoTrack` option. Tracking is **automatic and unconditional** whenever `select` is omitted — a render-time proxy records every leaf path you read. The only opt-out is supplying `select`. See [dependency tracking](/react/dependency-tracking).
+There is no `@tracked` decorator and no `autoTrack` option. Tracking is **automatic and unconditional** whenever `select` is omitted — a render-time proxy records every leaf path you read. The only opt-out is supplying `select`. See [dependency tracking](/docs/react/dependency-tracking).
 
 </details>
 
 <details>
 <summary>`emit` vs `update` vs `patch`?</summary>
 
-`emit(next)` replaces the whole state; `update(fn)` is `emit(fn(state))`; `patch(partial)` deep-merges a `DeepPartial<S>`. Note the equality check applies to `emit`/`update` only — `patch` filters per-key with its own `Object.is` comparison. A common mistake is calling `emit` with a partial object, which silently drops the missing fields. See [Cubit](/core/cubit).
+`emit(next)` replaces the whole state; `update(fn)` is `emit(fn(state))`; `patch(partial)` deep-merges a `DeepPartial<S>`. Note the equality check applies to `emit`/`update` only — `patch` filters per-key with its own `Object.is` comparison. A common mistake is calling `emit` with a partial object, which silently drops the missing fields. See [Cubit](/docs/core/cubit).
 
 </details>
 
 <details>
 <summary>Does `depend()` make my component re-render when the dependency changes?</summary>
 
-A plain `.untracked()` read does **not** auto-subscribe to the dependency's channel — but `.track()` does: read a dep's state via `const [s] = this.dep.track()` inside a getter and the component reading that getter re-renders when the dependency changes, no second `useBloc` needed. Calling a dependency's method (through `.untracked()`) never subscribes you to it. See [Bloc communication](/core/bloc-communication#auto-tracking-with-track).
+A plain `.untracked()` read does **not** auto-subscribe to the dependency's channel — but `.track()` does: read a dep's state via `const [s] = this.dep.track()` inside a getter and the component reading that getter re-renders when the dependency changes, no second `useBloc` needed. Calling a dependency's method (through `.untracked()`) never subscribes you to it. See [Bloc communication](/docs/core/bloc-communication#auto-tracking-with-track).
 
 </details>
 
 <details>
 <summary>`watch` callback fires async / `watch` never stops — what gives?</summary>
 
-`watch` fires once immediately, then on every change, but subscriptions are **microtask-deferred** — callbacks land after the synchronous `emit`. `watch` returns a cleanup function; if you never call it (or never return `watch.STOP`), the watcher leaks. Also note `watch` uses `ensure` and takes **no ref**, so it does not keep the bloc alive. See [`watch`](/core/watch).
+`watch` fires once immediately, then on every change, but subscriptions are **microtask-deferred** — callbacks land after the synchronous `emit`. `watch` returns a cleanup function; if you never call it (or never return `watch.STOP`), the watcher leaks. Also note `watch` uses `ensure` and takes **no ref**, so it does not keep the bloc alive. See [`watch`](/docs/core/watch).
 
 </details>
 
 <details>
 <summary>My tests leak state between cases.</summary>
 
-The registry is global. Reset it between tests with the testing setup helpers so instances do not bleed across cases. See [Testing overview](/testing/overview) and [Testing core](/testing/core).
+The registry is global. Reset it between tests with the testing setup helpers so instances do not bleed across cases. See [Testing overview](/docs/testing/overview) and [Testing core](/docs/testing/core).
 
 </details>
 
 <details>
 <summary>A circuit breaker threw ("max instances" / "max refs").</summary>
 
-You hit `maxInstancesPerType` or `maxRefsPerInstance` from the global config — usually a leak (unreleased refs, or distinct `args` exploding instance count). Find the leak first; raise the limit (or set it to `Infinity` to disable) only if the count is legitimately high. `maxEmitsPerSecond` only warns in dev, never throws. See [Configuration](/core/configuration).
+You hit `maxInstancesPerType` or `maxRefsPerInstance` from the global config — usually a leak (unreleased refs, or distinct `args` exploding instance count). Find the leak first; raise the limit (or set it to `Infinity` to disable) only if the count is legitimately high. `maxEmitsPerSecond` only warns in dev, never throws. See [Configuration](/docs/core/configuration).
 
 </details>
 
 ## See also
 
-- [Mental Model](/guide/mental-model) — the _why_ behind tracking, identity, and disposal
-- [Passing inputs](/guide/inputs) — `args` and `deps` in depth
-- [`useBloc`](/react/use-bloc) — the canonical options and precedence reference
-- [Instance management](/core/instance-management) — acquire/release, ref counting, `keepAlive`
+- [Mental Model](/docs/guide/mental-model) — the _why_ behind tracking, identity, and disposal
+- [Passing inputs](/docs/guide/inputs) — `args` and `deps` in depth
+- [`useBloc`](/docs/react/use-bloc) — the canonical options and precedence reference
+- [Instance management](/docs/core/instance-management) — acquire/release, ref counting, `keepAlive`

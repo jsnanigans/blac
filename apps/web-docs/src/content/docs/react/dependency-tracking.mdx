@@ -1,6 +1,7 @@
 ---
 title: Dependency tracking
 description: How BlaC auto-tracking records the state properties a component reads and re-renders only when one of those properties changes.
+chapter: touch-it
 ---
 
 import DependencyTrackingDemo from '../../../components/demos/DependencyTrackingDemo.tsx';
@@ -10,7 +11,7 @@ When a component subscribes to a state container, the naive contract is "re-rend
 BlaC fixes this with **auto-tracking**: it records which state properties each component actually reads during render, and re-renders that component only when one of _those_ properties changes. You write plain property access; the re-render scope is inferred for you — no selectors, no `useMemo`, no manual dependency arrays.
 
 :::note[Mental model]
-Auto-tracking, dependency tracking, and "proxy tracking" all name the same mechanism. The feature is **dependency tracking**; the default mode is **auto-tracking**; the implementation is a render-time recording **Proxy**. For the design rationale (why a proxy beats hand-written selectors), see [Mental Model](/guide/mental-model).
+Auto-tracking, dependency tracking, and "proxy tracking" all name the same mechanism. The feature is **dependency tracking**; the default mode is **auto-tracking**; the implementation is a render-time recording **Proxy**. For the design rationale (why a proxy beats hand-written selectors), see [Mental Model](/docs/guide/mental-model).
 :::
 
 ## Auto-tracking (default)
@@ -79,7 +80,7 @@ These are the patterns newcomers expect to track but don't — or that track mor
 - **Destructuring is just reading** — `const { name } = state` records `name` (good). But `const { user } = state; return user.name` records only `user` (the deeper `.name` read happens off the _raw_ destructured value, not the proxy), so you wake on every `user` change. Read through the proxy chain (`state.user.name`) to get leaf isolation.
 - **Spreading reads everything** — `<Card {...state} />` or `{ ...state }` enumerates every own key, so the component tracks the **entire** state object and re-renders on any change. Pass only the fields you need.
 - **Reading inside an effect does not track** — the proxy records during _render_. Anything you read inside `useEffect`, an event handler, or an async callback runs after the render proxy is gone and records nothing. Read the value in the render body (or capture it from `state` there) if it should drive re-renders.
-- **Iteration records `length` + callback leaf reads (while identity searches pin the array)** — `.map`, `.find`, `.reduce`, and `for..of` run against the proxy, recording `items.length` plus whatever leaf paths the callback reads on each item (`items.0.id`, `items.0.name`, etc.). Identity-search methods (`includes`, `indexOf`, `lastIndexOf`) bind to the raw array so `Object.is` matching works, and record the array path `items`. See [Performance](/react/performance#list-rendering-patterns) for keeping list parents from re-rendering when an individual row's text or status changes.
+- **Iteration records `length` + callback leaf reads (while identity searches pin the array)** — `.map`, `.find`, `.reduce`, and `for..of` run against the proxy, recording `items.length` plus whatever leaf paths the callback reads on each item (`items.0.id`, `items.0.name`, etc.). Identity-search methods (`includes`, `indexOf`, `lastIndexOf`) bind to the raw array so `Object.is` matching works, and record the array path `items`. See [Performance](/docs/react/performance#list-rendering-patterns) for keeping list parents from re-rendering when an individual row's text or status changes.
 - **Non-plain values are leaves, not deeply tracked** — only plain objects `{}` and arrays `[]` are proxied. A `Map`, `Set`, `Date`, or class instance in your state is treated as a single leaf: BlaC detects a _reference_ change at that value's own path, but reading _into_ it (`state.cache.get(id)`) records nothing finer. Replace the whole value on update, or model that data as plain objects/arrays.
 - **Methods read off the prototype don't record** — reading `bloc.increment` without calling it records nothing (methods live on the prototype, not as own properties). This is fine: action handlers shouldn't drive re-renders.
 - **Getter reads outside render do not track** — a getter read in an effect, event handler, async callback, or after commit sees live state but records no dependency. Read the getter in the render body if it should drive re-renders, or use `select: (state, bloc) => [bloc.total]` when you want the getter's return value to be the explicit boundary.
@@ -175,7 +176,7 @@ The selector is read on every render and is not part of the subscription, so an 
 - Auto-tracking records more paths than you want and you want to pin the dependency set explicitly, the way you would a `useMemo` dependency array.
 - You want a value that is intentionally _coarser_ or _derived_ (e.g. `[bloc.isEmpty]` re-renders on the empty/non-empty boundary, not on every item added).
 
-For the inverse case — a component that should never re-render because it only triggers actions — you don't need any option at all: a component that reads no state property records an empty path set and is never woken. See [Performance: split readers and writers](/react/performance#pattern-split-readers-and-writers).
+For the inverse case — a component that should never re-render because it only triggers actions — you don't need any option at all: a component that reads no state property records an empty path set and is never woken. See [Performance: split readers and writers](/docs/react/performance#pattern-split-readers-and-writers).
 
 ## Choosing a mode
 
@@ -200,6 +201,6 @@ Start with auto-tracking (the default — no option)
 
 ## See also
 
-- [useBloc](/react/use-bloc) — the full options reference, including `select`
-- [Performance](/react/performance) — re-render isolation, measuring, and list patterns
-- [Mental Model](/guide/mental-model) — why proxy tracking beats selectors and memoization
+- [useBloc](/docs/react/use-bloc) — the full options reference, including `select`
+- [Performance](/docs/react/performance) — re-render isolation, measuring, and list patterns
+- [Mental Model](/docs/guide/mental-model) — why proxy tracking beats selectors and memoization

@@ -1,14 +1,15 @@
 ---
 title: Tracking
 description: How BlaC records which leaves of state each consumer reads via a recording proxy, then wakes only the consumers whose leaves actually moved.
+chapter: touch-it
 ---
 
 Tracking is how BlaC knows which consumers care about a given state change. Instead of re-running every observer on every change, BlaC records exactly which leaves of the state each consumer reads, then wakes only the consumers whose leaves actually moved.
 
-This page explains the mechanism: what gets recorded, how the recording proxy works, how getters fold into it, and how it maps onto re-renders. If you only want the React-facing rules, jump to [Dependency Tracking](/react/dependency-tracking); for the design rationale, see the [Mental Model](/guide/mental-model).
+This page explains the mechanism: what gets recorded, how the recording proxy works, how getters fold into it, and how it maps onto re-renders. If you only want the React-facing rules, jump to [Dependency Tracking](/docs/react/dependency-tracking); for the design rationale, see the [Mental Model](/docs/guide/mental-model).
 
 :::caution[Tracking is automatic — there is nothing to opt into]
-Tracking is **automatic and unconditional**: there is no `tracked()` helper, no `@tracked` decorator, no `autoTrack` option, and nothing to opt into. The recording happens for you whenever a consumer reads state. To see which paths trigger re-renders at runtime, use the [BlaC DevTools](/plugins/devtools). To narrow or opt out of tracking in React, use the `select` option (see below).
+Tracking is **automatic and unconditional**: there is no `tracked()` helper, no `@tracked` decorator, no `autoTrack` option, and nothing to opt into. The recording happens for you whenever a consumer reads state. To see which paths trigger re-renders at runtime, use the [BlaC DevTools](/docs/plugins/devtools). To narrow or opt out of tracking in React, use the `select` option (see below).
 :::
 
 ## What tracking is
@@ -112,7 +113,7 @@ function Total() {
 }
 ```
 
-See [Dependency Tracking](/react/dependency-tracking#what-does-not-register-a-dependency) for the full list of what does and doesn't register.
+See [Dependency Tracking](/docs/react/dependency-tracking#what-does-not-register-a-dependency) for the full list of what does and doesn't register.
 
 ## When tracking matters (and when it doesn't)
 
@@ -124,7 +125,7 @@ Tracking exists to make re-renders precise. It matters most when:
 It matters less for a tiny container where every consumer reads everything — there the diff is cheap and the wake set is "everyone" regardless.
 
 :::note[Tracking outside React]
-Auto-tracking via the recording proxy is a **React render-time** feature, driven by `useBloc`. The lower-level container API (`channel.subscribe(interest, cb)`) lets you declare an interest set directly. The convenience helper [`watch`](/core/watch) deliberately does **not** auto-track: it subscribes to _all_ paths and fires on every change. If you need selective observation outside React, subscribe to the channel with an explicit interest, or filter inside your callback.
+Auto-tracking via the recording proxy is a **React render-time** feature, driven by `useBloc`. The lower-level container API (`channel.subscribe(interest, cb)`) lets you declare an interest set directly. The convenience helper [`watch`](/docs/core/watch) deliberately does **not** auto-track: it subscribes to _all_ paths and fires on every change. If you need selective observation outside React, subscribe to the channel with an explicit interest, or filter inside your callback.
 :::
 
 ## How tracking relates to re-renders
@@ -132,23 +133,23 @@ Auto-tracking via the recording proxy is a **React render-time** feature, driven
 Putting it together, one update flows like this:
 
 1. A method calls `emit` / `update` / `patch`. The container diffs old vs new state and marks the changed paths.
-2. Changes are coalesced per microtask flush, so several synchronous mutations produce one notification (see [System Events](/core/system-events)).
+2. Changes are coalesced per microtask flush, so several synchronous mutations produce one notification (see [System Events](/docs/core/system-events)).
 3. On flush, each consumer's recorded interest is intersected with the changed paths.
 4. Consumers with a non-empty intersection re-render (React) or have their callback invoked. The rest stay asleep.
 5. On the next render, the proxy re-records the interest from scratch — so if a component conditionally reads different fields, the tracked set adapts automatically.
 
-The practical takeaway: read exactly the state you render, keep state immutable, and BlaC will re-render the minimum. To drive a specific consumer from an explicit derived-value array instead of render-time reads, use the `select` option on `useBloc` (see [Dependency Tracking](/react/dependency-tracking#the-select-escape-hatch)).
+The practical takeaway: read exactly the state you render, keep state immutable, and BlaC will re-render the minimum. To drive a specific consumer from an explicit derived-value array instead of render-time reads, use the `select` option on `useBloc` (see [Dependency Tracking](/docs/react/dependency-tracking#the-select-escape-hatch)).
 
 ## See also
 
-- [Dependency Tracking](/react/dependency-tracking) — the React-facing rules, `select`, and limitations
-- [Performance](/react/performance) — splitting readers from writers and avoiding over-reads
-- [Mental Model](/guide/mental-model) — why proxy tracking beats selectors and memoization
-- [watch](/core/watch) — observing state outside React
+- [Dependency Tracking](/docs/react/dependency-tracking) — the React-facing rules, `select`, and limitations
+- [Performance](/docs/react/performance) — splitting readers from writers and avoiding over-reads
+- [Mental Model](/docs/guide/mental-model) — why proxy tracking beats selectors and memoization
+- [watch](/docs/core/watch) — observing state outside React
 
 ## Troubleshooting
 
-For the full FAQ see [Troubleshooting](/guide/troubleshooting). Below are tracking-specific problems.
+For the full FAQ see [Troubleshooting](/docs/guide/troubleshooting). Below are tracking-specific problems.
 
 ### Mutating a `Map`, `Set`, or `Date` doesn't trigger a re-render
 
@@ -191,4 +192,4 @@ function Total() {
 }
 ```
 
-See [Getters auto-track during render](#getters-auto-track-during-render) above and [Performance: Getters as computed properties](/react/performance#pattern-getters-as-computed-properties).
+See [Getters auto-track during render](#getters-auto-track-during-render) above and [Performance: Getters as computed properties](/docs/react/performance#pattern-getters-as-computed-properties).

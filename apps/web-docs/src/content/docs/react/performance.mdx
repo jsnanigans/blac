@@ -5,10 +5,10 @@ description: BlaC's re-render isolation — each component re-renders only when 
 
 import PerformanceDemo from '../../../components/demos/PerformanceDemo.tsx';
 
-BlaC's performance story is **re-render isolation**: each component re-renders only when the specific state it reads changes, and components that read nothing don't re-render at all. This falls out of [auto-tracking](/react/dependency-tracking) — most apps get it for free. This page is for when you want to confirm it's working, push it further, or render large lists efficiently.
+BlaC's performance story is **re-render isolation**: each component re-renders only when the specific state it reads changes, and components that read nothing don't re-render at all. This falls out of [auto-tracking](/docs/react/dependency-tracking) — most apps get it for free. This page is for when you want to confirm it's working, push it further, or render large lists efficiently.
 
 :::note[Where the gains come from]
-There is no shared subscription that wakes every consumer. Each `useBloc` call records its own path set and the container wakes only the consumers whose paths intersect a change. So the cost of a state update scales with _how many components read the changed field_, not with _how many components use the container_. The deep "why" lives in [Mental Model](/guide/mental-model).
+There is no shared subscription that wakes every consumer. Each `useBloc` call records its own path set and the container wakes only the consumers whose paths intersect a change. So the cost of a state update scales with _how many components read the changed field_, not with _how many components use the container_. The deep "why" lives in [Mental Model](/docs/guide/mental-model).
 :::
 
 ## How auto-tracking helps
@@ -23,7 +23,7 @@ function UserName() {
 }
 ```
 
-This happens automatically — no selectors, no memoization, no configuration. For the exact recording rules (and the patterns that quietly over-track), see [Dependency Tracking](/react/dependency-tracking).
+This happens automatically — no selectors, no memoization, no configuration. For the exact recording rules (and the patterns that quietly over-track), see [Dependency Tracking](/docs/react/dependency-tracking).
 
 ## Interactive before/after
 
@@ -66,7 +66,7 @@ Increment the ref in the render body. The body runs on every render; `useEffect`
 
 **2. React DevTools Profiler (visual, whole-tree).** Record an interaction and look for components that highlight (re-rendered) when they shouldn't have. A component that lights up on a state change it doesn't read is over-tracking — usually a spread or a whole-object read (see [Common mistakes](#common-mistakes)).
 
-**3. BlaC DevTools (state-change-centric).** The [BlaC DevTools](/plugins/devtools) show which instances are live and when each state change fires, so you can correlate a render spike with the emit that caused it and spot unexpected instance churn. The [Logging Plugin](/plugins/logging) additionally warns on rapid create/destroy lifecycles in the console.
+**3. BlaC DevTools (state-change-centric).** The [BlaC DevTools](/docs/plugins/devtools) show which instances are live and when each state change fires, so you can correlate a render spike with the emit that caused it and spot unexpected instance churn. The [Logging Plugin](/docs/plugins/logging) additionally warns on rapid create/destroy lifecycles in the console.
 
 ## Pattern: Split readers and writers
 
@@ -127,7 +127,7 @@ function CartBadge() {
 }
 ```
 
-This re-renders only when `isEmpty` flips, not on every item added. See [Dependency Tracking: the `select` escape hatch](/react/dependency-tracking#the-select-escape-hatch).
+This re-renders only when `isEmpty` flips, not on every item added. See [Dependency Tracking: the `select` escape hatch](/docs/react/dependency-tracking#the-select-escape-hatch).
 
 :::tip[Auto-track vs `select`: when to narrow vs derive]
 Reach for `select` to depend on a **derived/computed** value or to pin an explicit dependency set. To make a component _not_ re-render, don't pass an option — just don't read state. There is no `autoTrack` flag; the mode is chosen by the presence or absence of `select`.
@@ -196,7 +196,7 @@ function TodoRow({ id }: { id: string }) {
 }
 ```
 
-Here each row's `TodoItemCubit` is keyed by `args: { id }`, so toggling one row wakes only that row. See [Passing Inputs](/guide/inputs) for the identity model behind `args`.
+Here each row's `TodoItemCubit` is keyed by `args: { id }`, so toggling one row wakes only that row. See [Passing Inputs](/docs/guide/inputs) for the identity model behind `args`.
 
 **Or pass the item down and let the parent own the data.** When a single Cubit holds the list, render rows from a `select` that pins the row's own slice, so a row re-renders only when _its_ item changes:
 
@@ -293,13 +293,13 @@ This keeps the component body clean and avoids the usual `useEffect` dependency-
 
 ## See also
 
-- [Dependency Tracking](/react/dependency-tracking) — the recording rules that drive all of the above
-- [useBloc](/react/use-bloc) — the full options reference (`select`, `args`, `onMount`/`onUnmount`)
-- [DevTools](/plugins/devtools) — inspect live instances and state-change timing
+- [Dependency Tracking](/docs/react/dependency-tracking) — the recording rules that drive all of the above
+- [useBloc](/docs/react/use-bloc) — the full options reference (`select`, `args`, `onMount`/`onUnmount`)
+- [DevTools](/docs/plugins/devtools) — inspect live instances and state-change timing
 
 ## Troubleshooting
 
-For the full FAQ see [Troubleshooting](/guide/troubleshooting). Below are the performance-specific problems.
+For the full FAQ see [Troubleshooting](/docs/guide/troubleshooting). Below are the performance-specific problems.
 
 ### Getter wakes more often than expected
 

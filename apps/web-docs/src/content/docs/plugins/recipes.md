@@ -9,8 +9,8 @@ recipes use only `@blac/core` imports so they work without any extra
 dependencies unless noted.
 
 For the plugin authoring API that every recipe is built on, see
-[Plugin Authoring](/core/plugins). For the official first-party plugins see
-[Plugin Overview](/plugins/overview).
+[Plugin Authoring](/docs/core/plugins). For the official first-party plugins see
+[Plugin Overview](/docs/plugins/overview).
 
 ## Compose order and throw semantics
 
@@ -40,7 +40,7 @@ Good for small string-serializable state where IndexedDB is unnecessary.
 `localStorage` is readable by any script on the same origin. Do not persist
 state that contains passwords, tokens, health data, or any other personally
 identifiable information. If you need to store sensitive data, prefer the
-official [Persistence plugin](/plugins/persistence) with an encrypted adapter,
+official [Persistence plugin](/docs/plugins/persistence) with an encrypted adapter,
 or keep it in a `sessionStorage`-backed variant.
 :::
 
@@ -546,7 +546,7 @@ getPluginManager().install(
 
 ## See also
 
-- [Plugin Authoring](/core/plugins) — the `BlacPlugin` interface and hook reference
-- [Plugin Overview](/plugins/overview) — first-party plugin catalog
-- [Persistence](/plugins/persistence) — official IndexedDB persistence, including a custom adapter API
-- [Logging](/plugins/logging) — official structured console logging plugin
+- [Plugin Authoring](/docs/core/plugins) — the `BlacPlugin` interface and hook reference
+- [Plugin Overview](/docs/plugins/overview) — first-party plugin catalog
+- [Persistence](/docs/plugins/persistence) — official IndexedDB persistence, including a custom adapter API
+- [Logging](/docs/plugins/logging) — official structured console logging plugin

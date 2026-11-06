@@ -8,7 +8,7 @@ Some behavior does not belong to any single bloc — logging every state change,
 A **plugin** is the escape hatch: it installs once, globally, and observes lifecycle events across _every_ state container in the registry. Write the cross-cutting concern once; it applies everywhere automatically.
 
 :::note[Plugins vs system events — which do I reach for?]
-[System events](/core/system-events) (`this.onSystemEvent(...)`) are for logic that belongs to **one bloc** ("when _this_ cart changes, recompute _this_ total"). Plugins are for behavior that applies **across all blocs** ("log every state change in the app"). If you find yourself adding the same `onSystemEvent` handler to many blocs, that is the signal to lift it into a plugin.
+[System events](/docs/core/system-events) (`this.onSystemEvent(...)`) are for logic that belongs to **one bloc** ("when _this_ cart changes, recompute _this_ total"). Plugins are for behavior that applies **across all blocs** ("log every state change in the app"). If you find yourself adding the same `onSystemEvent` handler to many blocs, that is the signal to lift it into a plugin.
 :::
 
 ## The BlacPlugin interface
@@ -145,7 +145,7 @@ The methods below take an `instance` argument so a plugin can also reach blocs o
 | `getStats()`                          | `{ registeredTypes, totalInstances, typeBreakdown }`                                |
 | `getRefIds(instanceId)`               | Array of ref holder IDs for an instance                                             |
 
-The five hydration methods — `startHydration`, `applyHydratedState`, `finishHydration`, `failHydration`, and `waitForHydration` — exist so a plugin can drive the [hydration lifecycle](/core/system-events) from the outside. The [Persistence plugin](/plugins/persistence) is their real-world consumer: it begins hydration, restores saved state, and finishes (or fails) hydration through exactly these methods.
+The five hydration methods — `startHydration`, `applyHydratedState`, `finishHydration`, `failHydration`, and `waitForHydration` — exist so a plugin can drive the [hydration lifecycle](/docs/core/system-events) from the outside. The [Persistence plugin](/docs/plugins/persistence) is their real-world consumer: it begins hydration, restores saved state, and finishes (or fails) hydration through exactly these methods.
 
 ## PathSet and the path interner
 
@@ -245,19 +245,19 @@ To deliver `onStateChange` for every flush, the manager subscribes to each conta
 - `prev` is snapshotted **once per flush** (the state before the first emit of that flush) and reused for every plugin, so the value a plugin sees is independent of install order.
 - For true per-call granularity (rare), subscribe to the container's channel directly instead of using a plugin hook.
 
-This batching mirrors `onSystemEvent('stateChanged')` inside a bloc — the same microtask-coalescing model, seen from the global side rather than the per-instance side. See [System Events](/core/system-events) for the per-instance view and the full rationale for why BlaC batches.
+This batching mirrors `onSystemEvent('stateChanged')` inside a bloc — the same microtask-coalescing model, seen from the global side rather than the per-instance side. See [System Events](/docs/core/system-events) for the per-instance view and the full rationale for why BlaC batches.
 
 ## Built-in plugins
 
 These official plugins are themselves authored against the interface above — read their source as worked examples:
 
-- [Logging](/plugins/logging) — console logging and monitoring
-- [DevTools](/plugins/devtools) — Chrome DevTools integration
-- [Persistence](/plugins/persistence) — IndexedDB state persistence (the real consumer of the hydration methods on `ctx`)
+- [Logging](/docs/plugins/logging) — console logging and monitoring
+- [DevTools](/docs/plugins/devtools) — Chrome DevTools integration
+- [Persistence](/docs/plugins/persistence) — IndexedDB state persistence (the real consumer of the hydration methods on `ctx`)
 
 ## See also
 
-- [Plugin Overview](/plugins/overview) — the plugin catalog and where to start
-- [System Events](/core/system-events) — per-instance lifecycle hooks and when to use them instead
-- [Persistence](/plugins/persistence) — a complete plugin that drives the hydration API
-- [Core Concepts](/guide/concepts/) — definitions for plugin, hydration, interner, and `PathSet`
+- [Plugin Overview](/docs/plugins/overview) — the plugin catalog and where to start
+- [System Events](/docs/core/system-events) — per-instance lifecycle hooks and when to use them instead
+- [Persistence](/docs/plugins/persistence) — a complete plugin that drives the hydration API
+- [Core Concepts](/docs/guide/concepts/) — definitions for plugin, hydration, interner, and `PathSet`

@@ -34,7 +34,7 @@ const stop = watch(AuthCubit, (auth) => {
 stop();
 ```
 
-`watch` returns a `stop` function. Always call it when the subscription is no longer needed. Forgetting is the most common outside-React leak — a subscription you never stop keeps the bloc alive and runs your callback for the life of the process. See [watch](/core/watch) for the full API.
+`watch` returns a `stop` function. Always call it when the subscription is no longer needed. Forgetting is the most common outside-React leak — a subscription you never stop keeps the bloc alive and runs your callback for the life of the process. See [watch](/docs/core/watch) for the full API.
 
 ### Watching multiple blocs
 
@@ -203,7 +203,7 @@ Blocs work in Node.js without any changes. The module-level registry is per-modu
 
 For **worker threads** (`node:worker_threads`), each worker has its own module graph and therefore its own registry. Blocs do not cross thread boundaries — pass data between threads via the standard `postMessage` / `MessageChannel` API.
 
-For **long-running servers** that handle multiple requests in the same process, apply the [per-request registry isolation](/integrations/ssr) pattern to prevent state bleed between concurrent users.
+For **long-running servers** that handle multiple requests in the same process, apply the [per-request registry isolation](/docs/integrations/ssr) pattern to prevent state bleed between concurrent users.
 
 ```ts twoslash
 import { watch, acquire, release, Cubit } from '@blac/core';
@@ -236,7 +236,7 @@ release(JobCubit);
 
 ## See also
 
-- [watch](/core/watch) — full API, `instance()` references, `watch.STOP`, and the coalescing model
-- [Instance Management](/core/instance-management) — the full registry API: `acquire`, `release`, `borrow`, `ensure`, `clearAll`
-- [SSR & per-request isolation](/integrations/ssr) — isolating the registry in long-lived server processes
-- [Testing core logic](/testing/core) — `clearAll` for isolating the registry between tests
+- [watch](/docs/core/watch) — full API, `instance()` references, `watch.STOP`, and the coalescing model
+- [Instance Management](/docs/core/instance-management) — the full registry API: `acquire`, `release`, `borrow`, `ensure`, `clearAll`
+- [SSR & per-request isolation](/docs/integrations/ssr) — isolating the registry in long-lived server processes
+- [Testing core logic](/docs/testing/core) — `clearAll` for isolating the registry between tests

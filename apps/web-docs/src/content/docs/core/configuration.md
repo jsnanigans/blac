@@ -48,7 +48,7 @@ class Good extends Cubit<S, { id: string }> {}
 
 Prevents the instance from being auto-disposed when its ref count reaches zero. The instance persists for the lifetime of the app (it can still be torn down explicitly via `clear()` or `release(..., forceDispose)`).
 
-**Why:** By default, BlaC disposes an instance the moment the last consumer releases it — see [Instance Management](/core/instance-management). That is exactly what you want for screen-local state, but wrong for state that must outlive the components reading it.
+**Why:** By default, BlaC disposes an instance the moment the last consumer releases it — see [Instance Management](/docs/core/instance-management). That is exactly what you want for screen-local state, but wrong for state that must outlive the components reading it.
 
 ```ts
 @blac({ keepAlive: true })
@@ -93,7 +93,7 @@ class InternalTimerCubit extends Cubit<TimerState> {
 }
 ```
 
-**When to use:** high-frequency or purely internal state containers that would clutter DevTools. See [DevTools](/plugins/devtools) for how the plugin consumes this flag.
+**When to use:** high-frequency or purely internal state containers that would clutter DevTools. See [DevTools](/docs/plugins/devtools) for how the plugin consumes this flag.
 
 ### `{ equality: EqualityFn }`
 
@@ -116,7 +116,7 @@ class FilterCubit extends Cubit<FilterState> {
 ```
 
 :::note[Equality applies to emit/update, not patch]
-The configured equality function gates `emit` and `update` only. `patch` does its own per-key `Object.is` filtering and ignores this function — see [Cubit](/core/cubit) for the difference between the mutation methods.
+The configured equality function gates `emit` and `update` only. `patch` does its own per-key `Object.is` filtering and ignores this function — see [Cubit](/docs/core/cubit) for the difference between the mutation methods.
 :::
 
 ### `{ key: (args) => string }`
@@ -139,7 +139,7 @@ class UserCardCubit extends Cubit<
 }
 ```
 
-The same key function can be set directly as a class static (`static key = (args) => …`) if you prefer not to use a decorator. The registry reads either form. See [Passing Inputs](/guide/inputs) for the full identity model, and [Instance Management](/core/instance-management) for how keys drive sharing and disposal.
+The same key function can be set directly as a class static (`static key = (args) => …`) if you prefer not to use a decorator. The registry reads either form. See [Passing Inputs](/docs/guide/inputs) for the full identity model, and [Instance Management](/docs/core/instance-management) for how keys drive sharing and disposal.
 
 ## Without decorators
 
@@ -192,7 +192,7 @@ A few details that matter when tuning these:
 - **"Dev-only" means `process.env.NODE_ENV` is defined and not `'production'`.** A bundle with no `process` shim runs the production path (no per-emit bookkeeping), so if you want the warnings while developing, make sure your bundler defines `NODE_ENV` — Vite, Next and webpack do by default.
 
 :::caution[A thrown breaker is a symptom, not the bug]
-If `acquire` throws an instance- or ref-limit error, raising the limit usually just delays the freeze. The real cause is almost always an unstable key or a missing `release`. Stabilize the `args` / add a `static key` ([Passing Inputs](/guide/inputs)), or fix the missing cleanup ([Instance Management](/core/instance-management)), before reaching for a higher limit.
+If `acquire` throws an instance- or ref-limit error, raising the limit usually just delays the freeze. The real cause is almost always an unstable key or a missing `release`. Stabilize the `args` / add a `static key` ([Passing Inputs](/docs/guide/inputs)), or fix the missing cleanup ([Instance Management](/docs/core/instance-management)), before reaching for a higher limit.
 :::
 
 ### `equality` (global default)
@@ -225,7 +225,7 @@ configureBlac({ equality: (a, b) => Object.is(a, b) });
 
 ## See also
 
-- [Instance Management](/core/instance-management) — how `keepAlive`, ref counting, and instance keys drive sharing and disposal
-- [Passing Inputs](/guide/inputs) — `args`, `static key`, and the full instance-identity model
-- [Cubit](/core/cubit) — `emit` vs `update` vs `patch`, and where equality applies
-- [DevTools](/plugins/devtools) — how `excludeFromDevTools` is consumed
+- [Instance Management](/docs/core/instance-management) — how `keepAlive`, ref counting, and instance keys drive sharing and disposal
+- [Passing Inputs](/docs/guide/inputs) — `args`, `static key`, and the full instance-identity model
+- [Cubit](/docs/core/cubit) — `emit` vs `update` vs `patch`, and where equality applies
+- [DevTools](/docs/plugins/devtools) — how `excludeFromDevTools` is consumed

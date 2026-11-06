@@ -9,13 +9,13 @@ channel, the path interner, the recording proxy, the observed skeleton, and the
 cross-bloc dependency layer — and say exactly what it does and why it has to.
 
 If you only want the rules for writing components, read
-[Tracking](/core/tracked) and [Dependency Tracking](/react/dependency-tracking).
+[Tracking](/docs/core/tracked) and [Dependency Tracking](/docs/react/dependency-tracking).
 This page is for when you want the _machine_. It is grounded directly in the
 source: the engine lives in `@dirtytalk/engine`, the path machinery in
 `@dirtytalk/structural`, and BlaC's lifecycle layer in `@blac/core`'s
 `StateContainer`. The companion design narrative is the
-[Mental Model](/guide/mental-model); the distilled standalone version is
-[DirtyTalk](/dirtytalk/).
+[Mental Model](/docs/guide/mental-model); the distilled standalone version is
+[DirtyTalk](https://dirtytalk.42.dog/).
 
 We build in four stages, each strictly on top of the last:
 
@@ -564,8 +564,8 @@ BlaC re-renders the minimum.**
 
 ## See also
 
-- [Mental Model](/guide/mental-model) — the design narrative behind these stages.
-- [Tracking](/core/tracked) — the React-time recording rules in reference form.
-- [Dependency Tracking](/react/dependency-tracking) — `select` and what does/doesn't register.
-- [DirtyTalk](/dirtytalk/) — the standalone, engine-backed distillation.
-- [System Events](/core/system-events) — `stateChanged` / `dispose` lifecycle hooks.
+- [Mental Model](/docs/guide/mental-model) — the design narrative behind these stages.
+- [Tracking](/docs/core/tracked) — the React-time recording rules in reference form.
+- [Dependency Tracking](/docs/react/dependency-tracking) — `select` and what does/doesn't register.
+- [DirtyTalk](https://dirtytalk.42.dog/) — the standalone, engine-backed distillation.
+- [System Events](/docs/core/system-events) — `stateChanged` / `dispose` lifecycle hooks.

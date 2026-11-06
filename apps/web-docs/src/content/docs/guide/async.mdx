@@ -58,7 +58,7 @@ class UserCubit extends Cubit<UserState> {
 }
 ```
 
-Why `emit` and not `patch` here? Because the union has no shared shape — `loading` has no `user` key, `error` has no `user` key. `patch` deep-merges, which would leave a stale `user` lingering under an `error` status. `emit` replaces wholesale, so each branch is exactly the keys that branch declares. (See [Cubit](/core/cubit) for the replace-vs-merge rule.)
+Why `emit` and not `patch` here? Because the union has no shared shape — `loading` has no `user` key, `error` has no `user` key. `patch` deep-merges, which would leave a stale `user` lingering under an `error` status. `emit` replaces wholesale, so each branch is exactly the keys that branch declares. (See [Cubit](/docs/core/cubit) for the replace-vs-merge rule.)
 
 ### The request-id guard
 
@@ -150,7 +150,7 @@ class UserCubit extends Cubit<UserState> {
 ```
 
 :::tip[Loading getters track in render]
-Reading `user.isLoading` directly in render is reactive: the returned bloc is proxied, and `this.state.status` inside the getter records through the current state proxy. Use `select: (_, bloc) => [bloc.isLoading]` only when you want the boolean result to be the re-render boundary. Full rule: [Dependency Tracking](/react/dependency-tracking) and [Performance](/react/performance#pattern-getters-as-computed-properties).
+Reading `user.isLoading` directly in render is reactive: the returned bloc is proxied, and `this.state.status` inside the getter records through the current state proxy. Use `select: (_, bloc) => [bloc.isLoading]` only when you want the boolean result to be the re-render boundary. Full rule: [Dependency Tracking](/docs/react/dependency-tracking) and [Performance](/docs/react/performance#pattern-getters-as-computed-properties).
 :::
 
 ## A reusable loadable surface
@@ -293,7 +293,7 @@ function ReportView() {
 The upside of explicit modelling: error and retry are first-class states, not exceptions you have to catch at a boundary, and the loading UI lives next to the data it's loading. The cost is the `if` ladder — but with a discriminated union it's a few lines and fully type-checked.
 
 :::note[Kicking off the load]
-`onMount` fires after the bloc is acquired, so it's the natural place to start a fetch when the consuming component appears — see [useBloc](/react/use-bloc). For a load that should run once per _instance_ regardless of which component mounts first, start it from the bloc's `init` hook instead; see [Cubit](/core/cubit).
+`onMount` fires after the bloc is acquired, so it's the natural place to start a fetch when the consuming component appears — see [useBloc](/docs/react/use-bloc). For a load that should run once per _instance_ regardless of which component mounts first, start it from the bloc's `init` hook instead; see [Cubit](/docs/core/cubit).
 :::
 
 ## Cancellation and cleanup
@@ -369,7 +369,7 @@ class SearchCubit extends Cubit<SearchState> {
 }
 ```
 
-`onSystemEvent('dispose', …)` fires when the instance is being torn down (its ref count hit zero, or it was cleared). Aborting there cancels the request, and the `AbortError` branch swallows the rejection — no emit reaches the disposed container. See [System Events](/core/system-events) for the full lifecycle.
+`onSystemEvent('dispose', …)` fires when the instance is being torn down (its ref count hit zero, or it was cleared). Aborting there cancels the request, and the `AbortError` branch swallows the rejection — no emit reaches the disposed container. See [System Events](/docs/core/system-events) for the full lifecycle.
 
 :::tip[Guard `$blac.disposed` if you skip the abort]
 If you don't use an `AbortController`, an async action that resumes after disposal can still hit a disposed bloc. Either check `this.$blac.disposed` before emitting, or — cleaner — abort on `dispose` as above so the request never resolves into an emit at all.
@@ -377,8 +377,8 @@ If you don't use an `AbortController`, an async action that resumes after dispos
 
 ## See also
 
-- [Async Resources](/guide/async-resources/) — `@blac/async` packages this loading flow as `resource()` and `mutation()`
-- [Cubit](/core/cubit) — `emit` / `patch` / `update`, getters, and the `init` hook
-- [useBloc](/react/use-bloc) — `onMount`, `select`, and how re-renders are scoped
-- [System Events](/core/system-events) — the `dispose` and `hydrationChanged` lifecycle hooks
-- [Core Concepts](/guide/concepts/) — the vocabulary and model behind these APIs
+- [Async Resources](/docs/guide/async-resources/) — `@blac/async` packages this loading flow as `resource()` and `mutation()`
+- [Cubit](/docs/core/cubit) — `emit` / `patch` / `update`, getters, and the `init` hook
+- [useBloc](/docs/react/use-bloc) — `onMount`, `select`, and how re-renders are scoped
+- [System Events](/docs/core/system-events) — the `dispose` and `hydrationChanged` lifecycle hooks
+- [Core Concepts](/docs/guide/concepts/) — the vocabulary and model behind these APIs
