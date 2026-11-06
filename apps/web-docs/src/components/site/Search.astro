@@ -1,0 +1,166 @@
+---
+// ⌘K search over the Pagefind index (built by `pagefind --site dist`).
+---
+
+<button class="search-btn" type="button" aria-label="Search the docs" aria-keyshortcuts="Meta+K Control+K">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"
+    ></path></svg>
+  <span class="search-label">Search</span>
+  <kbd>⌘K</kbd>
+</button>
+
+<dialog class="search" aria-label="Search">
+  <form method="dialog" class="search-box" role="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"
+      ></path></svg>
+    <input type="search" placeholder="Search docs, chapters, RFCs…" autocomplete="off" spellcheck="false" />
+    <button class="search-close" type="submit" aria-label="Close search">esc</button>
+  </form>
+  <ol class="search-results" aria-live="polite"></ol>
+</dialog>
+
+<script>
+  import '../../scripts/search';
+</script>
+
+<style>
+  .search-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 36px;
+    padding: 0 0.5rem 0 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--dim);
+    font: 500 0.875rem var(--font-body);
+    cursor: pointer;
+  }
+
+  .search-btn:hover {
+    border-color: var(--line-strong);
+    color: var(--muted);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  kbd {
+    padding: 0.1rem 0.4rem;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    font-size: 0.7rem;
+  }
+
+  .search {
+    width: min(640px, calc(100vw - 2rem));
+    max-height: min(560px, 80vh);
+    margin: 12vh auto auto;
+    padding: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-lg);
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.6);
+  }
+
+  .search::backdrop {
+    background: rgb(5 4 10 / 0.6);
+    backdrop-filter: blur(3px);
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem 1.1rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--dim);
+  }
+
+  .search-box svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    font: 500 1.05rem var(--font-body);
+  }
+
+  .search-close {
+    padding: 0.15rem 0.45rem;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: transparent;
+    color: var(--dim);
+    font: 0.7rem var(--font-mono);
+    cursor: pointer;
+  }
+
+  .search-results {
+    margin: 0;
+    padding: 0.5rem;
+    list-style: none;
+    overflow-y: auto;
+  }
+
+  .search-results :global(a) {
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: var(--radius);
+    text-decoration: none;
+  }
+
+  .search-results :global(a:hover),
+  .search-results :global(a:focus-visible) {
+    background: var(--panel-2);
+  }
+
+  .search-results :global(span) {
+    color: var(--muted);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .search-results :global(mark) {
+    background: none;
+    color: var(--lit-text);
+    font-weight: 700;
+  }
+
+  .search-results :global(.search-empty) {
+    padding: 1rem;
+    color: var(--dim);
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 720px) {
+    .search-label,
+    kbd {
+      display: none;
+    }
+
+    .search-btn {
+      width: 40px;
+      padding: 0;
+      justify-content: center;
+      border: 0;
+      background: transparent;
+    }
+  }
+</style>

@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useRenderFlash } from '../../patchbay/site';
 import './demos.css';
 
 export interface RenderCounterProps {
@@ -26,9 +27,11 @@ export function RenderCounter({ label = 'renders' }: RenderCounterProps) {
   const count = useRef(0);
   // Render-body increment — see the doc comment above for why.
   count.current += 1;
+  // "Show renders": light the panel this counter watches.
+  const ref = useRenderFlash<HTMLSpanElement>((el) => el.closest('.blac-demo-panel, .blac-demo') ?? el);
 
   return (
-    <span className="blac-demo-render-counter" role="status">
+    <span className="blac-demo-render-counter" role="status" ref={ref}>
       <span className="blac-demo-render-counter__label">{label}</span>
       <span key={count.current} className="blac-demo-render-counter__count">
         {count.current}

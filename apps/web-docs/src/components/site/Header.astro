@@ -1,0 +1,256 @@
+---
+import Logo from './Logo.astro';
+import Search from './Search.astro';
+import FlashToggle from './FlashToggle.tsx';
+import { GITHUB } from '../../lib/nav';
+
+interface Props {
+  section?: string;
+  themeLocked: boolean;
+}
+
+const { section, themeLocked } = Astro.props;
+const hasBlog = Object.keys(import.meta.glob('../../content/blog/*.{md,mdx}')).length > 0;
+const links = [
+  { href: '/learn/', label: 'Learn', id: 'learn' },
+  { href: '/docs/guide/introduction/', label: 'Docs', id: 'docs' },
+  ...(hasBlog ? [{ href: '/blog/', label: 'Blog', id: 'blog' }] : []),
+];
+---
+
+<header class="topbar">
+  <div class="topbar-inner">
+    {
+      section === 'docs' && (
+        <button class="icon-btn menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+        </button>
+      )
+    }
+    <a class="brand" href="/" aria-label="BlaC home">
+      <Logo />
+      <span class="brand-name">blac</span>
+    </a>
+    <nav class="topnav" aria-label="Main">
+      {
+        links.map((l) => (
+          <a href={l.href} aria-current={section === l.id ? 'page' : undefined}>
+            {l.label}
+          </a>
+        ))
+      }
+    </nav>
+    <div class="tools">
+      <FlashToggle client:idle />
+      <Search />
+      {
+        !themeLocked && (
+          <button class="icon-btn theme-toggle" type="button" aria-label="Toggle light and dark theme">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="8" />
+              <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
+            </svg>
+          </button>
+        )
+      }
+      <a class="icon-btn" href={GITHUB} aria-label="BlaC on GitHub">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="currentColor"
+            stroke="none"
+            d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.75c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"
+          ></path>
+        </svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<script>
+  import '../../scripts/header';
+</script>
+
+<style>
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: var(--topbar);
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(14px) saturate(1.3);
+  }
+
+  .topbar-inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    height: 100%;
+    max-width: calc(var(--max) + 2 * var(--gutter));
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  :global(body[data-section='docs']) .topbar-inner {
+    max-width: none;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    text-decoration: none;
+  }
+
+  .brand-name {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 750;
+    letter-spacing: -0.04em;
+  }
+
+  .topnav {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .topnav a {
+    position: relative;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .topnav a:hover {
+    color: var(--text);
+  }
+
+  .topnav a[aria-current='page'] {
+    color: var(--text);
+  }
+
+  .topnav a[aria-current='page']::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -2px;
+    width: 5px;
+    height: 5px;
+    margin-left: -2.5px;
+    border-radius: 50%;
+    background: var(--lit);
+    box-shadow: 0 0 8px var(--lit);
+  }
+
+  .tools {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: auto;
+  }
+
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .icon-btn:hover {
+    background: var(--panel-2);
+    color: var(--text);
+  }
+
+  .icon-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+  }
+
+  .tools :global(.flash-toggle) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 36px;
+    margin-right: 0.25rem;
+    padding: 0 0.8rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--dim);
+    font: 600 0.8rem var(--font-body);
+    cursor: pointer;
+  }
+
+  .tools :global(.flash-toggle:hover) {
+    color: var(--text);
+  }
+
+  .tools :global(.flash-led) {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--line-strong);
+    transition: background 200ms, box-shadow 200ms;
+  }
+
+  .tools :global(.flash-toggle[aria-pressed='true']) {
+    border-color: color-mix(in srgb, var(--lit) 60%, transparent);
+    color: var(--text);
+  }
+
+  .tools :global(.flash-toggle[aria-pressed='true'] .flash-led) {
+    background: var(--lit);
+    box-shadow: 0 0 10px var(--lit);
+  }
+
+  .menu-toggle {
+    display: none;
+    margin-right: -0.75rem;
+  }
+
+  @media (max-width: 960px) {
+    .menu-toggle {
+      display: grid;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .tools :global(.flash-label) {
+      display: none;
+    }
+
+    .tools :global(.flash-toggle) {
+      width: 40px;
+      justify-content: center;
+      padding: 0;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .topbar-inner {
+      gap: 0.75rem;
+    }
+
+    .brand-name {
+      display: none;
+    }
+
+    .topnav a {
+      padding: 0.4rem 0.5rem;
+    }
+  }
+</style>

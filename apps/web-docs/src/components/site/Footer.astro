@@ -1,0 +1,122 @@
+---
+import Logo from './Logo.astro';
+import { GITHUB } from '../../lib/nav';
+
+const cols = [
+  {
+    label: 'Learn',
+    links: [
+      ['Chapters', '/learn/'],
+      ['Quick start', '/docs/guide/getting-started/'],
+      ['Tutorial', '/docs/guide/tutorial/'],
+    ],
+  },
+  {
+    label: 'Reference',
+    links: [
+      ['@blac/core', '/docs/core/cubit/'],
+      ['@blac/react', '/docs/react/use-bloc/'],
+      ['@blac/async', '/docs/guide/async-resources/'],
+      ['Plugins', '/docs/plugins/overview/'],
+    ],
+  },
+  {
+    label: 'Project',
+    links: [
+      ['GitHub', GITHUB],
+      ['RFCs', '/rfcs/'],
+      ['llms.txt', '/llms.txt'],
+      ['dirtytalk', 'https://dirtytalk.42.dog/'],
+    ],
+  },
+];
+---
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a class="brand" href="/"><Logo /><span>blac</span></a>
+      <p>Components render. Classes think.</p>
+      <p class="kicker">MIT · <a href="https://42.dog">42.dog</a></p>
+    </div>
+    {
+      cols.map((col) => (
+        <nav aria-label={col.label}>
+          <p class="kicker">{col.label}</p>
+          <ul>
+            {col.links.map(([label, href]) => (
+              <li>
+                <a href={href}>{label}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ))
+    }
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: 1px solid var(--line);
+    background: var(--panel);
+  }
+
+  .footer-inner {
+    display: grid;
+    grid-template-columns: 2fr repeat(3, 1fr);
+    gap: 2rem;
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 3.5rem var(--gutter) 4rem;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 750;
+    text-decoration: none;
+  }
+
+  .footer-brand p:not(.kicker) {
+    margin: 0.75rem 0 1rem;
+    color: var(--muted);
+  }
+
+  .footer-brand a:not(.brand) {
+    color: inherit;
+  }
+
+  ul {
+    margin: 0.85rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li + li {
+    margin-top: 0.4rem;
+  }
+
+  nav a {
+    color: var(--muted);
+    font-size: 0.95rem;
+    text-decoration: none;
+  }
+
+  nav a:hover {
+    color: var(--text);
+  }
+
+  @media (max-width: 720px) {
+    .footer-inner {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .footer-brand {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

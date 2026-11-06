@@ -1,0 +1,37 @@
+---
+// The b/c overprint monogram: module (cobalt b) and component (rose c) overlap
+// in the cable colour; the amber LED in the c's mouth is a lit signal.
+---
+
+<svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <path id="logo-b" d="M6 10a6.5 6.5 0 0 1 13 0v11.2A18.5 18.5 0 1 1 6 39Z"></path>
+    <clipPath id="logo-b-clip"><use href="#logo-b"></use></clipPath>
+    <mask id="logo-c-mask">
+      <rect width="64" height="64" fill="#fff"></rect>
+      <circle cx="41" cy="39" r="7.5" fill="#000"></circle>
+      <path d="M41 39 L64 24 L64 54 Z" fill="#000"></path>
+    </mask>
+    <mask id="logo-b-mask">
+      <rect width="64" height="64" fill="#fff"></rect>
+      <circle cx="24.5" cy="39" r="7" fill="#000"></circle>
+    </mask>
+  </defs>
+  <g mask="url(#logo-b-mask)"><use href="#logo-b" fill="var(--cobalt)"></use></g>
+  <g mask="url(#logo-c-mask)">
+    <circle cx="41" cy="39" r="18.5" fill="var(--rose)"></circle>
+    <circle cx="41" cy="39" r="18.5" fill="var(--cable)" clip-path="url(#logo-b-clip)"></circle>
+  </g>
+  <circle class="logo-led" cx="54.5" cy="39" r="4" fill="var(--lit)"></circle>
+</svg>
+
+<style>
+  .logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .logo-led {
+    filter: drop-shadow(0 0 3px var(--lit));
+  }
+</style>
