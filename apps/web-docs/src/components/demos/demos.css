@@ -1,134 +1,142 @@
 /*
-  Shared chrome for interactive `@blac/react` demo islands.
+  Shared chrome for interactive `@blac/react` demo islands, in the patch-bay
+  look: the frame is a module (screws, power LED, silkscreen label), each
+  panel is a component card, buttons are hardware keys and the render count
+  lights amber when it ticks. Keyed off the site tokens, so light/dark follow.
 
-  All values are pulled from Starlight / BlaC CSS custom properties so the demos
-  track the active light/dark theme automatically.
-
-  Class names are prefixed `blac-demo-` to avoid colliding with Starlight or
+  Class names are prefixed `blac-demo-` to avoid colliding with prose or
   Expressive Code styles.
 */
 
 .blac-demo {
-  /* Tactile hardware-module card that reads as "live, try it" vs. a code snippet. */
-  border: 1px solid var(--line-strong, var(--line-strong));
-  border-radius: var(--radius-lg, 1rem);
-  background: var(--panel, var(--bg));
-  box-shadow: 4px 4px 0 color-mix(in srgb, var(--cable) 65%, transparent);
+  position: relative;
   margin: 1.75rem 0;
-  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  box-shadow: var(--shadow-panel);
   font-size: 0.875rem;
+  overflow: hidden;
+}
+
+/* Faceplate screws. */
+.blac-demo::before,
+.blac-demo::after {
+  content: '';
+  position: absolute;
+  top: 9px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--screw);
+  box-shadow: inset 0 0 0 1.5px var(--panel-3);
+}
+
+.blac-demo::before {
+  left: 9px;
+}
+
+.blac-demo::after {
+  right: 9px;
 }
 
 .blac-demo__label {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--line, var(--line));
-  background: var(--panel-2, var(--panel-2));
-  color: var(--text, var(--muted));
-  font-family: var(--font-display, inherit);
-  font-size: 0.75rem;
-  font-weight: 760;
-  letter-spacing: 0.08em;
+  padding: 0.6rem 1.5rem;
+  border-bottom: 1px dashed var(--line);
+  color: var(--dim);
+  font: 600 0.72rem var(--font-mono);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
+/* Power LED: this one is live, not a screenshot. */
 .blac-demo__label::before {
-  /* Pulsing "Live" dot — signals this is interactive, not a static screenshot. */
   content: '';
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 50%;
-  background: var(--power, var(--cable));
-  box-shadow: 0 0 8px var(--power, transparent);
+  width: 7px;
+  height: 7px;
   flex: none;
+  border-radius: 50%;
+  background: var(--power);
+  box-shadow: 0 0 8px var(--power);
 }
 
 .blac-demo__body {
-  padding: 1.15rem 1.35rem;
+  padding: 1.15rem 1.35rem 1.35rem;
   color: var(--text);
 }
 
-/* --- Shared interactive primitives demos may reuse --------------------- */
+/* --- Hardware keys: sit on a ledge, travel down when pressed ----------- */
 
 .blac-demo button {
-  font: inherit;
-  font-family: var(--font-display, inherit);
+  padding: 0.4rem 0.95rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--panel-3);
+  color: var(--text);
+  font: 600 0.82rem var(--font-mono);
   cursor: pointer;
-  padding: 0.42rem 1rem;
-  border-radius: 999px;
-  border: 1px solid var(--cobalt, var(--cable));
-  background: var(--cobalt, var(--cable));
-  color: #fff;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  box-shadow: 0 3px 0 var(--line-strong);
   transition:
-    transform 0.16s var(--ease, ease),
-    box-shadow 0.16s ease,
-    background-color 0.15s ease;
+    transform 90ms var(--ease),
+    box-shadow 90ms var(--ease),
+    border-color 160ms var(--ease);
 }
 
 .blac-demo button:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 3px 3px 0 var(--rose, var(--cable-text));
+  border-color: var(--cable);
 }
 
 .blac-demo button:active {
-  transform: translate(0, 0);
-  box-shadow: none;
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--line-strong);
 }
 
 .blac-demo button:focus-visible {
-  outline: 2px solid var(--cable-text);
+  outline: 2px solid var(--lit);
   outline-offset: 2px;
 }
 
-/* --- RenderCounter ----------------------------------------------------- */
+/* --- RenderCounter: lights amber each time it ticks --------------------- */
 
 .blac-demo-render-counter {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.22rem 0.65rem;
-  border-radius: 999px;
-  border: 1px solid var(--line-strong, var(--line));
-  background: var(--panel-2, var(--panel-2));
-  color: var(--muted, var(--muted));
-  font-family: var(--font-mono, monospace);
-  font-size: 0.8125rem;
+  gap: 0.4rem;
+  color: var(--dim);
+  font: 600 0.7rem var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
 .blac-demo-render-counter__label {
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: 0.7rem;
 }
 
 .blac-demo-render-counter__count {
   display: inline-block;
-  padding: 0.05rem 0.38rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--rose) 20%, transparent);
-  font-weight: 700;
-  color: var(--rose-text, var(--cable-text));
+  min-width: 1.6em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 5px;
+  background: var(--panel-3);
+  color: var(--lit-text);
+  text-align: center;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .blac-demo-render-counter__count {
-    animation: blac-render-pop 0.38s var(--ease, ease);
+    animation: blac-render-pop var(--decay) var(--ease);
   }
 }
 
 @keyframes blac-render-pop {
   0% {
-    transform: scale(1.38);
+    transform: scale(1.35);
     background: var(--lit);
-    color: #121020;
-  }
-  100% {
-    transform: scale(1);
+    color: #160f00;
+    box-shadow: 0 0 14px var(--lit);
   }
 }
 
@@ -152,11 +160,23 @@
   }
 }
 
+/* A component card: rose name, and a jack on its edge where the cable lands. */
 .blac-demo-panel {
-  border: 1px solid var(--line, var(--line));
-  border-radius: var(--radius, 0.625rem);
-  background: var(--panel, var(--bg));
-  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.blac-demo-panel::before {
+  content: '';
+  position: absolute;
+  top: 1.05rem;
+  left: -6px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--bg) 0 30%, var(--rose) 38% 100%);
 }
 
 .blac-demo-panel__header {
@@ -164,15 +184,12 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.45rem 0.85rem;
-  background: var(--panel-2, var(--panel-2));
-  border-bottom: 1px solid var(--line, var(--line));
+  border-bottom: 1px dashed var(--line);
 }
 
 .blac-demo-panel__name {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--cable-text);
-  font-family: var(--font-mono, monospace);
+  color: var(--rose-text);
+  font: 700 0.8125rem var(--font-mono);
 }
 
 .blac-demo-panel__body {
