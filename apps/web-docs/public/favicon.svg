@@ -1,21 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="blac">
-  <defs>
-    <path id="b" d="M6 10a6.5 6.5 0 0 1 13 0v11.2A18.5 18.5 0 1 1 6 39Z" />
-    <clipPath id="b-clip"><use href="#b" /></clipPath>
-    <mask id="c-mask">
-      <rect width="64" height="64" fill="#fff" />
-      <circle cx="41" cy="39" r="7.5" fill="#000" />
-      <path d="M41 39 L64 24 L64 54 Z" fill="#000" />
-    </mask>
-    <mask id="b-mask">
-      <rect width="64" height="64" fill="#fff" />
-      <circle cx="24.5" cy="39" r="7" fill="#000" />
-    </mask>
-  </defs>
-  <g mask="url(#b-mask)"><use href="#b" fill="#3a8bff" /></g>
-  <g mask="url(#c-mask)">
-    <circle cx="41" cy="39" r="18.5" fill="#ff4d97" />
-    <circle cx="41" cy="39" r="18.5" fill="#8a72ff" clip-path="url(#b-clip)" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="BlaC">
+  <g transform="rotate(-45 32 32)">
+    <g fill="none" stroke-linecap="round">
+      <path d="M20 32C10 32 12 50 0 50" stroke="#6248e0" stroke-width="6"/>
+      <path d="M20 31C10 31 12 49 0 49" stroke="#8a72ff" stroke-width="3.5"/>
+      <path d="M20 30C10 30 12 48 0 48" stroke="#c2b6ff" stroke-width="1.2"/>
+    </g>
+    <rect x="16" y="23" width="20" height="18" rx="4" fill="#8a72ff"/>
+    <path d="M16 33H36V37a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4Z" fill="#6248e0"/>
+    <path d="M21 23h2v18h-2zM25 23h2v18h-2z" fill="#6248e0"/>
+    <path d="M18.5 25.5h2v2.5h-2zM28 25.5h5.5v2.5H28z" fill="#c2b6ff"/>
+    <path d="M35 28h10v8H35zM46.5 28h5v8h-5z" fill="#3a8bff"/>
+    <path d="M35 33h10v3H35zM46.5 33h5v3h-5z" fill="#1d63d4"/>
+    <path d="M36 29.5h8v1.6h-8zM47 29.5h4v1.6h-4z" fill="#9cc6ff"/>
+    <g>
+      <path d="M53 28h3a6 4 0 0 1 0 8h-3Z" fill="#ffb21e"/>
+      <path d="M53 33h8.8A6 4 0 0 1 56 36h-3Z" fill="#d98400"/>
+      <path d="M54 29.5h3v1.6h-3z" fill="#fff1c9"/>
+    </g>
   </g>
-  <circle cx="54.5" cy="39" r="4" fill="#ffb21e" />
 </svg>

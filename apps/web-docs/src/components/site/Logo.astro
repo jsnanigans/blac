@@ -1,28 +1,27 @@
 ---
-// The b/c overprint monogram: module (cobalt b) and component (rose c) overlap
-// in the cable colour; the amber LED in the c's mouth is a lit signal.
+// A patch cable's jack plug, cel-shaded (light from the top-left); the tip is the lit signal.
 ---
 
 <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
-  <defs>
-    <path id="logo-b" d="M6 10a6.5 6.5 0 0 1 13 0v11.2A18.5 18.5 0 1 1 6 39Z"></path>
-    <clipPath id="logo-b-clip"><use href="#logo-b"></use></clipPath>
-    <mask id="logo-c-mask">
-      <rect width="64" height="64" fill="#fff"></rect>
-      <circle cx="41" cy="39" r="7.5" fill="#000"></circle>
-      <path d="M41 39 L64 24 L64 54 Z" fill="#000"></path>
-    </mask>
-    <mask id="logo-b-mask">
-      <rect width="64" height="64" fill="#fff"></rect>
-      <circle cx="24.5" cy="39" r="7" fill="#000"></circle>
-    </mask>
-  </defs>
-  <g mask="url(#logo-b-mask)"><use href="#logo-b" fill="var(--cobalt)"></use></g>
-  <g mask="url(#logo-c-mask)">
-    <circle cx="41" cy="39" r="18.5" fill="var(--rose)"></circle>
-    <circle cx="41" cy="39" r="18.5" fill="var(--cable)" clip-path="url(#logo-b-clip)"></circle>
+  <g transform="rotate(-45 32 32)">
+    <g fill="none" stroke-linecap="round">
+      <path d="M20 32C10 32 12 50 0 50" stroke="var(--cable-lo)" stroke-width="6"/>
+      <path d="M20 31C10 31 12 49 0 49" stroke="var(--cable)" stroke-width="3.5"/>
+      <path d="M20 30C10 30 12 48 0 48" stroke="var(--cable-hi)" stroke-width="1.2"/>
+    </g>
+    <rect x="16" y="23" width="20" height="18" rx="4" fill="var(--cable)"/>
+    <path d="M16 33H36V37a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4Z" fill="var(--cable-lo)"/>
+    <path d="M21 23h2v18h-2zM25 23h2v18h-2z" fill="var(--cable-lo)"/>
+    <path d="M18.5 25.5h2v2.5h-2zM28 25.5h5.5v2.5H28z" fill="var(--cable-hi)"/>
+    <path d="M35 28h10v8H35zM46.5 28h5v8h-5z" fill="var(--cobalt)"/>
+    <path d="M35 33h10v3H35zM46.5 33h5v3h-5z" fill="var(--cobalt-lo)"/>
+    <path d="M36 29.5h8v1.6h-8zM47 29.5h4v1.6h-4z" fill="var(--cobalt-hi)"/>
+    <g class="logo-led">
+      <path d="M53 28h3a6 4 0 0 1 0 8h-3Z" fill="var(--lit)"/>
+      <path d="M53 33h8.8A6 4 0 0 1 56 36h-3Z" fill="var(--lit-lo)"/>
+      <path d="M54 29.5h3v1.6h-3z" fill="var(--lit-hot)"/>
+    </g>
   </g>
-  <circle class="logo-led" cx="54.5" cy="39" r="4" fill="var(--lit)"></circle>
 </svg>
 
 <style>
@@ -33,5 +32,30 @@
 
   .logo-led {
     filter: drop-shadow(0 0 3px var(--lit));
+  }
+
+  /* Hovering the brand pulls the plug and re-seats it: the tip goes dark, then flashes. */
+  :global(a:hover) > .logo {
+    animation: reseat 520ms var(--ease);
+  }
+
+  :global(a:hover) > .logo .logo-led {
+    animation: reflash 520ms var(--ease);
+  }
+
+  @keyframes reseat {
+    40% {
+      transform: translate(-3px, 3px) rotate(-6deg);
+    }
+  }
+
+  @keyframes reflash {
+    0%,
+    45% {
+      filter: brightness(0.4);
+    }
+    60% {
+      filter: brightness(1.4) drop-shadow(0 0 6px var(--lit));
+    }
   }
 </style>

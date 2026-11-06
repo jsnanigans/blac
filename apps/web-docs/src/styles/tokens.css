@@ -30,6 +30,11 @@
   --rose-text: #ff8fbe;
   --cable: #8a72ff;
   --cable-text: #b9abff;
+  --cable-lo: #6248e0;
+  --cable-hi: #c2b6ff;
+  --cobalt-lo: #1d63d4;
+  --cobalt-hi: #9cc6ff;
+  --lit-lo: #d98400;
   --lit: #ffb21e;
   --lit-text: #ffc85a;
   --lit-hot: #fff1c9;
@@ -64,6 +69,11 @@
   --rose-text: #b3155a;
   --cable: #5b43d6;
   --cable-text: #4a33c2;
+  --cable-lo: #3f2aa8;
+  --cable-hi: #9a88f2;
+  --cobalt-lo: #154696;
+  --cobalt-hi: #6e9ff0;
+  --lit-lo: #c27a00;
   --lit: #f0a000;
   --lit-text: #8f5600;
   --lit-hot: #ffe4a3;
