@@ -2,7 +2,7 @@
 
 IndexedDB persistence plugin for BlaC. Automatically hydrates state from storage on instance creation and persists state changes with debouncing.
 
-**[Documentation](https://blac-docs.pages.dev/plugins/persistence)** · **[npm](https://www.npmjs.com/package/@blac/plugin-persist)**
+**[Documentation](https://blac.42.dog/plugins/persistence)** · **[npm](https://www.npmjs.com/package/@blac/plugin-persist)**
 
 > [!WARNING]
 > **BlaC v2 is in pre-release (beta).** While in beta, **breaking API changes may

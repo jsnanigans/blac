@@ -2,7 +2,7 @@
 
 Async resources and mutations for BlaC containers: a status slot in state, abort on release, latest-wins calls, tag-based invalidation and global error hooks.
 
-**[Documentation](https://blac-docs.pages.dev/guide/async-resources)**
+**[Documentation](https://blac.42.dog/guide/async-resources)**
 
 > [!WARNING]
 > **BlaC v2 is in pre-release (beta).** While in beta, **breaking API changes may

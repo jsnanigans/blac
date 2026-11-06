@@ -2,7 +2,7 @@
 
 Logging and debugging plugin for BlaC. Logs lifecycle events, state changes, and monitors for potential memory issues like leaked instances and rapid create/dispose cycles.
 
-**[Documentation](https://blac-docs.pages.dev/plugins/logging)** · **[npm](https://www.npmjs.com/package/@blac/logging-plugin)**
+**[Documentation](https://blac.42.dog/plugins/logging)** · **[npm](https://www.npmjs.com/package/@blac/logging-plugin)**
 
 > [!WARNING]
 > **BlaC v2 is in pre-release (beta).** While in beta, **breaking API changes may

@@ -2,7 +2,7 @@
 
 React bindings for BlaC — `useBloc` hook with proxy-based automatic re-render optimization.
 
-**[Documentation](https://blac-docs.pages.dev/react/getting-started)** · **[npm](https://www.npmjs.com/package/@blac/react)**
+**[Documentation](https://blac.42.dog/react/getting-started)** · **[npm](https://www.npmjs.com/package/@blac/react)**
 
 > [!WARNING]
 > **BlaC v2 is in pre-release (beta).** While in beta, **breaking API changes may
@@ -343,7 +343,7 @@ class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
 import { renderWithBloc } from '@blac/react/testing';
 ```
 
-See the [testing docs](https://blac-docs.pages.dev/testing/react) for details.
+See the [testing docs](https://blac.42.dog/testing/react) for details.
 
 ## License
 

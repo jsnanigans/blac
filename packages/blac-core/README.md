@@ -2,7 +2,7 @@
 
 Core state management primitives for BlaC — state containers, registry, plugins, and tracking utilities.
 
-**[Documentation](https://blac-docs.pages.dev/guide/introduction)** · **[npm](https://www.npmjs.com/package/@blac/core)**
+**[Documentation](https://blac.42.dog/guide/introduction)** · **[npm](https://www.npmjs.com/package/@blac/core)**
 
 > [!WARNING]
 > **BlaC v2 is in pre-release (beta).** While in beta, **breaking API changes may
@@ -205,7 +205,7 @@ const stop2 = watch(instance(CounterCubit, { id: 'counter-1' }), (c) => {
 ```
 
 State tracking (which blocs/state a function accesses) is automatic — see
-[Tracked](https://blac-docs.pages.dev/core/tracked) for details.
+[Tracked](https://blac.42.dog/core/tracked) for details.
 
 ## Plugins
 

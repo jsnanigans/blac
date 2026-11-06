@@ -2,7 +2,7 @@
 
 Type-safe, class-based state management for React with automatic re-render optimization.
 
-**[Documentation](https://blac-docs.pages.dev)** · **[npm](https://www.npmjs.com/package/@blac/core)** · **[GitHub](https://github.com/jsnanigans/blac)**
+**[Documentation](https://blac.42.dog)** · **[npm](https://www.npmjs.com/package/@blac/core)** · **[GitHub](https://github.com/jsnanigans/blac)**
 
 > [!WARNING]
 > **BlaC v2 is in pre-release (beta).** While in beta, **breaking API changes may
@@ -16,8 +16,8 @@ Type-safe, class-based state management for React with automatic re-render optim
 - **Automatic re-render optimization** — Proxy-based tracking detects which properties you read and only re-renders when those change
 - **Zero providers** — No context wrappers. Import a class, call `useBloc`, done
 - **Lifecycle management** — Registry handles instance creation, sharing, ref counting, and disposal
-- **Plugin system** — DevTools, logging, and IndexedDB persistence out of the box
-- **React bindings** — `useBloc` subscribes via `useReducer` and tracks reads through a proxy, re-rendering only for the paths a component actually reads
+- **Plugin system** — DevTools, logging, and persistence (IndexedDB or Web Storage) out of the box
+- **React bindings** — `useBloc` subscribes via `useSyncExternalStore` and tracks reads through a proxy, re-rendering only for the paths a component actually reads
 - **Framework-agnostic core** — `@blac/core` has no React dependency; state can be read and observed through `watch()` outside of React
 
 ## Quick Start
@@ -51,14 +51,15 @@ Only `state.count` is tracked — the component won't re-render if other propert
 | ----------------------------------------------------- | --------------------------------------------------------------- |
 | [`@blac/core`](packages/blac-core)                    | State containers, registry, plugins, watch & tracking utilities |
 | [`@blac/react`](packages/blac-react)                  | React hook (`useBloc`) with proxy-based auto-tracking           |
+| [`@blac/async`](packages/blac-async)                  | Resources and mutations kept in state, with tag invalidation    |
 | [`@blac/devtools-connect`](packages/devtools-connect) | DevTools connection plugin (browser inspector)                  |
 | [`@blac/devtools-ui`](packages/devtools-ui)           | Embeddable DevTools UI — overlay or Picture-in-Picture          |
 | [`@blac/logging-plugin`](packages/logging-plugin)     | Console logging with memory monitoring                          |
-| [`@blac/plugin-persist`](packages/plugin-persist)     | IndexedDB state persistence with hydration                      |
+| [`@blac/plugin-persist`](packages/plugin-persist)     | IndexedDB and Web Storage persistence with hydration            |
 
 ## Development
 
-This is a pnpm workspace monorepo using [vite-plus](https://github.com/nicksrandall/vite-plus) for builds.
+This is a pnpm workspace monorepo using [Vite+](https://viteplus.dev) for builds.
 
 ```bash
 pnpm install
@@ -72,4 +73,4 @@ pnpm lint                        # lint all packages
 
 ## License
 
-MIT
+[MIT](LICENSE)
