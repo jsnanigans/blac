@@ -2,40 +2,48 @@
   position: relative;
 }
 
+/* Above the cards, so plugs sit on their sockets; clicks pass through. */
 .bay-cables {
   position: absolute;
   inset: 0;
-  z-index: 3;
-  width: 100%;
-  height: 100%;
+  z-index: 6;
+  max-width: none;
   overflow: visible;
   pointer-events: none;
 }
 
 .bay-cable-shadow,
-.bay-cable {
+.bay-cable,
+.bay-plug {
   fill: none;
   stroke-linecap: round;
 }
 
 .bay-cable-shadow {
-  stroke: var(--bg);
-  stroke-width: 9;
-  opacity: 0.55;
+  stroke: var(--shadow);
+  stroke-width: 6;
+  opacity: 0.4;
+  transform: translate(5px, 8px);
 }
 
-.bay-cable {
+.bay-cable,
+.bay-plug {
   --heat: 0;
   --c: var(--cable);
   stroke: color-mix(in srgb, var(--lit) calc(var(--heat) * 85%), var(--c));
-  stroke-width: 3.5;
+  stroke-width: 4;
 }
 
-.bay-cable[data-tone='cobalt'] {
+.bay-plug {
+  stroke-width: 9;
+  stroke-linecap: butt;
+}
+
+[data-tone='cobalt'] {
   --c: var(--cobalt);
 }
 
-.bay-cable[data-tone='rose'] {
+[data-tone='rose'] {
   --c: var(--rose);
 }
 
@@ -44,35 +52,58 @@
   filter: drop-shadow(0 0 6px var(--lit)) drop-shadow(0 0 2px var(--lit));
 }
 
+/*
+  Cel-shaded hardware, lit from the top left like the logo: flat tone bands
+  (light edge, base, shade band), an ink outline and a hard drop shadow.
+  On pages with the GPU backdrop the wall casts the shadows instead
+  (`.has-backdrop`), so they follow its light.
+*/
+
+.module,
+.unit {
+  --cel-shadow: 7px 9px 0 rgb(0 0 0 / 0.45);
+  border: 2px solid var(--ink);
+  background:
+    linear-gradient(
+      180deg,
+      var(--panel-hi) 0 3px,
+      transparent 3px calc(100% - 7px),
+      var(--panel-lo) calc(100% - 7px)
+    ),
+    var(--panel-2);
+  box-shadow: var(--cel-shadow);
+}
+
+:root.has-backdrop [data-mount] {
+  --cel-shadow: 0 0 0 transparent;
+}
+
 /* ── A module: a panel with screws, a power LED and a column of jacks. ── */
 
 .module {
   position: relative;
   padding: 1rem 1rem 1.1rem;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: linear-gradient(180deg, var(--panel-2), var(--panel));
-  box-shadow: var(--shadow-panel);
+  border-radius: 14px;
 }
 
 .module::before,
 .module::after {
   content: '';
   position: absolute;
-  top: 7px;
-  width: 6px;
-  height: 6px;
+  top: 8px;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--ink);
   border-radius: 50%;
-  background: var(--screw);
-  box-shadow: inset 0 0 0 1.5px var(--panel-3);
+  background: linear-gradient(135deg, var(--screw-hi) 0 45%, var(--screw) 45%);
 }
 
 .module::before {
-  left: 7px;
+  left: 8px;
 }
 
 .module::after {
-  right: 7px;
+  right: 8px;
 }
 
 .module-head {
@@ -83,9 +114,21 @@
   margin: 0.25rem 0.25rem 0.85rem;
 }
 
+/* The module's nameplate: a cobalt plate, the state colour. */
 .module-name {
-  font: 700 0.95rem var(--font-mono);
+  padding: 0.15rem 0.55rem 0.25rem;
+  border: 2px solid var(--ink);
+  border-radius: 7px;
+  background: linear-gradient(
+    180deg,
+    var(--cobalt-hi) 0 2px,
+    var(--cobalt) 2px calc(100% - 4px),
+    var(--cobalt-lo) calc(100% - 4px)
+  );
+  color: #fff;
+  font: 700 0.9rem var(--font-mono);
   letter-spacing: -0.01em;
+  text-shadow: 0 1px 0 var(--ink);
 }
 
 .power {
@@ -133,20 +176,24 @@
   white-space: nowrap;
 }
 
+/* A jack socket: a cel-shaded hex nut around a dark hole. */
 .socket {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   flex: none;
+  border: 2px solid var(--ink);
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    #050408 0 34%,
-    var(--screw) 38% 60%,
-    var(--panel-3) 64% 100%
-  );
-  box-shadow: 0 0 0 1px var(--line-strong);
+  background:
+    radial-gradient(circle, #000 0 26%, var(--ink) 27% 38%, transparent 39%),
+    linear-gradient(
+      135deg,
+      var(--screw-hi) 0 36%,
+      var(--screw) 36% 64%,
+      var(--screw-lo) 64%
+    );
 }
 
+/* A hardware key: lit top face, ink lip below, presses down. */
 .fire {
   display: inline-flex;
   align-items: center;
@@ -154,33 +201,54 @@
   min-width: 2.25rem;
   height: 30px;
   padding: 0 0.6rem;
-  border: 1px solid var(--line-strong);
-  border-radius: 7px;
-  background: var(--panel-3);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: linear-gradient(
+    180deg,
+    var(--panel-hi) 0 48%,
+    var(--panel-3) 48%
+  );
+  box-shadow: 0 3px 0 var(--ink);
   color: var(--text);
-  font: 600 0.78rem var(--font-mono);
+  font: 700 0.78rem var(--font-mono);
   cursor: pointer;
+  transform: translateY(-1px);
   transition:
-    border-color 120ms,
-    transform 120ms;
+    transform 90ms,
+    box-shadow 90ms,
+    color 120ms;
 }
 
 .fire:hover {
-  border-color: var(--lit);
+  color: var(--lit-text);
 }
 
 .fire:active {
-  transform: translateY(1px);
+  box-shadow: 0 0 0 var(--ink);
+  transform: translateY(2px);
 }
 
-/* ── A unit: one React component on the bay. ── */
+/* ── A unit: one React component on the bay, with a rose spine (the UI colour). ── */
 
 .unit {
   position: relative;
-  padding: 0.8rem 0.95rem 0.85rem 1.6rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
+  padding: 0.8rem 0.95rem 0.95rem 1.7rem;
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      90deg,
+      var(--rose-hi) 0 2px,
+      var(--rose) 2px 6px,
+      var(--rose-lo) 6px 9px,
+      transparent 9px
+    ),
+    linear-gradient(
+      180deg,
+      var(--panel-hi) 0 3px,
+      transparent 3px calc(100% - 7px),
+      var(--panel-lo) calc(100% - 7px)
+    ),
+    var(--panel-2);
 }
 
 .unit-name {
@@ -202,7 +270,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: -7px;
+  left: -9px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -210,10 +278,18 @@
 }
 
 .unit-input {
-  width: 12px;
-  height: 12px;
+  width: 15px;
+  height: 15px;
+  border: 2px solid var(--ink);
   border-radius: 50%;
-  background: radial-gradient(circle, #050408 0 34%, var(--screw) 40% 100%);
+  background:
+    radial-gradient(circle, #000 0 30%, transparent 31%),
+    linear-gradient(
+      135deg,
+      var(--screw-hi) 0 40%,
+      var(--screw) 40% 66%,
+      var(--screw-lo) 66%
+    );
 }
 
 .renders {
@@ -230,8 +306,9 @@
 .renders b {
   min-width: 1.6em;
   padding: 0.1rem 0.35rem;
+  border: 1.5px solid var(--ink);
   border-radius: 5px;
-  background: var(--panel-3);
+  background: var(--panel-lo);
   color: var(--lit-text);
   text-align: center;
 }

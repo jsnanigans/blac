@@ -1,41 +1,46 @@
 /* Shared chrome for chapter stages: a panel filling the sticky stage slot. */
 
+/* No frame: the stage hangs on the backdrop's wall, captioned by a label tape. */
 .stage {
   display: flex;
   flex-direction: column;
   height: 100%;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background:
-    radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 1.5px) 0 0 /
-      18px 18px,
-    color-mix(in srgb, var(--panel) 50%, var(--bg));
-  overflow: hidden;
 }
 
 .stage-head {
-  display: flex;
+  display: inline-flex;
+  align-self: flex-start;
   align-items: center;
   gap: 0.6rem;
-  min-height: 2.75rem;
-  padding: 0.7rem 1rem;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
+  max-width: 100%;
+  margin-left: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: linear-gradient(
+    180deg,
+    var(--panel-hi) 0 2px,
+    var(--panel-2) 2px calc(100% - 4px),
+    var(--panel-lo) calc(100% - 4px)
+  );
+  box-shadow: 4px 5px 0 rgb(0 0 0 / 0.45);
   text-transform: none;
   letter-spacing: 0.02em;
+  transform: rotate(-0.6deg);
 }
 
 .stage-caption {
   overflow: hidden;
-  color: var(--muted);
+  color: var(--text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .stage-led {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   flex: none;
+  border: 1.5px solid var(--ink);
   border-radius: 50%;
   background: var(--power);
   box-shadow: 0 0 8px var(--power);
@@ -48,8 +53,7 @@
   gap: clamp(3rem, 6vw, 5.5rem);
   align-items: center;
   min-height: 0;
-  padding: 1.25rem;
-  overflow: auto;
+  padding: 1.25rem 0.5rem;
 }
 
 .stage-bay .module {
@@ -103,7 +107,8 @@
 
 .tape code {
   padding: 0.05rem 0.35rem;
-  border: 1px solid var(--line);
+  border: 1.5px solid var(--ink);
+  background: var(--panel-lo);
   border-radius: 4px;
   color: var(--cobalt-text);
 }

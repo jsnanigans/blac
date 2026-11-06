@@ -2,18 +2,13 @@
   position: relative;
 }
 
+/* No frame: the module and the cards hang on the backdrop's wall. */
 .hero-bay {
   display: grid;
-  grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 14.5rem) minmax(0, 1fr);
   gap: clamp(4rem, 9vw, 7.5rem);
   align-items: center;
-  padding: 1.75rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background:
-    radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 1.5px) 0 0 /
-      18px 18px,
-    color-mix(in srgb, var(--panel) 55%, transparent);
+  padding: 1.75rem 0.5rem;
 }
 
 .hero-units {
@@ -27,13 +22,6 @@
   z-index: 2;
 }
 
-/* Cables sit above the panel but below the controls they plug into. */
-.hero-bay .socket,
-.hero-bay .unit-input {
-  position: relative;
-  z-index: 5;
-}
-
 .unit-reads {
   display: flex;
   flex-wrap: wrap;
@@ -45,7 +33,8 @@
 
 .unit-reads code {
   padding: 0.05rem 0.35rem;
-  border: 1px solid var(--line);
+  border: 1.5px solid var(--ink);
+  background: var(--panel-lo);
   border-radius: 4px;
   color: var(--cobalt-text);
 }
@@ -56,9 +45,16 @@
   width: 1.5rem;
   height: 1.5rem;
   margin-right: 0.25rem;
+  border: 2px solid var(--ink);
   border-radius: 50%;
-  background: var(--rose);
+  background: linear-gradient(
+    135deg,
+    var(--rose-hi) 0 30%,
+    var(--rose) 30% 68%,
+    var(--rose-lo) 68%
+  );
   color: #fff;
+  text-shadow: 0 1px 0 var(--ink);
   font: 700 0.75rem var(--font-mono);
 }
 
@@ -67,7 +63,7 @@
 }
 
 .hero-bay-note {
-  margin-top: 0.9rem;
+  margin-top: 1.4rem;
   text-align: center;
   text-transform: none;
   letter-spacing: 0.02em;
@@ -98,7 +94,7 @@
   }
 
   .hero-bay .unit-inputs {
-    top: -7px;
+    top: -9px;
     bottom: auto;
     left: 0;
     right: 0;
