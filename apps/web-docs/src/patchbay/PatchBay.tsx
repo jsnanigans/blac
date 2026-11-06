@@ -39,8 +39,8 @@ import './patchbay.css';
 const SIGNAL_MS = 560;
 const DECAY_MS = 900;
 /** A plug's flight from the jack to its input. */
-const FLY_MS = 620;
-const SPARK_MS = 420;
+const FLY_MS = 760;
+const SPARK_MS = 520;
 /** Unplugged: the plug pops, the cable drops, then reels back into its jack. */
 const DROP_MS = 380;
 const REEL_MS = 520;
@@ -52,7 +52,12 @@ const YANK = 1.3;
 const GRAB_PX = 16;
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-const ease = (t: number) => 1 - (1 - Math.min(1, Math.max(0, t))) ** 3;
+const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
+const ease = (t: number) => 1 - (1 - clamp01(t)) ** 3;
+const glide = (t: number) => {
+  const u = clamp01(t);
+  return u < 0.5 ? 4 * u ** 3 : 1 - (2 - 2 * u) ** 3 / 2;
+};
 const lerp = (a: Vec, b: Vec, t: number): Vec => ({
   x: a.x + (b.x - a.x) * t,
   y: a.y + (b.y - a.y) * t,
@@ -81,8 +86,14 @@ interface Wire {
    * input is gone (the component stopped reading it), so it drops and reels in.
    */
   phase: 'fly' | 'seated' | 'loose' | 'out';
-  t0: number;
+  /** Ms spent in this phase, from frame time (negative: waiting its turn). */
+  t: number;
+  /** Where the jack and input are drawn: they ease after `a`, `b` when the layout moves. */
+  ja: Vec;
+  jb: Vec;
   from: Vec;
+  /** Which way the plug faced when its flight began; it turns square as it lands. */
+  fromDir: Vec;
   heat: number;
   hover: number;
   lift: number;
@@ -121,15 +132,19 @@ function hoverWire(wires: Map<string, Wire>, p: Vec): string | null {
 
 const cableId = (consumer: string, key: string) => `${key}→${consumer}`;
 
-/** Which way a cable leaves each end: along the dominant axis, like a patch lead. */
+/**
+ * Which way a cable leaves each end: along the dominant axis, like a patch
+ * lead. Sideways plugs tip down a little under the cable's weight, so a short
+ * lead hangs in a U instead of looping.
+ */
 function outward(a: Vec, b: Vec): [Vec, Vec] {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   if (Math.abs(dx) >= Math.abs(dy)) {
-    const s = Math.sign(dx) || 1;
+    const s = (Math.sign(dx) || 1) * 0.9;
     return [
-      { x: s, y: 0 },
-      { x: -s, y: 0 },
+      { x: s, y: 0.44 },
+      { x: -s, y: 0.44 },
     ];
   }
   const s = Math.sign(dy) || 1;
@@ -224,45 +239,70 @@ export function PatchBay({
       const grab = state.grab;
       const cables: SceneCable[] = [];
       for (const w of [...state.wires.values()]) {
-        const t = now - w.t0;
+        w.t += dt * 1000;
+        const t = w.t;
         const [aOut, bOut] = outward(w.a, w.b);
-        let b: Vec | null = w.b;
+        const follow = Math.min(1, dt * 30);
+        for (const [p, q] of [
+          [w.ja, w.a],
+          [w.jb, w.b],
+        ] as const) {
+          p.x += (q.x - p.x) * follow;
+          p.y += (q.y - p.y) * follow;
+          if (Math.abs(q.x - p.x) + Math.abs(q.y - p.y) > 0.2) busy = true;
+        }
+        if (w.phase !== 'out' && t >= 0 && w.alpha < 1) {
+          w.alpha = Math.min(1, w.alpha + dt * 4);
+          busy = true;
+        }
+        let b: Vec | null = w.jb;
         let bDir: Vec | null = bOut;
         if (w.phase === 'fly') {
-          if (t < 0) continue;
-          const u = ease(t / FLY_MS);
-          // An arc up and over, the plug held out until it lands.
-          b = lerp(w.from, w.b, u);
-          b.y -= Math.sin(Math.PI * u) * 46;
-          bDir = null;
-          w.lift = 1 - u;
-          setLength(w.rope, slackLength(w.a, b), 1);
+          if (t < 0) {
+            busy = true;
+            continue;
+          }
+          const u = glide(t / FLY_MS);
+          // A low arc, the plug held square to its input until it lands.
+          b = lerp(w.from, w.jb, u);
+          const hop = Math.min(
+            18,
+            Math.hypot(w.jb.x - w.from.x, w.jb.y - w.from.y) * 0.2,
+          );
+          b.y -= Math.sin(Math.PI * u) * hop;
+          w.lift = 0.5 * Math.sin(Math.PI * Math.min(1, u * 1.4));
+          const turn = ease(u * 1.6);
+          const fx = w.fromDir.x + (bOut.x - w.fromDir.x) * turn;
+          const fy = w.fromDir.y + (bOut.y - w.fromDir.y) * turn;
+          const fl = Math.hypot(fx, fy) || 1;
+          bDir = { x: fx / fl, y: fy / fl };
+          setLength(w.rope, slackLength(w.ja, b), 1);
           if (t >= FLY_MS) {
             w.phase = 'seated';
             w.lift = 0;
-            state.sparks.push({ at: w.b, start: now });
-            kick(w.rope, POINTS - 3, -bOut.x * 260, -220);
-            light(w.input);
+            state.sparks.push({ at: w.jb, start: now });
+            kick(w.rope, POINTS >> 1, 0, 60);
           }
         } else if (w.phase === 'loose') {
           b = null;
           bDir = null;
-          w.lift = Math.min(1, w.lift + dt * 8);
+          w.lift = Math.min(0.6, w.lift + dt * 3);
           if (!grab || grab.wire !== w.id) {
             if (t > 380) {
               w.phase = 'fly';
-              w.t0 = now;
+              w.t = 0;
               w.from = { ...w.rope.pts[POINTS - 1]! };
+              w.fromDir = endDir(w.rope.pts, 'b');
             }
           }
         } else if (w.phase === 'out') {
-          w.lift = Math.min(1, w.lift + dt * 8);
+          w.lift = Math.min(0.6, w.lift + dt * 3);
           if (t < DROP_MS) {
             b = null;
           } else {
             const u = ease((t - DROP_MS) / REEL_MS);
-            b = lerp(w.rope.pts[POINTS - 1]!, w.a, u * 0.35);
-            setLength(w.rope, slackLength(w.a, b) * (1 - u), 0.3);
+            b = lerp(w.rope.pts[POINTS - 1]!, w.ja, u * 0.35);
+            setLength(w.rope, slackLength(w.ja, b) * (1 - u), 0.3);
             w.alpha = 1 - u;
             if (u >= 1) {
               state.wires.delete(w.id);
@@ -271,21 +311,21 @@ export function PatchBay({
           }
           bDir = null;
         } else {
-          setLength(w.rope, slackLength(w.a, w.b));
+          setLength(w.rope, slackLength(w.ja, w.jb));
         }
 
-        const pins: Pin[] = endPins(w.rope, w.a, aOut, b, bDir);
+        const pins: Pin[] = endPins(w.rope, w.ja, aOut, b, bDir);
         if (grab?.wire === w.id) {
           pins.push({ i: grab.i, x: grab.x, y: grab.y });
           if (
             w.phase === 'seated' &&
-            Math.hypot(grab.x - w.a.x, grab.y - w.a.y) +
-              Math.hypot(grab.x - w.b.x, grab.y - w.b.y) >
+            Math.hypot(grab.x - w.ja.x, grab.y - w.ja.y) +
+              Math.hypot(grab.x - w.jb.x, grab.y - w.jb.y) >
               w.rope.seg * (POINTS - 1) * YANK
           ) {
             w.phase = 'loose';
-            w.t0 = now;
-            kick(w.rope, POINTS - 1, -bOut.x * 900, -700);
+            w.t = 0;
+            kick(w.rope, POINTS - 1, -bOut.x * 320, -260);
           }
         }
         const moving = stepRope(w.rope, pins, dt, {
@@ -316,8 +356,12 @@ export function PatchBay({
           hover: w.hover,
           alpha: w.alpha,
           plugs: [
-            { at: pts[0]!, dir: endDir(pts, 'a'), lift: 0 },
-            { at: pts[pts.length - 1]!, dir: endDir(pts, 'b'), lift: w.lift },
+            { at: pts[0]!, dir: aOut, lift: 0 },
+            {
+              at: pts[pts.length - 1]!,
+              dir: bDir ?? endDir(pts, 'b'),
+              lift: w.lift,
+            },
           ],
         });
       }
@@ -355,7 +399,6 @@ export function PatchBay({
       const el = host.current;
       if (!el) return;
       const box = el.getBoundingClientRect();
-      const now = performance.now();
       const calm = reduced();
       let stagger = 0;
       const seen = new Set<string>();
@@ -372,40 +415,48 @@ export function PatchBay({
           w.input = i.el;
           if (w.phase === 'out') {
             w.phase = 'fly';
-            w.t0 = now;
+            w.t = 0;
             w.from = { ...w.rope.pts[POINTS - 1]! };
+            w.fromDir = endDir(w.rope.pts, 'b');
             w.alpha = 1;
           }
           continue;
         }
+        // A new cable fades in already hanging, its plug just short of the
+        // input, then eases in; on first mount one after another.
+        const [aOut, bOut] = outward(a, b);
+        const from = calm ? b : { x: b.x + bOut.x * 30, y: b.y + bOut.y * 30 };
         const fresh: Wire = {
           id,
           key: i.key,
           tone: i.tone,
-          rope: createRope(a, calm ? b : a, POINTS, slackLength(a, b)),
+          rope: createRope(a, from, POINTS, slackLength(a, b), aOut, bOut),
           a,
           b,
           phase: calm ? 'seated' : 'fly',
-          // First mount: the plugs go in one after another.
-          t0: now + (state.measured ? 0 : stagger++ * 110 + 250),
-          from: a,
+          t: state.measured ? 0 : -(stagger++ * 90 + 200),
+          ja: { ...a },
+          jb: { ...b },
+          from,
+          fromDir: bOut,
           heat: 0,
           hover: 0,
-          lift: calm ? 0 : 1,
-          alpha: 1,
+          lift: 0,
+          alpha: calm ? 1 : 0,
           input: i.el,
         };
-        if (calm) {
-          const [aOut, bOut] = outward(a, b);
-          for (let s = 0; s < 240; s++)
-            stepRope(fresh.rope, endPins(fresh.rope, a, aOut, b, bOut), 1 / 60);
-        }
+        for (let s = 0; s < 80; s++)
+          stepRope(
+            fresh.rope,
+            endPins(fresh.rope, a, aOut, from, bOut),
+            1 / 60,
+          );
         state.wires.set(id, fresh);
       }
       for (const w of state.wires.values()) {
         if (seen.has(w.id) || w.phase === 'out') continue;
         w.phase = 'out';
-        w.t0 = now;
+        w.t = 0;
         w.rope.still = 0;
         if (calm) state.wires.delete(w.id);
       }
@@ -473,7 +524,7 @@ export function PatchBay({
       const { i } = nearest(w.rope, p);
       if (e.pointerType === 'touch') {
         // Touch scrolls the page, so a tap only plucks.
-        kick(w.rope, i, (Math.random() - 0.5) * 900, -500);
+        kick(w.rope, i, (Math.random() - 0.5) * 360, -220);
         kickLoop();
         return;
       }
@@ -497,8 +548,8 @@ export function PatchBay({
       el.style.cursor = '';
       const w = state.wires.get(g.wire);
       if (w && !g.moved && e.timeStamp - g.start < 300)
-        kick(w.rope, g.i, (Math.random() - 0.5) * 900, -600);
-      if (w?.phase === 'loose') w.t0 = performance.now();
+        kick(w.rope, g.i, (Math.random() - 0.5) * 360, -260);
+      if (w?.phase === 'loose') w.t = 0;
       kickLoop();
     };
     el.addEventListener('pointermove', onMove);

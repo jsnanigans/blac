@@ -157,24 +157,22 @@ export function plug(layer: Layer, p: ScenePlug, look: PlugLook) {
   }
 }
 
-/** A plug seating: a ring and a few sparks that grow and fade. */
-export function spark(layer: Layer, at: Vec, t: number, hot: Rgb, lit: Rgb) {
-  const a = 1 - t;
+/** A plug seating: a soft glow and a thin ring that eases out and fades. */
+export function spark(layer: Layer, at: Vec, t: number, lit: Rgb) {
+  const a = (1 - t) ** 2;
+  const grow = 1 - (1 - t) ** 3;
   layer.pushCircle({
     cx: at.x,
     cy: at.y,
-    radius: 6 + 22 * t,
-    stroke: col(lit, 0.8 * a),
-    strokeWidth: 2.5 * a + 0.5,
+    radius: 10,
+    fill: col(lit, 0.25 * a),
+    blur: 6,
   });
-  for (let i = 0; i < 6; i++) {
-    const ang = (i / 6) * Math.PI * 2 + 0.4;
-    const d = { x: Math.cos(ang), y: Math.sin(ang) };
-    layer.pushStroke({
-      points: [along(at, d, 9 + 14 * t), along(at, d, 13 + 22 * t)],
-      color: col(hot, a),
-      width: 2 * a + 0.5,
-      cap: 'round',
-    });
-  }
+  layer.pushCircle({
+    cx: at.x,
+    cy: at.y,
+    radius: 7 + 11 * grow,
+    stroke: col(lit, 0.55 * a),
+    strokeWidth: 1.5,
+  });
 }

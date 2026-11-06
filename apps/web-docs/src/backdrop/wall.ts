@@ -131,9 +131,9 @@ fn ripple(p: vec2f) -> f32 {
     if (f32(k) >= u.nRipples) { break; }
     let rp = u.ripples[k];
     let age = rp.z;
-    let radius = age * 560.0;
+    let radius = age * 380.0;
     let d = abs(length(p - rp.xy) - radius);
-    let fall = exp(-age * 2.6) * rp.w;
+    let fall = exp(-age * 1.8) * rp.w;
     r = max(r, select(0.0, fall, d < 2.0 + 10.0 * fall));
   }
   return r;
@@ -211,8 +211,9 @@ fn fragment(@builtin(position) pos: vec4f, @location(0) uv: vec2f) -> @location(
         let kc = vec2f(48.0, 95.0);
         let screen = id * CELL + kc - u.par;
         let toward = atan2(u.pointer.y - screen.y, u.pointer.x - screen.x);
-        let idle = h2 * 6.28 + sin(u.time * 0.3 + h * 20.0) * 0.6;
-        let ang = mix(idle, toward, u.pointerOn);
+        // Each knob idles at its own slow pace, and some only half follow the cursor.
+        let idle = h2 * 6.28 + sin(u.time * (0.06 + 0.12 * fract(h * 13.0)) + h * 20.0) * 0.5;
+        let ang = mix(idle, toward, u.pointerOn * (0.35 + 0.65 * fract(h2 * 7.0)));
         let d = length(f - kc);
         if (d < 15.5) {
           if (d > 14.0) {
@@ -227,7 +228,7 @@ fn fragment(@builtin(position) pos: vec4f, @location(0) uv: vec2f) -> @location(
       } else {
         // A fader: an ink slot with a lit cap that drifts slowly.
         if (sdBox(f - vec2f(48.0, 98.0), vec2f(2.0, 16.0), 2.0) < 0.0) { s.albedo = u.ink.rgb; }
-        let y = 98.0 + sin(u.time * 0.4 + h2 * 30.0) * 12.0;
+        let y = 98.0 + sin(u.time * (0.05 + 0.15 * fract(h * 11.0)) + h2 * 30.0) * 10.0;
         let cap = sdBox(f - vec2f(48.0, y), vec2f(9.0, 4.0), 2.0);
         if (cap < 1.5) {
           s.albedo = select(u.ink.rgb, u.screw.rgb, cap < 0.0);
@@ -239,8 +240,8 @@ fn fragment(@builtin(position) pos: vec4f, @location(0) uv: vec2f) -> @location(
       if (ld < 4.0) {
         s.albedo = select(u.ink.rgb, u.bg.rgb, ld < 2.8);
         if (h2 > 0.82 && ld < 2.8) {
-          let on = 0.5 + 0.5 * sin(u.time * (0.6 + h * 1.4) + h2 * 40.0);
-          s.glow = mix(u.cobalt.rgb, u.rose.rgb, step(0.91, h2)) * on * 0.9;
+          let on = 0.5 + 0.5 * sin(u.time * (0.2 + h * 0.5) + h2 * 40.0);
+          s.glow = mix(u.cobalt.rgb, u.rose.rgb, step(0.91, h2)) * on * 0.6;
         }
       }
     }
@@ -255,7 +256,7 @@ fn fragment(@builtin(position) pos: vec4f, @location(0) uv: vec2f) -> @location(
   col *= 1.0 - shade * 0.65;
   col += s.glow;
   let ring = ripple(p);
-  col = mix(col, u.lit.rgb * (0.4 + 0.6 * band), ring * 0.55);
+  col = mix(col, u.lit.rgb * (0.4 + 0.6 * band), ring * 0.35);
 
   // Calm under the copy, so text stays easy to read.
   let c = u.calm;

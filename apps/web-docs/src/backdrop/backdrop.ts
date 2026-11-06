@@ -24,6 +24,7 @@ import {
   endPins,
   kick,
   nearest,
+  shift,
   smooth,
   stepRope,
   along,
@@ -46,7 +47,15 @@ interface BackCable {
   a: Vec;
   b: Vec;
   bOff: boolean;
+  /** Which way each plug points out of its jack: down, leaning toward the other end. */
+  aOut: Vec;
+  bOut: Vec;
+  /** The jacks it holds, so no two plugs share one. */
+  jacks: string[];
   rope: Rope;
+  /** Its own breeze, so the cables never sway in step. */
+  sway: { f: number; p: number; amp: number };
+  /** When the next pulse sets off down it (it may wait a moment). */
   pulse: number | null;
   ledAt: number;
 }
@@ -54,11 +63,14 @@ interface BackCable {
 interface Inlet {
   el: HTMLElement;
   rope: Rope;
-  anchor: Vec;
+  /** Where the plug was last frame, to carry the cable along with a scroll. */
+  last: Vec;
 }
 
 const POINTS = 22;
-const PULSE_S = 1.1;
+const PULSE_S = 2.4;
+/** How much of a scroll a cable follows rigidly; the rest it feels as a gentle sway. */
+const CARRY = 0.98;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const GRAB_PX = 18;
 const NOT_GRABBABLE =
@@ -68,6 +80,12 @@ const jackAt = (cx: number, cy: number): Vec => ({
   x: cx * CELL.w + TOP_JACK.x,
   y: cy * CELL.h + TOP_JACK.y,
 });
+
+const droop = (from: Vec, to: Vec): Vec => {
+  const lean = Math.sign(to.x - from.x) * 0.35;
+  const l = Math.hypot(lean, 1);
+  return { x: lean / l, y: 1 / l };
+};
 
 /**
  * A full-screen insomni scene behind the page: the cel-shaded wall (a
@@ -137,69 +155,115 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
 
   // ── Cables on the wall ───────────────────────────────────────────────
   const par = { x: 0, y: 0 };
-  const parTarget = { x: 0, y: 0 };
   const scrollSpeed = preset === 'hero' ? 0.25 : 0.3;
   const narrow = innerWidth < 700;
   const count = preset === 'hero' ? (narrow ? 4 : 7) : narrow ? 4 : 8;
   const rows = () => Math.ceil(height / CELL.h) + 2;
   const tones: Tone[] = ['cable', 'cobalt', 'rose'];
   const toScreen = (v: Vec): Vec => ({ x: v.x - par.x, y: v.y - par.y });
+  /** The plug's length: the cable leaves it straight. */
+  const STIFF = 28;
 
-  function spawn(i: number, row0: number, span: number): BackCable {
+  const taken = new Set<string>();
+
+  function spawn(
+    i: number,
+    row0: number,
+    span: number,
+    settle = 60,
+  ): BackCable {
     const cols = Math.ceil(width / CELL.w);
     // Keep them on the right, away from the copy (on phones, anywhere).
     const minCol = Math.ceil(cols * (narrow ? 0 : 0.5));
-    const cx = minCol + Math.floor((cols - minCol) * ((i * 0.618 + 0.3) % 1));
-    const cy = row0 + Math.floor(Math.random() * span);
-    const a = jackAt(cx, cy);
-    // Some dangle from one jack, unplugged, swinging free.
-    const hang = Math.random() < 0.3;
-    const reach =
-      (Math.random() < 0.5 ? -1 : 1) * (1 + Math.floor(Math.random() * 3));
-    const b = hang
-      ? { x: a.x + reach * 30, y: a.y + 140 + Math.random() * 160 }
-      : jackAt(
-          Math.max(minCol, cx + reach),
-          cy + Math.floor(Math.random() * 3),
+    // Retry until both jacks are free, widening the search as it goes.
+    for (let t = 0; ; t++) {
+      const cx =
+        minCol +
+        Math.floor((cols - minCol) * ((i * 0.618 + 0.3 + t * 0.382) % 1));
+      const cy = row0 + Math.floor(Math.random() * (span + (t >> 3)));
+      const ka = `${cx},${cy}`;
+      if (taken.has(ka)) continue;
+      // Some dangle from one jack, unplugged, swinging free.
+      const hang = Math.random() < 0.3;
+      const reach =
+        (Math.random() < 0.5 ? -1 : 1) * (1 + Math.floor(Math.random() * 3));
+      const bx = Math.max(minCol, cx + reach);
+      const by = cy + Math.floor(Math.random() * 3);
+      const kb = `${bx},${by}`;
+      // Never two plugs in one jack, nor one straight below the other.
+      if (!hang && (bx === cx || taken.has(kb))) continue;
+      const jacks = hang ? [ka] : [ka, kb];
+      for (const k of jacks) taken.add(k);
+
+      const a = jackAt(cx, cy);
+      const b = hang
+        ? { x: a.x + reach * 30, y: a.y + 140 + Math.random() * 160 }
+        : jackAt(bx, by);
+      const aOut = droop(a, b);
+      const bOut = droop(b, a);
+      const length =
+        Math.hypot(b.x - a.x, b.y - a.y) * (hang ? 1.05 : 1.3) + 60;
+      const sa = toScreen(a);
+      const sb = toScreen(b);
+      const rope = createRope(sa, sb, POINTS, length, aOut, hang ? null : bOut);
+      // The start shape is close already: a short settle keeps a respawn cheap.
+      for (let s = 0; s < settle; s++)
+        stepRope(
+          rope,
+          endPins(rope, sa, aOut, hang ? null : sb, bOut, STIFF),
+          1 / 60,
         );
-    const length = Math.hypot(b.x - a.x, b.y - a.y) * (hang ? 1.05 : 1.3) + 60;
-    const sa = toScreen(a);
-    const sb = toScreen(b);
-    const rope = createRope(sa, sb, POINTS, length);
-    for (let s = 0; s < 200; s++)
-      stepRope(rope, endPins(rope, sa, null, hang ? null : sb, null), 1 / 60);
-    return {
-      tone: tones[i % tones.length]!,
-      a,
-      b,
-      bOff: hang,
-      rope,
-      pulse: null,
-      ledAt: -10,
-    };
+      return {
+        tone: tones[i % tones.length]!,
+        a,
+        b,
+        bOff: hang,
+        aOut,
+        bOut,
+        jacks,
+        rope,
+        sway: {
+          f: 0.15 + Math.random() * 0.2,
+          p: Math.random() * Math.PI * 2,
+          amp: 20 + Math.random() * 30,
+        },
+        pulse: null,
+        ledAt: -10,
+      };
+    }
   }
 
   const scrollPar = () => (reduced.matches ? 0 : scrollY * scrollSpeed);
-  par.y = parTarget.y = scrollPar();
+  par.y = scrollPar();
   const firstRow = () => Math.floor(par.y / CELL.h) - 1;
   const cables: BackCable[] = Array.from({ length: count }, (_, i) =>
-    spawn(i, firstRow(), Math.max(1, rows() - 2)),
+    spawn(i, firstRow(), Math.max(1, rows() - 2), 200),
   );
 
   const inlets: Inlet[] = [];
+  const inletEnd = (el: HTMLElement): Vec => {
+    const r = el.getBoundingClientRect();
+    return { x: r.left + 6, y: r.top + r.height * 0.62 };
+  };
+  // Hangs off below the screen, and travels with its plug when the page scrolls.
+  const inletAnchor = (end: Vec): Vec => ({
+    x: end.x - 150,
+    y: end.y + height + 170,
+  });
   const syncInlets = () => {
     for (const el of document.querySelectorAll<HTMLElement>('[data-inlet]')) {
       if (inlets.some((i) => i.el === el)) continue;
-      const r = el.getBoundingClientRect();
-      const end = { x: r.left + 6, y: r.top + r.height * 0.62 };
-      const anchor = { x: end.x - 140, y: height + 160 };
+      const end = inletEnd(el);
+      const anchor = inletAnchor(end);
       const rope = createRope(
         end,
         anchor,
         POINTS,
         Math.hypot(anchor.x - end.x, anchor.y - end.y) * 1.08 + 80,
+        { x: -1, y: 0 },
+        { x: 0, y: -1 },
       );
-      inlets.push({ el, rope, anchor });
+      inlets.push({ el, rope, last: end });
     }
   };
 
@@ -213,7 +277,12 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
   } | null = null;
   let lampOn = 0;
   const lamp = { x: width * 0.7, y: height * 0.3 };
-  let grab: { cable: BackCable; i: number; x: number; y: number } | null = null;
+  let grab: {
+    cable: BackCable;
+    i: number;
+    x: number;
+    y: number;
+  } | null = null;
 
   const hoverCable = (p: Vec) => {
     let best: BackCable | null = null;
@@ -259,7 +328,7 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
     const hit = hoverCable({ x: e.clientX, y: e.clientY });
     if (!hit) return;
     if (e.pointerType === 'touch') {
-      kick(hit.cable.rope, hit.i, (Math.random() - 0.5) * 900, -500);
+      kick(hit.cable.rope, hit.i, (Math.random() - 0.5) * 360, -200);
       wake();
       return;
     }
@@ -275,7 +344,7 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
   };
   const onUp = () => {
     if (!grab) return;
-    kick(grab.cable.rope, grab.i, 0, -200);
+    kick(grab.cable.rope, grab.i, 0, -80);
     grab = null;
     document.documentElement.classList.remove('backdrop-grabbing');
   };
@@ -288,8 +357,8 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
     ripples.push({ x, y, t: clock, s });
     while (ripples.length > MAX_RIPPLES) ripples.shift();
   };
-  const fire = (c: BackCable) => {
-    if (c.pulse === null) c.pulse = clock;
+  const fire = (c: BackCable, delay = 0) => {
+    if (c.pulse === null) c.pulse = clock + delay;
   };
   const nearestCable = (x: number, y: number) =>
     cables.reduce(
@@ -301,7 +370,7 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
     ).c;
   const onSignal = (e: Event) => {
     const { x, y } = (e as CustomEvent<Vec>).detail;
-    ring(x, y, 0.7);
+    ring(x, y, 0.45);
     fire(nearestCable(x, y));
     wake();
   };
@@ -312,9 +381,11 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
     ring(
       stage ? stage.left + stage.width / 2 : width * 0.65,
       stage ? stage.top + stage.height / 2 : height / 2,
-      1,
+      0.6,
     );
-    for (const c of cables) fire(c);
+    // A few cables answer, each in its own time.
+    for (const c of cables)
+      if (Math.random() < 0.6) fire(c, Math.random() * 1.5);
     wake();
   };
 
@@ -324,7 +395,8 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
   let lastQuery = -1;
   let frame = 0;
   let last = 0;
-  let nextPulse = 2;
+  let nextPulse = 3;
+  const lastPar = { x: par.x, y: par.y };
   let fade = 1;
 
   const motes = Array.from({ length: narrow ? 14 : 28 }, () => ({
@@ -359,35 +431,46 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
       syncInlets();
     }
 
-    // Parallax: the wall drifts slower than the page, and leans from the cursor.
-    parTarget.y = scrollPar();
-    parTarget.x = pointer && !still ? (pointer.x / width - 0.5) * 14 : 0;
-    const py = pointer && !still ? (pointer.y / height - 0.5) * 10 : 0;
-    par.x += (parTarget.x - par.x) * 0.08;
-    par.y += (parTarget.y + py - par.y) * (still ? 1 : 0.18);
+    // Parallax: the wall moves slower than the page, locked to the scroll.
+    par.y = scrollPar();
+    // The cables ride along with the wall, only swaying a little.
+    for (const c of cables)
+      shift(c.rope, (lastPar.x - par.x) * CARRY, (lastPar.y - par.y) * CARRY);
+    lastPar.x = par.x;
+    lastPar.y = par.y;
 
-    // The lamp eases after the cursor and dims when it leaves.
-    lampOn += ((pointer && !still ? 1 : 0) - lampOn) * 0.05;
+    // The lamp sits on the cursor and dims when it leaves.
+    lampOn += ((pointer && !still ? 1 : 0) - lampOn) * Math.min(1, dt * 8);
     if (pointer) {
-      lamp.x += (pointer.x - lamp.x) * 0.12;
-      lamp.y += (pointer.y - lamp.y) * 0.12;
+      lamp.x = pointer.x;
+      lamp.y = pointer.y;
     }
 
     // Recycle cables that scrolled off the top into rows below the view.
     const top = par.y - CELL.h * 2;
+    // One per frame, so a fast scroll never stalls a frame.
+    let respawned = false;
     cables.forEach((c, i) => {
+      if (respawned) return;
       const low = c.bOff ? c.a.y : Math.max(c.a.y, c.b.y);
-      if (low < top) cables[i] = spawn(i, firstRow() + rows() - 1, 2);
       const high = c.bOff ? c.a.y : Math.min(c.a.y, c.b.y);
-      if (high > par.y + height + CELL.h * 3)
-        cables[i] = spawn(i, firstRow() - 1, 2);
+      const row =
+        low < top
+          ? firstRow() + rows() - 1
+          : high > par.y + height + CELL.h * 3
+            ? firstRow() - 1
+            : null;
+      if (row === null || grab?.cable === c) return;
+      for (const k of c.jacks) taken.delete(k);
+      cables[i] = spawn(i, row, 2);
+      respawned = true;
     });
 
     if (!still) {
       nextPulse -= dt;
       if (nextPulse <= 0) {
         fire(cables[Math.floor(Math.random() * cables.length)]!);
-        nextPulse = 1.6 + Math.random() * 2.4;
+        nextPulse = 3 + Math.random() * 4;
       }
     }
 
@@ -410,7 +493,7 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
       data.set(v, o);
       o += v.length;
     };
-    const live = ripples.filter((r) => clock - r.t < 1.6);
+    const live = ripples.filter((r) => clock - r.t < 2.4);
     put(width, height, clock, canvas.width / width);
     put(
       pointer?.x ?? -9999,
@@ -452,11 +535,12 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
     const lightFrom =
       lampOn > 0.3 ? lamp : { x: width * 0.12, y: -height * 0.4 };
 
+    /** `dirA`/`dirB`: a seated plug's set angle; a free one follows the cable. */
     const drawRope = (
       rope: Rope,
       tone: Tone,
-      plugA: boolean,
-      plugB: boolean,
+      dirA: Vec | null,
+      dirB: Vec | null | 'free',
       w = 5.5,
     ) => {
       const pts = smooth(rope.pts);
@@ -475,12 +559,15 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
         ink: pal.ink,
         shadow: pal.shadow,
       };
-      if (plugA)
-        plug(wires, { at: pts[0]!, dir: endDir(pts, 'a'), lift: 0 }, look);
-      if (plugB)
+      if (dirA) plug(wires, { at: pts[0]!, dir: dirA, lift: 0 }, look);
+      if (dirB)
         plug(
           wires,
-          { at: pts[pts.length - 1]!, dir: endDir(pts, 'b'), lift: 0 },
+          {
+            at: pts[pts.length - 1]!,
+            dir: dirB === 'free' ? endDir(pts, 'b') : dirB,
+            lift: 0,
+          },
           look,
         );
       return pts;
@@ -489,52 +576,56 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
     for (const c of cables) {
       const a = toScreen(c.a);
       const b = toScreen(c.b);
-      const pins = endPins(c.rope, a, null, c.bOff ? null : b, null);
+      const pins = endPins(c.rope, a, c.aOut, c.bOff ? null : b, c.bOut, STIFF);
       if (grab?.cable === c) pins.push({ i: grab.i, x: grab.x, y: grab.y });
-      const wind = still ? 0 : Math.sin(clock * 0.7 + c.a.x * 0.01) * 60;
+      const { f, p, amp } = c.sway;
+      const wind = still
+        ? 0
+        : (Math.sin(clock * f + p) +
+            0.4 * Math.sin(clock * f * 2.3 + p * 1.7)) *
+          amp;
       if (!still || grab)
         stepRope(c.rope, pins, dt, {
           pointer: ptrForce,
           reach: 70,
           wind,
-          damping: 0.99,
         });
-      const pts = drawRope(c.rope, c.tone, true, true);
-      if (c.pulse !== null) {
-        const t = (clock - c.pulse) / PULSE_S;
-        if (t >= 1) {
-          c.pulse = null;
-          c.ledAt = clock;
-          if (!c.bOff) ring(b.x, b.y, 0.35);
-        } else {
-          const at = along(pts, t);
-          for (let k = 1; k <= 6; k++) {
-            const q = along(pts, t - k * 0.02);
-            lights.pushCircle({
-              cx: q.x,
-              cy: q.y,
-              radius: 5 - k * 0.6,
-              fill: col(pal.lit, 0.6 - k * 0.08),
-            });
-          }
+      const pts = drawRope(c.rope, c.tone, c.aOut, c.bOff ? 'free' : c.bOut);
+      const t = c.pulse === null ? -1 : (clock - c.pulse) / PULSE_S;
+      if (t >= 1) {
+        c.pulse = null;
+        c.ledAt = clock;
+        if (!c.bOff) ring(b.x, b.y, 0.25);
+      } else if (t >= 0) {
+        // Fades in and out at the ends, so it glides rather than pops.
+        const vis = Math.min(1, t * 6, (1 - t) * 6);
+        const at = along(pts, t);
+        for (let k = 1; k <= 6; k++) {
+          const q = along(pts, t - k * 0.015);
           lights.pushCircle({
-            cx: at.x,
-            cy: at.y,
-            radius: 18,
-            fill: col(pal.lit, 0.5),
-            blur: 8,
-          });
-          lights.pushCircle({
-            cx: at.x,
-            cy: at.y,
-            radius: 5,
-            fill: col(pal.hot),
+            cx: q.x,
+            cy: q.y,
+            radius: 4 - k * 0.45,
+            fill: col(pal.lit, (0.4 - k * 0.055) * vis),
           });
         }
+        lights.pushCircle({
+          cx: at.x,
+          cy: at.y,
+          radius: 14,
+          fill: col(pal.lit, 0.28 * vis),
+          blur: 8,
+        });
+        lights.pushCircle({
+          cx: at.x,
+          cy: at.y,
+          radius: 3.5,
+          fill: col(pal.hot, 0.85 * vis),
+        });
       }
       // Status LED by the jack: green while live, amber when a pulse lands.
       for (const end of c.bOff ? [a] : [a, b]) {
-        const heat = Math.max(0, 1 - (clock - c.ledAt) / 0.9);
+        const heat = Math.max(0, 1 - (clock - c.ledAt) / 1.6) ** 2;
         const led = { x: end.x + 30, y: end.y - 22 };
         const colr = mix(pal.power, pal.lit, heat);
         wires.pushCircle({
@@ -553,33 +644,35 @@ export async function mountBackdrop(host: HTMLElement, preset: Preset) {
           lights.pushCircle({
             cx: led.x,
             cy: led.y,
-            radius: 10,
-            fill: col(pal.lit, heat * 0.6),
+            radius: 9,
+            fill: col(pal.lit, heat * 0.35),
             blur: 5,
           });
       }
     }
 
+    const inletOut = { x: -1, y: 0 };
     for (const inlet of inlets) {
       if (!inlet.el.isConnected) continue;
-      const r = inlet.el.getBoundingClientRect();
-      const end = { x: r.left + 6, y: r.top + r.height * 0.62 };
-      const anchor = { x: r.left - 160, y: height + 180 };
+      const end = inletEnd(inlet.el);
+      shift(
+        inlet.rope,
+        (end.x - inlet.last.x) * CARRY,
+        (end.y - inlet.last.y) * CARRY,
+      );
+      inlet.last = end;
+      const pins = endPins(
+        inlet.rope,
+        end,
+        inletOut,
+        inletAnchor(end),
+        null,
+        STIFF * 1.3,
+      );
       if (!still || grab)
-        stepRope(
-          inlet.rope,
-          endPins(inlet.rope, end, { x: -1, y: 0 }, anchor, null),
-          dt,
-          { pointer: ptrForce, reach: 70 },
-        );
-      else
-        for (let s = 0; s < 2; s++)
-          stepRope(
-            inlet.rope,
-            endPins(inlet.rope, end, { x: -1, y: 0 }, anchor, null),
-            1 / 60,
-          );
-      drawRope(inlet.rope, 'cobalt', true, false, 7);
+        stepRope(inlet.rope, pins, dt, { pointer: ptrForce, reach: 70 });
+      else for (let s = 0; s < 2; s++) stepRope(inlet.rope, pins, 1 / 60);
+      drawRope(inlet.rope, 'cobalt', inletOut, null, 7);
     }
 
     if (!still) {

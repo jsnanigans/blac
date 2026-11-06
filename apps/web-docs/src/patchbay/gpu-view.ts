@@ -94,8 +94,7 @@ export async function createGpuView(
             },
           );
       }
-      for (const sp of scene.sparks)
-        spark(lights, o(sp.at), sp.t, pal.hot, pal.lit);
+      for (const sp of scene.sparks) spark(lights, o(sp.at), sp.t, pal.lit);
       for (const p of scene.pulses) {
         p.trail.forEach((q, i) => {
           const at = o(q);
