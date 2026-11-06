@@ -106,7 +106,12 @@ function AppModule() {
     'cart.items': `[${state.cart.items.length}]`,
   };
   return (
-    <section className="module" aria-label="AppCubit state">
+    <section
+      className="module"
+      aria-label="AppCubit state"
+      data-mount
+      data-inlet
+    >
       <header className="module-head">
         <span className="module-name">AppCubit</span>
         <span className="power kicker">live</span>
@@ -140,7 +145,11 @@ function Unit({
   children: React.ReactNode;
 }) {
   return (
-    <article className="unit" ref={cardRef as React.RefObject<HTMLElement>}>
+    <article
+      className="unit"
+      ref={cardRef as React.RefObject<HTMLElement>}
+      data-mount
+    >
       <span className="unit-inputs" aria-hidden="true">
         {reads.map((k) => (
           <span key={k} className="unit-input" ref={plug(k)} />

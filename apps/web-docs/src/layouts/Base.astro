@@ -4,6 +4,7 @@ import '../styles/tokens.css';
 import '../styles/base.css';
 import Header from '../components/site/Header.astro';
 import Footer from '../components/site/Footer.astro';
+import Backdrop from '../components/site/Backdrop.astro';
 
 interface Props {
   title?: string;
@@ -12,6 +13,8 @@ interface Props {
   theme?: 'dark' | 'light';
   /** Section the page belongs to, for the active topnav link. */
   section?: 'home' | 'learn' | 'docs' | 'blog' | 'rfcs';
+  /** A full-screen scene fixed behind the page. */
+  backdrop?: 'hero' | 'chapter';
 }
 
 const {
@@ -19,6 +22,7 @@ const {
   description = 'BlaC puts state and business logic in plain TypeScript classes. Components read what they need and re-render only when those values change.',
   theme,
   section,
+  backdrop,
 } = Astro.props;
 
 const fullTitle = title ? `${title} · BlaC` : 'BlaC · Components render. Classes think.';
@@ -70,6 +74,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   </head>
   <body data-section={section}>
     <a class="skip" href="#main">Skip to content</a>
+    {backdrop && <Backdrop preset={backdrop} />}
     <Header section={section} themeLocked={Boolean(theme)} />
     <slot />
     <Footer />

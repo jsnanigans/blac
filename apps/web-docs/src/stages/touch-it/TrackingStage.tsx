@@ -197,7 +197,12 @@ function Module({ id }: { id: string }) {
     'items[0].done': String(s.items[0]?.done),
   };
   return (
-    <section className="module" aria-label="ProfileCubit state">
+    <section
+      className="module"
+      aria-label="ProfileCubit state"
+      data-mount
+      data-inlet
+    >
       <header className="module-head">
         <span className="module-name">ProfileCubit</span>
         <span className="power kicker">live</span>
@@ -232,7 +237,7 @@ function Profile({ id }: { id: string }) {
   const { card, plug } = usePatch<HTMLElement>(`Profile-${id}`, reads);
 
   return (
-    <article className="unit" ref={card}>
+    <article className="unit" ref={card} data-mount>
       <span className="unit-inputs" aria-hidden="true">
         {Object.keys(reads).map((k) => (
           <span key={k} className="unit-input" ref={plug(k)} />
@@ -277,7 +282,7 @@ function TodoList({ id }: { id: string }) {
   };
   const { card, plug } = usePatch<HTMLElement>(`TodoList-${id}`, reads);
   return (
-    <article className="unit" ref={card}>
+    <article className="unit" ref={card} data-mount>
       <span className="unit-inputs" aria-hidden="true">
         {Object.keys(reads).map((k) => (
           <span key={k} className="unit-input" ref={plug(k)} />
@@ -369,7 +374,7 @@ export default function TrackingStage() {
   );
 
   return (
-    <div ref={ref} className="stage" data-beat={beat}>
+    <div ref={ref} className="stage" data-active-beat={beat}>
       <div className="stage-head kicker">
         <span className="stage-led" aria-hidden="true" />
         <span className="stage-caption" aria-live="polite">

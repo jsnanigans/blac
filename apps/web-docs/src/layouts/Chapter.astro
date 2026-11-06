@@ -17,14 +17,14 @@ const ref = doc ? (await getCollection('docs')).find((d) => d.id === doc) : unde
 const num = pad2(order);
 ---
 
-<Base title={plain(title)} description={lede} theme="dark" section="learn">
+<Base title={plain(title)} description={lede} theme="dark" section="learn" backdrop="chapter">
   <article class="chapter" data-pagefind-body>
     <chapter-progress>
       <div class="progress-bar" aria-hidden="true"><span></span></div>
       <nav class="rail" aria-label="Beats"><ol></ol></nav>
     </chapter-progress>
 
-    <header class="intro">
+    <header class="intro" data-calm>
       <span class="numeral" aria-hidden="true">{num}</span>
       <p class="kicker"><span class="on">Chapter {num}</span> · {kicker}</p>
       <h1 set:html={title} />

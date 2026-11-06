@@ -1,0 +1,66 @@
+---
+// A full-screen scene fixed behind the page (insomni on WebGPU); a quiet
+// CSS wall without it. See src/backdrop/backdrop.ts.
+interface Props {
+  preset: 'hero' | 'chapter';
+}
+const { preset } = Astro.props;
+---
+
+<div class="backdrop" data-backdrop={preset} aria-hidden="true"></div>
+
+<script>
+  import '../../scripts/backdrop';
+</script>
+
+<style>
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 48px 46px, var(--panel-3) 0 9px, transparent 10px) 0 0 / 96px 120px,
+      linear-gradient(180deg, var(--panel-2) 0 10px, transparent 10px) 0 0 / 96px 120px,
+      radial-gradient(ellipse at 70% 20%, color-mix(in srgb, var(--cobalt) 10%, transparent), transparent 60%),
+      var(--panel);
+    opacity: 0.6;
+    transition: opacity 400ms;
+  }
+
+  /* Without the GPU scene nothing fades it on scroll: the CSS wall stays with the hero. */
+  :global(:root:not(.has-backdrop)) .backdrop[data-backdrop='hero'] {
+    position: absolute;
+    height: 100svh;
+    mask-image: linear-gradient(#000 60%, transparent);
+  }
+
+  .backdrop :global(canvas) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  :global(.has-backdrop) .backdrop {
+    background: none;
+    opacity: 1;
+    transition: none;
+  }
+
+  /* Page content scrolls over the wall. */
+  :global(body:has(.backdrop) > :not(.backdrop, .topbar, .skip)) {
+    position: relative;
+    z-index: 1;
+  }
+
+  :global(.backdrop-grab body) {
+    cursor: grab;
+  }
+
+  :global(.backdrop-grabbing body),
+  :global(.backdrop-grabbing body *) {
+    cursor: grabbing !important;
+    user-select: none;
+  }
+</style>

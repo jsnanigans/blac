@@ -5,7 +5,7 @@
 ---
 
 <blac-scrolly class="scrolly">
-  <div class="beats prose"><slot /></div>
+  <div class="beats prose" data-calm><slot /></div>
   <div class="stage-wrap"><slot name="stage" /></div>
 </blac-scrolly>
 
@@ -47,7 +47,8 @@
       height: 50svh;
       min-height: 320px;
       padding: 0.5rem 0;
-      background: var(--bg);
+      background: color-mix(in srgb, var(--bg) 72%, transparent);
+      backdrop-filter: blur(6px);
     }
 
     .beats {
