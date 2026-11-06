@@ -1,0 +1,244 @@
+.bay {
+  position: relative;
+}
+
+.bay-cables {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.bay-cable-shadow,
+.bay-cable {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.bay-cable-shadow {
+  stroke: var(--bg);
+  stroke-width: 9;
+  opacity: 0.55;
+}
+
+.bay-cable {
+  --heat: 0;
+  --c: var(--cable);
+  stroke: color-mix(in srgb, var(--lit) calc(var(--heat) * 85%), var(--c));
+  stroke-width: 3.5;
+}
+
+.bay-cable[data-tone='cobalt'] {
+  --c: var(--cobalt);
+}
+
+.bay-cable[data-tone='rose'] {
+  --c: var(--rose);
+}
+
+.bay-pulse {
+  fill: var(--lit-hot);
+  filter: drop-shadow(0 0 6px var(--lit)) drop-shadow(0 0 2px var(--lit));
+}
+
+/* ── A module: a panel with screws, a power LED and a column of jacks. ── */
+
+.module {
+  position: relative;
+  padding: 1rem 1rem 1.1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  box-shadow: var(--shadow-panel);
+}
+
+.module::before,
+.module::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--screw);
+  box-shadow: inset 0 0 0 1.5px var(--panel-3);
+}
+
+.module::before {
+  left: 7px;
+}
+
+.module::after {
+  right: 7px;
+}
+
+.module-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.25rem 0.25rem 0.85rem;
+}
+
+.module-name {
+  font: 700 0.95rem var(--font-mono);
+  letter-spacing: -0.01em;
+}
+
+.power {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.power::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--power);
+  box-shadow: 0 0 8px var(--power);
+}
+
+.power[data-on='false']::before {
+  background: var(--line-strong);
+  box-shadow: none;
+}
+
+.jack-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.45rem 0.25rem 0.45rem 0.6rem;
+  border-top: 1px dashed var(--line);
+}
+
+.jack-path {
+  overflow: hidden;
+  color: var(--cobalt-text);
+  font: 600 0.82rem var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jack-value {
+  overflow: hidden;
+  color: var(--muted);
+  font: 0.78rem var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.socket {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #050408 0 34%,
+    var(--screw) 38% 60%,
+    var(--panel-3) 64% 100%
+  );
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+
+.fire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 30px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--panel-3);
+  color: var(--text);
+  font: 600 0.78rem var(--font-mono);
+  cursor: pointer;
+  transition:
+    border-color 120ms,
+    transform 120ms;
+}
+
+.fire:hover {
+  border-color: var(--lit);
+}
+
+.fire:active {
+  transform: translateY(1px);
+}
+
+/* ── A unit: one React component on the bay. ── */
+
+.unit {
+  position: relative;
+  padding: 0.8rem 0.95rem 0.85rem 1.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.unit-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--rose-text);
+  font: 600 0.8rem var(--font-mono);
+}
+
+.unit-body {
+  margin-top: 0.35rem;
+  color: var(--text);
+  font-size: 0.98rem;
+}
+
+.unit-inputs {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -7px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.unit-input {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #050408 0 34%, var(--screw) 40% 100%);
+}
+
+.renders {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--dim);
+  font: 600 0.7rem var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.renders b {
+  min-width: 1.6em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 5px;
+  background: var(--panel-3);
+  color: var(--lit-text);
+  text-align: center;
+}
+
+.jack-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}

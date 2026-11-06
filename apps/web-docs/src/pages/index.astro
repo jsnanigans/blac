@@ -1,0 +1,517 @@
+---
+import { Code } from 'astro-expressive-code/components';
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import HeroBay from '../stages/hero/HeroBay.tsx';
+import CounterDemo from '../components/demos/CounterDemo.tsx';
+import { docHref, GITHUB } from '../lib/nav';
+import { pad2 } from '../lib/format';
+
+const INSTALL = 'pnpm add @blac/core @blac/react';
+
+const chapters = await getCollection('learn');
+const chapterFor = (slug: string) => chapters.find((c) => c.id === slug);
+
+const IDEAS = [
+  {
+    chapter: 'touch-it',
+    doc: 'react/dependency-tracking',
+    title: 'Touch it, you’re subscribed',
+    text: 'Reading <code>state.user.name</code> during render subscribes the component to that value and nothing else. Change the email and it stays put. There are no selectors to write and no dependency arrays to keep in sync.',
+  },
+  {
+    chapter: 'components-render',
+    doc: 'guide/philosophy',
+    title: 'Components render. Classes think.',
+    text: 'State, rules and async work live in a class with no React in it. The component reads state and calls methods. The class runs in a plain unit test, and the API behind it can change without touching the UI.',
+  },
+  {
+    chapter: 'first-in-last-out',
+    doc: 'core/instance-management',
+    title: 'First in, last out',
+    text: 'The first component that uses a bloc creates it, and the last one to unmount disposes it. Instances are shared by default. Key them with <code>args</code>, give each mount its own with <code>isolated</code>, or keep one around with <code>keepAlive</code>.',
+  },
+  {
+    chapter: 'blocs-that-talk',
+    doc: 'core/bloc-communication',
+    title: 'Blocs that talk',
+    text: 'A getter can read another bloc’s state through <code>.track()</code>. Components that read the getter re-render when either bloc changes it, with no second <code>useBloc</code> call.',
+  },
+];
+
+const PACKAGES = [
+  {
+    name: '@blac/core',
+    role: 'Core',
+    text: 'Cubit, the instance registry and path tracking: state, methods, getters and lifecycle, with no React dependency.',
+    href: docHref('core/cubit'),
+  },
+  {
+    name: '@blac/react',
+    role: 'React',
+    text: 'useBloc records what each render reads and re-renders on exactly that. Testing helpers included.',
+    href: docHref('react/use-bloc'),
+  },
+  {
+    name: '@blac/async',
+    role: 'Async data',
+    text: 'Resources and mutations kept in state: status, latest request wins, abort on release, tag-based invalidation.',
+    href: docHref('guide/async-resources'),
+  },
+  {
+    name: 'Plugins',
+    role: 'Plugins',
+    text: 'DevTools, persistence (IndexedDB, Web Storage) and logging attach to every bloc without touching a component.',
+    href: docHref('plugins/overview'),
+  },
+];
+
+const LOOP = `import { Cubit } from '@blac/core';
+import { useBloc } from '@blac/react';
+
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+  increment = () => this.emit({ count: this.state.count + 1 });
+}
+
+function Counter() {
+  const [state, counter] = useBloc(CounterCubit);
+  return <button onClick={counter.increment}>{state.count}</button>;
+}`;
+
+const TEST = `import { it, expect } from 'vitest';
+import { CartCubit } from './CartCubit';
+
+it('totals the cart', () => {
+  const cart = new CartCubit();
+  cart.add({ id: 'jack', price: 12 });
+  cart.add({ id: 'cable', price: 4 });
+  expect(cart.total).toBe(16);
+});`;
+---
+
+<Base theme="dark" section="home">
+  <main id="main">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="kicker">
+          <span class="dot" aria-hidden="true"></span> State management for React &amp; TypeScript
+          <a class="beta" href={docHref('guide/getting-started')}>v2 beta</a>
+        </p>
+        <h1>Components render.<br /><em>Classes think.</em></h1>
+        <p class="lede">
+          BlaC puts state and business logic in plain TypeScript classes. Components read what they need and call
+          methods. A component re-renders when a value it read changes, and state changes it didn't read never reach it.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="/learn/">Start learning</a>
+          <a class="btn" href={docHref('guide/getting-started')}>Quick start</a>
+        </div>
+        <div class="install">
+          <span class="prompt" aria-hidden="true">$</span>
+          <code>{INSTALL}</code>
+          <button type="button" class="copy" data-copy={INSTALL} aria-label="Copy install command">copy</button>
+        </div>
+      </div>
+      <div class="hero-stage">
+        <HeroBay client:load />
+      </div>
+    </section>
+
+    <section class="section loop">
+      <header class="section-head">
+        <p class="kicker">Quick look</p>
+        <h2>One class. One hook. That’s the whole loop.</h2>
+        <p class="section-lede">
+          No store to configure, no provider around your app, no reducers or selectors. The class owns the state and the
+          methods that change it. The component renders state and calls methods.
+        </p>
+      </header>
+      <div class="loop-grid">
+        <Code code={LOOP} lang="tsx" title="Counter.tsx" />
+        <div class="loop-demo">
+          <CounterDemo client:visible />
+        </div>
+      </div>
+    </section>
+
+    <section class="section ideas">
+      <header class="section-head">
+        <p class="kicker">How it works</p>
+        <h2>Four ideas behind it</h2>
+        <p class="section-lede">
+          Each one links to its reference page. The chapters take them apart step by step, with BlaC running on the
+          stage beside the text.
+        </p>
+      </header>
+      <ol class="idea-list">
+        {
+          IDEAS.map((idea, i) => {
+            const chapter = chapterFor(idea.chapter);
+            return (
+              <li>
+                <span class="idea-num">{pad2(i + 1)}</span>
+                <div>
+                  <h3>{idea.title}</h3>
+                  <p set:html={idea.text} />
+                </div>
+                <div class="idea-links">
+                  {chapter && (
+                    <a class="idea-link is-chapter" href={`/learn/${chapter.id}/`}>
+                      Chapter {pad2(chapter.data.order)} <span aria-hidden="true">→</span>
+                    </a>
+                  )}
+                  <a class="idea-link" href={docHref(idea.doc)}>
+                    Reference <span aria-hidden="true">→</span>
+                  </a>
+                </div>
+              </li>
+            );
+          })
+        }
+      </ol>
+    </section>
+
+    <section class="section">
+      <header class="section-head">
+        <p class="kicker">Packages</p>
+        <h2>A small core. The rest is opt-in.</h2>
+      </header>
+      <div class="packages">
+        {
+          PACKAGES.map((p) => (
+            <a class="package" href={p.href}>
+              <span class="kicker">{p.role}</span>
+              <code>{p.name}</code>
+              <p>{p.text}</p>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="section test">
+      <div>
+        <p class="kicker">Testing</p>
+        <h2>Test the logic without rendering anything.</h2>
+        <p class="section-lede">
+          A bloc is a class: construct it, call methods, check its state. No DOM, no providers, no mocked hooks. For
+          component tests, <code>renderWithBloc</code> mounts a component with the state you choose.
+        </p>
+        <a class="btn" href={docHref('testing/overview')}>Testing guide</a>
+      </div>
+      <Code code={TEST} lang="ts" title="cart.test.ts" />
+    </section>
+
+    <section class="close">
+      <h2>Plug in.</h2>
+      <p>Start with the first chapter, or go straight to the reference.</p>
+      <div class="actions">
+        <a class="btn primary" href="/learn/">Start learning</a>
+        <a class="btn" href={docHref('guide/introduction')}>Read the docs</a>
+        <a class="btn" href={GITHUB}>GitHub</a>
+      </div>
+    </section>
+  </main>
+</Base>
+
+<script>
+  import '../scripts/copy';
+</script>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(2rem, 5vw, 4.5rem);
+    align-items: center;
+    max-width: calc(var(--max) + 2 * var(--gutter));
+    min-height: calc(100svh - var(--topbar));
+    margin: 0 auto;
+    padding: clamp(3rem, 7vw, 5rem) var(--gutter);
+  }
+
+  .beta {
+    margin-left: 0.6rem;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--lit) 55%, transparent);
+    border-radius: 999px;
+    color: var(--lit-text);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 0.35rem;
+    border-radius: 50%;
+    background: var(--power);
+    box-shadow: 0 0 8px var(--power);
+    vertical-align: 1px;
+  }
+
+  h1 {
+    margin-top: 1.4rem;
+    font-size: clamp(2.9rem, 6vw, 4.9rem);
+    letter-spacing: -0.05em;
+    line-height: 0.98;
+  }
+
+  h1 em {
+    color: var(--lit-text);
+    font-style: normal;
+    text-shadow: var(--glow-text);
+  }
+
+  .lede {
+    max-width: 34rem;
+    margin: 1.75rem 0 0;
+    color: var(--muted);
+    font-size: 1.15rem;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+
+  .install {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    max-width: 100%;
+    margin-top: 1.5rem;
+    padding: 0.5rem 0.5rem 0.5rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--panel);
+    font: 0.88rem var(--font-mono);
+  }
+
+  .install code {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .prompt {
+    color: var(--lit-text);
+  }
+
+  .copy {
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: var(--panel-2);
+    color: var(--muted);
+    font: 600 0.72rem var(--font-mono);
+    cursor: pointer;
+  }
+
+  .section {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: clamp(4.5rem, 9vw, 8rem) var(--gutter);
+    border-top: 1px solid var(--line);
+  }
+
+  .section-head {
+    max-width: 44rem;
+    margin-bottom: 3rem;
+  }
+
+  h2 {
+    margin-top: 1rem;
+    font-size: clamp(2rem, 4.4vw, 3.4rem);
+    letter-spacing: -0.04em;
+  }
+
+  .section-lede {
+    margin: 1.25rem 0 0;
+    color: var(--muted);
+    font-size: 1.1rem;
+  }
+
+  .section-lede code,
+  .idea-list p :global(code) {
+    color: var(--rose-text);
+    font-size: 0.9em;
+  }
+
+  .loop-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .loop-demo :global(.blac-demo) {
+    margin: 0;
+  }
+
+  .idea-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--line);
+  }
+
+  .idea-list li {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr) auto;
+    gap: 2rem;
+    align-items: baseline;
+    padding: 2.25rem 0.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .idea-num {
+    color: var(--dim);
+    font: 700 1.6rem var(--font-mono);
+    transition: color 300ms;
+  }
+
+  .idea-list li:hover .idea-num {
+    color: var(--lit-text);
+    text-shadow: var(--glow-text);
+  }
+
+  .idea-list h3 {
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    letter-spacing: -0.03em;
+  }
+
+  .idea-list p {
+    max-width: 60ch;
+    margin: 0.75rem 0 0;
+    color: var(--muted);
+  }
+
+  .idea-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    align-items: flex-end;
+  }
+
+  .idea-link {
+    color: var(--muted);
+    font: 600 0.85rem var(--font-mono);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .idea-link:hover,
+  .idea-link.is-chapter {
+    color: var(--lit-text);
+  }
+
+  .packages {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--line);
+    overflow: hidden;
+  }
+
+  .package {
+    display: grid;
+    gap: 0.6rem;
+    align-content: start;
+    min-height: 15rem;
+    padding: 1.6rem;
+    background: var(--bg);
+    text-decoration: none;
+    transition: background 200ms;
+  }
+
+  .package:hover {
+    background: var(--panel);
+  }
+
+  .package code {
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .package p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  .test {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
+  }
+
+  .test .btn {
+    margin-top: 2rem;
+  }
+
+  .close {
+    padding: clamp(5rem, 11vw, 9rem) var(--gutter);
+    border-top: 1px solid var(--line);
+    text-align: center;
+    background: radial-gradient(ellipse at 50% 120%, rgb(255 178 30 / 0.12), transparent 60%);
+  }
+
+  .close h2 {
+    font-size: clamp(3rem, 9vw, 6.5rem);
+  }
+
+  .close p {
+    color: var(--muted);
+    font-size: 1.1rem;
+  }
+
+  .close .actions {
+    justify-content: center;
+  }
+
+  @media (max-width: 1060px) {
+    .hero {
+      grid-template-columns: minmax(0, 1fr);
+      min-height: 0;
+    }
+
+    .loop-grid,
+    .test {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .packages {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 720px) {
+    .idea-list li {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.75rem;
+    }
+
+    .idea-links {
+      flex-direction: row;
+      gap: 1.25rem;
+      align-items: center;
+    }
+
+    .packages {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .package {
+      min-height: 0;
+    }
+  }
+</style>
