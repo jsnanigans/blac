@@ -1,4 +1,5 @@
-export {};
+import { light } from './light';
+import { wire } from './wire';
 
 // Scroll-spy: the last heading above the reading line is the current one.
 const links = [...document.querySelectorAll<HTMLAnchorElement>('.toc a')];
@@ -31,4 +32,15 @@ document
 document.querySelector('.sidebar')?.addEventListener('click', (e) => {
   if ((e.target as HTMLElement).closest('a'))
     document.body.classList.remove('nav-open');
+});
+
+// Sections and callouts plug in and light up as they scroll into view.
+wire('.prose h2, .prose .callout');
+
+// Copying code lights its frame.
+document.addEventListener('click', (e) => {
+  const copy = (e.target as HTMLElement).closest(
+    '.expressive-code .copy button',
+  );
+  if (copy) light(copy.closest('.frame'));
 });

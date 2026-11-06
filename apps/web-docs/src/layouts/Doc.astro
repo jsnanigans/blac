@@ -2,6 +2,7 @@
 import type { MarkdownHeading } from 'astro';
 import { getCollection } from 'astro:content';
 import Base from './Base.astro';
+import Plug from '../components/site/Plug.astro';
 import { DOCS_NAV, NAV_ORDER, docHref, GITHUB } from '../lib/nav';
 import { plain } from '../lib/format';
 import '../styles/prose.css';
@@ -86,6 +87,10 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
                 <a class="pager-card" href={docHref(prev)}>
                   <span class="kicker">← Previous</span>
                   <strong>{titles.get(prev)}</strong>
+                  <span class="wire is-back" aria-hidden="true">
+                    <span class="wire-jack" />
+                    <Plug />
+                  </span>
                 </a>
               ) : (
                 <span />
@@ -95,6 +100,10 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
                   <span class="kicker">Next →</span>
                   <strong>{titles.get(next)}</strong>
                   {blurbs.get(next) && <span class="pager-blurb">{blurbs.get(next)}</span>}
+                  <span class="wire" aria-hidden="true">
+                    <Plug />
+                    <span class="wire-jack" />
+                  </span>
                 </a>
               )}
             </nav>
@@ -162,39 +171,59 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
     list-style: none;
   }
 
+  /* A patch strip: one jack per page on the rail; the current page has a plug seated and lit. */
+  .sidebar ul {
+    margin-left: 5px;
+    border-left: 1px solid var(--line);
+  }
+
   .sidebar a {
     position: relative;
     display: block;
-    padding: 0.28rem 0.75rem;
-    border-left: 1px solid var(--line);
+    padding: 0.28rem 0.75rem 0.28rem 1rem;
     color: var(--muted);
     font-size: 0.925rem;
     line-height: 1.45;
     text-decoration: none;
+    transition:
+      color 160ms var(--ease),
+      transform 160ms var(--ease);
+  }
+
+  .sidebar a::before {
+    content: '';
+    position: absolute;
+    top: calc(0.28rem + 0.725em - 5px);
+    left: -5.5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--bg) 0 28%, var(--line-strong) 36% 100%);
+    transition:
+      background 160ms var(--ease),
+      box-shadow 160ms var(--ease),
+      transform 160ms var(--ease);
   }
 
   .sidebar a:hover {
-    border-left-color: var(--line-strong);
     color: var(--text);
+    transform: translateX(2px);
+  }
+
+  .sidebar a:hover::before {
+    background: radial-gradient(circle, var(--bg) 0 28%, var(--cable) 36% 100%);
+    transform: translateX(-2px) scale(1.2);
   }
 
   .sidebar a[aria-current='page'] {
-    border-left-color: var(--lit);
     color: var(--text);
     font-weight: 600;
   }
 
   .sidebar a[aria-current='page']::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: -4px;
-    width: 7px;
-    height: 7px;
-    margin-top: -3.5px;
-    border-radius: 50%;
-    background: var(--lit);
-    box-shadow: 0 0 8px var(--lit);
+    background: radial-gradient(circle, var(--lit-hot) 0 28%, var(--lit) 36% 100%);
+    box-shadow: 0 0 10px var(--lit);
+    animation: plug-in 700ms var(--ease) 150ms backwards;
   }
 
   .doc-main {
@@ -279,14 +308,12 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
     text-align: right;
   }
 
-  .pager-blurb {
-    color: var(--muted);
-    font-size: 0.875rem;
-    line-height: 1.45;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+  .pager-card .wire {
+    margin-top: 0.4rem;
+  }
+
+  .pager-card.is-next .wire {
+    justify-content: flex-end;
   }
 
   .toc .kicker {
@@ -294,24 +321,53 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
   }
 
   .toc a {
+    position: relative;
     display: block;
-    padding: 0.25rem 0;
+    padding: 0.25rem 0 0.25rem 0.95rem;
     color: var(--dim);
     font-size: 0.85rem;
     line-height: 1.4;
     text-decoration: none;
   }
 
+  /* An LED per section; the one you're reading is lit. */
+  .toc a::before {
+    content: '';
+    position: absolute;
+    top: calc(0.25rem + 0.7em - 2.5px);
+    left: 0;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--line-strong);
+    transition:
+      background 200ms var(--ease),
+      box-shadow 200ms var(--ease);
+  }
+
   .toc .d3 a {
-    padding-left: 0.85rem;
+    padding-left: 1.8rem;
+  }
+
+  .toc .d3 a::before {
+    left: 0.85rem;
   }
 
   .toc a:hover {
     color: var(--text);
   }
 
+  .toc a:hover::before {
+    background: var(--cable);
+  }
+
   .toc a[aria-current] {
     color: var(--lit-text);
+  }
+
+  .toc a[aria-current]::before {
+    background: var(--lit);
+    box-shadow: 0 0 8px var(--lit);
   }
 
   @media (max-width: 1240px) {

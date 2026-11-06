@@ -1,5 +1,8 @@
 import { useLayoutEffect, useRef } from 'react';
 import { blac, Cubit, ensure } from '@blac/core';
+import { light } from '../scripts/light';
+
+export { light };
 
 const KEY = 'blac-render-flash';
 
@@ -30,14 +33,6 @@ export class SiteCubit extends Cubit<{ flash: boolean }> {
 }
 
 blac({ keepAlive: true })(SiteCubit);
-
-/** Restart the amber "lit" glow on `el`: it lights, then decays. */
-export function light(el: Element | null) {
-  if (!el) return;
-  el.classList.remove('is-lit');
-  void (el as HTMLElement).offsetWidth;
-  el.classList.add('is-lit');
-}
 
 /**
  * After every re-render (not the first), light `target(el)` in amber while

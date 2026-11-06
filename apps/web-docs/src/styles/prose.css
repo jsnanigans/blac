@@ -24,6 +24,32 @@
   font-size: 1.75rem;
 }
 
+/* Every section is a jack in the margin; a plug seats and it lights as the section scrolls in (doc.ts). */
+.prose h2::before {
+  content: '';
+  position: absolute;
+  top: 0.36em;
+  left: -1.7rem;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--cable-hi) 0 28%, var(--cable) 34% 100%);
+}
+
+:root.wired .prose h2:not(.is-on)::before {
+  background: radial-gradient(circle, var(--bg) 0 30%, var(--line-strong) 36% 100%);
+}
+
+:root.wired .prose h2.is-on::before {
+  animation: plug-in 700ms var(--ease);
+}
+
+@media (max-width: 44rem) {
+  .prose h2::before {
+    display: none;
+  }
+}
+
 .prose h3 {
   margin: 2.25rem 0 0.75rem;
   font-size: 1.3rem;
@@ -36,16 +62,26 @@
   letter-spacing: 0;
 }
 
+/* The underline is a cable; hovering sends an amber signal down it. */
 .prose a {
+  padding-bottom: 2px;
+  background:
+    linear-gradient(var(--lit), var(--lit)) 0 100% / 0 2px no-repeat,
+    linear-gradient(var(--cable), var(--cable)) 0 100% / 100% 1.5px no-repeat;
   color: var(--text);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--cable) 70%, transparent);
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 3px;
+  text-decoration: none;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition:
+    background-size 420ms var(--ease),
+    text-shadow 420ms var(--ease);
 }
 
 .prose a:hover {
-  text-decoration-color: var(--lit);
+  background-size:
+    100% 2px,
+    100% 1.5px;
+  text-shadow: var(--glow-text);
 }
 
 .prose strong {
@@ -64,15 +100,43 @@
   color: var(--dim);
 }
 
-.prose ul:not(.not-content *) > li::marker {
-  content: '◦  ';
-  color: var(--cable-text);
+/* Bullets are jacks; hovering an item lights its jack. */
+.prose ul:not(.not-content *) {
+  list-style: none;
 }
 
+.prose ul:not(.not-content *) > li {
+  position: relative;
+}
+
+.prose ul:not(.not-content *) > li::before {
+  content: '';
+  position: absolute;
+  top: 0.62em;
+  left: -1.1rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--bg) 0 30%, var(--cable-text) 38% 100%);
+  transition:
+    background 200ms var(--ease),
+    box-shadow 200ms var(--ease);
+}
+
+.prose ul:not(.not-content *) > li:hover::before {
+  background: radial-gradient(circle, var(--lit-hot) 0 30%, var(--lit) 38% 100%);
+  box-shadow: 0 0 8px var(--lit);
+}
+
+/* A patch cable between two jacks. */
 .prose hr {
+  height: 12px;
   margin: 3rem 0;
   border: 0;
-  border-top: 1px dashed var(--line-strong);
+  background:
+    radial-gradient(circle at 6px 50%, var(--bg) 0 2px, var(--line-strong) 2.5px 6px, transparent 6.5px),
+    radial-gradient(circle at calc(100% - 6px) 50%, var(--bg) 0 2px, var(--line-strong) 2.5px 6px, transparent 6.5px),
+    linear-gradient(var(--line-strong), var(--line-strong)) center / calc(100% - 12px) 2px no-repeat;
 }
 
 .prose blockquote {
@@ -105,7 +169,24 @@
 }
 
 .prose .expressive-code {
+  position: relative;
   margin-bottom: 1.5rem;
+}
+
+/* Faceplate screws in the frame's corners. */
+.prose .expressive-code::after {
+  --s: var(--screw) 0 1.8px, transparent 2.4px;
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 8px 8px, var(--s)),
+    radial-gradient(circle at calc(100% - 8px) 8px, var(--s)),
+    radial-gradient(circle at 8px calc(100% - 8px), var(--s)),
+    radial-gradient(circle at calc(100% - 8px) calc(100% - 8px), var(--s));
+  pointer-events: none;
 }
 
 .prose details {
@@ -128,11 +209,15 @@
 
 .callout {
   --c: var(--cable-text);
+  --s: var(--screw) 0 1.6px, transparent 2.2px;
   position: relative;
-  padding: 1rem 1.2rem 1rem 1.35rem;
+  padding: 1rem 1.6rem 1rem 1.35rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--panel);
+  background:
+    radial-gradient(circle at calc(100% - 9px) 9px, var(--s)),
+    radial-gradient(circle at calc(100% - 9px) calc(100% - 9px), var(--s)),
+    var(--panel);
   font-size: 0.97rem;
 }
 
@@ -169,6 +254,30 @@
   border-radius: 50%;
   background: var(--c);
   box-shadow: 0 0 8px var(--c);
+}
+
+/* The module's LED is off until it scrolls into view, then flickers on (doc.ts). */
+:root.wired .callout:not(.is-on) .callout__title::before {
+  opacity: 0.25;
+  box-shadow: none;
+}
+
+:root.wired .callout.is-on .callout__title::before {
+  animation: flicker 650ms linear;
+}
+
+@keyframes flicker {
+  0%,
+  30%,
+  60% {
+    opacity: 0.25;
+    box-shadow: none;
+  }
+  15%,
+  45%,
+  100% {
+    opacity: 1;
+  }
 }
 
 .callout--tip {
