@@ -30,7 +30,7 @@ import './blac-sandpack.css';
  * calm by default, source one click away.
  *
  * THEME:
- * Surfaces/accent map to Starlight's `--sl-color-*` variables so the chrome
+ * Surfaces/accent map to the site tokens (`src/styles/tokens.css`) so the chrome
  * tracks light/dark automatically. Syntax token colours can't come from those
  * variables, so they are a hand-tuned palette swapped on the active theme,
  * which we read from `document.documentElement.dataset.theme` (set by
@@ -116,21 +116,21 @@ function useStarlightTheme(): 'light' | 'dark' {
 function buildTheme(mode: 'light' | 'dark'): SandpackTheme {
   return {
     colors: {
-      surface1: 'var(--sl-color-bg)',
-      surface2: 'var(--sl-color-bg-nav, var(--sl-color-gray-6))',
-      surface3: 'var(--sl-color-gray-6)',
-      base: 'var(--sl-color-white)',
-      clickable: 'var(--sl-color-gray-3)',
-      disabled: 'var(--sl-color-gray-4)',
-      hover: 'var(--sl-color-text-accent)',
-      accent: 'var(--sl-color-text-accent)',
-      error: 'var(--sl-color-red, #e45649)',
-      errorSurface: 'var(--sl-color-red-low, rgba(228, 70, 73, 0.14))',
+      surface1: 'var(--bg)',
+      surface2: 'var(--panel, var(--panel-2))',
+      surface3: 'var(--panel-2)',
+      base: 'var(--text)',
+      clickable: 'var(--dim)',
+      disabled: 'var(--line-strong)',
+      hover: 'var(--cable-text)',
+      accent: 'var(--cable-text)',
+      error: 'var(--danger, #e45649)',
+      errorSurface: 'var(--panel-2, rgba(228, 70, 73, 0.14))',
     },
     syntax: mode === 'dark' ? DARK_SYNTAX : LIGHT_SYNTAX,
     font: {
-      body: 'var(--sl-font, sans-serif)',
-      mono: 'var(--sl-font-mono, monospace)',
+      body: 'var(--font-body, sans-serif)',
+      mono: 'var(--font-mono, monospace)',
       size: '13px',
       lineHeight: '1.6',
     },

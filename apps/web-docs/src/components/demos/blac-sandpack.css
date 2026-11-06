@@ -2,17 +2,17 @@
   Chrome for the editable BlacSandpack playground island.
 
   Mirrors the demo islands' approach: every surface/border/accent is pulled from
-  Starlight's `--sl-color-*` custom properties, so the frame tracks the active
+  the site tokens (`src/styles/tokens.css`), so the frame tracks the active
   light/dark theme automatically. Prefixed `blac-sp` to avoid colliding with
   Starlight, Expressive Code, or the `blac-demo-*` island classes.
 */
 
 .blac-sp {
   margin: 1.5rem 0;
-  border: 1px solid var(--sl-color-gray-5);
-  border-radius: var(--blac-radius, 0.75rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 0.75rem);
   overflow: hidden;
-  background-color: var(--sl-color-bg);
+  background-color: var(--bg);
 }
 
 /* Chrome bar -------------------------------------------------------------- */
@@ -22,8 +22,8 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.5rem 0.75rem;
-  background-color: var(--sl-color-gray-6);
-  border-bottom: 1px solid var(--sl-color-gray-5);
+  background-color: var(--panel-2);
+  border-bottom: 1px solid var(--line);
 }
 
 .blac-sp__label {
@@ -33,7 +33,7 @@
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: var(--sl-color-gray-2);
+  color: var(--muted);
   text-transform: uppercase;
 }
 
@@ -41,8 +41,8 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background-color: var(--blac-pink, var(--sl-color-accent));
-  box-shadow: 0 0 0 0 var(--blac-pink, var(--sl-color-accent));
+  background-color: var(--rose, var(--cable));
+  box-shadow: 0 0 0 0 var(--rose, var(--cable));
   animation: blac-sp-pulse 2.4s ease-out infinite;
 }
 
@@ -51,7 +51,7 @@
     box-shadow: 0 0 0 0
       color-mix(
         in srgb,
-        var(--blac-pink, var(--sl-color-accent)) 55%,
+        var(--rose, var(--cable)) 55%,
         transparent
       );
   }
@@ -69,12 +69,12 @@
   gap: 0.4rem;
   padding: 0.3rem 0.75rem;
   font: inherit;
-  font-size: var(--sl-text-xs);
+  font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1;
-  color: var(--sl-color-white);
-  background-color: var(--sl-color-bg);
-  border: 1px solid var(--sl-color-gray-5);
+  color: var(--text);
+  background-color: var(--bg);
+  border: 1px solid var(--line);
   border-radius: 0.5rem;
   cursor: pointer;
   transition:
@@ -84,13 +84,13 @@
 }
 
 .blac-sp__toggle:hover {
-  color: var(--sl-color-text-accent);
-  border-color: var(--sl-color-text-accent);
-  background-color: var(--sl-color-gray-6);
+  color: var(--cable-text);
+  border-color: var(--cable-text);
+  background-color: var(--panel-2);
 }
 
 .blac-sp__toggle:focus-visible {
-  outline: 2px solid var(--sl-color-accent-high);
+  outline: 2px solid var(--cable-text);
   outline-offset: 2px;
 }
 
@@ -114,7 +114,7 @@
 
 .blac-sp__editor {
   flex: 1 1 50%;
-  border-right: 1px solid var(--sl-color-gray-5);
+  border-right: 1px solid var(--line);
 }
 
 .blac-sp__preview {
@@ -134,7 +134,7 @@
 }
 
 .blac-sp__console {
-  border-top: 1px solid var(--sl-color-gray-5);
+  border-top: 1px solid var(--line);
 }
 
 /* Stack editor over preview on narrow screens. */
@@ -144,6 +144,6 @@
   }
   .blac-sp__editor {
     border-right: none;
-    border-bottom: 1px solid var(--sl-color-gray-5);
+    border-bottom: 1px solid var(--line);
   }
 }

@@ -81,12 +81,12 @@ const STATUS_STYLES: Record<
   { background: string; color: string }
 > = {
   idle: {
-    background: 'var(--sl-color-gray-6)',
-    color: 'var(--sl-color-gray-2)',
+    background: 'var(--panel-2)',
+    color: 'var(--muted)',
   },
   loading: {
-    background: 'color-mix(in srgb, var(--sl-color-accent) 20%, transparent)',
-    color: 'var(--sl-color-accent-high)',
+    background: 'color-mix(in srgb, var(--cable) 20%, transparent)',
+    color: 'var(--cable-text)',
   },
   success: {
     background: 'color-mix(in srgb, #22c55e 20%, transparent)',
@@ -106,9 +106,9 @@ function StatusBadge({ status }: { status: AsyncDemoState['status'] }) {
         display: 'inline-block',
         padding: '0.15rem 0.6rem',
         borderRadius: '999px',
-        fontSize: 'var(--sl-text-xs)',
+        fontSize: '0.8125rem',
         fontWeight: 700,
-        fontFamily: 'var(--sl-font-mono, monospace)',
+        fontFamily: 'var(--font-mono, monospace)',
         letterSpacing: '0.03em',
         textTransform: 'uppercase',
         ...s,
@@ -190,8 +190,8 @@ function AsyncStateView({ id }: { id: string }) {
               onClick={demo.reset}
               style={{
                 background: 'transparent',
-                borderColor: 'var(--sl-color-gray-5)',
-                color: 'var(--sl-color-gray-2)',
+                borderColor: 'var(--line)',
+                color: 'var(--muted)',
               }}
             >
               Reset

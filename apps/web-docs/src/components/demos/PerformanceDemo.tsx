@@ -155,8 +155,8 @@ export function PerformanceDemo() {
       <DashControls id={id} />
       <p
         style={{
-          fontSize: 'var(--sl-text-xs)',
-          color: 'var(--sl-color-gray-3)',
+          fontSize: '0.8125rem',
+          color: 'var(--dim)',
           margin: '0 0 0.4rem',
         }}
       >
@@ -169,8 +169,8 @@ export function PerformanceDemo() {
       </div>
       <p
         style={{
-          fontSize: 'var(--sl-text-xs)',
-          color: 'var(--sl-color-gray-3)',
+          fontSize: '0.8125rem',
+          color: 'var(--dim)',
           margin: '0 0 0.4rem',
         }}
       >

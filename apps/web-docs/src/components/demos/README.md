@@ -15,7 +15,7 @@ pages only. See its own section below.
 | ------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `DemoFrame.tsx`     | Theme-synced bordered chrome with an optional label. Wrap every demo.                                            |
 | `RenderCounter.tsx` | Counts real renders (increments a **ref in the render body**). The workhorse for proving re-render isolation.    |
-| `demos.css`         | All chrome styles, keyed off Starlight's `--sl-*` theme variables (auto light/dark). Imported by the components. |
+| `demos.css`         | All chrome styles, keyed off the site tokens in `src/styles/tokens.css` (auto light/dark). Imported by the components. |
 | `CounterDemo.tsx`   | The reference island. Copy its shape for new demos.                                                              |
 
 ### Authoring a new island
@@ -112,4 +112,4 @@ import { tutorialInteractiveFiles } from '../../../components/demos/tutorial-san
 Props: `files` (path → source map) or `code` (single-file shorthand for
 `/App.tsx`); `activeFile`, `editorHeight`, `showConsole`, `defaultOpen`. The
 chrome opens preview-only with a **View code** toggle, and theme-syncs to
-Starlight's `--sl-color-*` variables.
+the site tokens (`src/styles/tokens.css`).
