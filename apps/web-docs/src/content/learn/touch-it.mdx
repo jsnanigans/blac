@@ -1,0 +1,89 @@
+---
+title: Touch it, <em>you're subscribed.</em>
+order: 1
+kicker: Auto-tracking
+lede: A component re-renders when a value it read during its last render changes. State it didn't read can change as often as it likes without reaching it. There are no selectors to write and no dependency arrays to keep in sync. Here is how that works, with BlaC running on the stage.
+description: An interactive chapter on blac's auto-tracking. Reading a value during render subscribes the component to that value, re-wired on every render, compared leaf by leaf.
+doc: react/dependency-tracking
+---
+
+import Scrolly from '../../components/kit/Scrolly.astro';
+import Beat from '../../components/kit/Beat.astro';
+import TrackingStage from '../../stages/touch-it/TrackingStage.tsx';
+
+The stage is a patch bay. On the left is a `ProfileCubit` module, with one jack for each value in its state. On the right are two React components, each using `useBloc(ProfileCubit)`. A cable runs from a jack to a component when the component read that value during its last render. When a value changes, a pulse travels down its cables, and only the components at the other end re-render. The render counts are real.
+
+<Scrolly>
+  <TrackingStage client:visible slot="stage" />
+
+  <Beat id="reader" title="A component is a <em>reader</em>.">
+
+`<Profile>` renders `state.user.name`, and that is its only cable. Watch the stage while the email changes: the jack fires, no cable carries the signal, and Profile's render count stays where it is. Then the name changes, and Profile lights up.
+
+```tsx
+function Profile() {
+  const [state] = useBloc(ProfileCubit);
+  return <strong>{state.user.name}</strong>;
+}
+```
+
+  </Beat>
+
+  <Beat id="proxy" title="Reading <em>is</em> subscribing.">
+
+During render, `state` is not the plain object. `useBloc` hands the component a proxy that writes down every path it touches. When the render finishes, that list becomes the component's subscription.
+
+The strip under each component on the stage shows what its last render read. Profile is showing the email now, so it reads two values and has two cables. Your JSX is the subscription.
+
+  </Beat>
+
+  <Beat id="conditional" title="Every render <em>re-wires</em>.">
+
+The list is rebuilt on every render. When `showEmail` turns on, the next render reads `user.email` and a second cable plugs in. When it turns off, the next render doesn't read it, and the cable comes out. From then on, email changes no longer reach Profile.
+
+```tsx
+<strong>{state.user.name}</strong>
+{showEmail && <span>{state.user.email}</span>}
+```
+
+A component pays only for what it shows right now, not for everything it might show.
+
+  </Beat>
+
+  <Beat id="leaves" title="Values, not <em>objects</em>.">
+
+Subscriptions hold the leaves a component read, and they compare values. On the stage, `user` is replaced with a new object holding the same name and email. Nothing Profile read has changed, so it does not re-render. Setting a value to what it already is does nothing either.
+
+You don't need to keep object identity stable to stay fast. Only changes to values a component read can re-render it.
+
+  </Beat>
+
+  <Beat id="lists" title="Lists track <em>what you map</em>.">
+
+`items.map(…)` reads the list's length and, for each item, the fields the callback touches. TodoList renders titles, so toggling an item's `done` flag leaves it dark. Changing a title or adding an item lights it up.
+
+```tsx
+<ul>
+  {state.items.map((t) => (
+    <li key={t.title}>{t.title}</li>
+  ))}
+</ul>
+```
+
+  </Beat>
+
+  <Beat id="play" title="Your turn.">
+
+Press any jack and predict what lights up before it does. Turn on **Show renders** in the top bar to get the same outlines on every demo in these docs.
+
+When automatic tracking isn't what you want, `useBloc` takes a `select` function and tracks exactly the values it returns. The reference covers it, along with the edge cases.
+
+  </Beat>
+</Scrolly>
+
+## What to take away
+
+- A component subscribes to the values it reads during render, not to the whole state.
+- The subscription is re-recorded on every render, so conditional UI subscribes conditionally.
+- Changes are compared value by value: a new object with the same values re-renders nobody.
+- Lists track their length and the fields each item's callback reads.

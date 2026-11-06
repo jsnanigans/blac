@@ -1,0 +1,53 @@
+---
+interface Props {
+  /** Tabs sharing a key switch together across the site (e.g. package manager). */
+  syncKey?: string;
+}
+const { syncKey } = Astro.props;
+---
+
+<blac-tabs data-sync-key={syncKey}>
+  <div class="tab-list" role="tablist"></div>
+  <slot />
+</blac-tabs>
+
+<script>
+  import '../../scripts/tabs';
+</script>
+
+<style>
+  blac-tabs {
+    display: block;
+    margin-bottom: 1.5rem;
+  }
+
+  .tab-list {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .tab-list :global(button) {
+    padding: 0.3rem 0.8rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--dim);
+    font: 600 0.8rem var(--font-mono);
+    cursor: pointer;
+  }
+
+  .tab-list :global(button:hover) {
+    color: var(--text);
+  }
+
+  .tab-list :global(button[aria-selected='true']) {
+    border-color: var(--line-strong);
+    background: var(--panel-2);
+    color: var(--text);
+  }
+
+  blac-tabs :global(.tab-panel > :last-child) {
+    margin-bottom: 0;
+  }
+</style>

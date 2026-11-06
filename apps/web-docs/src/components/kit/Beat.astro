@@ -1,0 +1,76 @@
+---
+interface Props {
+  id: string;
+  title: string;
+}
+const { id, title } = Astro.props;
+---
+
+<section class="beat" id={id} data-beat={id} data-title={title}>
+  <p class="beat-num kicker" aria-hidden="true"></p>
+  <h2 class="beat-title" set:html={title} />
+  <div class="beat-body"><slot /></div>
+</section>
+
+<style>
+  .beat {
+    counter-increment: beat;
+    min-height: 72vh;
+    padding: 2rem 0;
+    opacity: 0.32;
+    transition: opacity var(--decay) var(--ease);
+  }
+
+  .beat:global(.active) {
+    opacity: 1;
+    transition-duration: 220ms;
+  }
+
+  .beat-num::before {
+    content: counter(beat, decimal-leading-zero);
+    font-size: 1.15rem;
+  }
+
+  .beat-num {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .beat-num::after {
+    content: '';
+    flex: 0 0 2.5rem;
+    height: 1px;
+    background: var(--line-strong);
+  }
+
+  .beat:global(.active) .beat-num {
+    color: var(--lit-text);
+    text-shadow: var(--glow-text);
+  }
+
+  .beat-title {
+    margin: 0 0 1.15rem;
+    font-size: clamp(1.7rem, 3.2vw, 2.5rem);
+  }
+
+  .beat-title :global(em) {
+    color: var(--lit-text);
+    font-style: normal;
+  }
+
+  .beat-body {
+    color: var(--muted);
+  }
+
+  .beat-body :global(strong) {
+    color: var(--text);
+  }
+
+  @media (max-width: 900px) {
+    .beat {
+      min-height: 58svh;
+    }
+  }
+</style>

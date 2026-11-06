@@ -1,0 +1,57 @@
+---
+// Beats on the left, a sticky live stage on the right (on top on phones).
+// The beat crossing the reading band gets `.active` and a bubbling `beat`
+// event (detail = id) that stages pick up with `useBeat`.
+---
+
+<blac-scrolly class="scrolly">
+  <div class="beats prose"><slot /></div>
+  <div class="stage-wrap"><slot name="stage" /></div>
+</blac-scrolly>
+
+<script>
+  import '../../scripts/scrolly';
+</script>
+
+<style>
+  .scrolly {
+    counter-reset: beat;
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(2rem, 5vw, 5rem);
+    margin: 2rem 0;
+  }
+
+  .beats {
+    padding: 14vh 0 36vh;
+  }
+
+  .stage-wrap {
+    position: sticky;
+    top: calc(var(--topbar) + 6vh);
+    align-self: start;
+    height: calc(88vh - var(--topbar));
+    min-height: 420px;
+  }
+
+  @media (max-width: 900px) {
+    .scrolly {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+    }
+
+    .stage-wrap {
+      order: -1;
+      top: var(--topbar);
+      z-index: 10;
+      height: 50svh;
+      min-height: 320px;
+      padding: 0.5rem 0;
+      background: var(--bg);
+    }
+
+    .beats {
+      padding: 2rem 0 30vh;
+    }
+  }
+</style>

@@ -1,0 +1,147 @@
+/* Shared chrome for chapter stages: a panel filling the sticky stage slot. */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 1.5px) 0 0 /
+      18px 18px,
+    color-mix(in srgb, var(--panel) 50%, var(--bg));
+  overflow: hidden;
+}
+
+.stage-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.stage-caption {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-led {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--power);
+  box-shadow: 0 0 8px var(--power);
+}
+
+.stage-bay {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 16.5rem) minmax(0, 1fr);
+  gap: clamp(3rem, 6vw, 5.5rem);
+  align-items: center;
+  min-height: 0;
+  padding: 1.25rem;
+  overflow: auto;
+}
+
+.stage-bay .module {
+  z-index: 2;
+}
+
+.stage-units {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.unit-sub {
+  display: block;
+  color: var(--muted);
+  font: 0.8rem var(--font-mono);
+}
+
+.unit-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+  color: var(--muted);
+  font: 0.75rem var(--font-mono);
+  cursor: pointer;
+}
+
+.unit-toggle input {
+  accent-color: var(--lit);
+}
+
+.unit-list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.92rem;
+}
+
+.tape {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+  margin: 0.55rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--line);
+  color: var(--dim);
+  font: 0.7rem var(--font-mono);
+}
+
+.tape code {
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--cobalt-text);
+}
+
+@media (max-width: 900px) {
+  .stage-bay {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 1.75rem;
+    padding: 0.6rem;
+    font-size: 0.88em;
+  }
+
+  .stage-bay .module {
+    padding: 0.6rem 0.5rem;
+  }
+
+  .stage-bay .jack-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 0.3rem 0.1rem 0.3rem 0.3rem;
+  }
+
+  .stage-bay .jack-value,
+  .stage-bay .jack-row .fire,
+  .stage-bay .tape,
+  .stage-bay .unit-toggle,
+  .stage-bay .renders-word {
+    display: none;
+  }
+
+  .stage-bay .unit {
+    padding: 0.55rem 0.6rem 0.6rem 1.1rem;
+  }
+
+  .stage-bay .unit-name {
+    flex-wrap: wrap;
+  }
+
+  .stage-bay .power {
+    display: none;
+  }
+}

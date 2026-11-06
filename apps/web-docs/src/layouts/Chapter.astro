@@ -1,0 +1,286 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Base from './Base.astro';
+import { docHref } from '../lib/nav';
+import { pad2, plain, readingMinutes } from "../lib/format";
+import '../styles/prose.css';
+
+interface Props {
+  entry: CollectionEntry<'learn'>;
+}
+
+const { entry } = Astro.props;
+const { title, kicker, lede, order, doc } = entry.data;
+const chapters = (await getCollection('learn')).sort((a, b) => a.data.order - b.data.order);
+const next = chapters[chapters.indexOf(chapters.find((c) => c.id === entry.id)!) + 1];
+const ref = doc ? (await getCollection('docs')).find((d) => d.id === doc) : undefined;
+const num = pad2(order);
+---
+
+<Base title={plain(title)} description={lede} theme="dark" section="learn">
+  <article class="chapter" data-pagefind-body>
+    <chapter-progress>
+      <div class="progress-bar" aria-hidden="true"><span></span></div>
+      <nav class="rail" aria-label="Beats"><ol></ol></nav>
+    </chapter-progress>
+
+    <header class="intro">
+      <span class="numeral" aria-hidden="true">{num}</span>
+      <p class="kicker"><span class="on">Chapter {num}</span> · {kicker}</p>
+      <h1 set:html={title} />
+      <p class="lede">{lede}</p>
+      <ul class="meta kicker">
+        <li><strong>{readingMinutes(entry.body ?? '')}</strong> min</li>
+        <li>real BlaC, running live</li>
+      </ul>
+      <a class="scroll-cue kicker" href="#chapter-start">Scroll <span aria-hidden="true">↓</span></a>
+    </header>
+
+    <div class="body" id="chapter-start">
+      <slot />
+    </div>
+
+    <footer class="outro" data-pagefind-ignore>
+      <p class="kicker">Keep going</p>
+      <nav class="outro-cards" aria-label="Continue">
+        {
+          ref && (
+            <a class="outro-card" href={docHref(ref.id)}>
+              <span class="kicker">Reference</span>
+              <strong>{ref.data.title}</strong>
+              {ref.data.description && <span class="outro-text">{ref.data.description}</span>}
+            </a>
+          )
+        }
+        {
+          next ? (
+            <a class="outro-card is-next" href={`/learn/${next.id}/`}>
+              <span class="kicker">
+                Chapter {pad2(next.data.order)} · {next.data.kicker}
+              </span>
+              <strong>
+                Next: <Fragment set:html={next.data.title} /> <span aria-hidden="true">→</span>
+              </strong>
+              <span class="outro-text">{next.data.lede}</span>
+            </a>
+          ) : (
+            <a class="outro-card is-next" href="/learn/">
+              <span class="kicker">Learn</span>
+              <strong>
+                All chapters <span aria-hidden="true">→</span>
+              </strong>
+              <span class="outro-text">That was the last chapter, for now.</span>
+            </a>
+          )
+        }
+      </nav>
+    </footer>
+  </article>
+</Base>
+
+<script>
+  import '../scripts/chapter';
+</script>
+
+<style>
+  .chapter {
+    position: relative;
+  }
+
+  .progress-bar {
+    position: fixed;
+    top: var(--topbar);
+    left: 0;
+    right: 0;
+    z-index: 49;
+    height: 2px;
+  }
+
+  .progress-bar span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--cobalt), var(--cable), var(--rose), var(--lit));
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  .rail {
+    position: fixed;
+    top: 50%;
+    left: max(0.75rem, calc((100vw - var(--max)) / 2 - 11rem));
+    z-index: 5;
+    width: 10rem;
+    opacity: 0;
+    transform: translateY(-50%);
+    transition: opacity 300ms var(--ease);
+    pointer-events: none;
+  }
+
+  chapter-progress:global(.in-body) .rail {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .rail ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rail :global(a) {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.2rem 0;
+    color: var(--dim);
+    font: 600 0.72rem/1.4 var(--font-mono);
+    text-decoration: none;
+  }
+
+  .rail :global(.rail-title) {
+    opacity: 0;
+    transition: opacity 200ms;
+  }
+
+  .rail:hover :global(.rail-title),
+  .rail :global(a[aria-current] .rail-title) {
+    opacity: 1;
+  }
+
+  .rail :global(a[aria-current]) {
+    color: var(--lit-text);
+  }
+
+  .intro {
+    position: relative;
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: clamp(5rem, 12vw, 9rem) var(--gutter) 3rem;
+  }
+
+  .numeral {
+    position: absolute;
+    top: clamp(2rem, 6vw, 4rem);
+    right: var(--gutter);
+    color: transparent;
+    font: 800 clamp(8rem, 22vw, 18rem) / 1 var(--font-display);
+    letter-spacing: -0.06em;
+    -webkit-text-stroke: 1px var(--line-strong);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  h1 {
+    position: relative;
+    max-width: 15ch;
+    margin-top: 1.25rem;
+    font-size: clamp(2.8rem, 7.5vw, 6rem);
+    letter-spacing: -0.045em;
+  }
+
+  h1 :global(em) {
+    color: var(--lit-text);
+    font-style: normal;
+    text-shadow: var(--glow-text);
+  }
+
+  .lede {
+    position: relative;
+    max-width: 54ch;
+    margin: 1.75rem 0 0;
+    color: var(--muted);
+    font-size: 1.2rem;
+  }
+
+  .meta {
+    display: flex;
+    gap: 1.5rem;
+    margin: 2rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .meta strong {
+    color: var(--text);
+  }
+
+  .scroll-cue {
+    display: inline-block;
+    margin-top: 3.5rem;
+    color: var(--lit-text);
+    text-decoration: none;
+    animation: cue 1.8s ease-in-out infinite;
+  }
+
+  @keyframes cue {
+    50% {
+      transform: translateY(6px);
+      opacity: 0.5;
+    }
+  }
+
+  .body {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  /* Prose between scrolly sections reads at prose width. */
+  .body > :global(:not(blac-scrolly)) {
+    max-width: var(--prose);
+  }
+
+  .body > :global(p) {
+    color: var(--muted);
+    font-size: 1.08rem;
+    line-height: 1.75;
+  }
+
+  .outro {
+    max-width: var(--max);
+    margin: 4rem auto 0;
+    padding: 4rem var(--gutter) 6rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .outro-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: 1rem;
+    margin-top: 1.25rem;
+  }
+
+  .outro-card {
+    display: grid;
+    gap: 0.5rem;
+    align-content: start;
+    padding: 1.5rem 1.6rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--panel);
+    text-decoration: none;
+    transition: border-color 160ms var(--ease);
+  }
+
+  .outro-card:hover {
+    border-color: var(--line-strong);
+  }
+
+  .outro-card.is-next:hover {
+    border-color: var(--lit);
+  }
+
+  .outro-card strong {
+    font: 700 1.4rem/1.2 var(--font-display);
+    letter-spacing: -0.02em;
+  }
+
+  .outro-text {
+    color: var(--muted);
+  }
+
+  @media (max-width: 1500px) {
+    .rail {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,129 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { pad2, readingMinutes } from '../../lib/format';
+
+const chapters = (await getCollection('learn')).sort((a, b) => a.data.order - b.data.order);
+---
+
+<Base
+  title="Learn"
+  description="Interactive chapters that take BlaC apart one idea at a time, with the real library running on every stage."
+  theme="dark"
+  section="learn"
+>
+  <main id="main" class="learn">
+    <header>
+      <p class="kicker"><span class="on">Learn</span> · {chapters.length} chapters</p>
+      <h1>Patch it in. <em>Watch it light up.</em></h1>
+      <p class="lede">
+        Each chapter takes one idea apart, step by step, while the real library runs on the stage beside the
+        text. Scroll to advance; the last step is always yours to play with.
+      </p>
+    </header>
+    <ol class="chapters">
+      {
+        chapters.map((c) => (
+          <li>
+            <a href={`/learn/${c.id}/`}>
+              <span class="num">{pad2(c.data.order)}</span>
+              <span class="copy">
+                <span class="kicker">{c.data.kicker}</span>
+                <strong set:html={c.data.title} />
+                <span class="text">{c.data.lede}</span>
+              </span>
+              <span class="kicker mins">{readingMinutes(c.body ?? '')} min</span>
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+  </main>
+</Base>
+
+<style>
+  .learn {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: clamp(4rem, 10vw, 8rem) var(--gutter) 6rem;
+  }
+
+  h1 {
+    max-width: 16ch;
+    margin-top: 1.25rem;
+    font-size: clamp(2.6rem, 7vw, 5.25rem);
+    letter-spacing: -0.045em;
+  }
+
+  h1 em {
+    color: var(--lit-text);
+    font-style: normal;
+    text-shadow: var(--glow-text);
+  }
+
+  .lede {
+    max-width: 56ch;
+    margin: 1.5rem 0 0;
+    color: var(--muted);
+    font-size: 1.15rem;
+  }
+
+  .chapters {
+    margin: 4rem 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--line);
+  }
+
+  .chapters a {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 1fr) auto;
+    gap: 1.5rem;
+    align-items: baseline;
+    padding: 2.25rem 0.5rem;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+  }
+
+  .num {
+    color: var(--dim);
+    font: 700 2.4rem/1 var(--font-display);
+    transition: color 200ms;
+  }
+
+  .copy {
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .copy strong {
+    font: 700 clamp(1.6rem, 3.4vw, 2.4rem) / 1.1 var(--font-display);
+    letter-spacing: -0.03em;
+  }
+
+  .copy strong :global(em) {
+    font-style: normal;
+  }
+
+  .text {
+    max-width: 62ch;
+    color: var(--muted);
+  }
+
+  .chapters a:hover .num,
+  .chapters a:hover strong :global(em) {
+    color: var(--lit-text);
+    text-shadow: var(--glow-text);
+  }
+
+  @media (max-width: 720px) {
+    .chapters a {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    .mins {
+      display: none;
+    }
+  }
+</style>
