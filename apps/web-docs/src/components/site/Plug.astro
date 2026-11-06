@@ -1,0 +1,29 @@
+---
+// The logo's plug laid flat, tip pointing right, trailing a straight cable.
+---
+
+<svg class="plug" viewBox="0 22 62 20" aria-hidden="true">
+  <path d="M0 32H18" stroke="var(--cable-lo)" stroke-width="5"></path>
+  <path d="M0 31H18" stroke="var(--cable)" stroke-width="2.5"></path>
+  <rect x="16" y="23" width="20" height="18" rx="4" fill="var(--cable)"></rect>
+  <path d="M16 33H36V37a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4Z" fill="var(--cable-lo)"></path>
+  <path d="M21 23h2v18h-2zM25 23h2v18h-2z" fill="var(--cable-lo)"></path>
+  <path d="M35 28h10v8H35zM46.5 28h5v8h-5z" fill="var(--cobalt)"></path>
+  <path d="M35 33h10v3H35zM46.5 33h5v3h-5z" fill="var(--cobalt-lo)"></path>
+  <path class="plug-tip" d="M53 28h3a6 4 0 0 1 0 8h-3Z"></path>
+</svg>
+
+<style>
+  .plug {
+    width: 46px;
+    height: 15px;
+    overflow: visible;
+  }
+
+  .plug-tip {
+    fill: var(--cobalt);
+    transition:
+      fill 200ms var(--ease),
+      filter 200ms var(--ease);
+  }
+</style>

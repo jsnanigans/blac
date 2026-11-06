@@ -127,29 +127,89 @@ pre {
   font: 600 0.95rem/1 var(--font-body);
   text-decoration: none;
   cursor: pointer;
+  /* A hardware key: it sits on a ledge and travels down when pressed. */
+  box-shadow: 0 3px 0 var(--line-strong);
   transition:
     border-color 160ms var(--ease),
     background 160ms var(--ease),
-    transform 160ms var(--ease);
+    box-shadow 90ms var(--ease),
+    transform 90ms var(--ease);
 }
 
 .btn:hover {
   border-color: var(--text);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 var(--line-strong);
 }
 
 .btn:active {
-  transform: translateY(1px);
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--line-strong);
 }
 
 .btn.primary {
   border-color: var(--lit);
   background: var(--lit);
   color: #160f00;
+  box-shadow: 0 3px 0 var(--lit-lo);
 }
 
 .btn.primary:hover {
   background: var(--lit-hot);
   border-color: var(--lit-hot);
+  box-shadow:
+    0 4px 0 var(--lit-lo),
+    0 0 24px rgb(255 178 30 / 0.45);
+}
+
+.btn.primary:active {
+  box-shadow: 0 0 0 var(--lit-lo);
+}
+
+/*
+  A plug and the jack it's headed for (Plug.astro + .wire-jack). Hovering the link
+  pushes the plug home and the jack lights. `.is-back` points the plug left.
+*/
+.wire {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wire.is-back .plug {
+  transform: scaleX(-1);
+}
+
+.wire .plug {
+  transition: translate 260ms var(--ease);
+}
+
+.wire-jack {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--bg) 0 30%, var(--line-strong) 38% 100%);
+  transition:
+    background 200ms var(--ease) 120ms,
+    box-shadow 200ms var(--ease) 120ms;
+}
+
+:is(a:hover, a:focus-visible) .wire .plug {
+  translate: 8px 0;
+}
+
+:is(a:hover, a:focus-visible) .wire.is-back .plug {
+  translate: -8px 0;
+}
+
+:is(a:hover, a:focus-visible) .wire .plug-tip {
+  fill: var(--lit);
+}
+
+:is(a:hover, a:focus-visible) .wire-jack {
+  background: radial-gradient(circle, var(--lit-hot) 0 30%, var(--lit) 38% 100%);
+  box-shadow: 0 0 12px var(--lit);
 }
 
 /* Something re-rendered or a signal fired: light up, then decay (see patchbay/site.ts). */
@@ -160,6 +220,18 @@ pre {
 @keyframes lit {
   from {
     box-shadow: var(--glow-lit);
+  }
+}
+
+/* A jack taking a plug: flashes amber, then settles to the seated colour (--seated). */
+@keyframes plug-in {
+  0% {
+    transform: scale(0.6);
+  }
+  35% {
+    transform: scale(1.25);
+    background: var(--lit);
+    box-shadow: 0 0 14px var(--lit);
   }
 }
 
