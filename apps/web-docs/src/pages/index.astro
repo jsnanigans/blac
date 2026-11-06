@@ -2,6 +2,7 @@
 import { Code } from 'astro-expressive-code/components';
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
+import Plug from '../components/site/Plug.astro';
 import HeroBay from '../stages/hero/HeroBay.tsx';
 import CounterDemo from '../components/demos/CounterDemo.tsx';
 import { docHref, GITHUB } from '../lib/nav';
@@ -151,8 +152,11 @@ it('totals the cart', () => {
           IDEAS.map((idea, i) => {
             const chapter = chapterFor(idea.chapter);
             return (
-              <li>
-                <span class="idea-num">{pad2(i + 1)}</span>
+              <li data-wire>
+                <span class="idea-num">
+                  <span class="idea-jack" aria-hidden="true" />
+                  {pad2(i + 1)}
+                </span>
                 <div>
                   <h3>{idea.title}</h3>
                   <p set:html={idea.text} />
@@ -186,6 +190,10 @@ it('totals the cart', () => {
               <span class="kicker">{p.role}</span>
               <code>{p.name}</code>
               <p>{p.text}</p>
+              <span class="wire" aria-hidden="true">
+                <Plug />
+                <span class="wire-jack" />
+              </span>
             </a>
           ))
         }
@@ -205,8 +213,12 @@ it('totals the cart', () => {
       <Code code={TEST} lang="ts" title="cart.test.ts" />
     </section>
 
-    <section class="close">
-      <h2>Plug in.</h2>
+    <section class="close" data-wire>
+      <div class="close-wire" aria-hidden="true">
+        <Plug />
+        <span class="close-jack"></span>
+      </div>
+      <h2>Plug <em>in.</em></h2>
       <p>Start with the first chapter, or go straight to the reference.</p>
       <div class="actions">
         <a class="btn primary" href="/learn/">Start learning</a>
@@ -219,6 +231,9 @@ it('totals the cart', () => {
 
 <script>
   import '../scripts/copy';
+  import { wire } from '../scripts/wire';
+
+  wire('[data-wire]');
 </script>
 
 <style>
@@ -257,7 +272,7 @@ it('totals the cart', () => {
   h1 {
     margin-top: 1.4rem;
     font-size: clamp(2.9rem, 6vw, 4.9rem);
-    letter-spacing: -0.05em;
+    letter-spacing: -0.03em;
     line-height: 0.98;
   }
 
@@ -328,7 +343,7 @@ it('totals the cart', () => {
   h2 {
     margin-top: 1rem;
     font-size: clamp(2rem, 4.4vw, 3.4rem);
-    letter-spacing: -0.04em;
+    letter-spacing: -0.03em;
   }
 
   .section-lede {
@@ -362,6 +377,7 @@ it('totals the cart', () => {
   }
 
   .idea-list li {
+    position: relative;
     display: grid;
     grid-template-columns: 5rem minmax(0, 1fr) auto;
     gap: 2rem;
@@ -370,15 +386,45 @@ it('totals the cart', () => {
     border-bottom: 1px solid var(--line);
   }
 
+  /* Each idea is a numbered jack; it takes a plug and lights as it scrolls in, and again on hover. */
   .idea-num {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
     color: var(--dim);
     font: 700 1.6rem var(--font-mono);
-    transition: color 300ms;
+    transition:
+      color 300ms,
+      text-shadow 300ms;
+  }
+
+  .idea-jack {
+    width: 0.7em;
+    height: 0.7em;
+    flex: none;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--cable-hi) 0 28%, var(--cable) 36% 100%);
+    transition:
+      background 200ms var(--ease),
+      box-shadow 200ms var(--ease);
+  }
+
+  :global(.wired) .idea-list li:not(.is-on) .idea-jack {
+    background: radial-gradient(circle, var(--bg) 0 30%, var(--line-strong) 38% 100%);
+  }
+
+  :global(.wired) .idea-list li.is-on .idea-jack {
+    animation: plug-in 700ms var(--ease);
   }
 
   .idea-list li:hover .idea-num {
     color: var(--lit-text);
     text-shadow: var(--glow-text);
+  }
+
+  .idea-list li:hover .idea-jack {
+    background: radial-gradient(circle, var(--lit-hot) 0 28%, var(--lit) 36% 100%);
+    box-shadow: 0 0 14px var(--lit);
   }
 
   .idea-list h3 {
@@ -422,6 +468,7 @@ it('totals the cart', () => {
   }
 
   .package {
+    position: relative;
     display: grid;
     gap: 0.6rem;
     align-content: start;
@@ -434,6 +481,24 @@ it('totals the cart', () => {
 
   .package:hover {
     background: var(--panel);
+  }
+
+  /* Faceplate screws. */
+  .package::before {
+    --s: var(--screw) 0 2px, transparent 2.6px;
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 10px 10px, var(--s)),
+      radial-gradient(circle at calc(100% - 10px) 10px, var(--s));
+    pointer-events: none;
+  }
+
+  .package .wire {
+    align-self: end;
+    justify-content: flex-end;
+    margin-top: 0.6rem;
   }
 
   .package code {
@@ -467,6 +532,55 @@ it('totals the cart', () => {
 
   .close h2 {
     font-size: clamp(3rem, 9vw, 6.5rem);
+  }
+
+  /* The finale: as it scrolls in, a big plug slides home, the jack flashes and "in." lights. */
+  .close-wire {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 22px;
+    margin-bottom: 1.5rem;
+  }
+
+  .close-wire :global(.plug) {
+    width: 138px;
+    height: 45px;
+    transition: translate 600ms cubic-bezier(0.5, 1.6, 0.4, 1) 200ms;
+  }
+
+  .close-jack {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--lit-hot) 0 30%, var(--lit) 38% 100%);
+    box-shadow: 0 0 30px var(--lit);
+    transition:
+      background 200ms var(--ease) 650ms,
+      box-shadow 400ms var(--ease) 650ms;
+  }
+
+  .close h2 em {
+    font-style: normal;
+    color: var(--lit-text);
+    text-shadow: var(--glow-text);
+    transition:
+      color 300ms var(--ease) 700ms,
+      text-shadow 300ms var(--ease) 700ms;
+  }
+
+  :global(.wired) .close:not(.is-on) .close-wire :global(.plug) {
+    translate: -48px 0;
+  }
+
+  :global(.wired) .close:not(.is-on) .close-jack {
+    background: radial-gradient(circle, var(--bg) 0 30%, var(--line-strong) 38% 100%);
+    box-shadow: none;
+  }
+
+  :global(.wired) .close:not(.is-on) h2 em {
+    color: var(--text);
+    text-shadow: none;
   }
 
   .close p {
