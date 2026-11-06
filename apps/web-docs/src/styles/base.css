@@ -1,0 +1,178 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  scroll-padding-top: calc(var(--topbar) + 1rem);
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  background: var(--bg);
+  overflow-x: clip;
+}
+
+img,
+svg,
+video,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--font-mono);
+}
+
+::selection {
+  background: var(--lit);
+  color: #120d00;
+}
+
+:focus-visible {
+  outline: 2px solid var(--lit);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Silkscreen label: the small uppercase print on a module panel. */
+.kicker {
+  margin: 0;
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.kicker .on {
+  color: var(--lit-text);
+}
+
+/* A jack: ring with a hole. Used as bullet, numeral badge, nav marker. */
+.jack {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--bg) 0 30%, var(--line-strong) 32% 58%, var(--screw) 60% 100%);
+}
+
+.jack.is-cobalt {
+  background: radial-gradient(circle, var(--bg) 0 30%, var(--cobalt) 32% 100%);
+}
+
+.jack.is-rose {
+  background: radial-gradient(circle, var(--bg) 0 30%, var(--rose) 32% 100%);
+}
+
+.jack.is-hot {
+  background: radial-gradient(circle, var(--lit-hot) 0 30%, var(--lit) 32% 100%);
+  box-shadow: 0 0 10px var(--lit);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.6rem 1.15rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--text);
+  font: 600 0.95rem/1 var(--font-body);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color 160ms var(--ease),
+    background 160ms var(--ease),
+    transform 160ms var(--ease);
+}
+
+.btn:hover {
+  border-color: var(--text);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn.primary {
+  border-color: var(--lit);
+  background: var(--lit);
+  color: #160f00;
+}
+
+.btn.primary:hover {
+  background: var(--lit-hot);
+  border-color: var(--lit-hot);
+}
+
+/* Something re-rendered or a signal fired: light up, then decay (see patchbay/site.ts). */
+.is-lit {
+  animation: lit var(--decay) var(--ease);
+}
+
+@keyframes lit {
+  from {
+    box-shadow: var(--glow-lit);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

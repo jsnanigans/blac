@@ -1,0 +1,93 @@
+---
+import '../styles/fonts.css';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import Header from '../components/site/Header.astro';
+import Footer from '../components/site/Footer.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Pin the theme (the website and Learn are panel-dark); omit to follow the reader's choice. */
+  theme?: 'dark' | 'light';
+  /** Section the page belongs to, for the active topnav link. */
+  section?: 'home' | 'learn' | 'docs' | 'blog' | 'rfcs';
+}
+
+const {
+  title,
+  description = 'BlaC puts state and business logic in plain TypeScript classes. Components read what they need and re-render only when those values change.',
+  theme,
+  section,
+} = Astro.props;
+
+const fullTitle = title ? `${title} · BlaC` : 'BlaC · Components render. Classes think.';
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en" data-theme={theme ?? 'dark'} data-force-theme={theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:type" content="website" />
+    <link
+      rel="preload"
+      href="/fonts/hanken-grotesk-latin-wght-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="preload"
+      href="/fonts/bricolage-grotesque-latin-opsz-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
+    <script is:inline>
+      (() => {
+        const root = document.documentElement;
+        if (root.dataset.forceTheme) return;
+        let theme = null;
+        try {
+          theme = localStorage.getItem('blac-theme');
+        } catch {
+          // Storage blocked: follow the system preference.
+        }
+        root.dataset.theme =
+          theme ?? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      })();
+    </script>
+  </head>
+  <body data-section={section}>
+    <a class="skip" href="#main">Skip to content</a>
+    <Header section={section} themeLocked={Boolean(theme)} />
+    <slot />
+    <Footer />
+  </body>
+</html>
+
+<style>
+  .skip {
+    position: absolute;
+    top: -100px;
+    left: 1rem;
+    z-index: 200;
+    padding: 0.5rem 1rem;
+    background: var(--lit);
+    color: #160f00;
+  }
+
+  .skip:focus {
+    top: 0.5rem;
+  }
+</style>

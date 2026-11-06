@@ -1,12 +1,13 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import starlight from '@astrojs/starlight';
+import mdx from '@astrojs/mdx';
+import sitemap from '@astrojs/sitemap';
+import expressiveCode from 'astro-expressive-code';
+import remarkDirective from 'remark-directive';
 import react from '@astrojs/react';
-import starlightSidebarTopics from 'starlight-sidebar-topics';
-import ts from 'typescript';
-import pluginTwoslash from 'expressive-code-twoslash';
+import { remarkCallouts } from './src/lib/remark-callouts.mjs';
+import { readdirSync } from 'node:fs';
 import remarkGfm from 'remark-gfm';
-import { blacDark, blacLight } from './src/styles/code-themes.mjs';
 
 /*
  * WORKAROUND — content-propagated styles dropped by `astro build`.
@@ -21,7 +22,7 @@ import { blacDark, blacLight } from './src/styles/code-themes.mjs';
  * is marked, and at render time `createHeadAndContent` silently drops every
  * stylesheet propagated through content-collection MDX:
  *
- *   - scoped <style> from .astro components imported in .mdx (Eyebrow…)
+ *   - scoped <style> from .astro components imported in .mdx (Tabs, Card…)
  *   - CSS imported by React islands (demos.css via DemoFrame/RenderCounter)
  *
  * Dev is unaffected (the dev plugin reads transform-time sources, where the
@@ -145,397 +146,49 @@ function rehypeTableCellLabels() {
   };
 }
 
+// Pre-/docs URLs (`/guide/x/`, `/proposals/x/`) keep working as static redirects.
+const slugsIn = (/** @type {string} */ dir) =>
+  readdirSync(new URL(dir, import.meta.url))
+    .filter((f) => /\.mdx?$/.test(f) && !f.startsWith('index.'))
+    .map((f) => f.replace(/\.mdx?$/, ''));
+const SECTIONS = [
+  'guide',
+  'core',
+  'react',
+  'plugins',
+  'testing',
+  'integrations',
+];
+const legacyRedirects = {
+  '/docs': '/docs/guide/introduction/',
+  '/dirtytalk': 'https://dirtytalk.42.dog/',
+  '/proposals': '/rfcs/',
+  ...Object.fromEntries(
+    slugsIn('./src/content/rfcs/').map((s) => [
+      `/proposals/${s}`,
+      `/rfcs/${s}/`,
+    ]),
+  ),
+  ...Object.fromEntries(
+    SECTIONS.flatMap((section) =>
+      slugsIn(`./src/content/docs/${section}/`).map((s) => [
+        `/${section}/${s}`,
+        `/docs/${section}/${s}/`,
+      ]),
+    ),
+  ),
+};
+
 // https://astro.build/config
 export default defineConfig({
-  vite: { plugins: [headPropagationSeedFix] },
-  // Canonical origin — drives sitemap + absolute URLs. Matches the custom
-  // domain route in wrangler.toml.
   site: 'https://blac.42.dog',
-  // GFM (tables, strikethrough, autolinks) renders in `.md` via Astro's
-  // built-in default, but `@astrojs/mdx` does NOT inherit that default — so
-  // tables in `.mdx` pages silently render as literal `| … |` text. Listing
-  // remark-gfm here as an explicit user plugin makes it run for BOTH `.md` and
-  // `.mdx` (mdx extends `markdown.remarkPlugins`), restoring tables in the
-  // interactive demo pages that were converted `.md` → `.mdx`.
+  devToolbar: { enabled: false },
+  vite: { plugins: [headPropagationSeedFix] },
+  // `@astrojs/mdx` does not inherit Astro's GFM default, so list it explicitly.
   markdown: {
-    remarkPlugins: [remarkGfm],
+    remarkPlugins: [remarkGfm, remarkDirective, remarkCallouts],
     rehypePlugins: [rehypeTableCellLabels],
   },
-  integrations: [
-    // React renderer for the interactive demo islands under
-    // src/components/demos/. Islands import real workspace `@blac/react` and
-    // hydrate lazily (`client:visible`) — see that dir's README for the
-    // embedding contract. `.mdx` component support comes from the
-    // `@astrojs/mdx` integration Starlight already bundles.
-    react(),
-    starlight({
-      title: 'BlaC',
-      description:
-        'Type-safe state management for React with automatic re-render optimization',
-      logo: {
-        src: './src/assets/logo.svg',
-        alt: 'BlaC',
-        // Hide the redundant wordmark next to the logo; the title supplies it.
-        replacesTitle: false,
-      },
-      social: [
-        {
-          icon: 'github',
-          label: 'GitHub',
-          href: 'https://github.com/jsnanigans/blac',
-        },
-      ],
-      editLink: {
-        baseUrl: 'https://github.com/jsnanigans/blac/edit/main/apps/web-docs/',
-      },
-      // Preload the body and display woff2s so the browser fetches them
-      // before CSS parse discovers the @font-face rules — shrinks the
-      // font-display:swap window (the metric-matched fallbacks in fonts.css
-      // make whatever window remains shift-free). Italic and mono are not
-      // preloaded. `crossorigin` is required for font preloads even same-origin.
-      head: [
-        {
-          tag: 'link',
-          attrs: {
-            rel: 'preload',
-            href: '/fonts/hanken-grotesk-latin-wght-normal.woff2',
-            as: 'font',
-            type: 'font/woff2',
-            crossorigin: 'anonymous',
-          },
-        },
-        {
-          tag: 'link',
-          attrs: {
-            rel: 'preload',
-            href: '/fonts/bricolage-grotesque-latin-opsz-normal.woff2',
-            as: 'font',
-            type: 'font/woff2',
-            crossorigin: 'anonymous',
-          },
-        },
-      ],
-      components: {
-        PageTitle: './src/components/overrides/PageTitle.astro',
-        Footer: './src/components/overrides/Footer.astro',
-        Hero: './src/components/overrides/Hero.astro',
-      },
-      customCss: [
-        // fonts.css must come first; tokens.css before everything that reads them.
-        './src/styles/fonts.css',
-        './src/styles/tokens.css',
-        './src/styles/content.css',
-        './src/styles/chrome.css',
-      ],
-
-      // Code highlighting = Expressive Code (Shiki at build time, zero client
-      // JS for the highlight itself), theme-synced to light/dark. Twoslash adds
-      // type-on-hover + build-time type-checking: a broken ```ts twoslash``
-      // snippet fails the build, exactly like the old VitePress site.
-      expressiveCode: {
-        themes: [blacDark, blacLight],
-        useStarlightUiThemeColors: true,
-        styleOverrides: {
-          borderRadius: '0.625rem',
-          borderColor: 'var(--blac-border)',
-          codeFontSize: 'var(--sl-text-code)',
-          codeLineHeight: '1.7',
-          codePaddingBlock: '1rem',
-          codePaddingInline: '1.25rem',
-          uiFontFamily: 'var(--blac-font-body)',
-          frames: {
-            shadowColor: 'transparent',
-          },
-        },
-        // The `any` cast bridges a harmless type-only version skew: pnpm
-        // resolves expressive-code-twoslash's `@expressive-code/core` peer to
-        // 0.42 (via its own deps) while Starlight runs EC 0.41.7. The plugin
-        // API is identical across that range, so the runtime is correct — only
-        // the two `ExpressiveCodePlugin` *types* differ. Remove the cast once
-        // the plugin's peer lands on the same EC line Starlight ships.
-        plugins: [
-          /** @type {any} */ (
-            pluginTwoslash({
-              // explicitTrigger defaults to true → only fences tagged
-              // `twoslash` are processed (plain ```ts`` blocks stay fast and
-              // unchecked), which is exactly what our migrated snippets rely on.
-              twoslashOptions: {
-                compilerOptions: {
-                  jsx: ts.JsxEmit.ReactJSX,
-                  jsxImportSource: 'react',
-                  module: ts.ModuleKind.ESNext,
-                  target: ts.ScriptTarget.ESNext,
-                  moduleResolution: ts.ModuleResolutionKind.Bundler,
-                  strict: true,
-                  esModuleInterop: true,
-                  allowSyntheticDefaultImports: true,
-                  skipLibCheck: true,
-                  lib: [
-                    'lib.dom.d.ts',
-                    'lib.dom.iterable.d.ts',
-                    'lib.esnext.d.ts',
-                  ],
-                },
-              },
-            })
-          ),
-        ],
-      },
-      // Each "topic" is a package/umbrella with its own swappable sidebar,
-      // selected from a dropdown in the top-left. Adding a package later =
-      // append a topic here + author its pages under src/content/docs/<id>/.
-      plugins: [
-        starlightSidebarTopics([
-          {
-            label: 'Guide',
-            link: '/guide/introduction/',
-            icon: 'open-book',
-            items: [
-              {
-                label: 'Getting Started',
-                items: [
-                  { label: 'What is BlaC?', link: '/guide/introduction/' },
-                  {
-                    label: 'Architecture & Philosophy',
-                    link: '/guide/philosophy/',
-                  },
-                  { label: 'Quick Start', link: '/guide/getting-started/' },
-                  { label: 'Core Concepts', link: '/guide/concepts/' },
-                  { label: 'Passing Inputs', link: '/guide/inputs/' },
-                  { label: 'Tutorial: Todo App', link: '/guide/tutorial/' },
-                ],
-              },
-              {
-                label: 'Going Deeper',
-                items: [
-                  { label: 'Mental Model', link: '/guide/mental-model/' },
-                  { label: 'Async', link: '/guide/async/' },
-                  { label: 'TypeScript', link: '/guide/typescript/' },
-                  {
-                    label: 'Troubleshooting & FAQ',
-                    link: '/guide/troubleshooting/',
-                  },
-                ],
-              },
-              {
-                label: 'Testing',
-                collapsed: true,
-                items: [
-                  { label: 'Overview', link: '/testing/overview/' },
-                  { label: 'Core Testing API', link: '/testing/core/' },
-                  { label: 'React Testing', link: '/testing/react/' },
-                ],
-              },
-              {
-                label: 'Integrations',
-                collapsed: true,
-                items: [
-                  { label: 'SSR', link: '/integrations/ssr/' },
-                  {
-                    label: 'Outside React',
-                    link: '/integrations/outside-react/',
-                  },
-                ],
-              },
-              {
-                label: 'Internals',
-                collapsed: true,
-                items: [
-                  { label: 'How BlaC Works', link: '/guide/internals/' },
-                  { label: 'DirtyTalk', link: '/dirtytalk/' },
-                ],
-              },
-              {
-                label: 'RFCs & Proposals',
-                collapsed: true,
-                items: [
-                  { label: 'Overview', link: '/proposals/' },
-                  {
-                    label: '@blac/async',
-                    items: [
-                      {
-                        label: 'Mutation Concurrency',
-                        link: '/proposals/mutation-concurrency/',
-                      },
-                      {
-                        label: 'Resource Input',
-                        link: '/proposals/resource-input/',
-                      },
-                      {
-                        label: 'Lifecycle Hooks',
-                        link: '/proposals/lifecycle-hooks/',
-                      },
-                      {
-                        label: 'Realtime Refetch',
-                        link: '/proposals/realtime-refetch/',
-                      },
-                      {
-                        label: 'Retry After Token Refresh',
-                        link: '/proposals/retry-failed/',
-                      },
-                      { label: 'ask()', link: '/proposals/ask/' },
-                      {
-                        label: 'Form Primitives',
-                        link: '/proposals/form-primitives/',
-                      },
-                    ],
-                  },
-                  {
-                    label: '@blac/core',
-                    items: [
-                      {
-                        label: 'Activation-Scoped Timers',
-                        link: '/proposals/activation-timers/',
-                      },
-                      {
-                        label: 'Typed Step Machine',
-                        link: '/proposals/step-machine/',
-                      },
-                      {
-                        label: 'Typed clearWhere',
-                        link: '/proposals/typed-clear-where/',
-                      },
-                      {
-                        label: 'Borrow by Key',
-                        link: '/proposals/borrow-key/',
-                        badge: { text: 'Closed', variant: 'caution' },
-                      },
-                    ],
-                  },
-                  {
-                    label: 'Release & Adoption',
-                    items: [
-                      {
-                        label: 'Release Readiness',
-                        link: '/proposals/release-readiness/',
-                      },
-                      {
-                        label: 'Adoption Pilot',
-                        link: '/proposals/adoption-pilot/',
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            label: '@blac/core',
-            link: '/core/cubit/',
-            icon: 'seti:typescript',
-            items: [
-              {
-                label: 'Reference',
-                items: [
-                  { label: 'Cubit', link: '/core/cubit/' },
-                  { label: 'Tracking', link: '/core/tracked/' },
-                  { label: 'Configuration', link: '/core/configuration/' },
-                  {
-                    label: 'Instance Management',
-                    link: '/core/instance-management/',
-                  },
-                  { label: 'System Events', link: '/core/system-events/' },
-                  {
-                    label: 'Bloc Communication',
-                    link: '/core/bloc-communication/',
-                  },
-                  { label: 'watch()', link: '/core/watch/' },
-                  { label: 'subscribe()', link: '/core/subscribe/' },
-                  { label: 'Authoring Plugins', link: '/core/plugins/' },
-                  { label: 'Types', link: '/core/types/' },
-                ],
-              },
-            ],
-          },
-          {
-            label: '@blac/react',
-            link: '/react/getting-started/',
-            icon: 'seti:react',
-            items: [
-              {
-                label: 'Reference',
-                items: [
-                  {
-                    label: 'Getting Started',
-                    link: '/react/getting-started/',
-                  },
-                  { label: 'useBloc()', link: '/react/use-bloc/' },
-                  {
-                    label: 'Dependency Tracking',
-                    link: '/react/dependency-tracking/',
-                  },
-                  { label: 'Performance', link: '/react/performance/' },
-                ],
-              },
-            ],
-          },
-          {
-            label: '@blac/async',
-            link: '/guide/async-resources/',
-            icon: 'rocket',
-            items: [
-              {
-                label: 'Reference',
-                items: [
-                  {
-                    label: 'Async Resources',
-                    link: '/guide/async-resources/',
-                  },
-                ],
-              },
-              {
-                label: 'RFCs & Proposals',
-                items: [
-                  {
-                    label: 'Mutation Concurrency',
-                    link: '/proposals/mutation-concurrency/',
-                  },
-                  {
-                    label: 'Resource Input',
-                    link: '/proposals/resource-input/',
-                  },
-                  {
-                    label: 'Lifecycle Hooks',
-                    link: '/proposals/lifecycle-hooks/',
-                  },
-                  {
-                    label: 'Realtime Refetch',
-                    link: '/proposals/realtime-refetch/',
-                  },
-                  {
-                    label: 'Retry After Token Refresh',
-                    link: '/proposals/retry-failed/',
-                  },
-                  { label: 'ask()', link: '/proposals/ask/' },
-                  {
-                    label: 'Form Primitives',
-                    link: '/proposals/form-primitives/',
-                  },
-                  { label: 'All Proposals', link: '/proposals/' },
-                ],
-              },
-            ],
-          },
-          {
-            label: 'Plugins',
-            link: '/plugins/overview/',
-            icon: 'puzzle',
-            items: [
-              {
-                label: 'Reference',
-                items: [
-                  { label: 'Overview', link: '/plugins/overview/' },
-                  { label: 'Logging', link: '/plugins/logging/' },
-                  { label: 'DevTools', link: '/plugins/devtools/' },
-                  { label: 'Persistence', link: '/plugins/persistence/' },
-                  { label: 'Recipes', link: '/plugins/recipes/' },
-                  { label: 'Authoring Plugins', link: '/core/plugins/' },
-                ],
-              },
-            ],
-          },
-        ]),
-      ],
-    }),
-  ],
+  redirects: legacyRedirects,
+  integrations: [expressiveCode(), mdx(), react(), sitemap()],
 });

@@ -1,5 +1,5 @@
 // Syntax themes in the Kinetic Risograph palette. Frame and background colours
-// come from Starlight's UI tokens (useStarlightUiThemeColors), so every token
+// come from the site tokens (astro.config styleOverrides), so every token
 // here is tuned for WCAG AA contrast against both dark (#141222) and light
 // (#f2eee6) code wells.
 

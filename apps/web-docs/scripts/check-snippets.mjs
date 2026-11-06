@@ -3,7 +3,7 @@
  * Strict build wrapper.
  *
  * `astro build` writes dist and exits 0 even when a ```ts twoslash`` snippet
- * fails to type-check: Starlight's content loader catches the per-file render
+ * fails to type-check: the content loader can catch a per-file render
  * error, logs it as a non-fatal [ERROR] line, and drops the code block. That
  * would let broken snippets ship silently with missing code.
  *
@@ -26,12 +26,12 @@ if (llms.status !== 0) {
 
 // Signatures of a soft-logged snippet/render failure that astro build swallows.
 const ERROR_PATTERNS = [
-  /\[ERROR\]\s+\[starlight-docs-loader\]\s+Error rendering/i,
+  /\[ERROR\].*Error rendering/i,
   /caused an error in its "preprocessCode" hook/i,
   /Errors were thrown in the sample/i,
 ];
 
-const child = spawn('astro build', { shell: true });
+const child = spawn('astro build && pagefind --site dist', { shell: true });
 
 let buf = '';
 const tap = (chunk) => {

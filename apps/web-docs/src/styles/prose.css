@@ -1,0 +1,266 @@
+/* Long-form Markdown: reference pages, RFCs, chapter beats and blog posts. */
+
+.prose {
+  color: var(--text);
+  font-size: 1.02rem;
+  line-height: 1.75;
+}
+
+.prose > :first-child {
+  margin-top: 0;
+}
+
+.prose :where(p, ul, ol, blockquote, table, details, .expressive-code, .callout):not(.not-content *) {
+  margin: 0 0 1.25rem;
+}
+
+.prose :where(h2, h3, h4) {
+  position: relative;
+  scroll-margin-top: calc(var(--topbar) + 1.5rem);
+}
+
+.prose h2 {
+  margin: 3.25rem 0 1rem;
+  font-size: 1.75rem;
+}
+
+.prose h3 {
+  margin: 2.25rem 0 0.75rem;
+  font-size: 1.3rem;
+}
+
+.prose h4 {
+  margin: 1.75rem 0 0.5rem;
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  letter-spacing: 0;
+}
+
+.prose a {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--cable) 70%, transparent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+.prose a:hover {
+  text-decoration-color: var(--lit);
+}
+
+.prose strong {
+  font-weight: 700;
+}
+
+.prose :where(ul, ol) {
+  padding-left: 1.4rem;
+}
+
+.prose li {
+  margin: 0.35rem 0;
+}
+
+.prose li::marker {
+  color: var(--dim);
+}
+
+.prose ul:not(.not-content *) > li::marker {
+  content: '◦  ';
+  color: var(--cable-text);
+}
+
+.prose hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px dashed var(--line-strong);
+}
+
+.prose blockquote {
+  padding: 0.25rem 0 0.25rem 1.25rem;
+  border-left: 2px solid var(--cable);
+  color: var(--muted);
+}
+
+/* Inline code: a cable-coloured chip. */
+.prose :not(pre) > code:not(.not-content code) {
+  padding: 0.12em 0.38em;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel-2);
+  color: var(--rose-text);
+  font-size: 0.86em;
+  overflow-wrap: anywhere;
+}
+
+.prose a > code {
+  color: inherit;
+}
+
+.prose kbd {
+  padding: 0.1em 0.4em;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  font-size: 0.82em;
+}
+
+.prose .expressive-code {
+  margin-bottom: 1.5rem;
+}
+
+.prose details {
+  padding: 0.85rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.prose summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.prose img {
+  border-radius: var(--radius);
+}
+
+/* ── Callouts (`:::note` / `:::tip` / `:::caution` / `:::danger`) ── */
+
+.callout {
+  --c: var(--cable-text);
+  position: relative;
+  padding: 1rem 1.2rem 1rem 1.35rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  font-size: 0.97rem;
+}
+
+.callout::before {
+  content: '';
+  position: absolute;
+  inset: 0.85rem auto 0.85rem 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--c);
+}
+
+.callout > :last-child {
+  margin-bottom: 0;
+}
+
+.callout__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.4rem !important;
+  color: var(--c);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.callout__title::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 8px var(--c);
+}
+
+.callout--tip {
+  --c: var(--power);
+}
+
+.callout--caution {
+  --c: var(--lit-text);
+}
+
+.callout--danger {
+  --c: var(--danger);
+}
+
+/* ── Tables ── */
+
+.prose table {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  overflow: hidden;
+}
+
+.prose :where(th, td) {
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose th {
+  background: var(--panel-2);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.prose td {
+  border-top: 1px solid var(--line);
+}
+
+.prose tbody tr:hover td {
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+}
+
+/* Small screens: rows become labelled cards (labels from rehypeTableCellLabels). */
+@media (max-width: 44rem) {
+  .prose table,
+  .prose tbody {
+    display: grid;
+    gap: 0.75rem;
+    border: 0;
+  }
+
+  .prose thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .prose tr {
+    display: grid;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--panel);
+  }
+
+  .prose td {
+    display: grid;
+    grid-template-columns: minmax(6rem, 34%) minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .prose tr td:first-child {
+    border-top: 0;
+  }
+
+  .prose td[data-label]::before {
+    content: attr(data-label);
+    color: var(--dim);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+}

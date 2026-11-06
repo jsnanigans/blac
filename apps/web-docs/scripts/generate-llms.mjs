@@ -45,7 +45,6 @@ const SECTIONS = [
   { key: 'plugins', label: 'Plugins' },
   { key: 'testing', label: 'Testing' },
   { key: 'integrations', label: 'Integrations' },
-  { key: 'dirtytalk', label: 'DirtyTalk' },
   { key: '__root__', label: 'Examples' },
 ];
 
@@ -67,12 +66,6 @@ const GROUPS = [
     file: 'llms-blac-react.txt',
     segments: ['react'],
   },
-  {
-    id: 'dirtytalk',
-    label: 'DirtyTalk',
-    file: 'llms-dirtytalk.txt',
-    segments: ['dirtytalk'],
-  },
 ];
 
 /** Recursively collect every .md / .mdx file under DOCS_DIR. */
@@ -82,7 +75,6 @@ async function collectDocs(dir) {
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === 'proposals' && dir === DOCS_DIR) continue;
       files.push(...(await collectDocs(full)));
     } else if (/\.mdx?$/.test(entry.name)) {
       files.push(full);
@@ -107,13 +99,12 @@ function fmField(frontmatter, key) {
   return m[1].replace(/^['"]([\s\S]*)['"]$/, '$1').trim();
 }
 
-/** docs-relative file path -> site URL ('/guide/introduction/'). */
+/** docs-relative file path -> site URL ('/docs/guide/introduction/'). */
 function toUrl(file) {
   let rel = path.relative(DOCS_DIR, file).replace(/\\/g, '/');
   rel = rel.replace(/\.mdx?$/, '');
-  if (rel === 'index') return '/';
-  rel = rel.replace(/\/index$/, '');
-  return `/${rel}/`;
+  rel = rel.replace(/(^|\/)index$/, '');
+  return rel ? `/docs/${rel}/` : '/docs/';
 }
 
 /** Strip a leading run of MDX `import … from '…';` statements from a body. */
@@ -126,7 +117,7 @@ function stripLeadingImports(body) {
 
 /** First path segment of a URL, or '' for the home page. */
 function firstSegment(url) {
-  return url.split('/').filter(Boolean)[0] ?? '';
+  return url.split('/').filter(Boolean)[1] ?? '';
 }
 
 function sectionKeyFor(url) {

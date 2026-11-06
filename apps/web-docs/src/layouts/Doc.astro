@@ -1,0 +1,358 @@
+---
+import type { MarkdownHeading } from 'astro';
+import { getCollection } from 'astro:content';
+import Base from './Base.astro';
+import { DOCS_NAV, NAV_ORDER, docHref, GITHUB } from '../lib/nav';
+import { plain } from '../lib/format';
+import '../styles/prose.css';
+
+interface Props {
+  id: string;
+  title: string;
+  description?: string;
+  chapter?: string;
+  headings: MarkdownHeading[];
+  /** `docs` pages get the sidebar; RFCs reuse the layout without it. */
+  kind?: 'docs' | 'rfcs';
+  editPath: string;
+}
+
+const { id, title, description, chapter, headings, kind = 'docs', editPath } = Astro.props;
+
+const docs = await getCollection('docs');
+const titles = new Map(docs.map((d) => [d.id, d.data.title]));
+const blurbs = new Map(docs.map((d) => [d.id, d.data.tagline ?? d.data.description]));
+const section = DOCS_NAV.find((s) => s.pages.includes(id));
+const at = NAV_ORDER.indexOf(id);
+const prev = at > 0 ? NAV_ORDER[at - 1] : undefined;
+const next = at >= 0 ? NAV_ORDER[at + 1] : undefined;
+const learn = chapter ? (await getCollection('learn')).find((c) => c.id === chapter) : undefined;
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+<Base title={title} description={description} section={kind === 'docs' ? 'docs' : 'rfcs'}>
+  <div class:list={['doc-layout', { 'no-sidebar': kind !== 'docs' }]}>
+    {
+      kind === 'docs' && (
+        <aside class="sidebar" aria-label="Documentation">
+          <nav>
+            {DOCS_NAV.map((s) => (
+              <div class="nav-section">
+                <p class="kicker">{s.label}</p>
+                <ul>
+                  {s.pages.map((p) => (
+                    <li>
+                      <a href={docHref(p)} aria-current={p === id ? 'page' : undefined}>
+                        {titles.get(p) ?? p}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
+        </aside>
+      )
+    }
+
+    <main id="main" class="doc-main" data-pagefind-body>
+      <header class="doc-head">
+        <p class="kicker">
+          {kind === 'rfcs' ? <a href="/rfcs/">RFCs</a> : (section?.label ?? 'Docs')}
+        </p>
+        <h1>{title}</h1>
+        {description && <p class="doc-lede">{description}</p>}
+        {
+          learn && (
+            <a class="watch-chip" href={`/learn/${learn.id}/`} data-pagefind-ignore>
+              <span class="jack is-hot" aria-hidden="true" />
+              Watch it run: Chapter {String(learn.data.order).padStart(2, '0')} · {plain(learn.data.title)}
+              <span aria-hidden="true">→</span>
+            </a>
+          )
+        }
+      </header>
+
+      <div class="prose">
+        <slot />
+      </div>
+
+      <footer class="doc-foot" data-pagefind-ignore>
+        <a class="edit" href={`${GITHUB}/edit/main/apps/web-docs/${editPath}`}>Edit this page on GitHub</a>
+        {
+          kind === 'docs' && (
+            <nav class="pager" aria-label="Pages">
+              {prev ? (
+                <a class="pager-card" href={docHref(prev)}>
+                  <span class="kicker">← Previous</span>
+                  <strong>{titles.get(prev)}</strong>
+                </a>
+              ) : (
+                <span />
+              )}
+              {next && (
+                <a class="pager-card is-next" href={docHref(next)}>
+                  <span class="kicker">Next →</span>
+                  <strong>{titles.get(next)}</strong>
+                  {blurbs.get(next) && <span class="pager-blurb">{blurbs.get(next)}</span>}
+                </a>
+              )}
+            </nav>
+          )
+        }
+      </footer>
+    </main>
+
+    {
+      toc.length > 1 && (
+        <aside class="toc" aria-label="On this page" data-pagefind-ignore>
+          <p class="kicker">On this page</p>
+          <ul>
+            {toc.map((h) => (
+              <li class={`d${h.depth}`}>
+                <a href={`#${h.slug}`}>{h.text}</a>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )
+    }
+  </div>
+</Base>
+
+<script>
+  import '../scripts/doc';
+</script>
+
+<style>
+  .doc-layout {
+    display: grid;
+    grid-template-columns: 272px minmax(0, 1fr) 220px;
+    gap: clamp(1.5rem, 3vw, 3.5rem);
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  .doc-layout.no-sidebar {
+    grid-template-columns: minmax(0, 1fr) 220px;
+    max-width: 1180px;
+  }
+
+  .sidebar,
+  .toc {
+    position: sticky;
+    top: var(--topbar);
+    align-self: start;
+    max-height: calc(100svh - var(--topbar));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 2rem 0 3rem;
+    scrollbar-width: thin;
+  }
+
+  .nav-section + .nav-section {
+    margin-top: 1.6rem;
+  }
+
+  .sidebar ul,
+  .toc ul {
+    margin: 0.55rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sidebar a {
+    position: relative;
+    display: block;
+    padding: 0.28rem 0.75rem;
+    border-left: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.925rem;
+    line-height: 1.45;
+    text-decoration: none;
+  }
+
+  .sidebar a:hover {
+    border-left-color: var(--line-strong);
+    color: var(--text);
+  }
+
+  .sidebar a[aria-current='page'] {
+    border-left-color: var(--lit);
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .sidebar a[aria-current='page']::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -4px;
+    width: 7px;
+    height: 7px;
+    margin-top: -3.5px;
+    border-radius: 50%;
+    background: var(--lit);
+    box-shadow: 0 0 8px var(--lit);
+  }
+
+  .doc-main {
+    min-width: 0;
+    max-width: var(--prose);
+    padding: 3rem 0 4rem;
+  }
+
+  .doc-head {
+    margin-bottom: 2.25rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .doc-head .kicker a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .doc-head h1 {
+    margin: 0.65rem 0 0;
+    font-size: clamp(2.1rem, 4.5vw, 3rem);
+  }
+
+  .doc-lede {
+    margin: 1rem 0 0;
+    color: var(--muted);
+    font-size: 1.12rem;
+  }
+
+  .watch-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-top: 1.25rem;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .watch-chip:hover {
+    border-color: var(--lit);
+  }
+
+  .doc-foot {
+    margin-top: 4rem;
+  }
+
+  .edit {
+    color: var(--dim);
+    font-size: 0.875rem;
+  }
+
+  .pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .pager-card {
+    display: grid;
+    gap: 0.3rem;
+    align-content: start;
+    padding: 1rem 1.2rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    text-decoration: none;
+  }
+
+  .pager-card:hover {
+    border-color: var(--line-strong);
+    background: var(--panel);
+  }
+
+  .pager-card.is-next {
+    text-align: right;
+  }
+
+  .pager-blurb {
+    color: var(--muted);
+    font-size: 0.875rem;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .toc .kicker {
+    margin-bottom: 0.25rem;
+  }
+
+  .toc a {
+    display: block;
+    padding: 0.25rem 0;
+    color: var(--dim);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    text-decoration: none;
+  }
+
+  .toc .d3 a {
+    padding-left: 0.85rem;
+  }
+
+  .toc a:hover {
+    color: var(--text);
+  }
+
+  .toc a[aria-current] {
+    color: var(--lit-text);
+  }
+
+  @media (max-width: 1240px) {
+    .doc-layout {
+      grid-template-columns: 250px minmax(0, 1fr);
+    }
+
+    .doc-layout.no-sidebar {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .toc {
+      display: none;
+    }
+  }
+
+  @media (max-width: 960px) {
+    .doc-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .sidebar {
+      position: fixed;
+      inset: var(--topbar) auto 0 0;
+      z-index: 40;
+      width: min(320px, 86vw);
+      max-height: none;
+      padding: 1.5rem var(--gutter) 3rem;
+      border-right: 1px solid var(--line);
+      background: var(--bg);
+      transform: translateX(-102%);
+      transition: transform 240ms var(--ease);
+    }
+
+    :global(body.nav-open) .sidebar {
+      transform: none;
+      box-shadow: 30px 0 60px -20px rgb(0 0 0 / 0.5);
+    }
+
+    .pager {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
