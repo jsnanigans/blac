@@ -4,7 +4,7 @@ description: Preview of one new option, configureAsync normalizeError, and four 
 ---
 
 :::caution[Proposal — not built]
-Nothing on this page exists in `@blac/async` yet, except the primitives marked as existing. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/proposals/) for the other pages.
+Nothing on this page exists in `@blac/async` yet, except the primitives marked as existing. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/rfcs/) for the other pages.
 :::
 
 ## Framing
@@ -25,10 +25,10 @@ In one production codebase, a schema-driven form component renders the fields an
 | Primitive                                                                                                                                                                | What it replaces in form containers                                                                      | Reuse elsewhere                                                                 |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Initial values from a `resource`: the form renders once `state.invoice.status` is `success` (existing)                                                                   | The `formReady` / `initialFormValues` / `setFormReady` triple, in about 13 files                         | Any view gated on loaded data                                                   |
-| `mutation` for submit (existing, resolves its [settled state](/guide/async-resources/#mutation); [concurrency](/proposals/mutation-concurrency/) proposed)               | `isSubmitting`, double-submit guards, the toast/report template                                          | Every write                                                                     |
+| `mutation` for submit (existing, resolves its [settled state](/docs/guide/async-resources/#mutation); [concurrency](/rfcs/mutation-concurrency/) proposed)               | `isSubmitting`, double-submit guards, the toast/report template                                          | Every write                                                                     |
 | `configureAsync({ normalizeError })` (new): one app function turns a raw error into `{ message?, fields?: Record<path, string>, status? }`, stored as the slot's `error` | Missing today: 400s are only toasted. The form reads `fields` from the submit slot into its field errors | `onError` can use `status` to skip 404s, pick toasts and filter error reporting |
-| `debounced(host, fn, ms)` from [activation timers](/proposals/activation-timers/)                                                                                        | Debounced async validation, for example "email taken"                                                    | Search, autosave                                                                |
-| The web-storage persist plugin on a slice (existing, see [Persistence](/plugins/persistence/))                                                                           | The bespoke draft service, where its shape fits                                                          | Any draft or preferences state                                                  |
+| `debounced(host, fn, ms)` from [activation timers](/rfcs/activation-timers/)                                                                                        | Debounced async validation, for example "email taken"                                                    | Search, autosave                                                                |
+| The web-storage persist plugin on a slice (existing, see [Persistence](/docs/plugins/persistence/))                                                                           | The bespoke draft service, where its shape fits                                                          | Any draft or preferences state                                                  |
 
 Only `normalizeError` is new library code. The rest is a way of using what exists or what other proposals add.
 

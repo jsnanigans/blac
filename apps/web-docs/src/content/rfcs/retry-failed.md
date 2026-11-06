@@ -4,7 +4,7 @@ description: Preview of retryFailed() for @blac/async, replacing an app-wide tok
 ---
 
 :::caution[Proposal — not built]
-Nothing on this page exists in `@blac/async` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/proposals/) for the other pages.
+Nothing on this page exists in `@blac/async` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/rfcs/) for the other pages.
 :::
 
 ## Problem

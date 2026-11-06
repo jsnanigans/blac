@@ -4,7 +4,7 @@ description: Preview of ask() for @blac/async, an awaitable request that a conta
 ---
 
 :::caution[Proposal — not built]
-Nothing on this page exists in `@blac/async` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/proposals/) for the other pages.
+Nothing on this page exists in `@blac/async` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/rfcs/) for the other pages.
 :::
 
 ## Framing
@@ -203,7 +203,7 @@ A second test calls `cubit.confirm.dismiss()` and asserts `api.archiveProject` w
 
 - **The dialog closes on answer.** The helper above keeps the dialog open, with a loading button, until the action finishes. With `ask`, the answer closes the slot at once and progress shows in `state.archive.status`, for example on the page's button. An app that needs a busy dialog can show the mutation's `loading` status inside the dialog, and answer after the work settles.
 - **Richer answers.** `Answer` is any type. A "don't ask again" checkbox is `answer({ ok: true, dontAskAgain })`, and the app-side check that skips the prompt stays in the app.
-- **Breadcrumbs.** The `analytics.track` call on open moves to a lifecycle hook, see [lifecycle hooks](/proposals/lifecycle-hooks/), or to the dialog component.
+- **Breadcrumbs.** The `analytics.track` call on open moves to a lifecycle hook, see [lifecycle hooks](/rfcs/lifecycle-hooks/), or to the dialog component.
 - **One slot per prompt.** Two different prompts in one container are two `ask` fields, each with its own slot.
 
 ## Library change

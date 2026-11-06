@@ -4,7 +4,7 @@ description: A small, measurable pilot of the shipped APIs in a real app, run be
 ---
 
 :::caution[Proposal — not started]
-This is a process proposal, not an API. See the [proposals index](/proposals/) for the other pages.
+This is a process proposal, not an API. See the [proposals index](/rfcs/) for the other pages.
 :::
 
 ## Why
@@ -13,7 +13,7 @@ This is a process proposal, not an API. See the [proposals index](/proposals/) f
 
 ## When
 
-After [mutation concurrency](/proposals/mutation-concurrency/), [resource input](/proposals/resource-input/), [lifecycle hooks](/proposals/lifecycle-hooks/) and [activation-scoped timers](/proposals/activation-timers/). Those change the shape of code the pilot would otherwise migrate twice. The larger proposals, [realtime refetch](/proposals/realtime-refetch/) and [`ask()`](/proposals/ask/), come after it and are shaped by what it finds.
+After [mutation concurrency](/rfcs/mutation-concurrency/), [resource input](/rfcs/resource-input/), [lifecycle hooks](/rfcs/lifecycle-hooks/) and [activation-scoped timers](/rfcs/activation-timers/). Those change the shape of code the pilot would otherwise migrate twice. The larger proposals, [realtime refetch](/rfcs/realtime-refetch/) and [`ask()`](/rfcs/ask/), come after it and are shaped by what it finds.
 
 ## Scope
 

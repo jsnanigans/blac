@@ -4,7 +4,7 @@ description: Preview of borrow(Class, { key }), an optional shortcut for call si
 ---
 
 :::caution[Proposal — closed]
-Nothing on this page exists in `@blac/core`, and it is not planned. A survey of a large production codebase found no call site that needs it. Reopen it if one appears. See the [proposals index](/proposals/) for the other pages.
+Nothing on this page exists in `@blac/core`, and it is not planned. A survey of a large production codebase found no call site that needs it. Reopen it if one appears. See the [proposals index](/rfcs/) for the other pages.
 :::
 
 ## Problem

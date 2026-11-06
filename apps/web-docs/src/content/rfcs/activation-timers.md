@@ -4,7 +4,7 @@ description: Preview of every, debounced and after in @blac/core, timers bound t
 ---
 
 :::caution[Proposal — not built]
-Nothing on this page exists in `@blac/core` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/proposals/) for the other pages.
+Nothing on this page exists in `@blac/core` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/rfcs/) for the other pages.
 :::
 
 ## Problem
@@ -67,7 +67,7 @@ class OrderSearchCubit extends Cubit<{
 }
 ```
 
-With [resource input](/proposals/resource-input/), the search itself becomes declarative (`input: (s) => s.query, debounce: 300`), and `setQuery` is a plain `patch`. `debounced` remains for work that is not a resource load, such as autosave or async validation.
+With [resource input](/rfcs/resource-input/), the search itself becomes declarative (`input: (s) => s.query, debounce: 300`), and `setQuery` is a plain `patch`. `debounced` remains for work that is not a resource load, such as autosave or async validation.
 
 ```ts
 every(this, 30_000, () => void this.refresh.reload()); // poll while active
@@ -184,11 +184,11 @@ The "before" test is a typical shape, not copied from a real suite.
 
 - `@blac/core`: `timers.ts` with the three helpers, about 40 lines on top of `onActivated`; exported from `index.ts`.
 - Tests: `every` ticks and stops on deactivation, restarts on reactivation; `after` fires once; `debounced` collapses calls, `.cancel` and `.flush` work, a pending call is dropped on deactivation.
-- Docs: a short section on the [Cubit](/core/cubit/) page.
+- Docs: a short section on the [Cubit](/docs/core/cubit/) page.
 
 Effort: about 3 hours.
 
-This is the building block for debounced async validation in [form primitives](/proposals/form-primitives/) and for polling in [realtime refetch](/proposals/realtime-refetch/).
+This is the building block for debounced async validation in [form primitives](/rfcs/form-primitives/) and for polling in [realtime refetch](/rfcs/realtime-refetch/).
 
 ## Open questions
 

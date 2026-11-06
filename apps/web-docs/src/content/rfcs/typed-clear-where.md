@@ -4,7 +4,7 @@ description: Preview of a class-scoped clearWhere(Class, predicate) overload in 
 ---
 
 :::caution[Proposal — not built]
-Nothing on this page exists in `@blac/core` yet. `clearWhere(predicate)` itself is built and documented in [Instance Management](/core/instance-management/#cleanup). See the [proposals index](/proposals/) for the other pages.
+Nothing on this page exists in `@blac/core` yet. `clearWhere(predicate)` itself is built and documented in [Instance Management](/docs/core/instance-management/#cleanup). See the [proposals index](/rfcs/) for the other pages.
 :::
 
 ## Problem
@@ -33,7 +33,7 @@ clearWhere(ChannelCubit, (bloc) => bloc.args.workspaceId === id);
 
 - `clearWhere` gains an overload whose class form only passes instances of that class to the predicate. About 10 lines.
 - Tests: only the given class is visited, other classes with matching args are untouched.
-- Docs: one example in [Instance Management](/core/instance-management/#cleanup).
+- Docs: one example in [Instance Management](/docs/core/instance-management/#cleanup).
 
 Effort: about 1 hour.
 

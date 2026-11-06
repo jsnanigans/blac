@@ -4,7 +4,7 @@ description: Preview of onStart and onSettled hooks in configureAsync, so one ad
 ---
 
 :::caution[Proposal — not built]
-Nothing on this page exists in `@blac/async` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/proposals/) for the other pages.
+Nothing on this page exists in `@blac/async` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/rfcs/) for the other pages.
 :::
 
 ## Problem
@@ -172,6 +172,6 @@ Effort: about 2 hours. High payoff, small surface.
 ## Open questions
 
 - **Superseded and aborted calls.** A `resource` load that is aborted by a newer one does not write the slot. Should `onSettled` skip it, or report `status: 'aborted'`? Skipping keeps `status` to two values; reporting makes cancelled work visible.
-- **What "settled" means.** [Mutation concurrency](/proposals/mutation-concurrency/) lets an older call finish without writing the slot. Should it still fire `onSettled`? Probably yes, since the request happened.
+- **What "settled" means.** [Mutation concurrency](/rfcs/mutation-concurrency/) lets an older call finish without writing the slot. Should it still fire `onSettled`? Probably yes, since the request happened.
 - **`meta` typing.** `unknown` with a cast in the adapter, or module augmentation of one app-wide `AsyncMeta` interface?
 - **Cached resource hits.** A `staleTime` hit starts no request. Proposed: it fires no hooks. Is a "cache hit" event useful for metrics?

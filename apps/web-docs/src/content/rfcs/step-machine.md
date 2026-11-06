@@ -4,7 +4,7 @@ description: A docs recipe for multi-step flows as a discriminated-union slot wi
 ---
 
 :::caution[Proposal — not built]
-Nothing on this page exists in `@blac/core` or `@blac/async` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/proposals/) for the other pages.
+Nothing on this page exists in `@blac/core` or `@blac/async` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/rfcs/) for the other pages.
 :::
 
 ## Problem
@@ -272,7 +272,7 @@ checkout.flow.can({ type: 'edit' }); // for the UI
 
 - **Slot.** `flow` is a plain state slot holding the current variant, so `useBloc` tracking and `withBlocState` seeding work as usual.
 - **`send(event)` and `can(event)`.** Same semantics as `transition` and `can` in the recipe. Illegal events return `false`.
-- **`enter(signal, step)`.** Runs when a state is entered. The signal aborts when the state is left or the host deactivates, so timers from [Activation timers](/proposals/activation-timers/) (`every`, `after`) clean up per state with no bookkeeping.
+- **`enter(signal, step)`.** Runs when a state is entered. The signal aborts when the state is left or the host deactivates, so timers from [Activation timers](/rfcs/activation-timers/) (`every`, `after`) clean up per state with no bookkeeping.
 - **Typing.** `states` keys must match the union's `name`, and `on` targets are checked against it.
 - **Not proposed.** Nested or parallel states, history, and a visualizer. A flow that needs them is a candidate for a real statechart library.
 

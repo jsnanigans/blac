@@ -4,7 +4,7 @@ description: Preview of the release hygiene still open for the shipped features,
 ---
 
 :::caution[Proposal — not done]
-This is tooling and release work, not a new API. See the [proposals index](/proposals/) for the other pages.
+This is tooling and release work, not a new API. See the [proposals index](/rfcs/) for the other pages.
 :::
 
 ## Problem

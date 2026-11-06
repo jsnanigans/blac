@@ -4,7 +4,7 @@ description: Preview of ordered mutation slots, an exclusive option and per-item
 ---
 
 :::caution[Proposal — not built]
-Nothing on this page exists in `@blac/async` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/proposals/) for the other pages.
+Nothing on this page exists in `@blac/async` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/rfcs/) for the other pages.
 :::
 
 ## Problem
@@ -28,7 +28,7 @@ A second gap: a mutation has **one** slot. Toggling row A and then row B shares 
 
 ## Proposed behavior
 
-Three changes, one of them API-free. They build on a mutation resolving its settled `AsyncState` ([Mutation](/guide/async-resources/#mutation)).
+Three changes, one of them API-free. They build on a mutation resolving its settled `AsyncState` ([Mutation](/docs/guide/async-resources/#mutation)).
 
 ### 1. The slot follows the latest call (default, no API)
 

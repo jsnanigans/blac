@@ -4,7 +4,7 @@ description: Preview of event sources, refetch triggers and conditional polling 
 ---
 
 :::caution[Proposal — not built]
-Nothing on this page exists in `@blac/async` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/proposals/) for the other pages.
+Nothing on this page exists in `@blac/async` yet. The API, names and behavior are up for review, and the code samples are illustrative (not compiled). See the [proposals index](/rfcs/) for the other pages.
 :::
 
 ## Problem
@@ -235,7 +235,7 @@ Effort: about 1–1.5 days.
 ## Open questions
 
 - **Event typing per source.** `configureAsync({ sources })` erases `E`. Options: module augmentation of one app-wide event type, a generic on `resource`, or a typed helper `refetchOn: sourceOf(orderEvents, { event })`. Which fits apps with several sockets?
-- **Debounce in `event`?** A burst of events already coalesces to two loads. Is a `debounce: ms` option still needed, or is that `debounced` from [activation timers](/proposals/activation-timers/)?
+- **Debounce in `event`?** A burst of events already coalesces to two loads. Is a `debounce: ms` option still needed, or is that `debounced` from [activation timers](/rfcs/activation-timers/)?
 - **`staleTime`.** Triggers bypass it by default, since "something changed" should not be ignored because the last load was recent. `focus` and `online` are the exception: they could respect `staleTime` so that tab switching does not refetch every time. Should that be the default for those two?
 - **Reactive intervals.** `refetchInterval(state)` only sees host state. To react to connection status, the host must mirror it into state, or the option takes a signal. Which is simpler to document?
 - **Several resources, one event.** Each resource subscribes separately, so one event can start several loads. That matches today, and `invalidate` tags remain the way to share a trigger. Is that enough?
