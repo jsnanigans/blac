@@ -417,6 +417,7 @@ function commit(consumer: Consumer): void {
   // A change between render and commit was diffed against the previous
   // interest, which may lack paths only this render read.
   if (primary.state !== consumer.renderedState) consumer.bump();
+  consumer.paths = deps.settle();
   if (deps.isUnchanged()) return;
 
   primary.registerConsumerPaths(consumer.id, consumer.paths);

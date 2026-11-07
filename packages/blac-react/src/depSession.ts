@@ -18,6 +18,9 @@ import { buildTrackedProxy } from './buildTrackedProxy';
 const NO_PATHS: PathSet = emptyPathSet();
 
 interface DepEntry {
+  // One live set per `.track()` call, merged at commit: reads keep landing in
+  // each call's own set until the render ends.
+  parts: PathSet[];
   paths: PathSet;
   Type: StateContainerConstructor;
   key: string;
@@ -44,6 +47,7 @@ export class DepSession {
   // Most consumers read no deps, so everything dep-related is allocated on the
   // first dep a render records.
   private primary: StateContainer | null = null;
+  private primaryParts: PathSet[] = [];
   private primaryPaths: PathSet = NO_PATHS;
   private entries: Map<StateContainer, DepEntry> | null = null;
   private subs: Map<StateContainer, DepSub> | null = null;
@@ -66,7 +70,7 @@ export class DepSession {
     this.entries?.clear();
     if (this.disarms !== null) this.disarms.length = 0;
     this.primary = primary;
-    this.primaryPaths = paths;
+    this.primaryParts = [paths];
   }
 
   record(
@@ -80,16 +84,30 @@ export class DepSession {
     (this.disarms ??= []).push(disarm);
     // A dep that resolves to the primary only widens the primary's entry.
     if (dep === this.primary) {
-      this.primaryPaths = unionPaths(this.primaryPaths, paths);
+      this.primaryParts.push(paths);
       return;
     }
     const entries = (this.entries ??= new Map());
     const existing = entries.get(dep);
     if (existing !== undefined) {
-      existing.paths = unionPaths(existing.paths, paths);
+      existing.parts.push(paths);
     } else {
-      entries.set(dep, { paths, Type, key, args });
+      entries.set(dep, { parts: [paths], paths, Type, key, args });
     }
+  }
+
+  /**
+   * Merge each container's per-call sets once the render's reads are done.
+   * Returns the primary's paths, widened by deps that resolved to it.
+   */
+  settle(): PathSet {
+    this.primaryPaths = mergeParts(this.primaryParts);
+    if (this.entries !== null) {
+      for (const entry of this.entries.values()) {
+        entry.paths = mergeParts(entry.parts);
+      }
+    }
+    return this.primaryPaths;
   }
 
   /** Stops every dep tracked this render from recording further reads. */
@@ -205,10 +223,13 @@ function sameEntry(a: DepEntry, b: DepEntry): boolean {
   );
 }
 
-function unionPaths(a: PathSet, b: PathSet): PathSet {
-  if (a === ALL_PATHS || b === ALL_PATHS) return ALL_PATHS;
-  const out = new Set<number>(a as Set<number>);
-  for (const id of b as Set<number>) out.add(id);
+function mergeParts(parts: PathSet[]): PathSet {
+  if (parts.length === 1) return parts[0];
+  const out = new Set<number>();
+  for (const part of parts) {
+    if (part === ALL_PATHS) return ALL_PATHS;
+    for (const id of part) out.add(id);
+  }
   return out;
 }
 
