@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.1.3
+
+### Patch Changes
+
+- b4dd7ea: Require `@dirtytalk/structural` 0.1.5, which fixes stale renders from dotted, backslash or NUL keys, values changing kind (object, array, `null`), keys added or removed with an `undefined` value, own-property checks (`Object.hasOwn`), and patches to an array root.
+
 ## 2.1.2
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @blac/react
 
+## 2.1.4
+
+### Patch Changes
+
+- 1ead9ee: A getter that calls `.track()` on the same dep more than once now keeps the reads made after the second call, so the component re-renders when they change.
+- State containers disposed when getter arguments change are no longer kept alive by the dependency wrapper cache, so they can be garbage collected.
+- b4dd7ea: Require `@dirtytalk/structural` 0.1.5, which fixes stale renders from dotted, backslash or NUL keys, values changing kind (object, array, `null`), keys added or removed with an `undefined` value, own-property checks (`Object.hasOwn`), and patches to an array root.
+- Updated dependencies [b4dd7ea]
+  - @blac/core@2.1.3
+
 ## 2.1.3
 
 ### Patch Changes
