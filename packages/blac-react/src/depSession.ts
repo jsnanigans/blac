@@ -264,7 +264,9 @@ export function makeDepWrapper(
   onDepHandle: (handle: object) => unknown,
 ): DepHandleLike {
   const brand = handle[DEP_BRAND];
-  const perDep = new Map<
+  // Weak, so instances a getter stops reaching (e.g. by switching args) can
+  // be collected once disposed.
+  const perDep = new WeakMap<
     StateContainer,
     { ref: { current: unknown }; proxy: StateContainer }
   >();
