@@ -178,6 +178,21 @@ The selector is read on every render and is not part of the subscription, so an 
 
 For the inverse case — a component that should never re-render because it only triggers actions — you don't need any option at all: a component that reads no state property records an empty path set and is never woken. See [Performance: split readers and writers](/docs/react/performance#pattern-split-readers-and-writers).
 
+## Supported state and known issues
+
+Tracking is built for **plain data**: plain objects and arrays with string keys and ordinary (enumerable, writable) properties, holding primitives or other plain data. `Map`, `Set`, `Date` and class instances work as [leaves](#what-does-not-register-a-dependency). Anything else is unsupported, and a component that relies on it can miss a re-render:
+
+- **Symbol keys** — reads of `state[sym]` are not tracked.
+- **Property flags** — a change to a property's descriptor (`enumerable`, `writable`, getter/setter) with the same value is not detected.
+- **Own vs inherited** — `Object.hasOwn(obj, 'toString')` doesn't wake when an own key starts shadowing an inherited one with the same value.
+- **Shadowed array methods** — assigning an own property over an array method (`arr.map = …`) is not detected.
+- **Non-enumerable properties** — `patch` drops them from a merged object without waking their readers.
+
+Two gaps also affect plain data:
+
+- **Bloc methods called in render** read the live `this.state`, not the tracking proxy, so `bloc.double()` in render records nothing. Use a getter (getters run against the proxy) or read the state fields directly.
+- **A `memo` child reading through a parent's proxy** — when a parent passes `state.user` to a `memo` child, the child's reads count for the parent only in renders where the child renders too. After the child bails out they are lost, so the parent can miss a change the child shows. Pass the leaf values the child needs, or have the child call `useBloc` itself.
+
 ## Choosing a mode
 
 ```text
