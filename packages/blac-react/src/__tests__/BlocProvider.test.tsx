@@ -296,4 +296,25 @@ describe('E1 — BlocProvider args-based scoping', () => {
 
     expect(provided).toEqual({ _id: 'a', label: 'two' });
   });
+
+  it('passes on a change inside args JSON cannot serialize', () => {
+    let provided: unknown;
+    function Probe() {
+      provided = useProvidedArgs(CounterCubit);
+      return null;
+    }
+    const tree = (tags: Set<string>) => (
+      <BlocProvider
+        bloc={CounterCubit}
+        args={{ _id: 'a', tags } as { _id: string }}
+      >
+        <Probe />
+      </BlocProvider>
+    );
+    const next = new Set(['b']);
+    const { rerender } = render(tree(new Set(['a'])));
+    rerender(tree(next));
+
+    expect(provided).toEqual({ _id: 'a', tags: next });
+  });
 });

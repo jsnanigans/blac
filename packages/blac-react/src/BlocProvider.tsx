@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useMemo,
+  useRef,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -66,25 +67,44 @@ export function BlocProvider<T extends StateContainerConstructor>({
 }: BlocProviderProps<T>): ReactElement {
   const parentMap = useContext(ProvidedArgsContext);
 
-  // Keyed on the args content, not identity, so an inline `args={{ ... }}`
-  // literal does not rebuild the map (and re-render every consumer) on
-  // every render, while a real field change still reaches `useProvidedArgs`.
-  const argsKey = JSON.stringify(args);
+  // Same content keeps the previous object, so an inline `args={{ ... }}`
+  // literal does not rebuild the map (and re-render every consumer) on every
+  // render, while a real field change still reaches `useProvidedArgs`.
+  const stable = useRef(args);
+  if (!sameArgs(stable.current, args)) stable.current = args;
+  const stableArgs = stable.current;
 
   // Merge our entry into a new Map so sibling/parent providers for other blocs
   // are preserved.
   const mergedMap = useMemo(() => {
     const next = new Map(parentMap);
-    next.set(bloc, args);
+    next.set(bloc, stableArgs);
     return next;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parentMap, bloc, argsKey]);
+  }, [parentMap, bloc, stableArgs]);
 
   return (
     <ProvidedArgsContext.Provider value={mergedMap}>
       {children}
     </ProvidedArgsContext.Provider>
   );
+}
+
+/** Plain objects and arrays compare by content, everything else by identity. */
+function sameArgs(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+  if (!isObject(a) || !isObject(b)) return false;
+  const proto = Object.getPrototypeOf(a);
+  if (proto !== Object.getPrototypeOf(b)) return false;
+  if (proto !== Object.prototype && proto !== Array.prototype) return false;
+  const keys = Object.keys(a);
+  return (
+    keys.length === Object.keys(b).length &&
+    keys.every((k) => Object.hasOwn(b, k) && sameArgs(a[k], b[k]))
+  );
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 /**
