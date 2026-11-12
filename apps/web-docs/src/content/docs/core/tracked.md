@@ -125,7 +125,7 @@ Tracking exists to make re-renders precise. It matters most when:
 It matters less for a tiny container where every consumer reads everything — there the diff is cheap and the wake set is "everyone" regardless.
 
 :::note[Tracking outside React]
-Auto-tracking via the recording proxy is a **React render-time** feature, driven by `useBloc`. The lower-level container API (`channel.subscribe(interest, cb)`) lets you declare an interest set directly. The convenience helper [`watch`](/docs/core/watch) deliberately does **not** auto-track: it subscribes to _all_ paths and fires on every change. If you need selective observation outside React, subscribe to the channel with an explicit interest, or filter inside your callback.
+Auto-tracking via the recording proxy is a **React render-time** feature, driven by `useBloc`. The lower-level container API (`consume(cb)` and `consumer.setPaths(paths)`) lets you declare an interest set directly. The convenience helper [`watch`](/docs/core/watch) deliberately does **not** auto-track: it subscribes to _all_ paths and fires on every change. If you need selective observation outside React, `consume` with an explicit path set, or filter inside your callback.
 :::
 
 ## How tracking relates to re-renders

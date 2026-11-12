@@ -257,7 +257,7 @@ See [Passing Inputs](/docs/guide/inputs) for the full decision matrix.
 1. **Mount:** `acquire(BlocClass)` creates or retrieves the instance, incrementing the ref count
 2. **`init(args)` called** (once, when the instance is first created) before the first state snapshot
 3. **`onActivate(signal)` fires** on the instance's 0→1 ownership transition — i.e. the first time anything acquires it. Fired in a layout effect.
-4. **Subscribe:** the hook subscribes to the bloc's channel using the selected tracking mode (auto-track or `select`)
+4. **Subscribe:** the hook registers a consumer on the bloc (`bloc.consume`) and sets its paths using the selected tracking mode (auto-track or `select`)
 5. **`onMount(bloc)` fires** in a mount effect, after the bloc is acquired
 6. **Re-render:** only triggered when a tracked state path or a `select` value changes
 7. **Unmount:** `onUnmount(bloc)` fires (bloc still alive). The ref is released at the end of the same tick, so a component that mounts in the same commit takes the instance over with its state intact. At zero, `onDeactivate()` fires (aborting the `onActivate` signal) and the instance is disposed unless the class is [`keepAlive`](/docs/core/configuration)

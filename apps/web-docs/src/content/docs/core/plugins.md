@@ -153,7 +153,7 @@ The five hydration methods — `startHydration`, `applyHydratedState`, `finishHy
 Most plugins act on the whole `next` state and ignore `paths` entirely. Reach for the interner only when you are building field-level tooling — structured logs or DevTools integrations that report _which_ property changed.
 :::
 
-`onStateChange` receives `paths: PathSet` as its fourth argument: a `Set<PathId>` of the property paths that changed in the flush — **or the `ALL_PATHS` sentinel** when the change spans every path (for example a change to a container with no registered consumers, which skips path diffing). It is never `undefined`.
+`onStateChange` receives `paths: PathSet` as its fourth argument: a `Set<PathId>` of the property paths that changed in the flush — which holds only the container's root id (`interner.lookup(id) === ''`) when no path read by a consumer changed. The type still admits the `ALL_PATHS` sentinel, so check for it before iterating. It is never `undefined`.
 
 A `PathId` is an integer, not a string. Each BlaC class has its own **per-class `PathInterner`** that maps path strings (`"items"`, `"user.profile.name"`) to those integers. Interning to integers keeps the hot path (diffing and set intersection on every flush) cheap — comparing numbers beats comparing strings. To turn a `PathId` back into a readable string, call `interner.lookup(pathId)` on the **focal container's** interner, reachable via `ctx.container`:
 
@@ -234,7 +234,7 @@ getPluginManager().install(auditPlugin, { environment: 'development' });
 <details>
 <summary>Performance note: plugins run on every flush</summary>
 
-To deliver `onStateChange` for every flush, the manager subscribes to each container's channel with `ALL_PATHS` interest, so every flush of every container runs the plugin bridge. It does not register as a consumer and does not change how paths are diffed. The trade-off is intentional — DevTools and persistence genuinely need every change — but it is why a plugin you do not need should stay uninstalled or `environment`-gated rather than installed-but-disabled.
+To deliver `onStateChange` for every flush, the manager calls `container.subscribe(...)` on each container, so every flush of every container runs the plugin bridge. That subscription is an `ALL_PATHS` consumer, so mutations on a container with no other consumers are still diffed against the root id only. The trade-off is intentional — DevTools and persistence genuinely need every change — but it is why a plugin you do not need should stay uninstalled or `environment`-gated rather than installed-but-disabled.
 
 </details>
 
@@ -243,7 +243,7 @@ To deliver `onStateChange` for every flush, the manager subscribes to each conta
 `onStateChange` fires **once per microtask flush**, not once per individual `emit`/`patch`/`update` call. If a method calls `patch` three times synchronously, `onStateChange` receives a single call with the final state and the union of all changed paths. Two consequences:
 
 - `prev` is snapshotted **once per flush** (the state before the first emit of that flush) and reused for every plugin, so the value a plugin sees is independent of install order.
-- For true per-call granularity (rare), subscribe to the container's channel directly instead of using a plugin hook.
+- For true per-call granularity (rare), call `container.subscribe` directly instead of using a plugin hook.
 
 This batching mirrors `onSystemEvent('stateChanged')` inside a bloc — the same microtask-coalescing model, seen from the global side rather than the per-instance side. See [System Events](/docs/core/system-events) for the per-instance view and the full rationale for why BlaC batches.
 

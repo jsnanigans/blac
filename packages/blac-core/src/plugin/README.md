@@ -68,11 +68,11 @@ function decodePaths(paths: PathSet, interner: PathInterner): string[] {
 ## Dispatch model
 
 - **Lifecycle events** (`onCreated`/`onDestroyed`/`onRefAcquired`/`onRefReleased`/`onDepsChanged`) are fired synchronously from the registry.
-- **`onStateChange`** is fired from each container's `DirtyChannel` flush callback — once per microtask flush, regardless of how many `emit`/`patch` calls collapsed into it. `prev` is the state at the previous flush (or container creation); `next` is the post-flush state.
+- **`onStateChange`** is fired from each container's flush — once per microtask flush, regardless of how many `emit`/`patch` calls collapsed into it. `prev` is the state at the previous flush (or container creation); `next` is the post-flush state.
 
 ## Perf notes
 
-- The plugin manager subscribes to every container with `ALL_PATHS` interest. Every flush of every container then runs the bridge. Devtools/persist plugins genuinely want every change; for fine-grained subscribers prefer `container.channel.subscribe(interest, cb)` directly.
+- The plugin manager subscribes to every container with `container.subscribe`. Every flush of every container then runs the bridge. Devtools/persist plugins genuinely want every change; for fine-grained subscribers prefer `container.consume(cb)` with `setPaths` directly.
 - Stateful plugins (logging) can opt into path-level signals by decoding `paths` via the interner.
 
 ## Official Plugins

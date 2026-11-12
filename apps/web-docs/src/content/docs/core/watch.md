@@ -6,7 +6,7 @@ description: Observe one or more blocs outside React and run a callback whenever
 `useBloc` connects a bloc to a React component. But state often needs to reach code that has no component to render: a logger, an analytics pipeline, a `localStorage` sync, a `<canvas>` driven by an imperative library, or a test assertion. `watch` is the escape hatch for those cases — it observes one or more blocs **outside of React** and runs a callback whenever their state changes.
 
 :::note[watch fires on every change, not only on what you read]
-Unlike `useBloc`, `watch` does **not** auto-track which properties your callback reads. It subscribes to the bloc's full state and invokes your callback on _every_ change (and once immediately). If you need to react only to a specific field, compare it yourself inside the callback, or use the lower-level `channel.subscribe(interest, cb)` API. Auto-tracking is a React render-time feature — see [Tracking](/docs/core/tracked).
+Unlike `useBloc`, `watch` does **not** auto-track which properties your callback reads. It subscribes to the bloc's full state and invokes your callback on _every_ change (and once immediately). If you need to react only to a specific field, compare it yourself inside the callback, or use the lower-level `consume(cb)` API with `setPaths`. Auto-tracking is a React render-time feature — see [Tracking](/docs/core/tracked).
 :::
 
 ## `watch(bloc, callback)`
@@ -252,7 +252,7 @@ const stop = watch([UserCubit, SettingsCubit] as const, ([user, settings]) => {
 | Non-React side effects (logging, analytics, syncing) | `watch`                                     |
 | Bridging a bloc to imperative / non-React UI         | `watch`                                     |
 | Test assertions on state over time                   | `watch`                                     |
-| You need selective, path-scoped observation          | `container.channel.subscribe(interest, cb)` |
+| You need selective, path-scoped observation          | `container.consume(cb)` + `setPaths`        |
 
 ## Examples
 
@@ -318,15 +318,15 @@ function attachChart(el: HTMLElement) {
 }
 ```
 
-## `watch` vs `channel.subscribe`
+## `watch` vs `subscribe` and `consume`
 
 Both observe a single container outside React; both fire once per microtask flush. The differences:
 
 - **`watch`** gives you the **instance** (so getters and methods are available), accepts multiple blocs, supports `instance()` references and the `watch.STOP` sentinel, and fires once immediately on setup.
-- **`channel.subscribe`** is the lower-level path-scoped surface on a container's channel. You pass an _interest_ thunk (the paths you care about, or `ALL_PATHS` for everything) and a callback that fires when a matching path changes. It does not fire on setup and gives you the changed path set rather than the instance — read `state` off the container yourself. Prefer `watch` for whole-state observation; reach for `channel.subscribe` when you need path-scoped interest.
+- **`subscribe` / `consume`** are the lower-level container methods. `subscribe(cb)` fires on every change; `consume(cb)` returns a consumer you scope with `setPaths(paths)`, so the callback fires only when one of those paths changes. Neither fires on setup, and both give you the changed path set rather than the instance — read `state` off the container yourself. Prefer `watch` for whole-state observation; reach for `consume` when you need path-scoped interest. See [subscribe and consume](/docs/core/subscribe).
 
 ```ts twoslash
-import { watch, ensure, ALL_PATHS } from '@blac/core';
+import { watch, ensure } from '@blac/core';
 import { Cubit } from '@blac/core';
 
 class UserCubit extends Cubit<{ name: string }> {
@@ -337,13 +337,11 @@ class UserCubit extends Cubit<{ name: string }> {
 
 const user = ensure(UserCubit);
 
-// channel.subscribe: path-scoped, fires on change (not on setup)
-const unsub = user.channel.subscribe(
-  () => ALL_PATHS,
-  () => {
-    console.log(user.state.name);
-  },
-);
+// consume: path-scoped, fires on change (not on setup)
+const consumer = user.consume(() => {
+  console.log(user.state.name);
+});
+consumer.setPaths(new Set([user.interner.intern('name')]));
 
 // watch: the instance, fires immediately, supports STOP and multiple blocs
 const stop = watch(UserCubit, (u) => {

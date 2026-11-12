@@ -45,7 +45,7 @@ BlaC's real notification core is `DirtyChannel<Region>` from `@dirtytalk/engine`
 but we approach it from the outside in. From the outside, that contract is what
 `Cubit` exposes: a value behind
 `state`, mutated by `emit` / `update`, with `watch` (or the lower-level
-`channel.subscribe`) firing on every coalesced flush. This block type-checks
+`subscribe`) firing on every coalesced flush. This block type-checks
 against the real `@blac/core` surface:
 
 ```ts twoslash
@@ -141,7 +141,7 @@ Stage 1: mark → flush → wake everyone
 ```
 
 This is everything a `Cubit` does at the listener level. The
-`watch(BlocClass, cb)` helper is exactly this: it bridges every channel
+`watch(BlocClass, cb)` helper is exactly this: it bridges every
 flush to a callback that wakes on any change, regardless of what changed,
 applied from outside React. The flush is microtask-coalesced, which is why
 several synchronous `emit`s produce a single notification.
@@ -216,14 +216,14 @@ PathSetSpace.intersects(PathSetSpace.empty(), ALL_PATHS); // false
 ```
 
 `ALL_PATHS` and the `PathSet` type are the only path primitives BlaC re-exports
-from `@blac/core` (for plugins composing channel subscriptions); this
+from `@blac/core` (for plugins composing `subscribe` and `consume` calls); this
 type-checked block uses them directly:
 
 ```ts twoslash
 import { ALL_PATHS, type PathSet } from '@blac/core';
 
 // A plugin or devtools panel can declare blanket interest in every change.
-const blanketInterest: () => PathSet = () => ALL_PATHS;
+const blanketInterest: PathSet = ALL_PATHS;
 void blanketInterest;
 ```
 
@@ -236,13 +236,12 @@ Where do the changed paths come from? The mutators compute them:
 
 - **`emit(next)`** installs a new immutable state, then diffs to find which
   observed paths changed value (Stage 3 covers the skeleton bound on that diff).
-- **`patch(partial)`** deep-merges a `DeepPartial<S>` and marks paths via
-  `changedPathsFromPatch`: it walks the patch shape, pulses each touched branch
-  up (`{ user: { email } }` marks both `user` and `user.email`), but
-  **value-filters** — a path is marked only if its value actually changed, and
-  recursion prunes into unchanged branches (an unchanged subtree keeps its
-  reference). So an over-spread patch that re-sets a whole parent when one field
-  changed does not over-wake the siblings.
+- **`patch(partial)`** is exactly `emit(deepMerge(state, partial))`: it goes
+  through the same diff as `emit`, which is value-filtered and prunes unchanged
+  references. So an over-spread patch that re-sets a whole parent when one field
+  changed does not over-wake the siblings, and a patch that replaces an array
+  with equal contents wakes readers of the whole array but not of its unchanged
+  children.
 - **`update(fn)`** is sugar for `emit(fn(state))`.
 
 From the public surface, the three mutators look like this — and all type-check:
@@ -370,49 +369,47 @@ Now the payoff. With `N` consumers sharing a container, the naive way to find
 who to wake is per-consumer diffing: `N` tree walks. BlaC does **one walk plus
 one lookup per changed path** instead.
 
-The trick is the **observed skeleton**: the union of every registered consumer's
-path set. On a mutation, `emit` diffs `prev` vs `next` **only along the
+The trick is the **observed skeleton**: the union of every consumer's watched
+paths. On a mutation, `emit` diffs `prev` vs `next` **only along the
 skeleton** — it reads each skeleton path in both states and includes it iff the
-value moved (`diffAlongSkeleton`, default `Object.is`). The container keeps the
-skeleton as a path trie, so the walk stops at every unchanged reference:
-replacing one item of a 1,000-item list compares 1,000 item references and
-descends into one. That one walk produces the dirty set; then each changed path
-is looked up in an index of the consumers watching it (Stage 2).
-Again the helpers are internal — this is the mechanism `emit` runs for you:
+value moved (`Object.is` by default). The container keeps the skeleton as a path
+trie, so the walk stops at every unchanged reference: replacing one item of a
+1,000-item list compares 1,000 item references and descends into one. That one
+walk produces the dirty set; then each changed path is looked up in an index of
+the consumers watching it (Stage 2). You feed the skeleton through the public
+`consume` / `setPaths` API:
 
-```ts
-import {
-  PathInterner,
-  diffAlongSkeleton,
-  pathSetUnion,
-  type PathSet,
-} from '@dirtytalk/structural';
+```ts twoslash
+import { Cubit, ensure } from '@blac/core';
 
-interface State {
-  user: { name: string; email: string };
+class UserCubit extends Cubit<{ user: { name: string; email: string } }> {
+  constructor() {
+    super({ user: { name: 'Ada', email: 'ada@x.io' } });
+  }
+  setEmail(email: string) {
+    this.patch({ user: { email } });
+  }
 }
-const interner = new PathInterner();
+
+const bloc = ensure(UserCubit);
+const { interner } = bloc;
 
 // Two consumers: one reads user.name, the other reads user.email.
-const consumerA: PathSet = new Set([interner.intern('user.name')]);
-const consumerB: PathSet = new Set([interner.intern('user.email')]);
+const a = bloc.consume(() => console.log('A woke'));
+a.setPaths(new Set([interner.intern('user.name')]));
+const b = bloc.consume((dirty) =>
+  console.log('B woke', [...(dirty as Set<number>)].map((id) => interner.lookup(id))),
+);
+b.setPaths(new Set([interner.intern('user.email')]));
 
-// The skeleton is the union of all registered consumers' interests.
-const skeleton = pathSetUnion(consumerA, consumerB);
-
-const prev: State = { user: { name: 'Ada', email: 'ada@x.io' } };
-const next: State = { user: { name: 'Ada', email: 'ada@new.io' } };
-
-// ONE diff walk, bounded to the skeleton, finds what actually moved.
-const dirty = diffAlongSkeleton(prev, next, skeleton, interner);
-// dirty = { user.email } — only consumerB will wake on intersection.
-[...(dirty as Set<number>)].map((id) => interner.lookup(id)); // ['user.email']
+// The skeleton is {user.name, user.email}. ONE diff walk, bounded to it,
+// finds that only user.email moved: B wakes, A stays asleep.
+bloc.setEmail('ada@new.io');
 ```
 
-The registry maintaining the skeleton is in `StructuralContainer`:
-`registerConsumerPaths(id, paths)` stores one consumer's set and recomputes the
-skeleton as the union of all of them (with a fast-path skip when the set is
-unchanged); `unregisterConsumer(id)` drops one and recomputes.
+`consume(cb)` registers a consumer and `setPaths(paths)` replaces what it
+watches; the container recomputes the skeleton as the union of all consumers'
+paths, and `dispose()` drops one.
 
 ```
 Stage 3: one walk, then N cheap intersections
@@ -423,7 +420,7 @@ Stage 3: one walk, then N cheap intersections
               ▼   union           ▼
         skeleton = {user.name, user.email}
                        │
-   emit(next) ─► diffAlongSkeleton(prev, next, skeleton)   ◄── the ONE walk
+   emit(next) ─► diff(prev, next) along skeleton         ◄── the ONE walk
                        │
                        ▼
                   dirty = {user.email}
@@ -434,19 +431,20 @@ Stage 3: one walk, then N cheap intersections
 ```
 
 :::note[The zero-consumer skip]
-With no registered consumers, `emit`/`update`/`patch` skip the diff and mark
-`ALL_PATHS`, since only `ALL_PATHS` subscribers (plugins, `watch`) can be
-listening. From one consumer on, every change is diffed.
+With no consumers, `emit`/`update`/`patch` only replace the state — no diff and
+no flush. From one consumer on (an `ALL_PATHS` subscriber such as `watch` counts),
+every change is diffed; when no watched path changed, the dirty set holds only
+the root id.
 :::
 
 ### How React ties in
 
 `useBloc` needs **no selector** because the JSX _is_ the interest declaration.
-Per render it renders against the recording proxy, then registers the resulting
-path set in a layout effect — after render, since during render the set is still
-empty and would freeze an empty skeleton, silently dropping wakeups. The channel
-subscription reads the live interest on every flush, so it re-renders only on
-intersection.
+Per render it renders against the recording proxy, then at commit calls
+`consumer.setPaths(paths)` on its `container.consume(...)` consumer — after
+render, since during render the set is still empty and would freeze an empty
+skeleton, silently dropping wakeups. On unmount it calls `consumer.dispose()`.
+The consumer re-renders only when a watched path changed.
 
 Conditional reads therefore reshape the skeleton automatically, render to
 render. To opt out and gate re-renders by a derived value array instead, pass
@@ -546,14 +544,14 @@ A single `emit` flows through all four stages:
    `prev`/`next` change, and delegates change-detection to
    `StructuralContainer`. (Stage 1 + 4 wrapper.)
 2. The container installs the new immutable state and computes the dirty
-   `PathSet` — `diffAlongSkeleton` against the observed skeleton for `emit`,
-   `changedPathsFromPatch` for `patch` — then `channel.mark(dirty)`.
+   `PathSet` by diffing against the observed skeleton (`patch` is `emit` of the
+   merged state, so both take this path), then marks it on its channel.
    (Stage 2 + 3.)
 3. The `DirtyChannel` coalesces marks and schedules one flush per tick. (Stage 1.)
-4. On flush, `useBloc` consumers are found by looking up each dirty path in the
-   container's path index (`subscribePaths`); every other subscriber's interest
-   thunk is evaluated and intersected with the dirty set. Only consumers with a
-   non-empty intersection have their callback fired (React re-render, `watch`
+4. On flush, consumers are found by looking up each dirty path in the
+   container's path index; `ALL_PATHS` consumers (`subscribe`, `watch`, plugins)
+   are woken by every flush. Only consumers whose watched paths changed have
+   their callback fired (React re-render, `watch`
    callback, plugin sink). (Stage 1 + 2.)
 5. On the next render, the proxy re-records each consumer's interest from
    scratch, so conditional reads reshape the skeleton automatically. (Stage 3.)

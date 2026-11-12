@@ -32,7 +32,7 @@ function UserName() {
 }
 ```
 
-**2. Track.** Each property access on the proxy records the path it touched. The recording is **leaf-only**: reading `state.address.city` records exactly `address.city`, not `address`. Reading a deeper path drops its immediate parent from the set. This is what gives you sibling isolation — a component reading `address.city` is not woken when `address.zip` changes, even though both live under the same parent object that got replaced. After the render commits, BlaC registers the recorded set as this consumer's "interest" (in a `useLayoutEffect`, after the proxy has actually been read — never during render, when the set is still empty).
+**2. Track.** Each property access on the proxy records the path it touched. The recording is **leaf-only**: reading `state.address.city` records exactly `address.city`, not `address`. Reading a deeper path drops its immediate parent from the set. This is what gives you sibling isolation — a component reading `address.city` is not woken when `address.zip` changes, even though both live under the same parent object that got replaced. After the render commits, BlaC passes the recorded set to this consumer's `setPaths` at commit — after the proxy has actually been read, never during render, when the set is still empty.
 
 **3. Intersect on change.** When something calls `emit`, `patch`, or `update`, BlaC computes a **dirty set** — the paths whose values actually changed — and asks one question per consumer: _does this consumer's recorded interest intersect the dirty set?_ That is a cheap set-membership check, not a tree walk. The expensive part (figuring out what changed) happens **once per mutation**, not once per consumer.
 
@@ -65,7 +65,7 @@ The demo below puts this loop into motion. `CountReader` tracks only `state.coun
 There is **one proxy and one recorded path set per `useBloc` call site**, not one shared per bloc. Two components reading the same `UserCubit` get two independent trackers with two independent interest sets. That is the whole point: re-render isolation is per consumer, so `UserName` and `UserEmail` can subscribe to the same instance and wake on different changes.
 
 :::caution[Per-consumer tracking, not a shared proxy]
-The proxy and tracker are created per `useBloc` call and torn down with it. There is deliberately no global "proxy cache" keyed by bloc — a shared proxy would force a shared interest set and collapse the isolation. If you are reading the source: each consumer has its own `pathRef` and its own channel subscription whose interest is `() => pathRef.current`.
+The proxy and tracker are created per `useBloc` call and torn down with it. There is deliberately no global "proxy cache" keyed by bloc — a shared proxy would force a shared interest set and collapse the isolation. If you are reading the source: each consumer has its own recorded path set and its own `consume` consumer, whose paths are set with `setPaths`.
 :::
 
 ### Why one diff, not N diffs
@@ -85,7 +85,7 @@ There is no `autoTrack` flag. A consumer is in one of two modes, decided purely 
 | Mode                                       | How interest is set                                       | Re-renders when                                        |
 | ------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------ |
 | **Auto-track** (default, `select` omitted) | Proxy records the paths you read in render                | A read path's value changes                            |
-| **`select` provided**                      | You return an array; subscription interest is `ALL_PATHS` | The returned array differs per-index (via `Object.is`) |
+| **`select` provided**                      | You return an array; consumer paths are `ALL_PATHS` | The returned array differs per-index (via `Object.is`) |
 
 `select` is the deliberate opt-out: you trade automatic per-path tracking for an explicit array, useful when you want to depend on a computed value or narrow a noisy read. See [Dependency Tracking](/docs/react/dependency-tracking) for the decision guide and [useBloc](/docs/react/use-bloc) for the full option list.
 
@@ -220,8 +220,8 @@ MOUNT
                      init(args) runs once; refs = 1     (create)
   3. first render: trackRender wraps state → proxy + empty path set
   4. you read state.name in JSX → path "name" recorded
-  5. useLayoutEffect: registerConsumerPaths(consumerId, { "name" })
-  6. useEffect: subscribe(() => pathRef.current) to the channel
+  5. commit: consumer = bloc.consume(onChange)
+     consumer.setPaths({ "name" })
   7. onMount(bloc) fires
 
 LIVE
@@ -236,10 +236,10 @@ UNMOUNT
   8. onUnmount(bloc) fires      (bloc still alive here)
   9. release(UserCubit, { args, refId })  → refs[refId]--
  10. refs.size === 0 && !keepAlive?
-       ├─ yes → dispose(): 'dispose' event, channel torn down,
+       ├─ yes → dispose(): 'dispose' event, consumers dropped,
        │         registry entry removed, cascade-dispose zero-ref deps
        └─ no  → instance stays (another consumer, or keepAlive)
- 11. consumer's tracker + subscription torn down
+ 11. consumer.dispose(); tracker torn down
 ```
 
 Two details worth internalizing:
