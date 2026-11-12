@@ -3,7 +3,7 @@ import { StrictMode } from 'react';
 import { render, act, screen } from '@testing-library/react';
 import { Cubit, getRefCount, hasInstance, borrow } from '@blac/core';
 import { useBloc } from '../useBloc';
-import { blacTestSetup } from '@blac/core/testing';
+import { blacTestSetup, flush } from '@blac/core/testing';
 
 class SharedBloc extends Cubit<{ count: number }> {
   constructor() {
@@ -101,7 +101,7 @@ describe('useBloc — shared instances', () => {
     expect(screen.getByTestId('b').textContent).toBe('1');
   });
 
-  it('unmounting one of two consumers does not dispose the instance', () => {
+  it('unmounting one of two consumers does not dispose the instance', async () => {
     function Comp() {
       useBloc(SharedBloc);
       return null;
@@ -119,12 +119,13 @@ describe('useBloc — shared instances', () => {
     expect(getRefCount(SharedBloc)).toBe(2);
 
     rerender(<Parent count={1} />);
+    await flush();
 
     expect(getRefCount(SharedBloc)).toBe(1);
     expect(hasInstance(SharedBloc)).toBe(true);
   });
 
-  it('unmounting the last consumer disposes the instance', () => {
+  it('unmounting the last consumer disposes the instance', async () => {
     function Comp() {
       useBloc(SharedBloc);
       return null;
@@ -133,11 +134,12 @@ describe('useBloc — shared instances', () => {
     expect(hasInstance(SharedBloc)).toBe(true);
 
     unmount();
+    await flush();
 
     expect(hasInstance(SharedBloc)).toBe(false);
   });
 
-  it('three consumers: only disposed after all three unmount', () => {
+  it('three consumers: only disposed after all three unmount', async () => {
     function Comp() {
       useBloc(SharedBloc);
       return null;
@@ -161,16 +163,18 @@ describe('useBloc — shared instances', () => {
     expect(hasInstance(SharedBloc)).toBe(true);
 
     rerender(<Parent count={0} />);
+    await flush();
     expect(hasInstance(SharedBloc)).toBe(false);
   });
 
-  it('re-mounting after dispose creates a fresh instance', () => {
+  it('re-mounting after dispose creates a fresh instance', async () => {
     function Comp() {
       useBloc(SharedBloc);
       return null;
     }
     const { unmount } = render(<Comp />);
     unmount();
+    await flush();
     expect(hasInstance(SharedBloc)).toBe(false);
 
     render(<Comp />);
@@ -181,7 +185,7 @@ describe('useBloc — shared instances', () => {
   // re-runs the memo (JSON key differs) but resolves the SAME instance key.
   // The ownership ref must stay at exactly 1 across the churn and the instance
   // must dispose on unmount.
-  it('R3: static key ignores a non-key arg — refcount stays 1 across churn', () => {
+  it('R3: static key ignores a non-key arg — refcount stays 1 across churn', async () => {
     // The registry dev-warns when the same key is reused with different args;
     // that is expected here (the whole point of a collapsing static key).
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -196,6 +200,7 @@ describe('useBloc — shared instances', () => {
       }
       expect(getRefCount(KeyedBloc, { args: { id: 'a' } })).toBe(1);
       unmount();
+      await flush();
       expect(hasInstance(KeyedBloc, { args: { id: 'a' } })).toBe(false);
     } finally {
       warnSpy.mockRestore();

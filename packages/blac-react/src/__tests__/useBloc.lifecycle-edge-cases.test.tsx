@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vite-plus/test';
 import { renderHook, render, screen, act } from '@testing-library/react';
 import { StrictMode, useLayoutEffect } from 'react';
 import { Cubit, getRefCount, hasInstance } from '@blac/core';
-import { blacTestSetup } from '@blac/core/testing';
+import { blacTestSetup, flush } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
 class LifecycleBloc extends Cubit<{ n: number }> {
@@ -136,7 +136,7 @@ describe('useBloc — lifecycle edge cases', () => {
   // R3/R4: StrictMode double-invokes effects (mount→unmount→mount). The
   // ownership ref is taken/released in a layout effect, so the net is a single
   // ref while mounted and full disposal on unmount.
-  it('StrictMode double-invoke leaves the refcount balanced', () => {
+  it('StrictMode double-invoke leaves the refcount balanced', async () => {
     function Comp() {
       useBloc(LifecycleBloc);
       return null;
@@ -146,8 +146,10 @@ describe('useBloc — lifecycle edge cases', () => {
         <Comp />
       </StrictMode>,
     );
+    await flush();
     expect(getRefCount(LifecycleBloc)).toBe(1);
     unmount();
+    await flush();
     expect(hasInstance(LifecycleBloc)).toBe(false);
   });
 });

@@ -3,7 +3,7 @@ import type {
   StateContainerConstructor,
   StateContainerRegistry,
 } from '@blac/core';
-import { DEP_BRAND } from '@blac/core/internal';
+import { DEP_BRAND, ON_DISPOSE } from '@blac/core/internal';
 import {
   ALL_PATHS,
   emptyPathSet,
@@ -14,6 +14,7 @@ import {
   type PathSubscription,
 } from '@dirtytalk/structural';
 import { buildTrackedProxy } from './buildTrackedProxy';
+import { deferRelease } from './deferRelease';
 
 const NO_PATHS: PathSet = emptyPathSet();
 
@@ -29,6 +30,8 @@ interface DepEntry {
 
 interface DepSub {
   subscription: PathSubscription;
+  /** A dep disposed from outside re-renders the consumer onto its successor. */
+  offDispose: () => void;
   registry: StateContainerRegistry;
   Type: StateContainerConstructor;
   key: string;
@@ -41,7 +44,7 @@ interface DepSub {
  * The render records entries; the commit calls `reconcile`, which subscribes
  * and takes a ref on new deps and drops the ones no longer read. `dispose`
  * releases everything. Refs are only taken at commit, so an uncommitted render
- * never leaks one.
+ * never leaks one, and given back at the end of the tick (see `deferRelease`).
  */
 export class DepSession {
   // Most consumers read no deps, so everything dep-related is allocated on the
@@ -184,7 +187,7 @@ export class DepSession {
       });
       // The key now maps to another instance; re-render against that one.
       if (live !== dep) {
-        registry.release(entry.Type, entry.key, false, refId);
+        deferRelease(registry, entry.Type, entry.key, refId, live);
         this.onChange();
         continue;
       }
@@ -192,6 +195,9 @@ export class DepSession {
       subscription.setInterest(entry.paths);
       (this.subs ??= new Map()).set(dep, {
         subscription,
+        offDispose: dep[ON_DISPOSE](() => {
+          if (!registry.destroyed) this.onChange();
+        }),
         registry,
         Type: entry.Type,
         key: entry.key,
@@ -210,8 +216,9 @@ export class DepSession {
 
   private drop(dep: StateContainer, sub: DepSub): void {
     sub.subscription.unsubscribe();
+    sub.offDispose();
     dep.unregisterConsumer(this.consumerId);
-    sub.registry.release(sub.Type, sub.key, false, this.refId);
+    deferRelease(sub.registry, sub.Type, sub.key, this.refId, dep);
   }
 }
 

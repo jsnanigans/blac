@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { describe, it, expect } from 'vite-plus/test';
 import { render, renderHook, act } from '@testing-library/react';
 import { blac, Cubit, getAll } from '@blac/core';
-import { blacTestSetup } from '@blac/core/testing';
+import { blacTestSetup, flush } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
 class FormCubit extends Cubit<{ n: number; label: string }, { label: string }> {
@@ -49,11 +49,12 @@ describe('useBloc — isolated', () => {
     expect(result.current[0].label).toBe('x');
   });
 
-  it('disposes only the unmounting instance', () => {
+  it('disposes only the unmounting instance', async () => {
     const a = renderHook(() => useBloc(FormCubit, { args: { label: 'x' } }));
     const b = renderHook(() => useBloc(FormCubit, { args: { label: 'x' } }));
 
     a.unmount();
+    await flush();
 
     expect(getAll(FormCubit).map((i) => i.$blac.id)).toEqual([
       b.result.current[1].$blac.id,

@@ -13,7 +13,7 @@ import {
   blac,
 } from '@blac/core';
 import { useBloc } from '../useBloc';
-import { blacTestSetup } from '@blac/core/testing';
+import { blacTestSetup, flush } from '@blac/core/testing';
 
 // ---------------------------------------------------------------------------
 // Blocs for case 1 (auto-track without explicit useBloc on dep) + case 9
@@ -609,6 +609,7 @@ describe('useBloc — track() case 8: unmount releases dep ref', () => {
     expect(hasInstance(LifecycleDep)).toBe(true);
 
     unmount();
+    await flush();
 
     // After unmount, both the consumer (LifecycleConsumer) and its tracked dep
     // (LifecycleDep) should have their ref counts released.

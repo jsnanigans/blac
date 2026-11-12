@@ -315,22 +315,16 @@ describe('useBloc', () => {
     });
 
     it('changed args object recomputes the key', () => {
-      const spy = vi.spyOn(JSON, 'stringify');
-
       const { rerender, result } = renderHook(
         ({ args }) => useBloc(ArgsCounterBloc, { args }),
         { initialProps: { args: { _id: 'change-a' } } },
       );
       const [, bloc1] = result.current;
-      const callsAfterMount = spy.mock.calls.length;
 
       rerender({ args: { _id: 'change-b' } });
       const [, bloc2] = result.current;
 
-      expect(spy.mock.calls.length).toBeGreaterThan(callsAfterMount);
       expect(bloc1).not.toBe(bloc2);
-
-      spy.mockRestore();
     });
 
     it('void args still collapse to an undefined key across re-renders', () => {

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vite-plus/test';
 import { render, renderHook, act, screen } from '@testing-library/react';
 import { useId } from 'react';
 import { Cubit, getRegistry } from '@blac/core';
-import { blacTestSetup } from '@blac/core/testing';
+import { blacTestSetup, flush } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
 class IsoBloc extends Cubit<{ n: number }, { _id: string }> {
@@ -75,7 +75,7 @@ describe('useBloc — instance isolation', () => {
     expect(r1.current[1].state).toBe(r2.current[1].state);
   });
 
-  it('unmounting args{_id:a} disposes only that instance, leaving args{_id:b} alive', () => {
+  it('unmounting args{_id:a} disposes only that instance, leaving args{_id:b} alive', async () => {
     function CompA() {
       useBloc(IsoBloc, { args: { _id: 'a' } });
       return null;
@@ -98,6 +98,7 @@ describe('useBloc — instance isolation', () => {
     expect(getRegistry().hasInstance(IsoBloc, 'b')).toBe(true);
 
     rerender(<Parent showA={false} />);
+    await flush();
 
     expect(getRegistry().hasInstance(IsoBloc, 'a')).toBe(false);
     expect(getRegistry().hasInstance(IsoBloc, 'b')).toBe(true);

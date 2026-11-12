@@ -16,6 +16,10 @@ export interface BlacOptions {
    * component unmounts. Applies to `useBloc` only; `ensure`/`acquire` still
    * resolve the shared instance. `false` turns off an `isolated` inherited
    * from a base class.
+   *
+   * The instance belongs to a committed mount. A first render that suspends
+   * is discarded by React and its retry gets a new instance, so a component
+   * must not suspend on a promise owned by its own isolated bloc.
    */
   isolated?: boolean;
   /** Exclude bloc from DevTools tracking (prevents infinite loops) */

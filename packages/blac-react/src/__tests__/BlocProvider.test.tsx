@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vite-plus/test';
 import { memo } from 'react';
 import { render, act, screen } from '@testing-library/react';
 import { Cubit, hasInstance } from '@blac/core';
-import { blacTestSetup } from '@blac/core/testing';
+import { blacTestSetup, flush } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 import { BlocProvider, useProvidedArgs } from '../BlocProvider';
 
@@ -175,7 +175,7 @@ describe('E1 — BlocProvider args-based scoping', () => {
     expect(hasInstance(CounterCubit)).toBe(true);
   });
 
-  it('unmounting a provider subtree drops the ref on that instance', () => {
+  it('unmounting a provider subtree drops the ref on that instance', async () => {
     function Probe() {
       useBloc(CounterCubit);
       return null;
@@ -198,6 +198,7 @@ describe('E1 — BlocProvider args-based scoping', () => {
     );
 
     rerender(<Parent show={false} />);
+    await flush();
     expect(hasInstance(CounterCubit, { args: { _id: 'ephemeral' } })).toBe(
       false,
     );

@@ -8,7 +8,7 @@ import {
   getRegistry,
 } from '@blac/core';
 import { useBloc } from '../useBloc';
-import { blacTestSetup } from '@blac/core/testing';
+import { blacTestSetup, flush } from '@blac/core/testing';
 
 blacTestSetup();
 
@@ -78,7 +78,7 @@ describe('useBloc — stress tests', () => {
     }
   });
 
-  it('mount/unmount 50 times — refCount returns to 0 after each cycle', () => {
+  it('mount/unmount 50 times — refCount returns to 0 after each cycle', async () => {
     function Comp() {
       useBloc(CounterBloc);
       return null;
@@ -86,6 +86,7 @@ describe('useBloc — stress tests', () => {
     for (let i = 0; i < 50; i++) {
       const { unmount } = render(<Comp />);
       unmount();
+      await flush();
       expect(hasInstance(CounterBloc)).toBe(false);
     }
   });

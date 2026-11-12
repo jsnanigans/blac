@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vite-plus/test';
 import { renderHook } from '@testing-library/react';
 import { Cubit, borrow } from '@blac/core';
 import { useBloc } from '../useBloc';
-import { blacTestSetup } from '@blac/core/testing';
+import { blacTestSetup, flush } from '@blac/core/testing';
 
 blacTestSetup();
 
@@ -82,7 +82,7 @@ describe('useBloc args option', () => {
     expect(result.current[0].id).toBe('carol');
   });
 
-  it('disposes the args-keyed instance on unmount (no leak)', () => {
+  it('disposes the args-keyed instance on unmount (no leak)', async () => {
     const args = { userId: 'leaky' };
 
     const { unmount } = renderHook(() => useBloc(UserCard, { args }));
@@ -90,6 +90,7 @@ describe('useBloc args option', () => {
     expect(borrow(UserCard, { args })).not.toBeNull();
 
     unmount();
+    await flush();
 
     // After unmount the ref must be dropped and the instance disposed.
     // Before the fix, release looked up 'default' instead of the args key,

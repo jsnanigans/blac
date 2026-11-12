@@ -16,9 +16,11 @@ import {
   type PathSet,
   type PathSubscription,
 } from '@dirtytalk/structural';
+import { ON_DISPOSE } from '@blac/core/internal';
 import { useProvidedArgs } from './BlocProvider';
 import { useRegistry } from './RegistryProvider';
 import { buildTrackedProxy } from './buildTrackedProxy';
+import { deferRelease } from './deferRelease';
 import { DepSession, makeDepWrapper, type DepHandleLike } from './depSession';
 import type { UseBlocOptions, UseBlocReturn } from './types';
 
@@ -37,16 +39,23 @@ let nextConsumerId = 0;
  *   (per-index `Object.is`).
  *
  * Lifecycle:
- * - The bloc is acquired from the registry on mount and released on
- *   unmount. The instance key is derived from `options.args` (own args),
- *   then the surrounding {@link BlocProvider} context args for this bloc,
- *   then the default key (no args).
+ * - The bloc is acquired from the registry on mount and released at the end
+ *   of the tick in which the component unmounts, so a consumer mounting in
+ *   the same commit takes over the instance instead of getting a new one.
+ *   The instance key is derived from `options.args` (own args), then the
+ *   surrounding {@link BlocProvider} context args for this bloc, then the
+ *   default key (no args).
+ * - If the bloc is disposed from outside while mounted (`clear`,
+ *   `clearWhere`, ...), the component re-renders against a new instance.
  * - `options.onMount` fires after the bloc is acquired; `options.onUnmount`
  *   fires *before* the registry releases its ref, so the bloc is still
  *   alive when the callback runs.
  *
  * Per-mount private instance: mark the class `@blac({ isolated: true })`, or
- * pass a unique key arg yourself (e.g. `useId()` in `args`).
+ * pass a unique key arg yourself (e.g. `useId()` in `args`). A per-mount
+ * instance does not survive a first render that suspends: React discards that
+ * render's hook state, so the retry gets a new instance. Do not `use()` a
+ * promise owned by a per-mount bloc in the component that creates it.
  *
  * @typeParam T - The state container constructor type (inferred from BlocClass)
  * @param BlocClass - The state container class to connect to
@@ -78,7 +87,6 @@ export function useBloc<
   options?: UseBlocOptions<T>,
 ): UseBlocReturn<T, ExtractState<T>> {
   const registry = useRegistry();
-
   const consumerRef = useRef<Consumer | null>(null);
   const consumer = (consumerRef.current ??= createConsumer());
 
@@ -95,12 +103,12 @@ export function useBloc<
     : sharedKey;
 
   // A memo kept on the consumer rather than in `useMemo`: no hook, deps array
-  // or factory closure per mount. `rebindNonce` is bumped by the commit when
-  // the rendered instance was disposed and recreated before commit (a
-  // same-commit owner handoff, or StrictMode's double effect); the tracked
-  // proxy can't be retargeted in place. Keyed on `BlocClass` as well as the
-  // key: classes without args or a `static key` share the default key, so
-  // `useBloc(cond ? A : B)` must still re-subscribe on a class swap.
+  // or factory closure per mount. `rebindNonce` is bumped when the bound
+  // instance is disposed from outside, or was replaced between render and
+  // commit; the tracked proxy can't be retargeted in place. Keyed on
+  // `BlocClass` as well as the key: classes without args or a `static key`
+  // share the default key, so `useBloc(cond ? A : B)` must still re-subscribe
+  // on a class swap.
   if (
     consumer.BlocClass !== BlocClass ||
     consumer.instanceKey !== instanceKey ||
@@ -165,6 +173,11 @@ const NO_DEPS: [] = [];
  *
  * `bump` increments `version` before calling `notify`: uSES requires
  * `getSnapshot()` to reflect the change by the time it is notified.
+ *
+ * The container subscription is made by the commit (a layout effect), not by
+ * uSES's `subscribe` (a passive effect that can run a task later): a change
+ * raised in between still bumps `version`, which uSES compares when it
+ * subscribes.
  */
 interface Consumer {
   id: string;
@@ -181,17 +194,19 @@ interface Consumer {
   rebindNonce: number;
   renderedState: unknown;
   version: number;
-  /** `noop` while unsubscribed. */
+  /** `noop` until uSES subscribes. */
   notify: () => void;
+  unlisten: () => void;
   bump: () => void;
   getSnapshot: () => number;
   onChange: () => void;
-  unsubscribe: () => void;
+  onDisposed: () => void;
+  offDispose: (() => void) | null;
   commit: () => void;
   mount: () => () => void;
   /** The committed `paths`, or `ALL_PATHS` in select mode. */
   interest: PathSet;
-  /** `null` while unsubscribed. */
+  /** `null` until the first commit and after unmount. */
   subscription: PathSubscription | null;
   subscribedTo: StateContainer | null;
   paths: PathSet;
@@ -213,7 +228,7 @@ interface Consumer {
   ownedClass: StateContainerConstructor | null;
   ownedKey: string;
   ownedRegistry: StateContainerRegistry | null;
-  ownedBloc: unknown;
+  ownedBloc: StateContainer | null;
 }
 
 function createConsumer(): Consumer {
@@ -226,19 +241,31 @@ function createConsumer(): Consumer {
     registry: null as unknown as StateContainerRegistry,
     container: null as unknown as StateContainer,
     trackedBloc: null,
-    subscribe: null as unknown as Consumer['subscribe'],
+    subscribe: (onStoreChange) => {
+      consumer.notify = onStoreChange;
+      return consumer.unlisten;
+    },
     boundNonce: 0,
     rebindNonce: 0,
     renderedState: undefined,
     version: 0,
     notify: noop,
+    unlisten: () => {
+      consumer.notify = noop;
+    },
     bump: () => {
       consumer.version++;
       consumer.notify();
     },
     getSnapshot: () => consumer.version,
     onChange: () => onChange(consumer),
-    unsubscribe: () => unsubscribe(consumer),
+    onDisposed: () => {
+      // Nothing to rebind to once the whole registry is gone.
+      if (consumer.registry.destroyed) return;
+      consumer.rebindNonce++;
+      consumer.bump();
+    },
+    offDispose: null,
     commit: () => commit(consumer),
     mount: () => teardown,
     interest: NO_PATHS,
@@ -263,6 +290,7 @@ function createConsumer(): Consumer {
   };
   const teardown = (): void => {
     release(consumer);
+    detach(consumer);
     consumer.deps.dispose();
   };
   consumer.deps = new DepSession(id, consumer.bump);
@@ -313,28 +341,30 @@ function bind(
     consumer.tracked,
     onDepHandle,
   );
-  // A new identity per instance, so uSES re-subscribes.
-  consumer.subscribe = (onStoreChange) => subscribe(consumer, onStoreChange);
 }
 
-function subscribe(consumer: Consumer, onStoreChange: () => void): () => void {
-  consumer.notify = onStoreChange;
+/** Subscribe to the bound container. @returns true if it was not already. */
+function attach(consumer: Consumer): boolean {
   const container = consumer.container;
+  if (consumer.subscribedTo === container) return false;
+  detach(consumer);
   const subscription = container.subscribePaths(consumer.onChange);
   subscription.setInterest(consumer.interest);
   consumer.subscription = subscription;
   consumer.subscribedTo = container;
   container.registerConsumerPaths(consumer.id, consumer.paths);
-  // An emit raised during render is still pending in the channel, so its
-  // next flush delivers it to this subscriber.
-  return consumer.unsubscribe;
+  consumer.offDispose = container[ON_DISPOSE](consumer.onDisposed);
+  return true;
 }
 
-function unsubscribe(consumer: Consumer): void {
-  consumer.notify = noop;
+function detach(consumer: Consumer): void {
+  const container = consumer.subscribedTo;
+  if (container === null) return;
   consumer.subscription?.unsubscribe();
   consumer.subscription = null;
-  consumer.subscribedTo?.unregisterConsumer(consumer.id);
+  consumer.offDispose?.();
+  consumer.offDispose = null;
+  container.unregisterConsumer(consumer.id);
   consumer.subscribedTo = null;
 }
 
@@ -354,7 +384,9 @@ function onChange(consumer: Consumer): void {
 
 function claim(consumer: Consumer): void {
   const { BlocClass, instanceKey, registry } = consumer;
+  // The instance too: after an outside dispose the same key holds a new one.
   if (
+    consumer.ownedBloc === consumer.container &&
     consumer.ownedClass === BlocClass &&
     consumer.ownedKey === instanceKey &&
     consumer.ownedRegistry === registry
@@ -376,29 +408,34 @@ function claim(consumer: Consumer): void {
   consumer.ownedBloc = live;
   consumer.onMount?.(live);
   // The render captured a stale instance; re-render against the live one.
-  if (live !== (consumer.container as unknown)) {
+  if (live !== consumer.container) {
     consumer.rebindNonce++;
     consumer.bump();
   }
 }
 
 function release(consumer: Consumer): void {
-  const { ownedClass, ownedRegistry } = consumer;
-  if (ownedClass === null || ownedRegistry === null) return;
+  const { ownedClass, ownedRegistry, ownedBloc } = consumer;
+  if (ownedClass === null || ownedRegistry === null || ownedBloc === null) {
+    return;
+  }
   // Before release, so the bloc is still alive in the callback.
-  consumer.onUnmount?.(consumer.ownedBloc);
+  consumer.onUnmount?.(ownedBloc);
   consumer.ownedClass = null;
   consumer.ownedRegistry = null;
-  ownedRegistry.release(
+  consumer.ownedBloc = null;
+  deferRelease(
+    ownedRegistry,
     ownedClass,
     consumer.ownedKey,
-    false,
     consumer.primaryRefId,
+    ownedBloc,
   );
 }
 
 function commit(consumer: Consumer): void {
   claim(consumer);
+  const attached = attach(consumer);
   // Getters called after commit read live state, not this render's proxy.
   consumer.tracked.current = null;
   const disarm = consumer.disarm;
@@ -408,17 +445,19 @@ function commit(consumer: Consumer): void {
   }
   const deps = consumer.deps;
   deps.disarm();
+  const primary = consumer.container;
+  const changedSinceRender = primary.state !== consumer.renderedState;
   if (consumer.isSelectMode) {
     // A later switch back to auto-track must reconcile in full.
     deps.invalidate();
+    if (changedSinceRender) onChange(consumer);
     return;
   }
-  const primary = consumer.container;
   // A change between render and commit was diffed against the previous
   // interest, which may lack paths only this render read.
-  if (primary.state !== consumer.renderedState) consumer.bump();
+  if (changedSinceRender) consumer.bump();
   consumer.paths = deps.settle();
-  if (deps.isUnchanged()) return;
+  if (!attached && deps.isUnchanged()) return;
 
   primary.registerConsumerPaths(consumer.id, consumer.paths);
   setInterest(consumer, consumer.paths);
