@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import {
   isIsolatedClass,
+  resolveInstanceKey,
   type ExtractArgs,
   type ExtractState,
   type InstanceState,
@@ -97,7 +98,10 @@ export function useBloc<
   consumer.ownArgs = (options as { args?: ExtractArgs<T> } | undefined)?.args;
   consumer.providerArgs = useProvidedArgs(BlocClass);
   const effectiveArgs = resolveEffectiveArgs(consumer);
-  const sharedKey = registry.resolveKey(BlocClass, undefined, effectiveArgs);
+  const sharedKey = resolveInstanceKey(
+    BlocClass,
+    effectiveArgs as ExtractArgs<T>,
+  );
   const instanceKey = isIsolatedClass(BlocClass)
     ? `${sharedKey}#${consumer.id}`
     : sharedKey;

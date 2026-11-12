@@ -3,6 +3,7 @@ import type {
   StateContainerConstructor,
   StateContainerRegistry,
 } from '@blac/core';
+import { resolveInstanceKey } from '@blac/core';
 import { DEP_BRAND, ON_DISPOSE } from '@blac/core/internal';
 import {
   ALL_PATHS,
@@ -281,7 +282,7 @@ export function makeDepWrapper(
 
   const resolve = (options?: DepAccessOptionsLike) => {
     const args = options?.args ?? brand.defaultArgs;
-    const key = registry.resolveKey(brand.Type, undefined, args);
+    const key = resolveInstanceKey(brand.Type, args);
     const dep = registry.acquire(brand.Type, key, {
       canCreate: true,
       countRef: false,
