@@ -112,9 +112,10 @@ export class PluginManager {
 
     if (!this.shouldEnablePlugin(effectiveConfig)) {
       if (IS_DEV) {
-        console.log(
-          `[BlaC] Plugin "${plugin.name}" skipped (environment mismatch)`,
-        );
+        const reason = effectiveConfig.enabled
+          ? 'environment mismatch'
+          : 'disabled';
+        console.log(`[BlaC] Plugin "${plugin.name}" skipped (${reason})`);
       }
       return;
     }
@@ -367,8 +368,7 @@ export class PluginManager {
     bridge.prevState = next;
 
     let ctx: PluginContext | undefined;
-    for (const { plugin, config } of this.plugins.values()) {
-      if (!config.enabled) continue;
+    for (const { plugin } of this.plugins.values()) {
       // eslint-disable-next-line @typescript-eslint/unbound-method -- invoked via .call below
       const hook = plugin.onStateChange;
       if (typeof hook !== 'function') continue;
@@ -396,9 +396,7 @@ export class PluginManager {
     ...extraArgs: any[]
   ): void {
     let ctx: PluginContext | undefined;
-    for (const { plugin, config } of this.plugins.values()) {
-      if (!config.enabled) continue;
-
+    for (const { plugin } of this.plugins.values()) {
       const hook = plugin[hookName];
       if (typeof hook !== 'function') continue;
 
