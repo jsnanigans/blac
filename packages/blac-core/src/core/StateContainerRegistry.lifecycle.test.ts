@@ -45,12 +45,6 @@ const withCreatedListener = () => {
   return { listener, unsubscribe };
 };
 
-const withStateChangedListener = () => {
-  const listener = vi.fn();
-  const unsubscribe = globalRegistry.on('stateChanged', listener);
-  return { listener, unsubscribe };
-};
-
 const withDisposedListener = () => {
   const listener = vi.fn();
   const unsubscribe = globalRegistry.on('disposed', listener);
@@ -82,17 +76,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       unsubscribe();
     });
 
-    it('should subscribe to stateChanged events', async () => {
-      const { listener } = withStateChangedListener();
-
-      const bloc = fixture.cubit(0);
-      bloc.increment();
-
-      await new Promise<void>((r) => queueMicrotask(r));
-      expect(listener).toHaveBeenCalledTimes(1);
-      expect(listener).toHaveBeenCalledWith(bloc, { value: 0 }, { value: 1 });
-    });
-
     it('should subscribe to disposed events', () => {
       const { listener } = withDisposedListener();
 
@@ -118,19 +101,14 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
     it('should allow subscribing to multiple event types', async () => {
       const { listener: createdListener } = withCreatedListener();
-      const { listener: stateChangedListener } = withStateChangedListener();
       const { listener: disposedListener } = withDisposedListener();
 
       const bloc = fixture.cubit();
       bloc[INIT_CONFIG]({});
-      bloc.increment();
       bloc.dispose();
 
       expect(createdListener).toHaveBeenCalledTimes(1);
       expect(disposedListener).toHaveBeenCalledTimes(1);
-
-      await new Promise<void>((r) => queueMicrotask(r));
-      expect(stateChangedListener).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -146,20 +124,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
       const bloc2 = fixture.cubit();
       bloc2[INIT_CONFIG]({});
-      expect(listener).toHaveBeenCalledTimes(1);
-    });
-
-    it('should unsubscribe from stateChanged events', async () => {
-      const bloc = fixture.cubit(0);
-      const { listener, unsubscribe } = withStateChangedListener();
-
-      bloc.increment();
-      await new Promise<void>((r) => queueMicrotask(r));
-      expect(listener).toHaveBeenCalledTimes(1);
-
-      unsubscribe();
-      bloc.increment();
-      await new Promise<void>((r) => queueMicrotask(r));
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
@@ -198,21 +162,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(bloc);
-    });
-
-    it('should emit stateChanged after state actually changes', async () => {
-      const { listener } = withStateChangedListener();
-
-      const bloc = fixture.cubit(0);
-
-      bloc.setValue(5);
-      await new Promise<void>((r) => queueMicrotask(r));
-      expect(listener).toHaveBeenCalledTimes(1);
-
-      bloc.increment();
-      await new Promise<void>((r) => queueMicrotask(r));
-      expect(listener).toHaveBeenCalledTimes(2);
-      expect(listener).toHaveBeenCalledWith(bloc, { value: 5 }, { value: 6 });
     });
 
     it('should emit disposed after cleanup', () => {
@@ -277,42 +226,11 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
   });
 
   describe('Plugin Use Cases', () => {
-    it('should support Redux DevTools plugin pattern', async () => {
-      const actions: any[] = [];
-      const states: any[] = [];
-
-      globalRegistry.on('stateChanged', (container, prevState, nextState) => {
-        actions.push({
-          type: 'STATE_CHANGE',
-          containerName: container.$blac.name,
-          timestamp: Date.now(),
-        });
-        states.push({ prev: prevState, next: nextState });
-      });
-
-      const bloc = fixture.cubit(0);
-      bloc.increment();
-      bloc.increment();
-
-      await new Promise<void>((r) => queueMicrotask(r));
-      expect(actions).toHaveLength(2);
-      expect(states).toEqual([
-        { prev: { value: 0 }, next: { value: 1 } },
-        { prev: { value: 1 }, next: { value: 2 } },
-      ]);
-    });
-
     it('should support logging plugin pattern', async () => {
       const logs: string[] = [];
 
       globalRegistry.on('created', (container) => {
         logs.push(`[CREATED] ${container.$blac.name} (${container.$blac.id})`);
-      });
-
-      globalRegistry.on('stateChanged', (container, prev, next) => {
-        logs.push(
-          `[STATE] ${container.$blac.name}: ${JSON.stringify(prev)} -> ${JSON.stringify(next)}`,
-        );
       });
 
       globalRegistry.on('disposed', (container) => {
@@ -321,66 +239,11 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
       const bloc = fixture.cubit(0);
       bloc[INIT_CONFIG]({});
-      bloc.increment();
       bloc.dispose();
 
-      // created and disposed are synchronous; stateChanged is deferred
       expect(logs).toHaveLength(2);
       expect(logs[0]).toMatch(/\[CREATED\] TestCubit/);
       expect(logs[1]).toMatch(/\[DISPOSED\] TestCubit/);
-
-      await new Promise<void>((r) => queueMicrotask(r));
-      expect(logs).toHaveLength(3);
-      expect(logs[2]).toBe('[STATE] TestCubit: {"value":0} -> {"value":1}');
-    });
-
-    it('should support time-travel debugging plugin pattern', async () => {
-      const history: Array<{ state: any; timestamp: number }> = [];
-      let _currentIndex = -1;
-
-      globalRegistry.on('stateChanged', (container, prev, next) => {
-        _currentIndex++;
-        history.push({ state: next, timestamp: Date.now() });
-      });
-
-      const bloc = fixture.cubit(0);
-      bloc.increment();
-      bloc.increment();
-      bloc.increment();
-
-      await new Promise<void>((r) => queueMicrotask(r));
-      expect(history).toHaveLength(3);
-      expect(history.map((h) => h.state)).toEqual([
-        { value: 1 },
-        { value: 2 },
-        { value: 3 },
-      ]);
-
-      const previousState = history[1].state;
-      expect(previousState).toEqual({ value: 2 });
-    });
-
-    it('should support performance monitoring plugin pattern', async () => {
-      const metrics = { stateChanges: 0, averageStateChangeTime: 0 };
-      const startTimes = new Map<any, number>();
-
-      globalRegistry.on('stateChanged', (container) => {
-        const start = startTimes.get(container) || Date.now();
-        const duration = Date.now() - start;
-        metrics.stateChanges++;
-        metrics.averageStateChangeTime =
-          (metrics.averageStateChangeTime * (metrics.stateChanges - 1) +
-            duration) /
-          metrics.stateChanges;
-      });
-
-      const bloc = fixture.cubit(0);
-      startTimes.set(bloc, Date.now());
-      bloc.increment();
-      bloc.increment();
-
-      await new Promise<void>((r) => queueMicrotask(r));
-      expect(metrics.stateChanges).toBe(2);
     });
   });
 
@@ -412,7 +275,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
   describe('API Stability Tests', () => {
     it('should maintain consistent event names', () => {
-      const events: LifecycleEvent[] = ['created', 'stateChanged', 'disposed'];
+      const events: LifecycleEvent[] = ['created', 'disposed'];
 
       events.forEach((event) => {
         expect(() => {
@@ -424,12 +287,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     it('should maintain consistent listener signatures', () => {
       globalRegistry.on('created', (container: StateContainer<any>) => {
         expect(container).toBeDefined();
-      });
-
-      globalRegistry.on('stateChanged', (container, prev, next) => {
-        expect(container).toBeDefined();
-        expect(prev).toBeDefined();
-        expect(next).toBeDefined();
       });
 
       globalRegistry.on('disposed', (container) => {

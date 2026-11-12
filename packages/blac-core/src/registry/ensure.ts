@@ -1,4 +1,5 @@
 import { getRegistry } from './config';
+import { resolveInstanceKey } from '../core/resolveInstanceKey';
 import type {
   ExtractArgs,
   StateContainerConstructor,
@@ -13,6 +14,6 @@ export function ensure<T extends StateContainerConstructor>(
   opts?: { args?: ExtractArgs<T> },
 ): InstanceType<T> {
   const registry = getRegistry();
-  const key = registry.resolveKey(BlocClass, undefined, opts?.args);
+  const key = resolveInstanceKey(BlocClass, opts?.args);
   return registry.ensure(BlocClass, key, opts?.args);
 }

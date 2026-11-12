@@ -5,16 +5,14 @@ import type {
 } from './StateContainer';
 import { BLAC_ERROR_PREFIX, IS_DEV } from '../constants';
 import { getBlacConfig } from '../config';
-import {
-  isKeepAliveClass,
-  getClassKey,
-  getBlacName,
-} from '../utils/static-props';
+import { isKeepAliveClass, getBlacName } from '../utils/static-props';
 import { structuralKey, DEFAULT_STRUCTURAL_KEY } from '../utils/structural-key';
 import {
+  ExtractArgs,
   InstanceReadonlyState,
   StateContainerConstructor,
 } from '../types/utilities';
+import { resolveInstanceKey } from './resolveInstanceKey';
 import { INIT_CONFIG, INSERT_INSTANCE, SET_ACTIVE } from './symbols';
 
 /**
@@ -70,11 +68,6 @@ type Container = StateContainer<any, any, any>;
  */
 export interface LifecycleEvents {
   created: [container: Container];
-  stateChanged: [
-    container: Container,
-    previousState: Readonly<Record<string, unknown>>,
-    currentState: Readonly<Record<string, unknown>>,
-  ];
   disposed: [container: Container];
   refAcquired: [container: Container, refId: string];
   refReleased: [container: Container, refId: string];
@@ -110,14 +103,8 @@ export type LifecycleListener<E extends LifecycleEvent> = (
  * const registry = new StateContainerRegistry();
  * const instance = registry.acquire(MyBloc);  // ownership, must release
  * const other = registry.ensure(OtherBloc);   // no ownership, bloc-to-bloc
- * registry.on('stateChanged', (container, prev, next) => {
- *   console.log('State changed:', prev, '->', next);
- * });
+ * registry.on('created', (container) => console.log(container));
  * ```
- *
- * `stateChanged` fires once per emit (microtask-deferred, not coalesced).
- * Plugins' `onStateChange` fires once per channel flush with coalesced
- * `prev`/`next` and a `PathSet`.
  */
 export class StateContainerRegistry {
   private readonly instancesByConstructor = new WeakMap<
@@ -151,13 +138,6 @@ export class StateContainerRegistry {
     LifecycleEvent,
     Set<(...args: any[]) => void>
   >();
-
-  get hasStateChangedListeners(): boolean {
-    return (this.listeners.get('stateChanged')?.size ?? 0) > 0;
-  }
-  private _pendingStateChanges: Array<
-    [StateContainer<any, any, any>, any, any]
-  > | null = null;
 
   private _autoRefIdCounter = 0;
   private _destroyed = false;
@@ -274,20 +254,6 @@ export class StateContainerRegistry {
     this._syncActivation(entry);
   }
 
-  /**
-   * Register a StateContainer class with configuration
-   * @param constructor - The StateContainer class constructor
-   * @throws Error if type is already registered
-   */
-  register<T extends StateContainerConstructor>(constructor: T): void {
-    if (this.types.has(constructor)) {
-      throw new Error(
-        `${BLAC_ERROR_PREFIX} Type "${getBlacName(constructor)}" is already registered`,
-      );
-    }
-    this.types.add(constructor);
-  }
-
   private ensureInstancesMap<T extends StateContainerConstructor>(
     Type: T,
   ): Map<string, InstanceEntry> {
@@ -333,32 +299,6 @@ export class StateContainerRegistry {
     instances.set(instanceKey, entry);
     this._indexEntry(entry);
     this.types.add(Type);
-  }
-
-  /**
-   * The single source of keying, so `acquire` and `release` agree: explicit
-   * key \> `static key(args)` \> structural hash of args \> default key.
-   *
-   * @param Type - The StateContainer class constructor
-   * @param instanceKey - Explicit key, or undefined to derive from args
-   * @param args - Construction args used for structural/`static key` derivation
-   */
-  resolveKey<T extends StateContainerConstructor = StateContainerConstructor>(
-    Type: T,
-    instanceKey: string | undefined,
-    args: unknown,
-  ): string {
-    if (instanceKey !== undefined) {
-      return instanceKey;
-    }
-    const keyFn = getClassKey(Type);
-    if (keyFn) {
-      return keyFn(args);
-    }
-    if (args !== undefined) {
-      return structuralKey(args);
-    }
-    return DEFAULT_STRUCTURAL_KEY;
   }
 
   private assertInstanceLimit(
@@ -422,7 +362,8 @@ export class StateContainerRegistry {
     const { canCreate = true, countRef = true } = options;
     const args = options.args;
 
-    const resolvedKey = this.resolveKey(Type, instanceKey, args);
+    const resolvedKey =
+      instanceKey ?? resolveInstanceKey(Type, args as ExtractArgs<T>);
 
     const instances = this.ensureInstancesMap(Type);
     let entry = instances.get(resolvedKey);
@@ -881,38 +822,6 @@ export class StateContainerRegistry {
           error,
         );
       }
-    }
-  }
-
-  /**
-   * Queue a microtask-deferred `stateChanged`.
-   * @internal - Called by StateContainer.applyState
-   */
-  notifyStateChanged(
-    container: StateContainer<any, any, any>,
-    previousState: any,
-    newState: any,
-  ): void {
-    if (!this.hasStateChangedListeners) return;
-
-    if (!this._pendingStateChanges) {
-      this._pendingStateChanges = [];
-      queueMicrotask(() => this.flushStateChanged());
-    }
-    this._pendingStateChanges.push([container, previousState, newState]);
-  }
-
-  /**
-   * One event per emit, deliberately not coalesced: devtools and time-travel
-   * need every intermediate transition. Plugins get the coalesced lane.
-   */
-  private flushStateChanged(): void {
-    const pending = this._pendingStateChanges;
-    this._pendingStateChanges = null;
-    if (!pending) return;
-
-    for (const [container, prev, next] of pending) {
-      this.emit('stateChanged', container, prev, next);
     }
   }
 }

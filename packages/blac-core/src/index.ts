@@ -35,7 +35,6 @@ export {
   clear,
   clearAll,
   clearWhere,
-  register,
   hasInstance,
   getRefCount,
   getRefIds,

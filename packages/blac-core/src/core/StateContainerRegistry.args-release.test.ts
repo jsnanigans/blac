@@ -60,9 +60,5 @@ describe('StateContainerRegistry args-based release', () => {
     const keyB = resolveInstanceKey(UserCard, { userId: 'b' });
     expect(keyA).not.toBe('default');
     expect(keyA).not.toBe(keyB);
-    // The internal tier still honours an explicit key.
-    expect(
-      getRegistry().resolveKey(UserCard, 'explicit', { userId: 'a' }),
-    ).toBe('explicit');
   });
 });

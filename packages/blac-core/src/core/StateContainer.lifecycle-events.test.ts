@@ -90,35 +90,4 @@ describe('StateContainer Lifecycle Events', () => {
     release(TestCubit);
     expect(disposedListener).toHaveBeenCalledTimes(1);
   });
-
-  it('should emit "stateChanged" event when state changes', async () => {
-    const stateChangedListener = vi.fn();
-    getRegistry().on('stateChanged', stateChangedListener);
-
-    class TestCubit extends Cubit<{ count: number }> {
-      constructor() {
-        super({ count: 0 });
-      }
-
-      increment = () => {
-        this.emit({ count: this.state.count + 1 });
-      };
-    }
-
-    const instance = acquire(TestCubit);
-
-    // Change state
-    instance.increment();
-
-    // stateChanged is deferred to microtask
-    await new Promise<void>((r) => queueMicrotask(r));
-
-    // Verify stateChanged event was emitted
-    expect(stateChangedListener).toHaveBeenCalledTimes(1);
-    expect(stateChangedListener).toHaveBeenCalledWith(
-      instance,
-      { count: 0 },
-      { count: 1 },
-    );
-  });
 });

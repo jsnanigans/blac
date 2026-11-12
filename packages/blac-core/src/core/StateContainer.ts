@@ -7,6 +7,7 @@ import {
 import { generateSimpleId } from '../utils/idGenerator';
 import { IS_DEV } from '../constants';
 import { getRegistry } from '../registry/config';
+import { resolveInstanceKey } from './resolveInstanceKey';
 import type { StateContainerRegistry } from './StateContainerRegistry';
 import type {
   ExtractArgs,
@@ -435,17 +436,14 @@ export abstract class StateContainer<
       this._dependencies = new Map();
     }
     try {
-      this._dependencies.set(
-        Type,
-        this._registry.resolveKey(Type, undefined, defaultArgs),
-      );
+      this._dependencies.set(Type, resolveInstanceKey(Type, defaultArgs));
     } catch {
       // A `static key` that needs args only a per-call access supplies.
     }
 
     const resolve = (args?: ExtractArgs<T>): InstanceType<T> => {
       const effectiveArgs = args ?? defaultArgs;
-      const key = this._registry.resolveKey(Type, undefined, effectiveArgs);
+      const key = resolveInstanceKey(Type, effectiveArgs);
       // Same no-ref semantics as `ensure()`, but records `this` as a
       // dependent edge on the resolved entry so the registry can sweep it
       // on `this`'s disposal (see StateContainerRegistry._releaseDependent).
@@ -678,9 +676,6 @@ export abstract class StateContainer<
         this._pendingChange = { prev, next };
       }
     }
-
-    // Microtask-deferred, so it is safe to queue before `super.emit`.
-    this._registry.notifyStateChanged(this, prev, next);
   }
 
   /**

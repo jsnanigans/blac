@@ -1,4 +1,5 @@
 import { getRegistry } from './config';
+import { resolveInstanceKey } from '../core/resolveInstanceKey';
 import type {
   ExtractArgs,
   StateContainerConstructor,
@@ -13,7 +14,7 @@ export function hasInstance<T extends StateContainerConstructor>(
   opts?: { args?: ExtractArgs<T> },
 ): boolean {
   const registry = getRegistry();
-  const key = registry.resolveKey(BlocClass, undefined, opts?.args);
+  const key = resolveInstanceKey(BlocClass, opts?.args);
   return registry.hasInstance(BlocClass, key);
 }
 
@@ -25,7 +26,7 @@ export function getRefCount<T extends StateContainerConstructor>(
   opts?: { args?: ExtractArgs<T> },
 ): number {
   const registry = getRegistry();
-  const key = registry.resolveKey(BlocClass, undefined, opts?.args);
+  const key = resolveInstanceKey(BlocClass, opts?.args);
   return registry.getRefCount(BlocClass, key);
 }
 
@@ -37,7 +38,7 @@ export function getRefIds<T extends StateContainerConstructor>(
   opts?: { args?: ExtractArgs<T> },
 ): string[] {
   const registry = getRegistry();
-  const key = registry.resolveKey(BlocClass, undefined, opts?.args);
+  const key = resolveInstanceKey(BlocClass, opts?.args);
   return registry.getRefIds(BlocClass, key);
 }
 

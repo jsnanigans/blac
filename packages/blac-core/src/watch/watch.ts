@@ -162,7 +162,7 @@ function toWatchTarget(
   }
   return {
     blocClass: input,
-    key: registry.resolveKey(input, undefined, undefined),
+    key: resolveInstanceKey(input),
     args: undefined,
   };
 }

@@ -12,7 +12,6 @@ import {
   release,
   getAll,
   forEach,
-  register,
   clear,
   clearAll,
   getStats,
@@ -52,51 +51,6 @@ class UserBloc extends StateContainer<
 
 describe('StateContainer - Registry Features', () => {
   blacTestSetup();
-
-  describe('Type Registration', () => {
-    it('should register a bloc type', () => {
-      register(CounterBloc);
-
-      const stats = getStats();
-      expect(stats.registeredTypes).toBe(1);
-      expect(stats.totalInstances).toBe(0);
-    });
-
-    it('should throw if registering duplicate type', () => {
-      register(CounterBloc);
-
-      expect(() => {
-        register(CounterBloc);
-      }).toThrow('Type "CounterBloc" is already registered');
-    });
-
-    it('should allow distinct types that share a blacName', () => {
-      class A extends StateContainer<{ n: number }> {
-        static blacName = 'Shared';
-        constructor() {
-          super({ n: 0 });
-        }
-      }
-      class B extends StateContainer<{ n: number }> {
-        static blacName = 'Shared';
-        constructor() {
-          super({ n: 0 });
-        }
-      }
-
-      register(A);
-      expect(() => register(B)).not.toThrow();
-      expect(getStats().registeredTypes).toBe(2);
-    });
-
-    it('should allow registering multiple different types', () => {
-      register(CounterBloc);
-      register(UserBloc);
-
-      const stats = getStats();
-      expect(stats.registeredTypes).toBe(2);
-    });
-  });
 
   describe('Shared Instances (Default)', () => {
     it('should create instance on first get (auto-register)', () => {
@@ -149,7 +103,6 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should return empty array for type with no instances', () => {
-      register(CounterBloc);
       const instances = getAll(CounterBloc);
       expect(instances).toEqual([]);
     });

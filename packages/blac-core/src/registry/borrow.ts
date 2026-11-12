@@ -1,4 +1,5 @@
 import { getRegistry } from './config';
+import { resolveInstanceKey } from '../core/resolveInstanceKey';
 import type {
   ExtractArgs,
   StateContainerConstructor,
@@ -20,7 +21,7 @@ function resolveBorrowKey<T extends StateContainerConstructor>(
   BlocClass: T,
   target: BorrowTarget<T> | undefined,
 ): string {
-  return getRegistry().resolveKey(BlocClass, undefined, target?.args);
+  return resolveInstanceKey(BlocClass, target?.args);
 }
 
 export function borrow<T extends StateContainerConstructor>(

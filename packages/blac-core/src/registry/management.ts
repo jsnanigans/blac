@@ -15,12 +15,3 @@ export function clearWhere(
 ): void {
   getRegistry().clearWhere(predicate);
 }
-
-/**
- * @public
- */
-export function register<T extends StateContainerConstructor>(
-  BlocClass: T,
-): void {
-  getRegistry().register(BlocClass);
-}

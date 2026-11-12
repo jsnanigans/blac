@@ -58,15 +58,6 @@ describe('StateContainerRegistry lifecycle events', () => {
     errorSpy.mockRestore();
   });
 
-  it('stateChanged event receives (instance, previousState, newState)', async () => {
-    const listener = vi.fn();
-    globalRegistry.on('stateChanged', listener);
-    const instance = acquire(EventBloc);
-    instance.doEmit({ n: 42 });
-    await new Promise<void>((r) => queueMicrotask(r));
-    expect(listener).toHaveBeenCalledWith(instance, { n: 0 }, { n: 42 });
-  });
-
   it('no listeners = no throw on emit', () => {
     expect(() => acquire(EventBloc)).not.toThrow();
   });

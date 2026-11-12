@@ -85,55 +85,12 @@ describe('scoped registry isolation', () => {
     expect(scoped.getInstancesMap(Dep).size).toBe(0);
   });
 
-  it('routes emits and deps from init() to the owning registry', async () => {
+  it('routes deps from init() to the owning registry', () => {
     const scoped = new StateContainerRegistry();
-    const scopedListener = vi.fn();
-    const globalListener = vi.fn();
-    scoped.on('stateChanged', scopedListener);
-    const offGlobal = globalRegistry.on('stateChanged', globalListener);
 
     scoped.acquire(EagerOwner, 'k', { refId: 'r1' });
-    await Promise.resolve();
 
-    offGlobal();
     expect(scoped.getInstancesMap(Dep).size).toBe(1);
     expect(globalRegistry.getInstancesMap(Dep).size).toBe(0);
-    expect(scopedListener).toHaveBeenCalled();
-    expect(globalListener).not.toHaveBeenCalled();
-  });
-
-  it('delivers stateChanged to the owning registry, not the global one', async () => {
-    const scoped = new StateContainerRegistry();
-    const scopedListener = vi.fn();
-    const globalListener = vi.fn();
-    scoped.on('stateChanged', scopedListener);
-    const offGlobal = globalRegistry.on('stateChanged', globalListener);
-
-    scoped.acquire(Dep, 'k', { refId: 'r1' }).emit({ v: 9 });
-    await Promise.resolve();
-
-    offGlobal();
-    expect(scopedListener).toHaveBeenCalledTimes(1);
-    expect(globalListener).not.toHaveBeenCalled();
-  });
-});
-
-describe('hasStateChangedListeners', () => {
-  it('returns false once every listener is unsubscribed', () => {
-    const registry = new StateContainerRegistry();
-    const off = registry.on('stateChanged', () => {});
-    expect(registry.hasStateChangedListeners).toBe(true);
-    off();
-    expect(registry.hasStateChangedListeners).toBe(false);
-  });
-
-  it('does not drift when the same listener is registered twice', () => {
-    const registry = new StateContainerRegistry();
-    const listener = () => {};
-    const off1 = registry.on('stateChanged', listener);
-    const off2 = registry.on('stateChanged', listener);
-    off1();
-    off2();
-    expect(registry.hasStateChangedListeners).toBe(false);
   });
 });

@@ -1,4 +1,5 @@
 import { getRegistry } from './config';
+import { resolveInstanceKey } from '../core/resolveInstanceKey';
 import type {
   ExtractArgs,
   StateContainerConstructor,
@@ -18,7 +19,7 @@ export function acquire<T extends StateContainerConstructor>(
   opts?: { args?: ExtractArgs<T>; refId?: string },
 ): InstanceType<T> {
   const registry = getRegistry();
-  const key = registry.resolveKey(BlocClass, undefined, opts?.args);
+  const key = resolveInstanceKey(BlocClass, opts?.args);
   return registry.acquire(BlocClass, key, {
     canCreate: true,
     countRef: true,
@@ -27,16 +28,4 @@ export function acquire<T extends StateContainerConstructor>(
   });
 }
 
-/**
- * Resolve the storage key an instance would be acquired under, given its
- * construction `args`. This is the canonical key-computation path. Callers that
- * both acquire and release against the `@internal` registry tier (e.g.
- * `@blac/react` `useBloc`) must use this once and pass the same resolved key to
- * both, so the ref is dropped under the key it was taken.
- */
-export function resolveInstanceKey<T extends StateContainerConstructor>(
-  BlocClass: T,
-  args?: ExtractArgs<T>,
-): string {
-  return getRegistry().resolveKey(BlocClass, undefined, args);
-}
+export { resolveInstanceKey };
