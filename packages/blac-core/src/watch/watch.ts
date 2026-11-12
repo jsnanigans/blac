@@ -83,6 +83,11 @@ export interface WatchOptions {
    * creating or acquiring anything.
    */
   signal?: AbortSignal;
+  /**
+   * The registry to watch in. Defaults to `getRegistry()`; pass the one from
+   * `useRegistry()` to stay inside a `RegistryProvider`'s scope.
+   */
+  registry?: StateContainerRegistry;
 }
 
 type ExtractInstance<T> =
@@ -189,15 +194,9 @@ function resolveBlocPassive(
   registry: StateContainerRegistry,
   target: WatchTarget,
 ): StateContainerInstance | undefined {
-  try {
-    return registry.acquire(target.blocClass, target.key, {
-      canCreate: false,
-      countRef: false,
-      args: target.args,
-    });
-  } catch {
-    return undefined;
-  }
+  return (
+    registry.borrowSafe(target.blocClass, target.key).instance ?? undefined
+  );
 }
 
 function isArray(input: unknown): input is readonly BlocInput[] {
@@ -272,7 +271,7 @@ function watchImpl(
 ): () => void {
   const isSingle = !isArray(blocsOrBloc);
   const inputs = isSingle ? [blocsOrBloc] : blocsOrBloc;
-  const registry = getRegistry();
+  const registry = options?.registry ?? getRegistry();
   const create = options?.create ?? true;
   const signal = options?.signal;
   if (signal?.aborted) return () => {};
