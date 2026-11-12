@@ -16,7 +16,10 @@
  */
 import { Cubit, type DeepReadonly } from '@blac/core';
 import { untracked, useBloc } from '@blac/react';
-import { __setTrackTrace, type TrackTraceEvent } from '@dirtytalk/structural';
+import {
+  setTrackTrace,
+  type TrackTraceEvent,
+} from '@dirtytalk/structural/testing';
 import React, { memo, useEffect, useLayoutEffect, useState } from 'react';
 
 interface Item {
@@ -148,7 +151,7 @@ export const ProxyTimingProbe: React.FC = () => {
   // trackRender is observed. Guarded so it only happens once.
   if (!installed) {
     installed = true;
-    __setTrackTrace(onTrace);
+    setTrackTrace(onTrace);
     rec('=== trace installed (probe mounted) ===');
   }
 
@@ -158,7 +161,7 @@ export const ProxyTimingProbe: React.FC = () => {
     const id = setTimeout(() => setDump(timeline.join('\n')), 500);
     return () => {
       clearTimeout(id);
-      __setTrackTrace(null);
+      setTrackTrace(null);
     };
   }, []);
 

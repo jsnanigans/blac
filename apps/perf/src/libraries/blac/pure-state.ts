@@ -1,6 +1,5 @@
-import { ALL_PATHS, Cubit, acquire, configureBlac, release } from '@blac/core';
+import { Cubit, acquire, configureBlac, release } from '@blac/core';
 import { ManualScheduler } from '@dirtytalk/engine';
-import { expandWithAncestors } from '@dirtytalk/structural';
 import { buildData } from '../../shared/data';
 import { listOps } from '../../shared/list';
 import { ROWS, ROW_UPDATES, op } from '../../shared/pure';
@@ -87,14 +86,12 @@ class PlainCounter extends Cubit<{ count: number }> {
 }
 
 const onAll = (c: Cubit, cb: () => void): void => {
-  c.subscribe(() => ALL_PATHS, cb);
+  c.subscribe(cb);
 };
 
 /** A consumer watching `path`, registered the way `useBloc` does it. */
-const watchPath = (c: Cubit, id: string, path: string, cb: () => void) => {
-  const paths = new Set([c.interner.intern(path)]);
-  c.registerConsumerPaths(id, paths);
-  c.subscribePaths(cb).setInterest(expandWithAncestors(paths, c.interner));
+const watchPath = (c: Cubit, path: string, cb: () => void) => {
+  c.consume(cb).setPaths(new Set([c.interner.intern(path)]));
 };
 
 export const blacPureState: PureStateLibrary = {
@@ -176,7 +173,7 @@ export const blacPureState: PureStateLibrary = {
     'same-tick burst 1000 (tracked consumer)': op({
       setup: () => {
         const s = track(new WideStore());
-        watchPath(s, 'bench', 'field0', () => void s.state.field0);
+        watchPath(s, 'field0', () => void s.state.field0);
         return s;
       },
       run: (s) => {
@@ -241,7 +238,7 @@ export const blacPureState: PureStateLibrary = {
       setup: () => {
         const s = track(new ListStore(buildData(ROWS)));
         for (let i = 0; i < ROWS; i++) {
-          watchPath(s, `row${i}`, `data.${i}.label`, () => {
+          watchPath(s, `data.${i}.label`, () => {
             void s.state.data[i].label;
           });
         }
