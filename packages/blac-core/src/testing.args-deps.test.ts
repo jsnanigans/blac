@@ -6,7 +6,6 @@ import { Cubit } from './core/Cubit';
 import { StateContainer } from './core/StateContainer';
 import { blac } from './decorators';
 import { clearAll } from './registry';
-import { ALL_PATHS } from '@dirtytalk/structural';
 import {
   blacTestSetup,
   createCubitStub,
@@ -181,19 +180,10 @@ describe('flush', () => {
       }
     }
     const [a, b, c] = [new N(), new N(), new N()];
-    a.channel.subscribe(
-      () => ALL_PATHS,
-      () => b.emit({ n: 1 }),
-    );
-    b.channel.subscribe(
-      () => ALL_PATHS,
-      () => c.emit({ n: 1 }),
-    );
+    a.subscribe(() => b.emit({ n: 1 }));
+    b.subscribe(() => c.emit({ n: 1 }));
     let seen = 0;
-    c.channel.subscribe(
-      () => ALL_PATHS,
-      () => seen++,
-    );
+    c.subscribe(() => seen++);
 
     a.emit({ n: 1 });
     await flush();

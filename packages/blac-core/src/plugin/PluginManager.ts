@@ -45,11 +45,11 @@ interface ContainerBridge {
  *
  * Hooks into registry lifecycle events (synchronous) and per-container
  * channel flushes (microtask-coalesced): while at least one installed
- * plugin implements `onStateChange`, the manager subscribes each container
- * with `ALL_PATHS` interest and dispatches
- * `onStateChange(ctx, prev, next, paths)` on every flush.
+ * plugin implements `onStateChange`, the manager subscribes to each
+ * container and dispatches `onStateChange(ctx, prev, next, paths)` on every
+ * flush.
  *
- * `ALL_PATHS` interest wakes the bridge on every flush of every container —
+ * The bridge wakes on every flush of every container —
  * an intended trade-off for plugins that genuinely want every change
  * (devtools/persist). Plugins that want low overhead should remain
  * uninstalled or environment-gated.
@@ -277,8 +277,7 @@ export class PluginManager {
   }
 
   /**
-   * Subscribe to the container's channel with `ALL_PATHS` interest so it
-   * fires on every flush. `prev` is the snapshot from the previous flush (or
+   * Subscribe to every change of the container. `prev` is the snapshot from the previous flush (or
    * create-time for the first); the channel's `paths` is passed straight
    * through to plugins.
    */
@@ -293,9 +292,8 @@ export class PluginManager {
     };
     this.containerBridges.set(container, bridge);
 
-    bridge.unsub = container.channel.subscribe(
-      () => ALL_PATHS,
-      (paths) => this.dispatchStateChange(container, paths),
+    bridge.unsub = container.subscribe((paths) =>
+      this.dispatchStateChange(container, paths),
     );
   }
 
@@ -358,10 +356,19 @@ export class PluginManager {
    */
   private dispatchStateChange(
     container: StateContainer<any, any, any>,
-    paths: PathSet,
+    dirty: PathSet,
   ): void {
     const bridge = this.containerBridges.get(container);
     if (!bridge) return;
+
+    // The container reports the changed ids among the paths consumers watch,
+    // and only its root id when the change touched none of them. Plugins get
+    // `ALL_PATHS` for that case: the change is real but not narrowed down.
+    const ids = dirty as Set<number>;
+    const paths =
+      ids.size === 1 && ids.has(container.interner.rootId())
+        ? ALL_PATHS
+        : dirty;
 
     const prev = bridge.prevState;
     const next = container.state;

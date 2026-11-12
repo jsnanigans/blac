@@ -1,5 +1,4 @@
 import {
-  ALL_PATHS,
   StructuralContainer,
   type DeepPartial,
   type StructuralContainerOptions,
@@ -133,11 +132,12 @@ function shallowEqualRecord(
 
 /**
  * BlaC's lifecycle/identity/dependency layer on top of `StructuralContainer`
- * (which provides `state`, `emit`/`patch`/`update`, and `channel`).
+ * (which provides `state`, `emit`/`patch`/`update`, `consume` and `subscribe`).
  * StateContainer adds identity/lifecycle/hydration (`$blac: BlacMeta`),
  * cross-bloc deps (`depend()`), per-consumer deps slices, and registry
  * integration. Subscribe via `onSystemEvent(...)` for coarse lifecycle
- * events or `this.channel.subscribe(...)` for path-scoped ones.
+ * events, `subscribe(cb)` for every state change or `consume(cb)` for
+ * path-scoped ones.
  */
 export abstract class StateContainer<
   S extends object = any,
@@ -611,33 +611,22 @@ export abstract class StateContainer<
     }
   }
 
-  // emit/patch layer disposed guard, equality short-circuit, emit-rate
+  // `emit` layers the disposed guard, equality short-circuit, emit-rate
   // breaker, hydration flag tracking, and pending-change capture for the
-  // 'stateChanged' system event on top of `super.emit`/`super.patch`, which
-  // still own the actual change detection.
+  // 'stateChanged' system event on top of `super.emit`, which still owns the
+  // actual change detection.
 
   protected override emit(next: S): void {
     this.applyState(next, 'default');
   }
 
-  /** @see emit for the StateContainer concerns layered onto `super.patch`. */
+  /** `super.patch` merges and calls `emit`, so only the warning differs. */
   protected override patch(partial: DeepPartial<S>): void {
     if (this._disposed) {
       this._warnDisposedMutation('patch');
       return;
     }
-    // Raw state, not `this.state`: inside a tracked getter that getter reports
-    // the render proxy, which must never be mistaken for a state transition.
-    const prev = super.state;
-
     super.patch(partial);
-
-    // `super.patch` returns `prev` by reference when the merge changed
-    // nothing, so identity is the no-op test — no pre-scan needed.
-    const next = super.state;
-    if (Object.is(prev, next)) return;
-
-    this._recordChange(prev, next, 'default');
   }
 
   private applyState(next: S, source: 'default' | 'hydration'): void {
@@ -743,10 +732,7 @@ export abstract class StateContainer<
     // The channel bridge only exists to feed 'stateChanged'. Subscribe on the
     // first such handler so instances nobody observes stay off the channel.
     if (event === 'stateChanged' && this._bridgeUnsub === null) {
-      this._bridgeUnsub = this.channel.subscribe(
-        () => ALL_PATHS,
-        () => this._drainPending(),
-      );
+      this._bridgeUnsub = this.subscribe(() => this._drainPending());
     }
 
     return () => {

@@ -55,6 +55,8 @@ export class BlacHydration<S extends object> {
   finish(): void;
   // (undocumented)
   get isHydrated(): boolean;
+  // @internal
+  noteChange(): void;
   // (undocumented)
   get status(): HydrationStatus;
   // (undocumented)
@@ -349,6 +351,8 @@ export interface InstanceEntry<T = any> {
   args?: unknown;
   // (undocumented)
   argsKey?: string;
+  // (undocumented)
+  argsMismatchWarned?: boolean;
   dependents?: Set<StateContainer<any, any, any>>;
   // (undocumented)
   instance: T;
@@ -420,52 +424,42 @@ export function isKeepAliveClass<T extends StateContainerConstructor>(
 ): boolean;
 
 // @public
-export type LifecycleEvent =
-  | 'created'
-  | 'stateChanged'
-  | 'disposed'
-  | 'refAcquired'
-  | 'refReleased'
-  | 'depsChanged'
-  | 'hydrationChanged'
-  | 'activated'
-  | 'deactivated';
+export type LifecycleEvent = keyof LifecycleEvents;
 
 // @public
-export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
-  ? (container: StateContainer<any, any, any>) => void
-  : E extends 'stateChanged'
-    ? (
-        container: StateContainer<any, any, any>,
-        previousState: Readonly<Record<string, unknown>>,
-        currentState: Readonly<Record<string, unknown>>,
-      ) => void
-    : E extends 'disposed'
-      ? (container: StateContainer<any, any, any>) => void
-      : E extends 'refAcquired'
-        ? (container: StateContainer<any, any, any>, refId: string) => void
-        : E extends 'refReleased'
-          ? (container: StateContainer<any, any, any>, refId: string) => void
-          : E extends 'depsChanged'
-            ? (
-                container: StateContainer<any, any, any>,
-                previousDeps: Readonly<Record<string, unknown>>,
-                currentDeps: Readonly<Record<string, unknown>>,
-              ) => void
-            : E extends 'hydrationChanged'
-              ? (
-                  container: StateContainer<any, any, any>,
-                  status: HydrationStatus,
-                  previousStatus: HydrationStatus,
-                ) => void
-              : E extends 'activated'
-                ? (
-                    container: StateContainer<any, any, any>,
-                    signal: AbortSignal,
-                  ) => void
-                : E extends 'deactivated'
-                  ? (container: StateContainer<any, any, any>) => void
-                  : never;
+export interface LifecycleEvents {
+  // (undocumented)
+  activated: [container: Container, signal: AbortSignal];
+  // Warning: (ae-forgotten-export) The symbol "Container" needs to be exported by the entry point index.d.ts
+  //
+  // (undocumented)
+  created: [container: Container];
+  // (undocumented)
+  deactivated: [container: Container];
+  // (undocumented)
+  depsChanged: [
+    container: Container,
+    previousDeps: Readonly<Record<string, unknown>>,
+    currentDeps: Readonly<Record<string, unknown>>,
+  ];
+  // (undocumented)
+  disposed: [container: Container];
+  // (undocumented)
+  hydrationChanged: [
+    container: Container,
+    status: HydrationStatus,
+    previousStatus: HydrationStatus,
+  ];
+  // (undocumented)
+  refAcquired: [container: Container, refId: string];
+  // (undocumented)
+  refReleased: [container: Container, refId: string];
+}
+
+// @public
+export type LifecycleListener<E extends LifecycleEvent> = (
+  ...args: LifecycleEvents[E]
+) => void;
 
 // @public
 export function onActivated(
@@ -523,11 +517,6 @@ export interface PluginContext {
   waitForHydration(instance: StateContainer<any, any, any>): Promise<void>;
 }
 
-// @public (undocumented)
-export function register<T extends StateContainerConstructor>(
-  BlocClass: T,
-): void;
-
 // @public
 export function release<T extends StateContainerConstructor>(
   BlocClass: T,
@@ -566,6 +555,8 @@ export abstract class StateContainer<
   [APPLY_DEPS](ownerId: string, slice: Partial<Deps>): void;
   // @internal
   [INIT_CONFIG](config: StateContainerConfig): void;
+  // @internal
+  [ON_ACTIVATED](handler: (signal: AbortSignal) => void): () => void;
   // @internal
   [ON_DISPOSE](handler: () => void): () => void;
   // @internal
@@ -615,7 +606,6 @@ export abstract class StateContainer<
     event: E,
     handler: SystemEventHandler<S, E>,
   ): () => void;
-  // (undocumented)
   protected patch(partial: DeepPartial<S>): void;
   // (undocumented)
   get state(): S;
@@ -687,51 +677,14 @@ export class StateContainerRegistry {
       };
   clear<T extends StateContainerConstructor>(Type: T): void;
   clearAll(): void;
+  clearWhere(
+    predicate: (instance: StateContainer<any, any, any>) => boolean,
+  ): void;
+  destroy(): void;
+  // (undocumented)
+  get destroyed(): boolean;
   // @internal
-  emit(event: 'created', container: StateContainer<any, any, any>): void;
-  // (undocumented)
-  emit(event: 'disposed', container: StateContainer<any, any, any>): void;
-  // (undocumented)
-  emit(
-    event: 'stateChanged',
-    container: StateContainer<any, any, any>,
-    previousState: any,
-    currentState: any,
-  ): void;
-  // (undocumented)
-  emit(
-    event: 'refAcquired',
-    container: StateContainer<any, any, any>,
-    refId: string,
-  ): void;
-  // (undocumented)
-  emit(
-    event: 'refReleased',
-    container: StateContainer<any, any, any>,
-    refId: string,
-  ): void;
-  // (undocumented)
-  emit(
-    event: 'depsChanged',
-    container: StateContainer<any, any, any>,
-    previousDeps: Readonly<Record<string, unknown>>,
-    currentDeps: Readonly<Record<string, unknown>>,
-  ): void;
-  // (undocumented)
-  emit(
-    event: 'hydrationChanged',
-    container: StateContainer<any, any, any>,
-    status: HydrationStatus,
-    previousStatus: HydrationStatus,
-  ): void;
-  // (undocumented)
-  emit(
-    event: 'activated',
-    container: StateContainer<any, any, any>,
-    signal: AbortSignal,
-  ): void;
-  // (undocumented)
-  emit(event: 'deactivated', container: StateContainer<any, any, any>): void;
+  emit<E extends LifecycleEvent>(event: E, ...args: LifecycleEvents[E]): void;
   // @internal
   ensure<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
@@ -771,19 +724,10 @@ export class StateContainerRegistry {
     Type: T,
     instanceKey?: string,
   ): boolean;
-  // (undocumented)
-  get hasStateChangedListeners(): boolean;
-  // @internal
-  notifyStateChanged(
-    container: StateContainer<any, any, any>,
-    previousState: any,
-    newState: any,
-  ): void;
   on<E extends LifecycleEvent>(
     event: E,
     listener: LifecycleListener<E>,
   ): () => void;
-  register<T extends StateContainerConstructor>(constructor: T): void;
   // @internal
   release<T extends StateContainerConstructor>(
     Type: T,
@@ -791,11 +735,6 @@ export class StateContainerRegistry {
     forceDispose?: boolean,
     refId?: string,
   ): void;
-  resolveKey<T extends StateContainerConstructor = StateContainerConstructor>(
-    Type: T,
-    instanceKey: string | undefined,
-    args: unknown,
-  ): string;
 }
 
 // @public (undocumented)
@@ -841,6 +780,7 @@ export interface WatchFn extends WatchSingleFn {
 // @public
 export interface WatchOptions {
   create?: boolean;
+  registry?: StateContainerRegistry;
   signal?: AbortSignal;
 }
 

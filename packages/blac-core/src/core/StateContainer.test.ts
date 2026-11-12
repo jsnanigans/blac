@@ -15,7 +15,6 @@ import {
 } from '../registry';
 import { Cubit } from './Cubit';
 import { INIT_CONFIG } from './symbols';
-import { ALL_PATHS } from '@dirtytalk/structural';
 
 // Test implementation of StateContainer
 class TestContainer extends StateContainer<{ value: number }, { id?: string }> {
@@ -483,10 +482,7 @@ describe('StateContainer', () => {
       it('should update state and notify subscribers', async () => {
         const container = new TestContainer(0);
         const listener = vi.fn();
-        container.channel.subscribe(
-          () => ALL_PATHS,
-          () => listener(container.state),
-        );
+        container.subscribe(() => listener(container.state));
 
         container.testEmit({ value: 42 });
         await flush();
@@ -536,12 +532,9 @@ describe('StateContainer', () => {
 
         const container = new OrderTrackingContainer();
 
-        container.channel.subscribe(
-          () => ALL_PATHS,
-          () => {
-            container.callOrder.push('listener');
-          },
-        );
+        container.subscribe(() => {
+          container.callOrder.push('listener');
+        });
 
         container.testEmit({ text: 'updated' });
         await flush();
@@ -589,10 +582,7 @@ describe('StateContainer', () => {
     it('should handle complex object state updates', async () => {
       const container = new ObjectStateContainer();
       const listener = vi.fn();
-      container.channel.subscribe(
-        () => ALL_PATHS,
-        () => listener(container.state),
-      );
+      container.subscribe(() => listener(container.state));
 
       container.increment();
       await flush();
@@ -619,10 +609,7 @@ describe('StateContainer', () => {
     it('should handle rapid state updates', async () => {
       const container = new TestContainer(0);
       const states: { value: number }[] = [];
-      container.channel.subscribe(
-        () => ALL_PATHS,
-        () => states.push(container.state),
-      );
+      container.subscribe(() => states.push(container.state));
 
       for (let i = 1; i <= 100; i++) {
         container.testEmit({ value: i });
@@ -639,10 +626,7 @@ describe('StateContainer', () => {
     it('should work with attach lifecycle', async () => {
       const instance1 = acquire(TestContainer, { args: { id: 'shared' } });
       const listener = vi.fn();
-      instance1.channel.subscribe(
-        () => ALL_PATHS,
-        () => listener(instance1.state),
-      );
+      instance1.subscribe(() => listener(instance1.state));
 
       const instance2 = acquire(TestContainer, { args: { id: 'shared' } });
       expect(instance1).toBe(instance2);

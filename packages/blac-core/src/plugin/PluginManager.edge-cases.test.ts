@@ -187,7 +187,7 @@ describe('PluginManager edge cases', () => {
     expect(onStateChange).toHaveBeenCalledTimes(1);
 
     // Asserted on the private map because the leak has no public observable:
-    // the bridge is a `channel.subscribe` (so it misses `consumerCount`) and
+    // the bridge is a `subscribe` listener like any other and
     // `destroy()` uninstalls the plugins, so nothing reachable would dispatch
     // whether or not the subscription survived.
     const bridges = (

@@ -94,10 +94,11 @@ export interface BlacPlugin {
   onCreated?(ctx: PluginContext): void;
 
   /**
-   * Fires once per channel flush with the changed `PathSet`.
-   * `paths` may be `ALL_PATHS` when the change spans every path, and may
-   * include the container's reserved root id (`container.interner.rootId()`),
-   * which decodes to the empty path `''`.
+   * Fires once per flush. `paths` holds the changed path ids among the paths
+   * the container's consumers watch (decode with `container.interner.lookup`),
+   * or `ALL_PATHS` when the change touched none of them, e.g. because nothing
+   * reads the container path by path. It may include the container's root id
+   * (`container.interner.rootId()`), which decodes to the empty path `''`.
    * `prev`/`next` are the coalesced before/after states for the flush.
    */
   onStateChange?<S extends object = any>(

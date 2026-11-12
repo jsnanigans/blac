@@ -14,7 +14,6 @@ import {
 import { clearAll } from '../registry';
 import { setRegistry } from '../registry/config';
 import { INIT_CONFIG } from './symbols';
-import { ALL_PATHS } from '@dirtytalk/structural';
 
 class TestCubit extends Cubit<{ count: number }> {
   constructor() {
@@ -43,10 +42,7 @@ describe('StateContainer performance optimizations', () => {
     it('direct subscribers still called when no system event handlers exist', async () => {
       const cubit = new TestCubit();
       const listener = vi.fn();
-      cubit.channel.subscribe(
-        () => ALL_PATHS,
-        () => listener(cubit.state),
-      );
+      cubit.subscribe(() => listener(cubit.state));
 
       for (let i = 1; i <= 100; i++) {
         cubit.patch({ count: i });

@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vite-plus/test';
 import { blacTestSetup, flush } from '@blac/core/testing';
 import { Cubit } from './Cubit';
 import { configureBlac } from '../config';
-import { ALL_PATHS } from '@dirtytalk/structural';
 
 class CountCubit extends Cubit<{ count: number; label: string }> {
   constructor() {
@@ -45,10 +44,7 @@ describe('Cubit edge cases', () => {
     const cubit = new CountCubit();
     const sameRef = cubit.state;
     const listener = vi.fn();
-    cubit.channel.subscribe(
-      () => ALL_PATHS,
-      () => listener(cubit.state),
-    );
+    cubit.subscribe(() => listener(cubit.state));
     cubit.emit(sameRef);
     expect(listener).not.toHaveBeenCalled();
   });
@@ -56,10 +52,7 @@ describe('Cubit edge cases', () => {
   it('emit() with structurally equal value does NOT notify (shallow-equal default)', () => {
     const cubit = new CountCubit();
     const listener = vi.fn();
-    cubit.channel.subscribe(
-      () => ALL_PATHS,
-      () => listener(cubit.state),
-    );
+    cubit.subscribe(() => listener(cubit.state));
     cubit.emit({ ...cubit.state });
     expect(listener).not.toHaveBeenCalled();
   });
@@ -67,10 +60,7 @@ describe('Cubit edge cases', () => {
   it('emit() notifies when at least one key differs', async () => {
     const cubit = new CountCubit();
     const listener = vi.fn();
-    cubit.channel.subscribe(
-      () => ALL_PATHS,
-      () => listener(cubit.state),
-    );
+    cubit.subscribe(() => listener(cubit.state));
     cubit.emit({ ...cubit.state, count: cubit.state.count + 1 });
     await flush();
     expect(listener).toHaveBeenCalledTimes(1);

@@ -1,4 +1,3 @@
-import { ALL_PATHS } from '@dirtytalk/structural';
 import type { Cubit } from './core/Cubit';
 import { getStateChangeCount } from './core/StateContainer';
 import { StateContainerRegistry } from './core/StateContainerRegistry';
@@ -217,14 +216,11 @@ export function waitForState<B extends StateContainerInstance>(
       clearTimeout(timer);
       unsubscribe();
     };
-    const unsubscribe = bloc.channel.subscribe(
-      () => ALL_PATHS,
-      () => {
-        if (!predicate(bloc.state)) return;
-        settle();
-        resolve(bloc.state);
-      },
-    );
+    const unsubscribe = bloc.subscribe(() => {
+      if (!predicate(bloc.state)) return;
+      settle();
+      resolve(bloc.state);
+    });
     const timer = setTimeout(() => {
       settle();
       reject(new Error(`[blac] waitForState(): timed out after ${timeout}ms`));
