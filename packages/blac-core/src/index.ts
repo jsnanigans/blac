@@ -54,6 +54,7 @@ export {
 } from './core/StateContainerRegistry';
 export type {
   LifecycleEvent,
+  LifecycleEvents,
   LifecycleListener,
   InstanceEntry,
 } from './core/StateContainerRegistry';

@@ -60,7 +60,9 @@ export function blacTestSetup(): void {
     setRegistry(testRegistry);
   });
   afterEach(() => {
-    testRegistry.clearAll();
+    // Not `clearAll()`: components a test left mounted must not re-render
+    // onto new instances while they are being torn down.
+    testRegistry.destroy();
     setRegistry(savedRegistry);
   });
 }

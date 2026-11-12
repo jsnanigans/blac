@@ -8,6 +8,7 @@
  * `JSON.stringify` see an empty object. Read the fields by name.
  */
 
+import { IS_DEV } from '../constants';
 import { generateSimpleId } from '../utils/idGenerator';
 import { getBlacName } from '../utils/static-props';
 import type { HydrationStatus } from './StateContainer';
@@ -25,82 +26,150 @@ export const META_BRAND = Symbol('blac.meta');
 const EMPTY_DEPS: ReadonlyMap<StateContainerConstructor, string> = new Map();
 
 /**
- * Narrow view of the parts of `StateContainer` the meta accessors read. The
- * container's fields are TS-private (compile-time only), so they are not
- * reachable cross-module by name; the constructor performs a single internal
- * cast to this shape. This is purely a typing bridge — zero runtime indirection.
- *
- * The `$blac.hydration` surface delegates to these `_`-private methods, so the
- * container has a single source of truth for the hydration state machine.
+ * The parts of `StateContainer` the meta classes reach. Its fields are
+ * TS-private, so they are not reachable cross-module by name; the constructors
+ * cast once to these shapes.
  */
-interface MetaInternals<S extends object> {
+interface MetaInternals<S extends object> extends HydrationHost<S> {
   readonly constructor: StateContainerConstructor;
-  _name: string;
   _instanceId?: string;
   _debug: boolean;
   _createdAt: number;
-  _disposed: boolean;
   _registry: StateContainerRegistry;
-  _hydrationStatus: HydrationStatus;
-  _hydrationError: Error | undefined;
-  _changedWhileHydrating: boolean;
   _dependencies: Map<StateContainerConstructor, string> | null;
-  _beginHydration(): void;
-  _applyHydratedState(next: S): boolean;
-  _finishHydration(): void;
-  _failHydration(error: Error): void;
-  _waitForHydration(): Promise<void>;
+  _hydration: BlacHydration<S> | null;
+}
+
+interface HydrationHost<S extends object> {
+  _name: string;
+  _disposed: boolean;
+  _applyHydratedState(next: S): void;
+  _notifyHydration(
+    status: HydrationStatus,
+    previousStatus: HydrationStatus,
+    error: Error | undefined,
+    changedWhileHydrating: boolean,
+  ): void;
 }
 
 /**
- * Hydration sub-surface of {@link BlacMeta}. Exposes the container's
- * hydration state machine — the `begin`/`apply`/`finish`/`fail`/`wait`
- * methods and the `status`/`error`/`isHydrated`/`changedWhileHydrating`
- * getters — namespaced under `$blac`.
+ * The container's hydration state machine, under `$blac.hydration`. Owns its
+ * state and is built on first access, so a container that never hydrates
+ * pays for one `null` field.
  */
 export class BlacHydration<S extends object> {
-  readonly #c: MetaInternals<S>;
+  readonly #c: HydrationHost<S>;
+  #status: HydrationStatus = 'idle';
+  #error: Error | undefined;
+  #changed = false;
+  #promise: Promise<void> | null = null;
+  #settle: { resolve: () => void; reject: (error: Error) => void } | null =
+    null;
 
   /** @internal */
   constructor(container: object) {
-    this.#c = container as MetaInternals<S>;
+    this.#c = container as HydrationHost<S>;
     Object.freeze(this);
   }
 
   get status(): HydrationStatus {
-    return this.#c._hydrationStatus;
+    return this.#status;
   }
 
   get error(): Error | undefined {
-    return this.#c._hydrationError;
+    return this.#error;
   }
 
   get isHydrated(): boolean {
-    return this.#c._hydrationStatus === 'hydrated';
+    return this.#status === 'hydrated';
   }
 
   get changedWhileHydrating(): boolean {
-    return this.#c._changedWhileHydrating;
+    return this.#changed;
   }
 
   begin(): void {
-    this.#c._beginHydration();
+    if (this.#c._disposed) {
+      throw new Error(
+        `Cannot begin hydration for disposed container ${this.#c._name}`,
+      );
+    }
+    this.#changed = false;
+    this.#promise = null;
+    this.#settle = null;
+    void this.#pending();
+    this.#setStatus('hydrating');
   }
 
+  /** @returns false when the persisted state was not applied. */
   apply(next: S): boolean {
-    return this.#c._applyHydratedState(next);
+    if (this.#c._disposed) return false;
+    if (this.#status !== 'hydrating' || this.#changed) {
+      if (IS_DEV && this.#changed) {
+        console.warn(
+          `[blac] ${this.#c._name}: persisted state discarded because the ` +
+            `container emitted while hydrating.`,
+        );
+      }
+      return false;
+    }
+    this.#c._applyHydratedState(next);
+    return true;
   }
 
   finish(): void {
-    this.#c._finishHydration();
+    if (this.#status === 'hydrated') return;
+    if (this.#status === 'error') void this.#pending();
+    this.#setStatus('hydrated');
+    this.#settle?.resolve();
+    this.#settle = null;
   }
 
   fail(error: Error): void {
-    this.#c._failHydration(error);
+    const err =
+      error instanceof Error
+        ? error
+        : new Error(`Hydration failed: ${String(error)}`);
+    this.#setStatus('error', err);
+    void this.#pending();
+    this.#settle?.reject(err);
+    this.#settle = null;
   }
 
   wait(): Promise<void> {
-    return this.#c._waitForHydration();
+    if (this.#status === 'idle' || this.#status === 'hydrated') {
+      return Promise.resolve();
+    }
+    if (this.#status === 'error') {
+      return Promise.reject(
+        this.#error ??
+          new Error(`Hydration failed for container ${this.#c._name}`),
+      );
+    }
+    return this.#pending();
+  }
+
+  /** @internal A non-hydration state change; discards a pending `apply`. */
+  noteChange(): void {
+    if (this.#status === 'hydrating') this.#changed = true;
+  }
+
+  #setStatus(status: HydrationStatus, error?: Error): void {
+    const previousStatus = this.#status;
+    this.#status = status;
+    this.#error = error;
+    this.#c._notifyHydration(status, previousStatus, error, this.#changed);
+  }
+
+  /** The unsettled promise for the current run, created on demand. */
+  #pending(): Promise<void> {
+    if (this.#promise === null || this.#settle === null) {
+      this.#promise = new Promise<void>((resolve, reject) => {
+        this.#settle = { resolve, reject };
+      });
+      this.#promise.catch(() => {});
+    }
+    return this.#promise;
   }
 }
 
@@ -115,7 +184,6 @@ export class BlacHydration<S extends object> {
  */
 export class BlacMeta<S extends object = any> {
   readonly #c: MetaInternals<S>;
-  #hydration: BlacHydration<S> | undefined;
 
   /** @internal Called from the `StateContainer` field initializer. */
   constructor(container: object) {
@@ -159,7 +227,7 @@ export class BlacMeta<S extends object = any> {
 
   /** Built on first access; identity-stable afterwards. */
   get hydration(): BlacHydration<S> {
-    return (this.#hydration ??= new BlacHydration(this.#c));
+    return (this.#c._hydration ??= new BlacHydration(this.#c));
   }
 }
 

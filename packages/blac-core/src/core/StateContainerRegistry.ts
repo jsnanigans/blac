@@ -30,9 +30,28 @@ export interface InstanceEntry<T = any> {
   /** Args from creation, for the dev arg-mismatch warning. */
   args?: unknown;
   argsKey?: string;
+  argsMismatchWarned?: boolean;
   /** `depend()`-owners holding this instance. */
   dependents?: Set<StateContainer<any, any, any>>;
   sweepTimer?: ReturnType<typeof setTimeout>;
+}
+
+/** A `static key` class may take args the structural hash rejects. */
+function safeStructuralKey(args: unknown): string {
+  try {
+    return structuralKey(args);
+  } catch {
+    return '<unserializable>';
+  }
+}
+
+const AUTO_REF_PREFIX = '_auto_';
+
+function pickRef(refs: Map<string, number>): string | undefined {
+  for (const refId of refs.keys()) {
+    if (refId.startsWith(AUTO_REF_PREFIX)) return refId;
+  }
+  return refs.keys().next().value;
 }
 
 const EMPTY_INSTANCES_MAP: ReadonlyMap<string, InstanceEntry> = new Map();
@@ -41,56 +60,46 @@ const EMPTY_INSTANCES_MAP: ReadonlyMap<string, InstanceEntry> = new Map();
  * Lifecycle events emitted by the registry
  * @public
  */
-export type LifecycleEvent =
-  | 'created'
-  | 'stateChanged'
-  | 'disposed'
-  | 'refAcquired'
-  | 'refReleased'
-  | 'depsChanged'
-  | 'hydrationChanged'
-  | 'activated'
-  | 'deactivated';
+export type LifecycleEvent = keyof LifecycleEvents;
+
+type Container = StateContainer<any, any, any>;
+
+/**
+ * Arguments each lifecycle event passes to its listeners.
+ * @public
+ */
+export interface LifecycleEvents {
+  created: [container: Container];
+  stateChanged: [
+    container: Container,
+    previousState: Readonly<Record<string, unknown>>,
+    currentState: Readonly<Record<string, unknown>>,
+  ];
+  disposed: [container: Container];
+  refAcquired: [container: Container, refId: string];
+  refReleased: [container: Container, refId: string];
+  depsChanged: [
+    container: Container,
+    previousDeps: Readonly<Record<string, unknown>>,
+    currentDeps: Readonly<Record<string, unknown>>,
+  ];
+  hydrationChanged: [
+    container: Container,
+    status: HydrationStatus,
+    previousStatus: HydrationStatus,
+  ];
+  activated: [container: Container, signal: AbortSignal];
+  deactivated: [container: Container];
+}
 
 /**
  * Listener function type for each lifecycle event
  * @typeParam E - The lifecycle event type
  * @public
  */
-export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
-  ? (container: StateContainer<any, any, any>) => void
-  : E extends 'stateChanged'
-    ? (
-        container: StateContainer<any, any, any>,
-        previousState: Readonly<Record<string, unknown>>,
-        currentState: Readonly<Record<string, unknown>>,
-      ) => void
-    : E extends 'disposed'
-      ? (container: StateContainer<any, any, any>) => void
-      : E extends 'refAcquired'
-        ? (container: StateContainer<any, any, any>, refId: string) => void
-        : E extends 'refReleased'
-          ? (container: StateContainer<any, any, any>, refId: string) => void
-          : E extends 'depsChanged'
-            ? (
-                container: StateContainer<any, any, any>,
-                previousDeps: Readonly<Record<string, unknown>>,
-                currentDeps: Readonly<Record<string, unknown>>,
-              ) => void
-            : E extends 'hydrationChanged'
-              ? (
-                  container: StateContainer<any, any, any>,
-                  status: HydrationStatus,
-                  previousStatus: HydrationStatus,
-                ) => void
-              : E extends 'activated'
-                ? (
-                    container: StateContainer<any, any, any>,
-                    signal: AbortSignal,
-                  ) => void
-                : E extends 'deactivated'
-                  ? (container: StateContainer<any, any, any>) => void
-                  : never;
+export type LifecycleListener<E extends LifecycleEvent> = (
+  ...args: LifecycleEvents[E]
+) => void;
 
 /**
  * Owns StateContainer instances: creation, ref tracking, disposal and
@@ -151,6 +160,7 @@ export class StateContainerRegistry {
   > | null = null;
 
   private _autoRefIdCounter = 0;
+  private _destroyed = false;
 
   constructor() {
     // Also covers a direct `dispose()` that bypasses `release()`.
@@ -159,9 +169,15 @@ export class StateContainerRegistry {
 
   /** Prune a tracked instance's entry and release its `depend()` edges. */
   private _handleDisposed(container: StateContainer<any, any, any>): void {
-    const Type = container.constructor as StateContainerConstructor;
-    const found = this._pruneEntry(Type, container);
-    if (!found) return;
+    this._pruneEntry(container);
+    this._releaseEdges(container);
+  }
+
+  /**
+   * Also runs for a container this registry never tracked (a bare `new`, or
+   * one whose `init()` threw): its `depend()` edges are recorded here anyway.
+   */
+  private _releaseEdges(container: StateContainer<any, any, any>): void {
     const edges = this._dependentEdges.get(container);
     if (!edges) return;
     this._dependentEdges.delete(container);
@@ -214,19 +230,26 @@ export class StateContainerRegistry {
     keys.add(key);
   }
 
-  /** @returns true if this registry tracked `container`. */
-  private _pruneEntry(
-    Type: StateContainerConstructor,
-    container: StateContainer<any, any, any>,
-  ): boolean {
+  /**
+   * Forget `container`'s entry. Matches by entry identity, so it never removes
+   * an instance recreated under the same key, and is a no-op once pruned.
+   */
+  private _pruneEntry(container: StateContainer<any, any, any>): void {
     const entry = this._entryByInstance.get(container);
-    if (entry === undefined) return false;
+    if (entry === undefined) return;
     this._entryByInstance.delete(container);
-    const instances = this.instancesByConstructor.get(Type);
+    const instances = this.instancesByConstructor.get(
+      container.constructor as StateContainerConstructor,
+    );
     if (instances?.get(entry.key) === entry) instances.delete(entry.key);
     const id = container.$blac.id;
     if (this._entryById.get(id) === entry) this._entryById.delete(id);
-    return true;
+  }
+
+  /** Dispose and forget; covers an instance whose events go to another registry. */
+  private _disposeEntry(entry: InstanceEntry): void {
+    if (!entry.instance.$blac.disposed) entry.instance.dispose();
+    this._pruneEntry(entry.instance);
   }
 
   private _indexEntry(entry: InstanceEntry): void {
@@ -245,7 +268,7 @@ export class StateContainerRegistry {
     if (!entry) return;
     entry.dependents?.delete(dependent);
     if (this._isUnowned(Type, entry)) {
-      if (!entry.instance.$blac.disposed) entry.instance.dispose();
+      this._disposeEntry(entry);
       return;
     }
     this._syncActivation(entry);
@@ -405,15 +428,22 @@ export class StateContainerRegistry {
     let entry = instances.get(resolvedKey);
 
     if (entry?.instance.$blac.disposed) {
-      instances.delete(resolvedKey);
+      this._pruneEntry(entry.instance);
       entry = undefined;
     }
 
     if (entry) {
-      if (IS_DEV && args !== undefined && entry.args !== undefined) {
-        const incomingKey = structuralKey(args);
-        const storedKey = (entry.argsKey ??= structuralKey(entry.args));
+      if (
+        IS_DEV &&
+        !entry.argsMismatchWarned &&
+        args !== undefined &&
+        entry.args !== undefined &&
+        args !== entry.args
+      ) {
+        const incomingKey = safeStructuralKey(args);
+        const storedKey = (entry.argsKey ??= safeStructuralKey(entry.args));
         if (incomingKey !== storedKey) {
+          entry.argsMismatchWarned = true;
           console.warn(
             `${BLAC_ERROR_PREFIX} ${getBlacName(Type)} instance key "${resolvedKey}" was acquired with different args. ` +
               `Existing args: ${storedKey}, new args: ${incomingKey}. ` +
@@ -424,7 +454,8 @@ export class StateContainerRegistry {
       }
 
       if (countRef) {
-        const refId = options.refId ?? `_auto_${this._autoRefIdCounter++}`;
+        const refId =
+          options.refId ?? `${AUTO_REF_PREFIX}${this._autoRefIdCounter++}`;
         const count = entry.refs.get(refId) ?? 0;
         if (count === 0) {
           this.assertRefLimit(Type, resolvedKey, entry.refs.size + 1);
@@ -464,11 +495,17 @@ export class StateContainerRegistry {
       registry: this,
     };
     const instance = new Type() as InstanceType<T>;
-    instance[INIT_CONFIG](config);
+    try {
+      instance[INIT_CONFIG](config);
+    } catch (error) {
+      this._releaseEdges(instance);
+      throw error;
+    }
     const initialRefs = new Map<string, number>();
     let initialRefId: string | undefined;
     if (countRef) {
-      initialRefId = options.refId ?? `_auto_${this._autoRefIdCounter++}`;
+      initialRefId =
+        options.refId ?? `${AUTO_REF_PREFIX}${this._autoRefIdCounter++}`;
       initialRefs.set(initialRefId, 1);
     }
     const newEntry: InstanceEntry = {
@@ -516,8 +553,7 @@ export class StateContainerRegistry {
       if (instances?.get(entry.key) !== entry) return;
       if (entry.instance.$blac.disposed) return;
       if (!this._isUnowned(Type, entry)) return;
-      entry.instance.dispose();
-      instances.delete(entry.key);
+      this._disposeEntry(entry);
     }, getBlacConfig().unownedSweepDelayMs);
     (entry.sweepTimer as { unref?: () => void }).unref?.();
   }
@@ -535,10 +571,15 @@ export class StateContainerRegistry {
     Type: T,
     instanceKey: string = DEFAULT_STRUCTURAL_KEY,
   ): InstanceType<T> {
-    return this.acquire(Type, instanceKey, {
-      canCreate: false,
-      countRef: false,
-    });
+    // A plain lookup: no ref, no activation change, and a pending sweep of a
+    // speculative instance keeps running.
+    const entry = this.instancesByConstructor.get(Type)?.get(instanceKey);
+    if (entry === undefined || entry.instance.$blac.disposed) {
+      throw new Error(
+        `${BLAC_ERROR_PREFIX} ${getBlacName(Type)} instance "${instanceKey}" not found and creation is disabled.`,
+      );
+    }
+    return entry.instance;
   }
 
   /**
@@ -593,7 +634,9 @@ export class StateContainerRegistry {
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Pre-resolved instance key (defaults to 'default')
    * @param forceDispose - Force immediate disposal regardless of refs
-   * @param refId - The specific ref to remove; removes one arbitrary ref if omitted
+   * @param refId - The specific ref to remove. If omitted, an auto-generated
+   *   ref goes first, so an unnamed release does not drop a named owner's ref
+   *   (a mounted component's) while an unnamed one is still held.
    */
   release<T extends StateContainerConstructor>(
     Type: T,
@@ -606,14 +649,11 @@ export class StateContainerRegistry {
     if (!instances || !entry) return;
 
     if (forceDispose) {
-      if (!entry.instance.$blac.disposed) {
-        entry.instance.dispose();
-      }
-      instances.delete(instanceKey);
+      this._disposeEntry(entry);
       return;
     }
 
-    const releasedRefId = refId ?? entry.refs.keys().next().value;
+    const releasedRefId = refId ?? pickRef(entry.refs);
     if (releasedRefId === undefined) return;
     const count = entry.refs.get(releasedRefId) ?? 0;
     if (count === 0) return;
@@ -626,10 +666,7 @@ export class StateContainerRegistry {
 
     // Checked before activation so a disposing entry never also deactivates.
     if (this._isUnowned(Type, entry)) {
-      if (!entry.instance.$blac.disposed) {
-        entry.instance.dispose();
-      }
-      instances.delete(instanceKey);
+      this._disposeEntry(entry);
       return;
     }
 
@@ -675,12 +712,10 @@ export class StateContainerRegistry {
   clear<T extends StateContainerConstructor>(Type: T): void {
     const instances = this.instancesByConstructor.get(Type);
     if (!instances) return;
-    for (const entry of instances.values()) {
-      if (!entry.instance.$blac.disposed) {
-        entry.instance.dispose();
-      }
+    // A snapshot: disposing prunes the map, and may cascade to other keys.
+    for (const entry of Array.from(instances.values())) {
+      this._disposeEntry(entry);
     }
-    instances.clear();
   }
 
   /** Dispose every live instance, keepAlive included, for which `predicate` is true. */
@@ -753,12 +788,29 @@ export class StateContainerRegistry {
     return entry !== undefined && !entry.instance.$blac.disposed;
   }
 
-  /** Dispose every instance and forget all types (for testing). */
+  /**
+   * Dispose every instance and forget all types. Mounted consumers move to
+   * new instances, as with any outside dispose; use `destroy()` for a
+   * registry that is going away.
+   */
   clearAll(): void {
     for (const Type of this.types) {
       this.clear(Type);
     }
     this.types.clear();
+  }
+
+  /**
+   * Dispose every instance for good: the registry is going away (a test's, a
+   * request's), so adapters do not rebind mounted consumers to new instances.
+   */
+  destroy(): void {
+    this._destroyed = true;
+    this.clearAll();
+  }
+
+  get destroyed(): boolean {
+    return this._destroyed;
   }
 
   /** Instance counts, for debugging. */
@@ -816,49 +868,13 @@ export class StateContainerRegistry {
    * Emit lifecycle event to all listeners
    * @internal - Called by StateContainer lifecycle methods
    */
-  emit(event: 'created', container: StateContainer<any, any, any>): void;
-  emit(event: 'disposed', container: StateContainer<any, any, any>): void;
-  emit(
-    event: 'stateChanged',
-    container: StateContainer<any, any, any>,
-    previousState: any,
-    currentState: any,
-  ): void;
-  emit(
-    event: 'refAcquired',
-    container: StateContainer<any, any, any>,
-    refId: string,
-  ): void;
-  emit(
-    event: 'refReleased',
-    container: StateContainer<any, any, any>,
-    refId: string,
-  ): void;
-  emit(
-    event: 'depsChanged',
-    container: StateContainer<any, any, any>,
-    previousDeps: Readonly<Record<string, unknown>>,
-    currentDeps: Readonly<Record<string, unknown>>,
-  ): void;
-  emit(
-    event: 'hydrationChanged',
-    container: StateContainer<any, any, any>,
-    status: HydrationStatus,
-    previousStatus: HydrationStatus,
-  ): void;
-  emit(
-    event: 'activated',
-    container: StateContainer<any, any, any>,
-    signal: AbortSignal,
-  ): void;
-  emit(event: 'deactivated', container: StateContainer<any, any, any>): void;
-  emit(event: LifecycleEvent, ...args: any[]): void {
+  emit<E extends LifecycleEvent>(event: E, ...args: LifecycleEvents[E]): void {
     const listeners = this.listeners.get(event);
     if (!listeners || listeners.size === 0) return;
 
     for (const listener of listeners) {
       try {
-        listener(...args);
+        (listener as (...a: unknown[]) => void)(...args);
       } catch (error) {
         console.error(
           `${BLAC_ERROR_PREFIX} Listener error for '${event}':`,

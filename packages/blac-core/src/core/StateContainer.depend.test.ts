@@ -321,15 +321,23 @@ describe('StateContainer.depend()', () => {
       expect(auth).toBeInstanceOf(AuthBloc);
     });
 
-    it('disposing owner does not affect dependency', () => {
+    it('disposing an unregistered owner releases its dependency', () => {
       const owner = new OwnerBloc();
       const auth = owner.getAuth.untracked();
-      auth.login('test');
+
+      owner.dispose();
+
+      expect(auth.$blac.disposed).toBe(true);
+    });
+
+    it('a dependency another owner still holds survives', () => {
+      const owner = new OwnerBloc();
+      const auth = owner.getAuth.untracked();
+      acquire(AuthBloc, { refId: 'other' });
 
       owner.dispose();
 
       expect(auth.$blac.disposed).toBe(false);
-      expect(auth.state.userId).toBe('test');
     });
   });
 
