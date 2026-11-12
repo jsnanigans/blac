@@ -14,8 +14,8 @@ import {
   emptyPathSet,
   trackRender,
   ProxyCache,
+  type Consumer as PathConsumer,
   type PathSet,
-  type PathSubscription,
 } from '@dirtytalk/structural';
 import { ON_DISPOSE } from '@blac/core/internal';
 import { useProvidedArgs } from './BlocProvider';
@@ -211,7 +211,7 @@ interface Consumer {
   /** The committed `paths`, or `ALL_PATHS` in select mode. */
   interest: PathSet;
   /** `null` until the first commit and after unmount. */
-  subscription: PathSubscription | null;
+  subscription: PathConsumer | null;
   subscribedTo: StateContainer | null;
   paths: PathSet;
   isSelectMode: boolean;
@@ -352,11 +352,10 @@ function attach(consumer: Consumer): boolean {
   const container = consumer.container;
   if (consumer.subscribedTo === container) return false;
   detach(consumer);
-  const subscription = container.subscribePaths(consumer.onChange);
-  subscription.setInterest(consumer.interest);
+  const subscription = container.consume(consumer.onChange);
+  subscription.setPaths(consumer.interest);
   consumer.subscription = subscription;
   consumer.subscribedTo = container;
-  container.registerConsumerPaths(consumer.id, consumer.paths);
   consumer.offDispose = container[ON_DISPOSE](consumer.onDisposed);
   return true;
 }
@@ -364,11 +363,10 @@ function attach(consumer: Consumer): boolean {
 function detach(consumer: Consumer): void {
   const container = consumer.subscribedTo;
   if (container === null) return;
-  consumer.subscription?.unsubscribe();
+  consumer.subscription?.dispose();
   consumer.subscription = null;
   consumer.offDispose?.();
   consumer.offDispose = null;
-  container.unregisterConsumer(consumer.id);
   consumer.subscribedTo = null;
 }
 
@@ -463,14 +461,13 @@ function commit(consumer: Consumer): void {
   consumer.paths = deps.settle();
   if (!attached && deps.isUnchanged()) return;
 
-  primary.registerConsumerPaths(consumer.id, consumer.paths);
   setInterest(consumer, consumer.paths);
   deps.reconcile(consumer.registry);
 }
 
 const setInterest = (consumer: Consumer, interest: PathSet): void => {
   consumer.interest = interest;
-  consumer.subscription?.setInterest(interest);
+  consumer.subscription?.setPaths(interest);
 };
 
 // Own args win over provider args. Shared by render and the ownership effect,

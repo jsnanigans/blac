@@ -100,7 +100,7 @@
     "deploy": "pnpm publish --access public"
   },
   "dependencies": {
-    "@dirtytalk/structural": "^0.1.5"
+    "@dirtytalk/structural": "^0.2.0"
   },
   "peerDependencies": {
     "@blac/core": "workspace:^",

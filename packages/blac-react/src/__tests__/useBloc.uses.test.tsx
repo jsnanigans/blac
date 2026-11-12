@@ -4,7 +4,7 @@ import { render, act, screen } from '@testing-library/react';
 import { Cubit, StateContainer, ensure } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { blacTestSetup } from '@blac/core/testing';
-import type { PathSubscription } from '@dirtytalk/structural';
+import type { Consumer, PathSet } from '@dirtytalk/structural';
 
 class CounterBloc extends Cubit<{ count: number }> {
   constructor() {
@@ -53,19 +53,18 @@ describe('useBloc — useSyncExternalStore', () => {
     // that StrictMode's double-invoke puts the instance through — a
     // per-instance spy would be discarded with the first instance.
     const proto = StateContainer.prototype as unknown as {
-      subscribePaths: (this: unknown, cb: () => void) => PathSubscription;
+      consume: (this: unknown, cb: (dirty: PathSet) => void) => Consumer;
     };
-    const original = proto.subscribePaths;
-    proto.subscribePaths = function patched(this: unknown, cb) {
+    const original = proto.consume;
+    proto.consume = function patched(this: unknown, cb) {
       subs++;
-      const subscription = original.call(this, cb);
-      return {
-        setInterest: (interest) => subscription.setInterest(interest),
-        unsubscribe: () => {
-          unsubs++;
-          subscription.unsubscribe();
-        },
+      const consumer = original.call(this, cb);
+      const dispose = consumer.dispose.bind(consumer);
+      consumer.dispose = () => {
+        unsubs++;
+        dispose();
       };
+      return consumer;
     };
 
     function Comp() {
@@ -88,6 +87,6 @@ describe('useBloc — useSyncExternalStore', () => {
     });
     expect(unsubs).toBe(subs);
 
-    proto.subscribePaths = original;
+    proto.consume = original;
   });
 });

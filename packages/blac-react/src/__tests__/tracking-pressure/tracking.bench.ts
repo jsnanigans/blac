@@ -4,11 +4,7 @@
 // Run: vp test bench --run tracking
 import { bench, describe } from 'vite-plus/test';
 import { Cubit } from '@blac/core';
-import {
-  trackRender,
-  ProxyCache,
-  type PathSubscription,
-} from '@dirtytalk/structural';
+import { trackRender, ProxyCache } from '@dirtytalk/structural';
 
 type Item = {
   id: number;
@@ -41,16 +37,12 @@ function consumers(
   n: number,
   read: (s: Tree, i: number) => unknown,
 ) {
-  const subs: PathSubscription[] = [];
   let woken = 0;
   for (let i = 0; i < n; i++) {
     const t = trackRender(bloc.state, bloc.interner);
     read(t.value, i);
     t.disarm();
-    const sub = bloc.subscribePaths(() => woken++);
-    sub.setInterest(t.paths);
-    bloc.registerConsumerPaths(`c${i}`, t.paths);
-    subs.push(sub);
+    bloc.consume(() => woken++).setPaths(t.paths);
   }
   return { woken: () => woken };
 }

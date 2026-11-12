@@ -1,13 +1,8 @@
 /**
  * Tests for useBloc with automatic proxy tracking.
  *
- * NOTE: The new structural-channel model applies a "single-consumer skip"
- * optimization: when only one consumer is registered against a bloc, every
- * emit wakes that consumer (the diff cost isn't worth it for one). To
- * exercise the fine-grained path-tracking contract, these tests mount a
- * second consumer with disjoint interest. With >=2 consumers, the source
- * computes the diffAlongSkeleton and only wakes consumers whose recorded
- * paths intersect the change.
+ * Each test also mounts a second consumer with disjoint interest, so the
+ * tracked component is not the only reader of the bloc.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
@@ -84,8 +79,7 @@ class TestCubit extends Cubit<TestState> {
 
 blacTestSetup();
 
-// A sentinel consumer that registers disjoint interest so the bloc has 2+
-// consumers and `diffAlongSkeleton` runs on every emit.
+// A sentinel consumer with disjoint interest.
 function Sentinel({ touch }: { touch: keyof TestState }) {
   const [state] = useBloc(TestCubit);
   // Touch one branch only; never overlaps with the test components below.

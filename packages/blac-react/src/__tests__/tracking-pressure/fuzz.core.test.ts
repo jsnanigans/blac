@@ -1,7 +1,7 @@
 // Differential fuzz of render-time dependency tracking without React.
 //
 // Each probe mirrors one `useBloc` consumer: `trackRender` over the state with
-// a per-probe `ProxyCache`, then `registerConsumerPaths` + `setInterest` at
+// a per-probe `ProxyCache`, then `setPaths` at
 // "commit". After every mutation a probe that was not woken must still render
 // the same output as its reader on the raw state; a woken probe re-renders and
 // its tracked output must equal the raw output (proxy transparency).
@@ -10,11 +10,7 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { Cubit } from '@blac/core';
 import { blacTestSetup } from '@blac/core/testing';
-import {
-  trackRender,
-  ProxyCache,
-  type PathSubscription,
-} from '@dirtytalk/structural';
+import { trackRender, ProxyCache, type Consumer } from '@dirtytalk/structural';
 import {
   genMutation,
   genReader,
@@ -42,12 +38,9 @@ class FuzzCubit extends Cubit<Tree> {
   }
 }
 
-let probeSeq = 0;
-
 class Probe {
-  readonly id = `probe-${probeSeq++}`;
   readonly cache = new ProxyCache();
-  readonly sub: PathSubscription;
+  readonly sub: Consumer;
   out = '';
   woken = false;
   paths: Set<number> = new Set();
@@ -56,7 +49,7 @@ class Probe {
     readonly bloc: FuzzCubit,
     readonly reader: Reader,
   ) {
-    this.sub = bloc.subscribePaths(() => {
+    this.sub = bloc.consume(() => {
       this.woken = true;
     });
     this.render();
@@ -67,14 +60,12 @@ class Probe {
     this.out = serialize(this.reader.read(t.value));
     t.disarm();
     this.paths = t.paths as Set<number>;
-    this.bloc.registerConsumerPaths(this.id, t.paths);
-    this.sub.setInterest(t.paths);
+    this.sub.setPaths(t.paths);
     this.woken = false;
   }
 
   unmount(): void {
-    this.sub.unsubscribe();
-    this.bloc.unregisterConsumer(this.id);
+    this.sub.dispose();
   }
 
   describePaths(): string[] {

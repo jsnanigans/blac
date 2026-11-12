@@ -341,7 +341,6 @@ describe('useBloc', () => {
   describe('BR2: guarded dep-reconcile layout effect', () => {
     it('identical tracked paths on the primary bloc skip re-registration', () => {
       const instance = ensure(CounterBloc);
-      const spy = vi.spyOn(instance, 'registerConsumerPaths');
 
       const { rerender } = renderHook(() => {
         const [state] = useBloc(CounterBloc);
@@ -349,18 +348,17 @@ describe('useBloc', () => {
         return state;
       });
 
-      const callsAfterMount = spy.mock.calls.length;
-      expect(callsAfterMount).toBeGreaterThan(0);
+      const [consumer] = instance.consumers();
+      const pathsAfterMount = consumer.paths;
+      expect((pathsAfterMount as Set<number>).size).toBe(1);
 
       rerender();
 
-      expect(spy.mock.calls.length).toBe(callsAfterMount);
-      spy.mockRestore();
+      expect(consumer.paths).toBe(pathsAfterMount);
     });
 
     it('identical dep set and paths skip dep reconciliation', () => {
       const depInstance = ensure(DepBloc);
-      const spy = vi.spyOn(depInstance, 'registerConsumerPaths');
 
       const { rerender } = renderHook(() => {
         const [, bloc] = useBloc(ToggleDepConsumerBloc);
@@ -368,13 +366,12 @@ describe('useBloc', () => {
         return bloc;
       });
 
-      const callsAfterMount = spy.mock.calls.length;
-      expect(callsAfterMount).toBeGreaterThan(0);
+      const [consumer] = depInstance.consumers();
+      const pathsAfterMount = consumer.paths;
 
       rerender();
 
-      expect(spy.mock.calls.length).toBe(callsAfterMount);
-      spy.mockRestore();
+      expect(consumer.paths).toBe(pathsAfterMount);
     });
 
     it('dropping a dep still unsubscribes and stops waking the consumer', async () => {
@@ -431,7 +428,6 @@ describe('useBloc', () => {
 
     it('changing tracked dep paths still reconciles (re-registers)', async () => {
       const depInstance = ensure(TwoFieldBloc);
-      const spy = vi.spyOn(depInstance, 'registerConsumerPaths');
 
       function Comp() {
         const [, bloc] = useBloc(FieldSwitchConsumerBloc);
@@ -439,8 +435,8 @@ describe('useBloc', () => {
       }
       render(<Comp />);
 
-      const callsAfterMount = spy.mock.calls.length;
-      expect(callsAfterMount).toBeGreaterThan(0);
+      const [consumer] = depInstance.consumers();
+      const pathsAfterMount = consumer.paths;
 
       await act(async () => {
         ensure(FieldSwitchConsumerBloc).setUseA(false);
@@ -448,9 +444,7 @@ describe('useBloc', () => {
 
       // Tracked leaf switched from 'a' to 'b' — the path set changed, so the
       // reconcile must NOT be skipped.
-      expect(spy.mock.calls.length).toBeGreaterThan(callsAfterMount);
-
-      spy.mockRestore();
+      expect(consumer.paths).not.toBe(pathsAfterMount);
     });
   });
 });

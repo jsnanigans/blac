@@ -31,12 +31,9 @@ class NestedBloc extends Cubit<NestedState> {
 
 blacTestSetup();
 
-// Regression: object sibling-leaf isolation under `patch`. Previously every
-// consumer expanded its interest to ancestor paths as *normal* ids, which
-// collided with `changedPathsFromPatch`'s structural pulse-up of the same
-// parent — so changing `user.name` woke `user.email`/`profile.bio` readers too.
-// The ancestor-watch lane fixes this while keeping array / wholesale-replacement
-// readers waking.
+// Regression: object sibling-leaf isolation under `patch`. Changing
+// `user.name` must not wake `user.email`/`profile.bio` readers, while array /
+// wholesale-replacement readers keep waking.
 describe('useBloc — nested patch sibling isolation', () => {
   it('changing user.name does NOT re-render a user.email reader', async () => {
     const nameRenders = vi.fn();

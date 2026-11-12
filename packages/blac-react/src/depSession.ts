@@ -11,8 +11,8 @@ import {
   pathSetEquals,
   trackRender,
   ProxyCache,
+  type Consumer,
   type PathSet,
-  type PathSubscription,
 } from '@dirtytalk/structural';
 import { buildTrackedProxy } from './buildTrackedProxy';
 import { deferRelease } from './deferRelease';
@@ -30,7 +30,7 @@ interface DepEntry {
 }
 
 interface DepSub {
-  subscription: PathSubscription;
+  consumer: Consumer;
   /** A dep disposed from outside re-renders the consumer onto its successor. */
   offDispose: () => void;
   registry: StateContainerRegistry;
@@ -147,7 +147,6 @@ export class DepSession {
   }
 
   reconcile(registry: StateContainerRegistry): void {
-    const { consumerId } = this;
     const entries = this.entries;
     this.reconciled = true;
     this.lastPrimary = this.primary;
@@ -173,10 +172,9 @@ export class DepSession {
         this.onChange();
         continue;
       }
-      dep.registerConsumerPaths(consumerId, entry.paths);
       const existing = subs?.get(dep);
       if (existing) {
-        existing.subscription.setInterest(entry.paths);
+        existing.consumer.setPaths(entry.paths);
         continue;
       }
       const refId = this.refId;
@@ -192,10 +190,10 @@ export class DepSession {
         this.onChange();
         continue;
       }
-      const subscription = dep.subscribePaths(this.onChange);
-      subscription.setInterest(entry.paths);
+      const consumer = dep.consume(this.onChange);
+      consumer.setPaths(entry.paths);
       (this.subs ??= new Map()).set(dep, {
-        subscription,
+        consumer,
         offDispose: dep[ON_DISPOSE](() => {
           if (!registry.destroyed) this.onChange();
         }),
@@ -216,9 +214,8 @@ export class DepSession {
   }
 
   private drop(dep: StateContainer, sub: DepSub): void {
-    sub.subscription.unsubscribe();
+    sub.consumer.dispose();
     sub.offDispose();
-    dep.unregisterConsumer(this.consumerId);
     deferRelease(sub.registry, sub.Type, sub.key, this.refId, dep);
   }
 }
