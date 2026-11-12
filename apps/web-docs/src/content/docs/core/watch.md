@@ -169,6 +169,10 @@ controller.abort(); // stops both
 
 Aborting is equivalent to calling the returned `stop()`. A signal that is already aborted returns a no-op `stop()` without creating or subscribing to anything.
 
+### Watch in a scoped registry
+
+`watch` uses the global registry by default. Pass `{ registry }` to watch inside another one, for example the registry from `useRegistry()` under a `RegistryProvider`.
+
 Inside a container, combine it with [`onActivated`](/docs/core/cubit/#onactivated) to scope a watch to the container's activation. This replaces the hand-written bridge, where an unsubscribe function is stored in a field and must be called on every teardown path:
 
 ```ts title="Before — a manual bridge"
@@ -244,7 +248,7 @@ const stop = watch([UserCubit, SettingsCubit] as const, ([user, settings]) => {
 
 | Scenario                                             | Use                                         |
 | ---------------------------------------------------- | ------------------------------------------- |
-| A React component needs state                        | [`useBloc`](/docs/react/use-bloc)                |
+| A React component needs state                        | [`useBloc`](/docs/react/use-bloc)           |
 | Non-React side effects (logging, analytics, syncing) | `watch`                                     |
 | Bridging a bloc to imperative / non-React UI         | `watch`                                     |
 | Test assertions on state over time                   | `watch`                                     |

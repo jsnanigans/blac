@@ -336,6 +336,8 @@ clearWhere(() => true); // everything, but registered types are kept
 `clear`, `clearAll`, and `clearWhere` dispose instances **regardless of ref count**, ignoring `keepAlive`. Between tests that is exactly what you want (see [Testing core logic](/docs/testing/core)). In app code, use them only at a real boundary where the data must go — sign-out, a workspace or account switch — never to "refresh" state that live components still show.
 :::
 
+Components that are mounted when their instance is disposed this way re-render against a new instance in its initial state. For a registry that is going away entirely, such as a per-test or per-request one, call `registry.destroy()` instead: it disposes everything and leaves mounted components alone.
+
 ### Replacing reset events
 
 Without a registry-level primitive, apps build a reset bus: a global event that every container listens for, each deciding by matching a substring of its instance id whether the reset applies to it.

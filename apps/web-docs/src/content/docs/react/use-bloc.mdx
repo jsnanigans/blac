@@ -260,7 +260,7 @@ See [Passing Inputs](/docs/guide/inputs) for the full decision matrix.
 4. **Subscribe:** the hook subscribes to the bloc's channel using the selected tracking mode (auto-track or `select`)
 5. **`onMount(bloc)` fires** in a mount effect, after the bloc is acquired
 6. **Re-render:** only triggered when a tracked state path or a `select` value changes
-7. **Unmount:** `onUnmount(bloc)` fires (bloc still alive), then `release(BlocClass)` decrements the ref count. At zero, `onDeactivate()` fires (aborting the `onActivate` signal) and the instance is disposed unless the class is [`keepAlive`](/docs/core/configuration)
+7. **Unmount:** `onUnmount(bloc)` fires (bloc still alive). The ref is released at the end of the same tick, so a component that mounts in the same commit takes the instance over with its state intact. At zero, `onDeactivate()` fires (aborting the `onActivate` signal) and the instance is disposed unless the class is [`keepAlive`](/docs/core/configuration)
 
 `init` remains the place to seed synchronous state from `args` — it is not deprecated. `onActivate`/`onDeactivate` are for side effects (fetch, subscribe, timers) tied to whether anything currently owns the instance; see [Cubit](/docs/core/cubit#onactivate--ondeactivate) for the full model.
 
