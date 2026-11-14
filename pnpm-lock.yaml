@@ -47,8 +47,6 @@ catalogs:
       version: 0.1.24
 
 overrides:
-  '@dirtytalk/engine': link:../dirtytalk/packages/engine
-  '@dirtytalk/structural': link:../dirtytalk/packages/structural
   vite: npm:@voidzero-dev/vite-plus-core@0.1.24
   vitest: npm:@voidzero-dev/vite-plus-test@0.1.24
 
@@ -188,11 +186,11 @@ importers:
         specifier: workspace:*
         version: link:../../packages/blac-react
       '@dirtytalk/engine':
-        specifier: link:../../../dirtytalk/packages/engine
-        version: link:../../../dirtytalk/packages/engine
+        specifier: ^0.3.0
+        version: 0.3.0
       '@dirtytalk/structural':
-        specifier: link:../../../dirtytalk/packages/structural
-        version: link:../../../dirtytalk/packages/structural
+        specifier: ^0.2.0
+        version: 0.2.0(react@19.2.8)
       '@reduxjs/toolkit':
         specifier: ^2.12.0
         version: 2.12.0(react-redux@9.3.0(@types/react@19.2.15)(react@19.2.8)(redux@5.0.1))(react@19.2.8)
@@ -331,8 +329,8 @@ importers:
   packages/blac-core:
     dependencies:
       '@dirtytalk/structural':
-        specifier: link:../../../dirtytalk/packages/structural
-        version: link:../../../dirtytalk/packages/structural
+        specifier: ^0.2.0
+        version: 0.2.0(react@19.2.8)
     devDependencies:
       '@size-limit/preset-small-lib':
         specifier: ^13.0.3
@@ -377,8 +375,8 @@ importers:
   packages/blac-react:
     dependencies:
       '@dirtytalk/structural':
-        specifier: link:../../../dirtytalk/packages/structural
-        version: link:../../../dirtytalk/packages/structural
+        specifier: ^0.2.0
+        version: 0.2.0(react@19.2.8)
     devDependencies:
       '@babel/core':
         specifier: ^8.0.1
@@ -979,6 +977,17 @@ packages:
   '@ctrl/tinycolor@4.2.0':
     resolution: {integrity: sha512-kzyuwOAQnXJNLS9PSyrk0CWk35nWJW/zl/6KvnTBMFK65gm7U1/Z5BqjxeapjZCIhQcM/DsrEmcbRwDyXyXK4A==}
     engines: {node: '>=14'}
+
+  '@dirtytalk/engine@0.3.0':
+    resolution: {integrity: sha512-CYF6/4QB5M+8F6o/slfB05zBTx20dwzJ9Qz4prgl5EzGRsL06UMRViuXFzXbjwF66WSio9r0A66R/a4v5IBShw==}
+
+  '@dirtytalk/structural@0.2.0':
+    resolution: {integrity: sha512-6C6mBP5NGLwMrPwQwHn9SvKHujsLTcEv2XDpOV3KgUtjnzei8BVMabWTtXolPqzKIUOMMwGbsCZ9Eph09KVmmg==}
+    peerDependencies:
+      react: '>=18'
+    peerDependenciesMeta:
+      react:
+        optional: true
 
   '@ec-ts/twoslash-vue@1.0.0':
     resolution: {integrity: sha512-3bB0/1DPPLHjS0eok2Cne7xQjCQVU5AWScEBGYTqsKuTCTukDUMxUiYI54rDPQME3OLnpysiORi0FQKLA96pAg==}
@@ -6108,6 +6117,14 @@ snapshots:
   '@csstools/css-tokenizer@4.0.0': {}
 
   '@ctrl/tinycolor@4.2.0': {}
+
+  '@dirtytalk/engine@0.3.0': {}
+
+  '@dirtytalk/structural@0.2.0(react@19.2.8)':
+    dependencies:
+      '@dirtytalk/engine': 0.3.0
+    optionalDependencies:
+      react: 19.2.8
 
   '@ec-ts/twoslash-vue@1.0.0(typescript@6.0.3)':
     dependencies:
