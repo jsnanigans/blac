@@ -1,5 +1,39 @@
 # @blac/core
 
+## 2.1.4
+
+### Patch Changes
+
+- cadb405: Fix stale renders and leaked instances at the edges of the consumer lifecycle.
+
+  `@blac/react`
+  - A state change raised between a component's commit and React's passive effects is no longer lost.
+  - A component whose bloc is disposed from outside (`clear`, `clearAll`, `clearWhere`, `forceDispose`) re-renders against a new instance instead of staying on the disposed one.
+  - `useBloc` releases its ref at the end of the tick in which the component unmounts. A consumer mounting in the same commit keeps the instance and its state, and StrictMode no longer creates the instance twice. Tests that assert disposal right after `unmount()` need `await flush()` first.
+
+  `@blac/core`
+  - `depend()` edges are released for an owner the registry did not create, and for one whose `init()` throws.
+  - `depend(Type)` no longer throws at construction when `Type` has a `static key` and no default args.
+  - An instance recreated under the same key by a `disposed` listener is no longer dropped from the registry.
+  - The dev args-mismatch warning fires once per instance and no longer throws for non-plain args.
+  - `release()` without a `refId` drops an auto-generated ref before a named one.
+  - `borrow()` is a plain lookup and no longer cancels a pending sweep.
+  - The per-instance `stateChanged` event is skipped when emits cancel out within a tick.
+  - New: `registry.destroy()` for a registry that is going away, used by `blacTestSetup()`; `watch(..., { registry })`.
+
+- 7c082ca: Move to `@dirtytalk/structural` 0.2.
+  - core: breaking: the `channel` getter and `subscribe(interest, cb)` are gone. Use `bloc.subscribe(cb)` for every change, or `bloc.consume(cb)` and `consumer.setPaths(paths)` for path-scoped changes. `registerConsumerPaths`, `unregisterConsumer`, `getConsumerPaths` and `subscribePaths` are removed with them.
+  - core: `patch` goes through `emit`, so the configured equality applies to patches and a patched array wakes only the readers of the entries that changed.
+  - core: frozen state (immer output) is tracked as precisely as mutable state.
+  - core: plugins get `ALL_PATHS` in `onStateChange` when the change touched no watched path; otherwise the changed ids among the watched paths, as before.
+  - react: `useBloc` registers one consumer per container instead of a subscription plus a path registration.
+
+- ce501c1: Remove unused registry API and fix `BlocProvider` args comparison.
+  - core: removed the registry `stateChanged` lifecycle event (and `hasStateChangedListeners`). Use a plugin's `onStateChange` or `onSystemEvent('stateChanged')`.
+  - core: removed `register()` and `registry.register()`; types register on first acquire.
+  - core: removed `registry.resolveKey()`; use `resolveInstanceKey(BlocClass, args)`.
+  - react: `BlocProvider` compares `args` structurally instead of with `JSON.stringify`, so it no longer throws on cyclic or BigInt args or misses a change inside a `Map`, `Set` or class instance.
+
 ## 2.1.3
 
 ### Patch Changes

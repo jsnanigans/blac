@@ -1,5 +1,21 @@
 # @blac/logging-plugin
 
+## 2.0.23
+
+### Patch Changes
+
+- 7c082ca: Move to `@dirtytalk/structural` 0.2.
+  - core: breaking: the `channel` getter and `subscribe(interest, cb)` are gone. Use `bloc.subscribe(cb)` for every change, or `bloc.consume(cb)` and `consumer.setPaths(paths)` for path-scoped changes. `registerConsumerPaths`, `unregisterConsumer`, `getConsumerPaths` and `subscribePaths` are removed with them.
+  - core: `patch` goes through `emit`, so the configured equality applies to patches and a patched array wakes only the readers of the entries that changed.
+  - core: frozen state (immer output) is tracked as precisely as mutable state.
+  - core: plugins get `ALL_PATHS` in `onStateChange` when the change touched no watched path; otherwise the changed ids among the watched paths, as before.
+  - react: `useBloc` registers one consumer per container instead of a subscription plus a path registration.
+
+- Updated dependencies [cadb405]
+- Updated dependencies [7c082ca]
+- Updated dependencies [ce501c1]
+  - @blac/core@2.1.4
+
 ## 2.0.22
 
 ### Patch Changes
