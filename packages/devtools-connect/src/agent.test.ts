@@ -28,6 +28,13 @@ class HiddenCubit extends Cubit<{ count: number }> {
   }
 }
 
+@blac({ keepAlive: true })
+class SessionCubit extends Cubit<{ user: string }> {
+  constructor() {
+    super({ user: '' });
+  }
+}
+
 vi.mock('./serialize', async (importOriginal) => ({
   serialize: vi.fn(
     (await importOriginal<typeof import('./serialize')>()).serialize,
@@ -239,5 +246,52 @@ describe('agent + client', () => {
     await frame();
 
     expect(sent).not.toHaveBeenCalled();
+  });
+
+  it('reports lifetime, refs and an idle keepAlive instance', async () => {
+    acquire(SessionCubit, { refId: 'shell' } as never);
+    const { client } = connect();
+    let [meta] = (await snapshot(client)).instances;
+    expect(meta.keepAlive).toBe(true);
+    expect(meta.isolated).toBe(false);
+    expect(meta.status).toEqual({
+      active: true,
+      refs: ['shell'],
+      hydration: 'idle',
+    });
+
+    release(SessionCubit, { refId: 'shell' } as never);
+    await frame();
+    [meta] = (await snapshot(client)).instances;
+    expect(meta.status).toMatchObject({ active: false, refs: [] });
+  });
+
+  it('exposes the watched instance as $bloc', async () => {
+    const cubit = acquire(CounterCubit);
+    const { client } = connect();
+    await snapshot(client);
+    const g = globalThis as { $bloc?: unknown };
+
+    client.select(client.getSnapshot().instances[0].id);
+    expect(g.$bloc).toBe(cubit);
+    client.select(null);
+    expect(g.$bloc).toBeUndefined();
+  });
+
+  it('counts instances created and disposed within one flush as churn', async () => {
+    const { client } = connect();
+    await snapshot(client);
+
+    for (let i = 0; i < 3; i++) {
+      acquire(CounterCubit);
+      release(CounterCubit);
+    }
+    await frame();
+    const state = await snapshot(client);
+
+    expect(state.instances).toEqual([]);
+    expect(state.churn).toEqual([
+      { className: 'CounterCubit', at: expect.any(Number), count: 3 },
+    ]);
   });
 });

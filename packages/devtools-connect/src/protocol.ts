@@ -33,6 +33,20 @@ export type Wire =
 /** Decoded dotted paths that changed; `'all'` when the change spans everything. */
 export type Paths = string[] | 'all';
 
+export type HydrationStatus = 'idle' | 'hydrating' | 'hydrated' | 'error';
+
+/** Ownership and hydration; resent as `status` whenever it changes. */
+export interface InstanceStatus {
+  /** Held by refs or dependents. A keepAlive instance survives inactive. */
+  active: boolean;
+  /** Ref ids holding the instance, e.g. `useBloc@useBloc-3`. */
+  refs: string[];
+  /** `'idle'` unless a plugin (e.g. persist) hydrates the instance. */
+  hydration: HydrationStatus;
+  hydrationError?: string;
+  changedWhileHydrating?: boolean;
+}
+
 export interface InstanceMeta {
   id: string;
   className: string;
@@ -42,6 +56,10 @@ export interface InstanceMeta {
   /** Number of recorded changes since creation. */
   version: number;
   args?: Wire;
+  /** The fields below are missing from agents before 2.0.27. */
+  keepAlive?: boolean;
+  isolated?: boolean;
+  status?: InstanceStatus;
 }
 
 export interface HistoryEntry {
@@ -88,7 +106,13 @@ export type AgentMsg =
       /** Union of the paths of every change since the last `changed`. */
       paths: Paths;
     })
+  | (Sequenced & { t: 'status'; id: string; status: InstanceStatus })
   | (Sequenced & { t: 'disposed'; id: string; at: number })
+  /**
+   * Instances per class created and disposed between two flushes, so never
+   * sent as `created`.
+   */
+  | (Sequenced & { t: 'ephemeral'; at: number; counts: Record<string, number> })
   /** Sent only by older agents, which kept disposed instances listed. */
   | (Sequenced & { t: 'removed'; id: string })
   /**

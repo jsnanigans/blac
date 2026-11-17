@@ -1,4 +1,4 @@
-import { ALL_PATHS } from '@blac/core';
+import { ALL_PATHS, isIsolatedClass, isKeepAliveClass } from '@blac/core';
 import type { BlacPlugin, PathSet, PluginContext } from '@blac/core';
 import {
   AGENT_HOOK,
@@ -8,6 +8,7 @@ import {
   type ClientMsg,
   type HistoryEntry,
   type InstanceMeta,
+  type InstanceStatus,
   type Paths,
   type SequencedAgentMsg,
 } from './protocol';
@@ -39,6 +40,12 @@ interface Change {
 
 interface Entry {
   id: string;
+  /** The core's id, without the `#n` added for a duplicate. */
+  baseId: string;
+  container: Container;
+  keepAlive: boolean;
+  isolated: boolean;
+  active: boolean;
   className: string;
   name: string;
   createdAt: number;
@@ -58,10 +65,14 @@ interface Connection {
   created: string[];
   changed: Map<string, Paths>;
   disposed: Array<{ id: string; at: number }>;
+  status: Set<string>;
+  ephemeral: Map<string, number>;
   off: Array<() => void>;
 }
 
 const FLUSH_MS = 16;
+/** The page global the selected instance is exposed as. */
+const CONSOLE_GLOBAL = '$bloc';
 
 const mergePaths = (a: Paths | undefined, b: Paths): Paths => {
   if (a === undefined) return b;
@@ -124,6 +135,8 @@ export class DevToolsAgent implements BlacPlugin {
   private readonly byId = new Map<string, Entry>();
   private readonly connections = new Set<Connection>();
   private hook: AgentHook | undefined;
+  private ctx: PluginContext | undefined;
+  private exposed: Container | undefined;
   private duplicates = 0;
   private flushTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -131,7 +144,8 @@ export class DevToolsAgent implements BlacPlugin {
     this.historySize = config.historySize ?? 50;
   }
 
-  onInstall(): void {
+  onInstall(ctx: PluginContext): void {
+    this.ctx = ctx;
     this.hook = { connect: (transport) => this.connect(transport) };
     (globalThis as Record<symbol, unknown>)[AGENT_HOOK] = this.hook;
     if (typeof window === 'undefined') return;
@@ -149,6 +163,7 @@ export class DevToolsAgent implements BlacPlugin {
     this.flushTimer = undefined;
     const g = globalThis as Record<symbol, unknown>;
     if (g[AGENT_HOOK] === this.hook) delete g[AGENT_HOOK];
+    this.expose(undefined);
   }
 
   onCreated(ctx: PluginContext): void {
@@ -160,8 +175,16 @@ export class DevToolsAgent implements BlacPlugin {
     const id = this.byId.has(baseId)
       ? `${baseId}#${++this.duplicates}`
       : baseId;
+    const Type = container.constructor as Parameters<
+      typeof isKeepAliveClass
+    >[0];
     const entry: Entry = {
       id,
+      baseId,
+      container,
+      keepAlive: isKeepAliveClass(Type),
+      isolated: isIsolatedClass(Type),
+      active: ctx.getRefIds(baseId).length > 0,
       className: meta.className,
       name: meta.name,
       createdAt: meta.createdAt,
@@ -224,14 +247,55 @@ export class DevToolsAgent implements BlacPlugin {
 
     this.byContainer.delete(container);
     this.byId.delete(entry.id);
+    if (this.exposed === container) this.expose(undefined);
     const at = Date.now();
     for (const conn of this.connections) {
       if (!conn.active) continue;
       conn.changed.delete(entry.id);
+      conn.status.delete(entry.id);
       const pending = conn.created.indexOf(entry.id);
       // Created and disposed within one flush: the client never saw it.
-      if (pending >= 0) conn.created.splice(pending, 1);
-      else conn.disposed.push({ id: entry.id, at });
+      if (pending >= 0) {
+        conn.created.splice(pending, 1);
+        const { className } = entry;
+        conn.ephemeral.set(className, (conn.ephemeral.get(className) ?? 0) + 1);
+      } else conn.disposed.push({ id: entry.id, at });
+    }
+    this.scheduleFlush();
+  }
+
+  onActivate(ctx: PluginContext): void {
+    this.setActive(ctx, true);
+  }
+
+  onDeactivate(ctx: PluginContext): void {
+    this.setActive(ctx, false);
+  }
+
+  onRefAcquired(ctx: PluginContext): void {
+    this.statusChanged(ctx);
+  }
+
+  onRefReleased(ctx: PluginContext): void {
+    this.statusChanged(ctx);
+  }
+
+  onHydrationChange(ctx: PluginContext): void {
+    this.statusChanged(ctx);
+  }
+
+  private setActive(ctx: PluginContext, active: boolean): void {
+    const entry = ctx.container && this.byContainer.get(ctx.container);
+    if (!entry) return;
+    entry.active = active;
+    this.statusChanged(ctx);
+  }
+
+  private statusChanged(ctx: PluginContext): void {
+    const entry = ctx.container && this.byContainer.get(ctx.container);
+    if (!entry) return;
+    for (const conn of this.connections) {
+      if (conn.active) conn.status.add(entry.id);
     }
     this.scheduleFlush();
   }
@@ -247,6 +311,8 @@ export class DevToolsAgent implements BlacPlugin {
       created: [],
       changed: new Map(),
       disposed: [],
+      status: new Set(),
+      ephemeral: new Map(),
       off: [],
     };
     this.connections.add(conn);
@@ -277,6 +343,7 @@ export class DevToolsAgent implements BlacPlugin {
         if (!conn.active) break;
         conn.watching = msg.id;
         conn.sent = (msg.id && this.byId.get(msg.id)?.version) || 0;
+        this.expose(msg.id ? this.byId.get(msg.id)?.container : undefined);
         break;
       case 'history': {
         const entry = conn.active ? this.byId.get(msg.id) : undefined;
@@ -301,6 +368,16 @@ export class DevToolsAgent implements BlacPlugin {
     conn.created = [];
     conn.changed.clear();
     conn.disposed = [];
+    conn.status.clear();
+    conn.ephemeral.clear();
+  }
+
+  /** Expose the selected instance in the page console, like React's `$r`. */
+  private expose(container: Container | undefined): void {
+    this.exposed = container;
+    const g = globalThis as Record<string, unknown>;
+    if (container) g[CONSOLE_GLOBAL] = container;
+    else delete g[CONSOLE_GLOBAL];
   }
 
   private hasActive(): boolean {
@@ -320,20 +397,33 @@ export class DevToolsAgent implements BlacPlugin {
   private flush(): void {
     for (const conn of this.connections) {
       if (!conn.active) continue;
-      const { created, changed, disposed } = conn;
+      const { created, changed, disposed, status, ephemeral } = conn;
       conn.created = [];
       conn.changed = new Map();
       conn.disposed = [];
+      conn.status = new Set();
+      conn.ephemeral = new Map();
 
       // Disposals first, so a keyed instance re-created in the same frame
       // (same id) arrives after its predecessor is gone.
       for (const { id, at } of disposed) {
         this.send(conn, { t: 'disposed', id, at });
       }
+      if (ephemeral.size > 0) {
+        const counts = Object.fromEntries(ephemeral);
+        this.send(conn, { t: 'ephemeral', at: Date.now(), counts });
+      }
       for (const id of created) {
         const entry = this.byId.get(id);
         if (entry) this.send(conn, { t: 'created', meta: this.meta(entry) });
         changed.delete(id);
+        status.delete(id);
+      }
+      for (const id of status) {
+        const entry = this.byId.get(id);
+        if (entry) {
+          this.send(conn, { t: 'status', id, status: this.status(entry) });
+        }
       }
       for (const [id, paths] of changed) {
         const entry = this.byId.get(id);
@@ -368,6 +458,23 @@ export class DevToolsAgent implements BlacPlugin {
       updatedAt: entry.updatedAt,
       version: entry.version,
       ...(entry.args !== undefined && { args: serialize(entry.args) }),
+      keepAlive: entry.keepAlive,
+      isolated: entry.isolated,
+      status: this.status(entry),
+    };
+  }
+
+  private status(entry: Entry): InstanceStatus {
+    const refs = this.ctx?.getRefIds(entry.baseId) ?? [];
+    const meta = this.ctx?.getInstanceMetadata(entry.container);
+    return {
+      active: entry.active || refs.length > 0,
+      refs,
+      hydration: meta?.hydrationStatus ?? 'idle',
+      ...(meta?.hydrationError && {
+        hydrationError: String(meta.hydrationError.message),
+      }),
+      ...(meta?.changedWhileHydrating && { changedWhileHydrating: true }),
     };
   }
 

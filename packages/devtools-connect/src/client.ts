@@ -32,6 +32,16 @@ export interface LogEntry {
   paths?: Paths;
 }
 
+/** Instances of a class that lived under `SHORT_LIVED_MS`. */
+export interface ChurnEntry {
+  className: string;
+  at: number;
+  count: number;
+}
+
+export const SHORT_LIVED_MS = 1000;
+const CHURN_SIZE = 200;
+
 export interface ClientState {
   status: ClientStatus;
   /** Set when `status` is `'incompatible'`. */
@@ -43,6 +53,8 @@ export interface ClientState {
   /** Recorded changes of the selected instance, oldest first. */
   history: HistoryEntry[];
   log: LogEntry[];
+  /** Short-lived instances, oldest first. */
+  churn: ChurnEntry[];
 }
 
 export interface DevToolsClientOptions {
@@ -72,6 +84,7 @@ export class DevToolsClient {
   private logView: LogEntry[] = [];
   private logDirty = false;
   private logKey = 0;
+  private churn: ChurnEntry[] = [];
   private notifyQueued = false;
   private state: ClientState;
   private readonly off: Array<() => void>;
@@ -189,6 +202,7 @@ export class DevToolsClient {
       this.history = [];
       this.log = [];
       this.logDirty = true;
+      this.churn = [];
       // Start the log with what already exists, so it isn't blank on connect.
       for (const meta of [...instances].sort(
         (a, b) => a.createdAt - b.createdAt,
@@ -226,12 +240,26 @@ export class DevToolsClient {
         this.record('changed', next, msg.at, msg.version, msg.paths);
         break;
       }
+      case 'status': {
+        const meta = this.instances.get(msg.id);
+        if (!meta) return;
+        this.instances.set(msg.id, { ...meta, status: msg.status });
+        break;
+      }
+      case 'ephemeral':
+        for (const [className, count] of Object.entries(msg.counts)) {
+          this.addChurn({ className, at: msg.at, count });
+        }
+        break;
       case 'disposed': {
         const meta = this.instances.get(msg.id);
         if (!meta) return;
         this.instances.delete(msg.id);
         if (msg.id === this.selectedId) this.history = [];
         this.record('disposed', meta, msg.at);
+        if (msg.at - meta.createdAt < SHORT_LIVED_MS) {
+          this.addChurn({ className: meta.className, at: msg.at, count: 1 });
+        }
         break;
       }
       // Older agents keep disposed instances and send this when they drop one.
@@ -275,6 +303,10 @@ export class DevToolsClient {
     this.logDirty = true;
   }
 
+  private addChurn(entry: ChurnEntry): void {
+    this.churn = [...this.churn.slice(1 - CHURN_SIZE), entry];
+  }
+
   /** A keyed instance came back (`Id#n`) after the selected one was disposed. */
   private isRecreationOfSelected(id: string): boolean {
     return (
@@ -307,6 +339,7 @@ export class DevToolsClient {
       selectedId: this.selectedId,
       history: this.history,
       log: this.logView,
+      churn: this.churn,
     };
   }
 }
