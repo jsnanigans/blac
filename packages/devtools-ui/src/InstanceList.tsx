@@ -1,18 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import type { InstanceMeta } from '@blac/devtools-connect/protocol';
 import { clock, instanceCopy, instanceKey, keyLabel, time } from './format';
-import {
-  ClassMark,
-  Empty,
-  Icon,
-  Kbd,
-  UpdatesPill,
-  hueStyle,
-  read,
-  useHeldValue,
-  useInteractionHold,
-  write,
-} from './ui';
+import { ClassMark, Empty, Icon, Kbd, hueStyle, read, write } from './ui';
 
 interface Props {
   instances: InstanceMeta[];
@@ -28,12 +17,6 @@ const matches = (meta: InstanceMeta, query: string) =>
   [meta.className, meta.name, meta.id].some((text) =>
     text.toLowerCase().includes(query),
   );
-
-const ids = (list: InstanceMeta[]) => list.map((meta) => meta.id).join('\n');
-
-/** Changes that don't add or remove rows go straight through a hold. */
-const sameRows = (a: InstanceMeta[], b: InstanceMeta[]) =>
-  a.length === b.length && a.every((meta, i) => meta.id === b[i].id);
 
 const lastEvent = (meta: InstanceMeta) =>
   meta.version === 0
@@ -63,6 +46,9 @@ function Row({
       data-child={child ? '' : undefined}
       style={hueStyle(meta.className)}
     >
+      {meta.version !== initial && (
+        <span key={meta.version} className="flash" aria-hidden />
+      )}
       <span className="twisty" />
       <button
         type="button"
@@ -162,7 +148,6 @@ export function InstanceList({ instances, selectedId, onSelect }: Props) {
   const [filter, setFilter] = useState('');
   const [limits, setLimits] = useState<Record<string, number>>({});
   const [collapsed, setCollapsed] = useState(readCollapsed);
-  const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
   const query = filter.trim().toLowerCase();
 
   const visible = useMemo(
@@ -177,23 +162,16 @@ export function InstanceList({ instances, selectedId, onSelect }: Props) {
         ),
     [instances, query],
   );
-  const held = useInteractionHold(scroller);
-  const { shown, pending, release } = useHeldValue(visible, held, sameRows);
-  const latest = useMemo(
-    () => new Map(visible.map((meta) => [meta.id, meta])),
-    [visible],
-  );
 
   const groups = useMemo(() => {
     const byClass = new Map<string, InstanceMeta[]>();
-    for (const old of shown) {
-      const meta = latest.get(old.id) ?? old;
+    for (const meta of visible) {
       const items = byClass.get(meta.className);
       if (items) items.push(meta);
       else byClass.set(meta.className, [meta]);
     }
     return [...byClass];
-  }, [shown, latest]);
+  }, [visible]);
 
   const toggle = (className: string) => {
     const next = new Set(collapsed);
@@ -201,8 +179,6 @@ export function InstanceList({ instances, selectedId, onSelect }: Props) {
     setCollapsed(next);
     write(COLLAPSED_KEY, JSON.stringify([...next]));
   };
-
-  const hidden = pending && ids(shown) !== ids(visible);
 
   return (
     <>
@@ -226,8 +202,7 @@ export function InstanceList({ instances, selectedId, onSelect }: Props) {
           <Kbd>/</Kbd>
         </label>
       </div>
-      <div className="scroll" ref={setScroller} data-list="select">
-        <UpdatesPill visible={hidden} label="Show updates" onApply={release} />
+      <div className="scroll" data-list="select">
         {groups.length === 0 && (
           <Empty
             title={

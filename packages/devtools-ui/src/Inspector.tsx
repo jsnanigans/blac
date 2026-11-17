@@ -96,7 +96,7 @@ export function Inspector({
   if (!entry) {
     body = <SkeletonRows count={4} />;
   } else if (view === 'state') {
-    body = <Tree value={entry.state} marks={marks} />;
+    body = <Tree value={entry.state} marks={marks} stamp={entry.version} />;
   } else if (view === 'changes') {
     body = !previous ? (
       <Empty

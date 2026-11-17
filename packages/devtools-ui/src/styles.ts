@@ -209,7 +209,8 @@ ${scoped("[data-theme='dark']")} {${DARK}}
 .bd .search input::-webkit-search-cancel-button { display: none; }
 
 /* Lists and rows */
-.bd .line { display: flex; align-items: stretch; }
+.bd .line { position: relative; display: flex; align-items: stretch; }
+.bd .flash { position: absolute; inset: 0; pointer-events: none; animation: bd-flash 1.8s var(--ease) forwards; }
 .bd .twisty { display: flex; align-items: center; justify-content: center; flex: none; width: 18px; padding: 0; border: 0; background: none; color: var(--muted-foreground); }
 .bd button.twisty:hover { color: var(--foreground); }
 .bd .twisty .icon { transition: transform 150ms var(--ease); }
@@ -236,7 +237,6 @@ ${scoped("[data-theme='dark']")} {${DARK}}
 .bd .line.group .row:hover .twisty { color: var(--foreground); }
 .bd .line.group .badge { margin-left: auto; }
 .bd section[data-group] { background: color-mix(in oklch, var(--hue, transparent) 3%, transparent); }
-.bd .line[data-child] { position: relative; }
 .bd .line[data-child]::before { content: ''; position: absolute; top: 0; bottom: 0; left: 26px; width: 2px; background: color-mix(in oklch, var(--hue) 50%, transparent); }
 .bd .line[data-child] .row { padding-left: 26px; }
 .bd .row-key { color: var(--foreground); }
@@ -272,7 +272,8 @@ ${scoped("[data-theme='dark']")} {${DARK}}
 .bd .row[data-disposed] { opacity: 0.7; transition: opacity 500ms var(--ease); }
 .bd .row .ver { display: inline-block; }
 .bd .row .ver[data-changed] { color: var(--info-foreground); }
-.bd .row .ver[data-flash] { animation: bd-flash 700ms var(--ease); }
+.bd .row .ver[data-flash] { animation: bd-pop 1.8s var(--ease); }
+.bd .card .row[data-flash] { animation: bd-flash 1.8s var(--ease); }
 .bd .more { margin: 4px 6px 8px; }
 .bd .skeleton-row { animation: none; }
 .bd .skeleton { display: block; height: 10px; background: linear-gradient(90deg, var(--muted) 25%, var(--accent) 50%, var(--muted) 75%); background-size: 200% 100%; animation: bd-shimmer 1.4s linear infinite; }
@@ -280,25 +281,6 @@ ${scoped("[data-theme='dark']")} {${DARK}}
 .bd .card { margin: 8px; border: 1px solid var(--border); background: var(--card); overflow: hidden; }
 .bd .card > * + * { border-top: 1px solid var(--border); }
 .bd .card .row { padding: 7px 12px; }
-
-.bd .pill-anchor { position: sticky; top: 8px; z-index: 2; display: flex; justify-content: center; height: 0; pointer-events: none; }
-.bd .pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 26px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 13px;
-  background: var(--primary);
-  color: var(--primary-foreground);
-  font-weight: 500;
-  box-shadow: 0 4px 12px rgb(0 0 0 / 0.2);
-  opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity 150ms var(--ease), transform 150ms var(--ease);
-}
-.bd .pill[data-visible='true'] { opacity: 1; transform: none; pointer-events: auto; }
 
 /* States */
 .bd .empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 28px 16px; text-align: center; }
@@ -341,7 +323,7 @@ ${scoped("[data-theme='dark']")} {${DARK}}
 .bd .val.string { color: var(--success-foreground); }
 .bd .val.number, .bd .val.boolean, .bd .val.bigint { color: var(--info-foreground); }
 .bd .val.special { color: var(--special); }
-.bd .tree [data-mark] { box-shadow: inset 2px 0 var(--info); animation: bd-mark 1.2s var(--ease); }
+.bd .tree [data-mark] { box-shadow: inset 2px 0 var(--info); animation: bd-mark 2.4s var(--ease); }
 .bd .tree [data-mark='added'] { box-shadow: inset 2px 0 var(--success); }
 .bd .tree [data-mark='removed'] { box-shadow: inset 2px 0 var(--destructive); }
 
@@ -383,8 +365,15 @@ ${scoped("[data-theme='dark']")} {${DARK}}
 .bd-float:hover .bd-grip::after { opacity: 0.5; }
 
 @keyframes bd-enter { from { opacity: 0; transform: translateY(4px); } }
-@keyframes bd-flash { from { background: color-mix(in srgb, var(--info) 30%, transparent); } }
-@keyframes bd-mark { from { background: color-mix(in srgb, var(--info) 22%, transparent); } }
+@keyframes bd-flash {
+  0%, 35% { background: color-mix(in srgb, var(--info) 28%, transparent); }
+  100% { background: transparent; }
+}
+@keyframes bd-pop { 0%, 35% { color: var(--info); font-weight: 600; } }
+@keyframes bd-mark {
+  0%, 40% { background: color-mix(in srgb, var(--info) 32%, transparent); }
+  100% { background: transparent; }
+}
 @keyframes bd-shimmer { to { background-position: -200% 0; } }
 @keyframes bd-spin { to { transform: rotate(360deg); } }
 .bd .spin { animation: bd-spin 1s linear infinite; }

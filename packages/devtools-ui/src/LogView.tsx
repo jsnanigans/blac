@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { LogEntry } from '@blac/devtools-connect/client';
 import {
   ago,
@@ -6,20 +6,9 @@ import {
   instanceKey,
   keyLabel,
   logRows,
-  plural,
   type LogRow,
 } from './format';
-import {
-  ClassMark,
-  Empty,
-  Icon,
-  Kbd,
-  Segmented,
-  UpdatesPill,
-  useHeldValue,
-  useInteractionHold,
-  useNow,
-} from './ui';
+import { ClassMark, Empty, Icon, Kbd, Segmented, useNow } from './ui';
 
 interface Props {
   log: LogEntry[];
@@ -37,8 +26,6 @@ const KIND_LABEL: Record<Kind, string> = {
 };
 const MAX_SHOWN = 500;
 
-const newest = (log: LogEntry[]) => log[log.length - 1]?.key ?? 0;
-
 function meta({ entry, count, first }: LogRow): string {
   if (entry.kind === 'created') return 'created';
   if (entry.kind === 'disposed') return 'disposed';
@@ -53,20 +40,13 @@ export function LogView({ log, onOpen, onClear }: Props) {
   const now = useNow();
   const [filter, setFilter] = useState('');
   const [kind, setKind] = useState<Kind>('all');
-  const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
-  const held = useInteractionHold(scroller);
-  const { shown, pending, release } = useHeldValue(
-    log,
-    held,
-    (a, b) => newest(a) === newest(b),
-  );
-  const waiting = pending ? log.filter((e) => e.key > newest(shown)).length : 0;
+  const firstKey = useRef(log[log.length - 1]?.key ?? 0).current;
   const query = filter.trim().toLowerCase();
 
   const rows = useMemo(
     () =>
       logRows(
-        shown.filter(
+        log.filter(
           (e) =>
             (kind === 'all' ||
               (kind === 'changes') === (e.kind === 'changed')) &&
@@ -76,7 +56,7 @@ export function LogView({ log, onOpen, onClear }: Props) {
               )),
         ),
       ).slice(0, MAX_SHOWN),
-    [shown, kind, query],
+    [log, kind, query],
   );
 
   return (
@@ -116,12 +96,7 @@ export function LogView({ log, onOpen, onClear }: Props) {
           Clear log
         </button>
       </div>
-      <div className="scroll" ref={setScroller}>
-        <UpdatesPill
-          visible={waiting > 0}
-          label={`${plural(waiting, 'new event')} · show`}
-          onApply={release}
-        />
+      <div className="scroll">
         {rows.length === 0 ? (
           <Empty
             title={log.length === 0 ? 'No events yet' : 'No events match'}
@@ -142,6 +117,7 @@ export function LogView({ log, onOpen, onClear }: Props) {
                   type="button"
                   className="row"
                   data-row
+                  data-flash={entry.key > firstKey ? '' : undefined}
                   data-disposed={entry.kind === 'disposed' ? '' : undefined}
                   title="Open in inspector"
                   onClick={() => onOpen(entry)}

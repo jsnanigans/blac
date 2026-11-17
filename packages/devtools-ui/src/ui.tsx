@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useEffect,
   useState,
   useSyncExternalStore,
@@ -33,7 +32,6 @@ const ICONS = {
     </>
   ),
   check: <path d="M20 6 9 17l-5-5" />,
-  arrowUp: <path d="m5 12 7-7 7 7M12 19V5" />,
   created: (
     <>
       <circle cx="12" cy="12" r="10" />
@@ -177,85 +175,6 @@ export function SkeletonRows({ count = 5 }: { count?: number }) {
           </span>
         </div>
       ))}
-    </div>
-  );
-}
-
-const RELEASE_DELAY_MS = 500;
-
-/**
- * Whether the pointer is over `element` or focus is inside it. Leaving releases
- * after a short delay, so crossing an edge doesn't flush updates under a click.
- */
-export function useInteractionHold(element: HTMLElement | null): boolean {
-  const [held, setHeld] = useState(false);
-  useEffect(() => {
-    if (!element) return;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const hold = () => {
-      clearTimeout(timer);
-      setHeld(true);
-    };
-    const release = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        if (!element.matches(':hover, :focus-within')) setHeld(false);
-      }, RELEASE_DELAY_MS);
-    };
-    element.addEventListener('pointerenter', hold);
-    element.addEventListener('pointerleave', release);
-    element.addEventListener('focusin', hold);
-    element.addEventListener('focusout', release);
-    return () => {
-      clearTimeout(timer);
-      element.removeEventListener('pointerenter', hold);
-      element.removeEventListener('pointerleave', release);
-      element.removeEventListener('focusin', hold);
-      element.removeEventListener('focusout', release);
-    };
-  }, [element]);
-  return held;
-}
-
-/**
- * Shows `value` as it changes, except while `held`. A new value that
- * `passes(shown, value)` goes straight through, so harmless updates never hold.
- */
-export function useHeldValue<T>(
-  value: T,
-  held: boolean,
-  passes: (shown: T, value: T) => boolean = Object.is,
-) {
-  const [shown, setShown] = useState(value);
-  const holding = held && !passes(shown, value);
-  if (!holding && shown !== value) setShown(value);
-  const release = useCallback(() => setShown(value), [value]);
-  return { shown: holding ? shown : value, pending: holding, release };
-}
-
-/** Floats over a held list to offer the updates behind the hold. */
-export function UpdatesPill({
-  visible,
-  label,
-  onApply,
-}: {
-  visible: boolean;
-  label: string;
-  onApply: () => void;
-}) {
-  return (
-    <div className="pill-anchor">
-      <button
-        type="button"
-        className="pill"
-        data-visible={visible}
-        aria-hidden={!visible}
-        tabIndex={visible ? 0 : -1}
-        onClick={onApply}
-      >
-        <Icon name="arrowUp" size={12} />
-        {label}
-      </button>
     </div>
   );
 }
