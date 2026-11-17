@@ -1,5 +1,13 @@
 # @blac/devtools-ui
 
+## 2.0.26
+
+### Patch Changes
+
+- 4441206: The agent reports its package version, and the DevTools panel warns when it differs from the panel's version and says which side to update — or both, when both are behind the latest release on npm.
+- Updated dependencies [4441206]
+  - @blac/devtools-connect@2.0.26
+
 ## 2.0.25
 
 ### Patch Changes
