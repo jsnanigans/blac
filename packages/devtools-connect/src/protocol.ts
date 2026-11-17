@@ -1,5 +1,16 @@
 export const PROTOCOL_VERSION = 1;
 
+declare const __BLAC_CONNECT_VERSION__: string | undefined;
+
+/**
+ * This `@blac/devtools-connect` package version, injected at build time;
+ * `'dev'` when built from source.
+ */
+export const CONNECT_VERSION: string =
+  typeof __BLAC_CONNECT_VERSION__ === 'string'
+    ? __BLAC_CONNECT_VERSION__
+    : 'dev';
+
 /** `window.postMessage` envelope tags used by the page <-> content-script hop. */
 export const WINDOW_AGENT_SOURCE = 'blac-devtools-agent';
 export const WINDOW_CLIENT_SOURCE = 'blac-devtools-client';
@@ -63,6 +74,8 @@ export type AgentMsg =
   | (Sequenced & {
       t: 'welcome';
       protocol: number;
+      /** `CONNECT_VERSION`; missing from agents before 2.0.26. */
+      version?: string;
       instances: InstanceMeta[];
     })
   | (Sequenced & { t: 'snapshot'; instances: InstanceMeta[] })

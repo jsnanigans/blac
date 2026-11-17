@@ -8,5 +8,9 @@ const theme = chrome.devtools.panels.themeName === 'dark' ? 'dark' : 'light';
 const client = new DevToolsClient(createPanelTransport(`blac-panel:${tabId}`));
 
 createRoot(document.getElementById('root')!).render(
-  <Panel client={client} theme={theme} />,
+  <Panel
+    client={client}
+    theme={theme}
+    panelName="the BlaC DevTools extension"
+  />,
 );

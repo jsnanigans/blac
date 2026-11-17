@@ -2,6 +2,7 @@ import { ALL_PATHS } from '@blac/core';
 import type { BlacPlugin, PathSet, PluginContext } from '@blac/core';
 import {
   AGENT_HOOK,
+  CONNECT_VERSION,
   PROTOCOL_VERSION,
   type AgentMsg,
   type ClientMsg,
@@ -264,6 +265,7 @@ export class DevToolsAgent implements BlacPlugin {
         this.send(conn, {
           t: 'welcome',
           protocol: PROTOCOL_VERSION,
+          version: CONNECT_VERSION,
           instances: compatible ? this.allMeta() : [],
         });
         break;

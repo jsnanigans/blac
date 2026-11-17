@@ -1,10 +1,19 @@
 import { defineConfig } from 'vite-plus';
 import path from 'path';
+import connectPkg from '../devtools-connect/package.json' with { type: 'json' };
+import pkg from './package.json' with { type: 'json' };
 
 const connect = (file: string) =>
   path.resolve(__dirname, '../devtools-connect/src', file);
 
+const define = {
+  __BLAC_UI_VERSION__: JSON.stringify(pkg.version),
+  // Tests alias the connect source, which reads its own version.
+  __BLAC_CONNECT_VERSION__: JSON.stringify(connectPkg.version),
+};
+
 export default defineConfig({
+  define,
   resolve: {
     alias: {
       '@blac/devtools-connect/client': connect('client.ts'),
@@ -12,6 +21,7 @@ export default defineConfig({
     },
   },
   pack: {
+    define: { __BLAC_UI_VERSION__: define.__BLAC_UI_VERSION__ },
     entry: ['src/index.tsx'],
     format: ['esm', 'cjs'],
     dts: false,

@@ -12,7 +12,7 @@ import { DevToolsAgent } from './agent';
 import { serialize } from './serialize';
 import { DevToolsClient } from './client';
 import { createMemoryTransportPair } from './transport';
-import { PROTOCOL_VERSION, type AgentMsg } from './protocol';
+import { CONNECT_VERSION, PROTOCOL_VERSION, type AgentMsg } from './protocol';
 
 class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
@@ -95,6 +95,7 @@ describe('agent + client', () => {
 
     let state = await snapshot(client);
     expect(state.status).toBe('connected');
+    expect(state.agentVersion).toBe(CONNECT_VERSION);
     expect(state.instances.map((i) => i.className)).toEqual(['CounterCubit']);
 
     cubit.inc();

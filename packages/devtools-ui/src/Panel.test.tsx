@@ -31,6 +31,11 @@ const base: ClientState = {
   log: [],
 };
 
+vi.stubGlobal(
+  'fetch',
+  vi.fn(async () => Response.json({ version: '99.0.0' })),
+);
+
 let container: HTMLElement;
 let root: Root;
 
@@ -153,6 +158,20 @@ describe('Panel', () => {
   it('shows the version mismatch only', () => {
     render({ ...base, status: 'incompatible', agentProtocol: 9 });
     expect(container.textContent).toContain('protocol v9, this panel v1');
+    expect(container.textContent).toContain('Update @blac/devtools-ui.');
     expect(container.querySelector('.seg')).toBeNull();
+  });
+
+  it('warns which sides to update when versions differ', async () => {
+    render({ ...base, agentVersion: '0.0.1' });
+    expect(container.textContent).toContain(
+      'Update @blac/devtools-connect in the app.',
+    );
+    expect(container.querySelector('.seg')).not.toBeNull();
+
+    await act(async () => {});
+    expect(container.textContent).toContain(
+      'latest is v99.0.0. Update @blac/devtools-connect in the app and @blac/devtools-ui.',
+    );
   });
 });

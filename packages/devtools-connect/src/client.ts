@@ -36,6 +36,8 @@ export interface ClientState {
   status: ClientStatus;
   /** Set when `status` is `'incompatible'`. */
   agentProtocol?: number;
+  /** The agent's `CONNECT_VERSION`; unset for agents that predate it. */
+  agentVersion?: string;
   instances: InstanceMeta[];
   selectedId: string | null;
   /** Recorded changes of the selected instance, oldest first. */
@@ -59,6 +61,7 @@ export class DevToolsClient {
   private readonly historySize: number;
   private status: ClientStatus = 'connecting';
   private agentProtocol: number | undefined;
+  private agentVersion: string | undefined;
   private session: string | undefined;
   private lastSeq = 0;
   private resyncing = false;
@@ -139,6 +142,7 @@ export class DevToolsClient {
     if (msg.t === 'bye') return this.waitForAgent();
 
     if (msg.t === 'welcome') {
+      this.agentVersion = msg.version;
       if (msg.protocol !== PROTOCOL_VERSION) {
         this.status = 'incompatible';
         this.agentProtocol = msg.protocol;
@@ -172,6 +176,7 @@ export class DevToolsClient {
   private waitForAgent(): void {
     this.status = 'connecting';
     this.agentProtocol = undefined;
+    this.agentVersion = undefined;
     this.resyncing = false;
     this.instances.clear();
     this.touch();
@@ -297,6 +302,7 @@ export class DevToolsClient {
     return {
       status: this.status,
       agentProtocol: this.agentProtocol,
+      agentVersion: this.agentVersion,
       instances: [...this.instances.values()],
       selectedId: this.selectedId,
       history: this.history,

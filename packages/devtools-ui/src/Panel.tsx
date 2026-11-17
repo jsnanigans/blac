@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
   useSyncExternalStore,
   type HTMLAttributes,
@@ -15,6 +16,12 @@ import { Inspector, type View } from './Inspector';
 import { InstanceList } from './InstanceList';
 import { LogView } from './LogView';
 import { CSS } from './styles';
+import {
+  fetchLatestVersion,
+  outdatedSides,
+  UI_VERSION,
+  type Side,
+} from './versions';
 import {
   Empty,
   Icon,
@@ -33,6 +40,8 @@ export type Theme = 'auto' | 'light' | 'dark';
 export interface PanelProps {
   client: DevToolsClient;
   theme?: Theme;
+  /** What to tell users to update when this panel is the older side. */
+  panelName?: string;
 }
 
 /** Window controls and drag handling the overlay adds to the header. */
@@ -105,6 +114,7 @@ export function Shell({
 export function Panel({
   client,
   theme = 'auto',
+  panelName = '@blac/devtools-ui',
   chrome,
 }: PanelProps & { chrome?: Chrome }) {
   const state = useSyncExternalStore(client.subscribe, client.getSnapshot);
@@ -228,13 +238,42 @@ export function Panel({
     />
   );
 
+  const { agentVersion } = state;
+  const mismatch = outdatedSides(agentVersion, UI_VERSION).length > 0;
+  const [latest, setLatest] = useState<string>();
+  useEffect(() => {
+    if (mismatch) void fetchLatestVersion().then(setLatest);
+  }, [mismatch]);
+  const outdated = outdatedSides(agentVersion, UI_VERSION, latest);
+
+  const names: Record<Side, ReactNode> = {
+    agent: (
+      <>
+        <code>@blac/devtools-connect</code> in the app
+      </>
+    ),
+    panel: panelName,
+  };
+  const update = (sides: Side[]) => (
+    <>
+      The app runs <code>@blac/devtools-connect</code>{' '}
+      {agentVersion ? `v${agentVersion}` : 'of unknown version'}, this panel v
+      {UI_VERSION}
+      {latest && `, latest is v${latest}`}. Update {names[sides[0]]}
+      {sides[1] && <> and {names[sides[1]]}</>}.
+    </>
+  );
+
   let body;
   if (status === 'incompatible') {
+    const sides: Side[] =
+      agentVersion && outdated.length > 0
+        ? outdated
+        : [(state.agentProtocol ?? 0) < PROTOCOL_VERSION ? 'agent' : 'panel'];
     body = (
       <Notice tone="danger" title="Version mismatch">
         The app's agent speaks protocol v{state.agentProtocol}, this panel v
-        {PROTOCOL_VERSION}. Update <code>@blac/devtools-connect</code> or the
-        extension so they match.
+        {PROTOCOL_VERSION}. {update(sides)}
       </Notice>
     );
   } else if (status !== 'connected' && state.instances.length === 0) {
@@ -313,6 +352,11 @@ export function Panel({
       chrome={chrome}
       onKeyDown={onKeyDown}
     >
+      {status === 'connected' && outdated.length > 0 && (
+        <Notice tone="warn" title="Version mismatch">
+          {update(outdated)}
+        </Notice>
+      )}
       {body}
     </Shell>
   );
