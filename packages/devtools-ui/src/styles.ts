@@ -93,6 +93,7 @@ export const CSS = `
 .bd .inspector header h2 { margin: 0; }
 .bd .inspector header > div { flex-basis: 100%; }
 .bd .link { margin-left: 8px; padding: 0; border: 0; background: none; color: var(--accent); font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; }
+.bd .link.more { display: block; margin: 4px 8px; }
 .bd .item { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; padding: 3px 8px; border: 0; background: none; text-align: left; white-space: nowrap; }
 .bd .item > * { overflow: hidden; text-overflow: ellipsis; }
 .bd .item:hover { background: var(--bg-alt); }

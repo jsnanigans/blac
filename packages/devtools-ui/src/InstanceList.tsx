@@ -8,6 +8,9 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
+/** Rows rendered per class before a "show more" button. */
+const PAGE = 200;
+
 const matches = (meta: InstanceMeta, query: string) =>
   [meta.className, meta.name, meta.id].some((text) =>
     text.toLowerCase().includes(query),
@@ -49,6 +52,7 @@ function Row({
 export function InstanceList({ instances, selectedId, onSelect }: Props) {
   const [filter, setFilter] = useState('');
   const [showDisposed, setShowDisposed] = useState(false);
+  const [limits, setLimits] = useState<Record<string, number>>({});
   const query = filter.trim().toLowerCase();
   const disposed = instances.filter((meta) => meta.disposedAt).length;
 
@@ -57,10 +61,9 @@ export function InstanceList({ instances, selectedId, onSelect }: Props) {
     for (const meta of instances) {
       if (meta.disposedAt && !showDisposed) continue;
       if (query && !matches(meta, query)) continue;
-      byClass.set(meta.className, [
-        ...(byClass.get(meta.className) ?? []),
-        meta,
-      ]);
+      const items = byClass.get(meta.className);
+      if (items) items.push(meta);
+      else byClass.set(meta.className, [meta]);
     }
     return [...byClass.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
@@ -97,21 +100,36 @@ export function InstanceList({ instances, selectedId, onSelect }: Props) {
               : 'No instances match.'}
           </p>
         )}
-        {groups.map(({ className, items }) => (
-          <section key={className}>
-            <h3>
-              {className} <span className="muted">{items.length}</span>
-            </h3>
-            {items.map((meta) => (
-              <Row
-                key={meta.id}
-                meta={meta}
-                selected={meta.id === selectedId}
-                onSelect={onSelect}
-              />
-            ))}
-          </section>
-        ))}
+        {groups.map(({ className, items }) => {
+          const limit = limits[className] ?? PAGE;
+          return (
+            <section key={className}>
+              <h3>
+                {className} <span className="muted">{items.length}</span>
+              </h3>
+              {items.slice(0, limit).map((meta) => (
+                <Row
+                  key={meta.id}
+                  meta={meta}
+                  selected={meta.id === selectedId}
+                  onSelect={onSelect}
+                />
+              ))}
+              {items.length > limit && (
+                <button
+                  type="button"
+                  className="link more"
+                  onClick={() =>
+                    setLimits({ ...limits, [className]: limit + PAGE })
+                  }
+                >
+                  show {Math.min(PAGE, items.length - limit)} more of{' '}
+                  {items.length - limit}
+                </button>
+              )}
+            </section>
+          );
+        })}
       </div>
     </div>
   );
