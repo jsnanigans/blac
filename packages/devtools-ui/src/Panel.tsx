@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useState,
   useSyncExternalStore,
   type HTMLAttributes,
@@ -129,6 +130,13 @@ export function Panel({
   const { status, selectedId, history } = state;
   const selected = state.instances.find((meta) => meta.id === selectedId);
   const pickedVersion = pick?.id === selectedId ? pick.version : null;
+  const changeTimes = useMemo(
+    () =>
+      state.log
+        .filter((e) => e.kind === 'changed' && e.id === selectedId)
+        .map((e) => e.at),
+    [state.log, selectedId],
+  );
 
   const select = (id: string | null, version: number | null = null) => {
     client.select(id);
@@ -205,8 +213,13 @@ export function Panel({
       case 's':
       case 'c':
       case 'h':
+      case 'i':
         if (inspecting) {
-          setView(({ s: 'state', c: 'changes', h: 'history' } as const)[e.key]);
+          setView(
+            ({ s: 'state', c: 'changes', h: 'history', i: 'info' } as const)[
+              e.key
+            ],
+          );
         }
         break;
       case '[':
@@ -304,6 +317,8 @@ export function Panel({
         <div className="pane list-pane" style={{ width: listWidth }}>
           <InstanceList
             instances={state.instances}
+            churn={state.churn}
+            now={now}
             selectedId={selectedId}
             onSelect={(id) => select(id)}
           />
@@ -320,6 +335,7 @@ export function Panel({
               key={selected.id}
               meta={selected}
               history={history}
+              changes={changeTimes}
               pickedVersion={pickedVersion}
               onPick={pickVersion}
               view={view}
@@ -332,8 +348,8 @@ export function Panel({
               title="Nothing selected"
               hint={
                 <>
-                  Pick an instance to see its state, changes and history. Use{' '}
-                  <Kbd>j</Kbd>
+                  Pick an instance to see its state, changes, history and
+                  lifetime. Use <Kbd>j</Kbd>
                   <Kbd>k</Kbd> to move and <Kbd>/</Kbd> to filter.
                 </>
               }

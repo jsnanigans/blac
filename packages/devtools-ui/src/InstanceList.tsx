@@ -1,10 +1,21 @@
 import { useMemo, useRef, useState } from 'react';
+import type { ChurnEntry } from '@blac/devtools-connect/client';
 import type { InstanceMeta } from '@blac/devtools-connect/protocol';
-import { clock, instanceCopy, instanceKey, keyLabel, time } from './format';
+import { StatusBadges } from './Inspector';
+import {
+  clock,
+  instanceCopy,
+  instanceKey,
+  keyLabel,
+  plural,
+  time,
+} from './format';
 import { ClassMark, Empty, Icon, Kbd, hueStyle, read, write } from './ui';
 
 interface Props {
   instances: InstanceMeta[];
+  churn: ChurnEntry[];
+  now: number;
   selectedId: string | null;
   onSelect: (id: string) => void;
 }
@@ -13,10 +24,29 @@ interface Props {
 const PAGE = 200;
 const COLLAPSED_KEY = 'blac-devtools-collapsed';
 
+const CHURN_WINDOW_MS = 10_000;
+
+/** Also matches `keepalive`, `isolated` and `idle`. */
 const matches = (meta: InstanceMeta, query: string) =>
-  [meta.className, meta.name, meta.id].some((text) =>
-    text.toLowerCase().includes(query),
-  );
+  [
+    meta.className,
+    meta.name,
+    meta.id,
+    meta.keepAlive ? 'keepalive' : '',
+    meta.isolated ? 'isolated' : '',
+    meta.status && !meta.status.active ? 'idle' : '',
+  ].some((text) => text.toLowerCase().includes(query));
+
+/** Classes with short-lived instances in the last 10s, most first. */
+function churning(churn: ChurnEntry[], now: number) {
+  const counts = new Map<string, number>();
+  for (let i = churn.length - 1; i >= 0; i--) {
+    const { className, at, count } = churn[i];
+    if (now - at > CHURN_WINDOW_MS) break;
+    counts.set(className, (counts.get(className) ?? 0) + count);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1]);
+}
 
 const lastEvent = (meta: InstanceMeta) =>
   meta.version === 0
@@ -92,6 +122,7 @@ function Row({
             </span>
           </span>
         </span>
+        <StatusBadges meta={meta} />
         {copy && (
           <span
             className="badge num"
@@ -144,7 +175,13 @@ function readCollapsed(): Set<string> {
   }
 }
 
-export function InstanceList({ instances, selectedId, onSelect }: Props) {
+export function InstanceList({
+  instances,
+  churn,
+  now,
+  selectedId,
+  onSelect,
+}: Props) {
   const [filter, setFilter] = useState('');
   const [limits, setLimits] = useState<Record<string, number>>({});
   const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -202,6 +239,26 @@ export function InstanceList({ instances, selectedId, onSelect }: Props) {
           <Kbd>/</Kbd>
         </label>
       </div>
+      {churning(churn, now)
+        .slice(0, 3)
+        .map(([className, count]) => (
+          <button
+            key={className}
+            type="button"
+            className="churn"
+            title={`${plural(count, 'instance')} of ${className} were created and disposed within 1s in the last 10s. Unstable args or a missing static key?`}
+            onClick={() => setFilter(className)}
+          >
+            <Icon name="info" size={13} />
+            <span className="row-line">
+              <span className="row-primary">{className}</span>
+              <span className="row-meta"> · short-lived instances</span>
+            </span>
+            <span className="badge num" data-tone="warn">
+              {count} in 10s
+            </span>
+          </button>
+        ))}
       <div className="scroll" data-list="select">
         {groups.length === 0 && (
           <Empty

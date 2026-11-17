@@ -13,22 +13,26 @@ import {
   keyLabel,
   summary,
 } from './format';
+import { InfoView, lifetimeLabel } from './InfoView';
 import { Tree } from './Tree';
 import { ClassMark, Empty, Icon, Segmented, SkeletonRows } from './ui';
 
-export type View = 'state' | 'changes' | 'history';
+export type View = 'state' | 'changes' | 'history' | 'info';
 
-export const VIEWS: readonly View[] = ['state', 'changes', 'history'];
+export const VIEWS: readonly View[] = ['state', 'changes', 'history', 'info'];
 
 const VIEW_LABEL: Record<View, string> = {
   state: 'State',
   changes: 'Changes',
   history: 'History',
+  info: 'Info',
 };
 
 interface Props {
   meta: InstanceMeta;
   history: HistoryEntry[];
+  /** Times of this instance's changes still in the log. */
+  changes: readonly number[];
   /** A recorded version to hold the inspector at; `null` follows the latest. */
   pickedVersion: number | null;
   onPick: (version: number | null) => void;
@@ -67,6 +71,7 @@ function CopyButton({ text, label }: { text: () => string; label: string }) {
 export function Inspector({
   meta,
   history,
+  changes: changeTimes,
   pickedVersion,
   onPick,
   view,
@@ -93,7 +98,9 @@ export function Inspector({
   const copy = instanceCopy(meta.id);
 
   let body;
-  if (!entry) {
+  if (view === 'info') {
+    body = <InfoView meta={meta} changes={changeTimes} now={now} />;
+  } else if (!entry) {
     body = <SkeletonRows count={4} />;
   } else if (view === 'state') {
     body = <Tree value={entry.state} marks={marks} stamp={entry.version} />;
@@ -183,9 +190,26 @@ export function Inspector({
                 text={() => JSON.stringify(entry.state, null, 2)}
               />
             )}
+            {history.length > 0 && (
+              <button
+                type="button"
+                className="icon-btn"
+                aria-label="Download recorded history"
+                title="Download recorded history"
+                onClick={() => download(meta, history)}
+              >
+                <Icon name="download" size={13} />
+              </button>
+            )}
           </span>
         </div>
         <div className="insp-meta">
+          {meta.keepAlive !== undefined && lifetimeLabel(meta) !== 'shared' && (
+            <span className="badge" data-tone="info">
+              {lifetimeLabel(meta)}
+            </span>
+          )}
+          {meta.status && <StatusBadges meta={meta} />}
           <span className="num">v{meta.version}</span>
           <span>·</span>
           <span title={clock(meta.createdAt)}>
@@ -229,4 +253,44 @@ export function Inspector({
       <div className="insp-body">{body}</div>
     </>
   );
+}
+
+/** Idle and hydration badges; nothing for the common active, unhydrated case. */
+export function StatusBadges({ meta }: { meta: InstanceMeta }) {
+  const status = meta.status;
+  if (!status) return null;
+  return (
+    <>
+      {!status.active && (
+        <span
+          className="badge"
+          data-tone="warn"
+          title={meta.keepAlive ? 'No owners; kept alive' : 'No owners'}
+        >
+          idle
+        </span>
+      )}
+      {(status.hydration === 'hydrating' || status.hydration === 'error') && (
+        <span
+          className="badge"
+          data-tone={status.hydration === 'error' ? 'danger' : 'info'}
+          title={status.hydrationError}
+        >
+          {status.hydration === 'error' ? 'hydration failed' : 'hydrating'}
+        </span>
+      )}
+    </>
+  );
+}
+
+function download(meta: InstanceMeta, history: HistoryEntry[]) {
+  const blob = new Blob([JSON.stringify({ meta, history }, null, 2)], {
+    type: 'application/json',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${meta.id.replace(/[^\w.-]+/g, '_')}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }

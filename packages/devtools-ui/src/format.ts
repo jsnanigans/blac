@@ -191,3 +191,28 @@ export function summary(value: Wire | undefined): string {
   }
   return `{${Object.keys(value ?? {}).length} keys}`;
 }
+
+export type RefKind = 'component' | 'dependency' | 'watch' | 'manual';
+
+/** Who holds a ref, from the id conventions of `useBloc`, `.track()` and `watch`. */
+export function refKind(refId: string): RefKind {
+  if (refId.startsWith('useBloc@')) {
+    return refId.endsWith(':dep') ? 'dependency' : 'component';
+  }
+  return refId.startsWith('_watch_') ? 'watch' : 'manual';
+}
+
+/** Counts per bin, oldest first, of the times in the `bins * binMs` before `now`. */
+export function histogram(
+  times: readonly number[],
+  now: number,
+  bins: number,
+  binMs: number,
+): number[] {
+  const counts: number[] = Array.from({ length: bins }, () => 0);
+  for (const at of times) {
+    const bin = Math.floor((now - at) / binMs);
+    if (bin >= 0 && bin < bins) counts[bins - 1 - bin]++;
+  }
+  return counts;
+}

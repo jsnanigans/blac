@@ -166,6 +166,7 @@ ${scoped("[data-theme='dark']")} {${DARK}}
   white-space: nowrap;
 }
 .bd .badge[data-tone='warn'] { background: color-mix(in srgb, var(--warning) var(--tint), transparent); color: var(--warning-foreground); }
+.bd .badge[data-tone='danger'] { background: color-mix(in srgb, var(--destructive) var(--tint), transparent); color: var(--destructive-foreground); }
 .bd .badge[data-tone='info'] { background: color-mix(in srgb, var(--info) var(--tint), transparent); color: var(--info-foreground); }
 
 .bd .kbd {
@@ -338,6 +339,31 @@ ${scoped("[data-theme='dark']")} {${DARK}}
 .bd .changes del { background: color-mix(in srgb, var(--destructive) var(--tint), transparent); }
 .bd .changes ins { background: color-mix(in srgb, var(--success) calc(var(--tint) + 2%), transparent); }
 .bd .caption { margin-bottom: 6px; color: var(--muted-foreground); font-size: 11px; }
+
+.bd .churn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--warning) calc(var(--tint) / 2), transparent);
+  text-align: left;
+}
+.bd .churn > .icon { color: var(--warning-foreground); }
+.bd .churn:hover { background: color-mix(in srgb, var(--warning) var(--tint), transparent); }
+
+.bd .facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0 0 16px; }
+.bd .facts dt { color: var(--muted-foreground); }
+.bd .facts dd { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; margin: 0; }
+.bd .activity { display: inline-flex; align-items: center; gap: 8px; }
+.bd .spark rect { fill: var(--info); }
+.bd .spark rect[data-zero] { fill: var(--border); }
+.bd .info .card { margin: 0 0 8px; }
+.bd .refs > p { padding: 5px 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bd .refs-head { font-weight: 500; background: var(--muted); }
 
 /* Narrow: one pane at a time, the inspector pushes over the list */
 @container (max-width: 600px) {

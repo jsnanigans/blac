@@ -29,6 +29,7 @@ const base: ClientState = {
   selectedId: null,
   history: [],
   log: [],
+  churn: [],
 };
 
 vi.stubGlobal(
@@ -172,6 +173,56 @@ describe('Panel', () => {
     await act(async () => {});
     expect(container.textContent).toContain(
       'latest is v99.0.0. Update @blac/devtools-connect in the app and @blac/devtools-ui.',
+    );
+  });
+
+  it('shows lifetime, owners and refs in the info view', () => {
+    render({
+      ...base,
+      instances: [
+        {
+          ...meta('a', 'SessionBloc', 'default'),
+          keepAlive: true,
+          isolated: false,
+          status: {
+            active: false,
+            refs: [],
+            hydration: 'idle',
+          },
+        },
+        {
+          ...meta('b', 'CounterBloc', 'main'),
+          keepAlive: false,
+          isolated: false,
+          status: {
+            active: true,
+            refs: ['useBloc@useBloc-1', 'useBloc@useBloc-2:dep'],
+            hydration: 'idle',
+          },
+        },
+      ],
+      selectedId: 'b',
+    });
+    expect(container.querySelector('.list-pane')?.textContent).toContain(
+      'idle',
+    );
+
+    click(button('Info'));
+    const info = container.querySelector('.info')?.textContent;
+    expect(info).toContain('shared');
+    expect(info).toContain('2 refs');
+    expect(info).toContain('useBloc@useBloc-1');
+    expect(info).toContain('Components, via .track()');
+  });
+
+  it('flags classes with short-lived instances', () => {
+    const now = Date.now();
+    render({
+      ...base,
+      churn: [{ className: 'SearchBloc', at: now, count: 12 }],
+    });
+    expect(container.querySelector('.churn')?.textContent).toContain(
+      '12 in 10s',
     );
   });
 });
