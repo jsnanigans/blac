@@ -20,8 +20,6 @@ import {
 export interface DevToolsAgentConfig {
   /** Recorded changes kept per instance. */
   historySize?: number;
-  /** Disposed instances kept listed. */
-  maxDisposed?: number;
 }
 
 type Container = NonNullable<PluginContext['container']>;
@@ -44,7 +42,6 @@ interface Entry {
   name: string;
   createdAt: number;
   updatedAt: number;
-  disposedAt?: number;
   version: number;
   args: unknown;
   ring: Change[];
@@ -60,7 +57,6 @@ interface Connection {
   created: string[];
   changed: Map<string, Paths>;
   disposed: Array<{ id: string; at: number }>;
-  removed: string[];
   off: Array<() => void>;
 }
 
@@ -123,10 +119,8 @@ export class DevToolsAgent implements BlacPlugin {
 
   private readonly session = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   private readonly historySize: number;
-  private readonly maxDisposed: number;
   private readonly byContainer = new WeakMap<object, Entry>();
   private readonly byId = new Map<string, Entry>();
-  private readonly disposedOrder: Entry[] = [];
   private readonly connections = new Set<Connection>();
   private hook: AgentHook | undefined;
   private duplicates = 0;
@@ -134,7 +128,6 @@ export class DevToolsAgent implements BlacPlugin {
 
   constructor(config: DevToolsAgentConfig = {}) {
     this.historySize = config.historySize ?? 50;
-    this.maxDisposed = config.maxDisposed ?? 100;
   }
 
   onInstall(): void {
@@ -222,26 +215,22 @@ export class DevToolsAgent implements BlacPlugin {
     this.scheduleFlush();
   }
 
+  /** Only live instances are kept; a disposed one is forgotten at once. */
   onDestroyed(ctx: PluginContext): void {
-    const entry = ctx.container && this.byContainer.get(ctx.container);
+    const container = ctx.container;
+    const entry = container && this.byContainer.get(container);
     if (!entry) return;
 
-    entry.disposedAt = Date.now();
-    // A disposed instance can't change again; its final state is enough.
-    entry.ring = entry.ring.slice(-1);
-    this.disposedOrder.push(entry);
-    while (this.disposedOrder.length > this.maxDisposed) {
-      const evicted = this.disposedOrder.shift();
-      if (!evicted) break;
-      this.byId.delete(evicted.id);
-      for (const conn of this.connections) {
-        if (conn.active) conn.removed.push(evicted.id);
-      }
-    }
-
+    this.byContainer.delete(container);
+    this.byId.delete(entry.id);
+    const at = Date.now();
     for (const conn of this.connections) {
-      if (conn.active)
-        conn.disposed.push({ id: entry.id, at: entry.disposedAt });
+      if (!conn.active) continue;
+      conn.changed.delete(entry.id);
+      const pending = conn.created.indexOf(entry.id);
+      // Created and disposed within one flush: the client never saw it.
+      if (pending >= 0) conn.created.splice(pending, 1);
+      else conn.disposed.push({ id: entry.id, at });
     }
     this.scheduleFlush();
   }
@@ -257,7 +246,6 @@ export class DevToolsAgent implements BlacPlugin {
       created: [],
       changed: new Map(),
       disposed: [],
-      removed: [],
       off: [],
     };
     this.connections.add(conn);
@@ -311,7 +299,6 @@ export class DevToolsAgent implements BlacPlugin {
     conn.created = [];
     conn.changed.clear();
     conn.disposed = [];
-    conn.removed = [];
   }
 
   private hasActive(): boolean {
@@ -331,18 +318,16 @@ export class DevToolsAgent implements BlacPlugin {
   private flush(): void {
     for (const conn of this.connections) {
       if (!conn.active) continue;
-      const { created, changed, disposed, removed } = conn;
+      const { created, changed, disposed } = conn;
       conn.created = [];
       conn.changed = new Map();
       conn.disposed = [];
-      conn.removed = [];
 
       // Disposals first, so a keyed instance re-created in the same frame
-      // arrives after its predecessor is marked disposed.
+      // (same id) arrives after its predecessor is gone.
       for (const { id, at } of disposed) {
         this.send(conn, { t: 'disposed', id, at });
       }
-      for (const id of removed) this.send(conn, { t: 'removed', id });
       for (const id of created) {
         const entry = this.byId.get(id);
         if (entry) this.send(conn, { t: 'created', meta: this.meta(entry) });
@@ -380,7 +365,6 @@ export class DevToolsAgent implements BlacPlugin {
       createdAt: entry.createdAt,
       updatedAt: entry.updatedAt,
       version: entry.version,
-      ...(entry.disposedAt !== undefined && { disposedAt: entry.disposedAt }),
       ...(entry.args !== undefined && { args: serialize(entry.args) }),
     };
   }

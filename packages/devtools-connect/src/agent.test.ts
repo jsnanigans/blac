@@ -102,13 +102,18 @@ describe('agent + client', () => {
     await frame();
     state = await snapshot(client);
     expect(state.instances[0].version).toBe(1);
-    expect(state.log.map((l) => l.kind)).toEqual(['created', 'changed']);
-    expect(state.log[1].paths).toEqual(['count']);
+    expect(state.log.map((l) => l.kind)).toEqual([
+      'created',
+      'created',
+      'changed',
+    ]);
+    expect(state.log[2].paths).toEqual(['count']);
 
     release(CounterCubit);
     await frame();
     state = await snapshot(client);
-    expect(state.instances[0].disposedAt).toBeTypeOf('number');
+    expect(state.instances).toHaveLength(1);
+    expect(state.log[state.log.length - 1].kind).toBe('disposed');
   });
 
   it('streams every recorded change of the selected instance', async () => {
@@ -129,34 +134,17 @@ describe('agent + client', () => {
     expect(state.log.filter((l) => l.kind === 'changed')).toHaveLength(1);
   });
 
-  it('drops disposed instances the agent no longer keeps', async () => {
-    getPluginManager().clear();
-    agent = new DevToolsAgent({ maxDisposed: 1 });
-    getPluginManager().install(agent);
-    const { client } = connect();
-
-    acquire(CounterCubit);
-    release(CounterCubit);
-    acquire(CounterCubit);
-    release(CounterCubit);
-    await frame();
-
-    expect((await snapshot(client)).instances).toHaveLength(1);
-  });
-
-  it('skips excluded instances and keeps ids unique across re-creation', async () => {
+  it('lists only live, non-excluded instances', async () => {
     acquire(HiddenCubit);
     acquire(CounterCubit);
     release(CounterCubit);
     acquire(CounterCubit);
     const { client } = connect();
-    const ids = (await snapshot(client)).instances.map((i) => i.id);
 
-    expect(ids).toHaveLength(2);
-    expect(new Set(ids).size).toBe(2);
+    expect((await snapshot(client)).instances).toHaveLength(1);
   });
 
-  it('moves the selection to a re-created instance and trims disposed history', async () => {
+  it('keeps the selection on a re-created instance', async () => {
     const cubit = acquire(CounterCubit);
     cubit.inc();
     const { client } = connect();
@@ -169,12 +157,9 @@ describe('agent + client', () => {
     await frame();
     const state = await snapshot(client);
 
-    expect(state.selectedId).not.toBe(firstId);
-    expect(state.selectedId?.startsWith(firstId)).toBe(true);
-
-    client.select(firstId);
-    await frame();
-    expect((await snapshot(client)).history.map((h) => h.version)).toEqual([1]);
+    expect(state.instances).toHaveLength(1);
+    expect(state.selectedId).toBe(firstId);
+    expect(state.history.map((h) => h.version)).toEqual([0]);
   });
 
   it('recovers from a sequence gap with a snapshot', async () => {
@@ -200,18 +185,20 @@ describe('agent + client', () => {
     expect(state.instances[0].version).toBe(2);
   });
 
-  it('keeps data across a reconnect and resets on a new session', async () => {
+  it('drops instances on bye and the log on a new session', async () => {
     const cubit = acquire(CounterCubit);
     const { client, pair } = connect();
     cubit.inc();
     await frame();
 
     pair.agent.send({ t: 'bye' });
-    expect((await snapshot(client)).status).toBe('connecting');
+    const gone = await snapshot(client);
+    expect(gone.status).toBe('connecting');
+    expect(gone.instances).toEqual([]);
     pair.agent.send({ t: 'ready', protocol: PROTOCOL_VERSION });
     const resumed = await snapshot(client);
     expect(resumed.status).toBe('connected');
-    expect(resumed.log).toHaveLength(1);
+    expect(resumed.log.map((l) => l.kind)).toEqual(['created', 'changed']);
 
     pair.agent.send({
       t: 'welcome',

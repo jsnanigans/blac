@@ -34,7 +34,6 @@ Then add the UI from [`@blac/devtools-ui`](../devtools-ui/README.md) or install 
 ```ts
 createDevToolsAgent({
   historySize: 50, // recorded changes kept per live instance
-  maxDisposed: 100, // disposed instances kept listed (final state only)
 });
 ```
 

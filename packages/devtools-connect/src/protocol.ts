@@ -28,7 +28,6 @@ export interface InstanceMeta {
   name: string;
   createdAt: number;
   updatedAt: number;
-  disposedAt?: number;
   /** Number of recorded changes since creation. */
   version: number;
   args?: Wire;
@@ -77,7 +76,7 @@ export type AgentMsg =
       paths: Paths;
     })
   | (Sequenced & { t: 'disposed'; id: string; at: number })
-  /** A disposed instance the agent no longer keeps. */
+  /** Sent only by older agents, which kept disposed instances listed. */
   | (Sequenced & { t: 'removed'; id: string })
   /**
    * Recorded changes, oldest first: the whole ring in reply to `history`,

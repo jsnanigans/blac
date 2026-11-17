@@ -166,13 +166,14 @@ export class DevToolsClient {
   }
 
   /**
-   * The agent went away (reload, navigation, lost port). Keep everything until
-   * the next `welcome`: the same session resumes, a new one starts over.
+   * The agent went away (reload, navigation, lost port). Its instances are
+   * gone; the log stays until a new session starts over.
    */
   private waitForAgent(): void {
     this.status = 'connecting';
     this.agentProtocol = undefined;
     this.resyncing = false;
+    this.instances.clear();
     this.touch();
   }
 
@@ -183,6 +184,12 @@ export class DevToolsClient {
       this.history = [];
       this.log = [];
       this.logDirty = true;
+      // Start the log with what already exists, so it isn't blank on connect.
+      for (const meta of [...instances].sort(
+        (a, b) => a.createdAt - b.createdAt,
+      )) {
+        this.record('created', meta, meta.createdAt);
+      }
     }
     this.lastSeq = seq;
     this.resyncing = false;
@@ -217,11 +224,12 @@ export class DevToolsClient {
       case 'disposed': {
         const meta = this.instances.get(msg.id);
         if (!meta) return;
-        const next = { ...meta, disposedAt: msg.at };
-        this.instances.set(msg.id, next);
-        this.record('disposed', next, msg.at);
+        this.instances.delete(msg.id);
+        if (msg.id === this.selectedId) this.history = [];
+        this.record('disposed', meta, msg.at);
         break;
       }
+      // Older agents keep disposed instances and send this when they drop one.
       case 'removed':
         this.instances.delete(msg.id);
         break;
@@ -262,13 +270,12 @@ export class DevToolsClient {
     this.logDirty = true;
   }
 
-  /** A keyed instance came back (`Id#n`) while its disposed self is selected. */
+  /** A keyed instance came back (`Id#n`) after the selected one was disposed. */
   private isRecreationOfSelected(id: string): boolean {
-    const selected = this.selectedId && this.instances.get(this.selectedId);
     return (
-      !!selected &&
-      selected.disposedAt !== undefined &&
-      baseId(selected.id) === baseId(id)
+      !!this.selectedId &&
+      !this.instances.has(this.selectedId) &&
+      baseId(this.selectedId) === baseId(id)
     );
   }
 
