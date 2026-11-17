@@ -107,11 +107,18 @@ With no client attached the agent serializes and sends nothing, but it does keep
 
 ### Inspect instances
 
-The **Instances** view lists every container one line per instance (`ClassName · key · version · last change`), sorted by class, with a text filter. Each class gets a colored monogram, kept the same across sessions. A class with several instances becomes a collapsible group, and instances that share a key (duplicates or `isolated` mounts) carry a `#n` badge. Only live instances are listed: a disposed one disappears at once, and all of them go when the page reloads (the log is cleared when the new page connects). Large classes show 200 rows at a time. While the pointer is over the list, rows aren't added or removed under it; a **Show updates** button applies what arrived. Select one to open the inspector (if a selected keyed instance is disposed and re-created, the selection follows the new one; otherwise the inspector empties). Its header shows the `args` that keyed the instance and a button to copy the state, with three views:
+The **Instances** view lists every container one line per instance (`ClassName · key · version · last change`), sorted by class, with a text filter. Each class gets a colored monogram, kept the same across sessions. A class with several instances becomes a collapsible group, and instances that share a key (duplicates or `isolated` mounts) carry a `#n` badge. Only live instances are listed: a disposed one disappears at once, and all of them go when the page reloads (the log is cleared when the new page connects). Large classes show 200 rows at a time. While the pointer is over the list, rows aren't added or removed under it; a **Show updates** button applies what arrived. Select one to open the inspector (if a selected keyed instance is disposed and re-created, the selection follows the new one; otherwise the inspector empties). Its header shows the instance's lifetime (`keepAlive` or `isolated`), the `args` that keyed it, and buttons to copy the state and download the recorded history as JSON, with four views:
 
 - **State**: the current state as a collapsible tree (Maps, Sets, Dates, Errors and other non-JSON values are tagged), with the paths the last change touched marked;
 - **Changes**: the diff against the previous version;
-- **History**: recorded versions, newest first, with the paths each change touched.
+- **History**: recorded versions, newest first, with the paths each change touched;
+- **Info**: lifetime, owners, hydration status (with the persist plugin), creation time, an update-rate sparkline, and the refs that hold the instance, grouped by holder (components, components via `.track()`, `watch()`, manual `acquire`).
+
+An instance with no owners — typically a `keepAlive` instance after its last consumer unmounted — carries an **idle** badge in the list, and one that is hydrating or failed to hydrate says so. The filter also matches `keepalive`, `isolated` and `idle`.
+
+The selected instance is available as `$bloc` in the page console, like React DevTools' `$r`.
+
+When instances of a class are created and disposed within a second of each other (including ones that never lived long enough to be listed), a warning above the list shows how many in the last 10 seconds. This usually means unstable `args` or a missing `static key`; click it to filter to that class.
 
 State is sent only for the selected instance; everything else sends just metadata, which keeps large apps responsive.
 
@@ -133,16 +140,16 @@ The **Log** view is a bounded, global stream of created, changed and disposed ev
 
 ## Keyboard shortcuts
 
-| Key                                                      | Action                                                          |
-| -------------------------------------------------------- | --------------------------------------------------------------- |
-| <kbd>Alt</kbd>+<kbd>D</kbd>                              | Toggle the in-app overlay                                       |
-| <kbd>/</kbd>                                             | Focus the filter                                                |
-| <kbd>j</kbd> / <kbd>k</kbd>, <kbd>↓</kbd> / <kbd>↑</kbd> | Next / previous row                                             |
-| <kbd>1</kbd> / <kbd>2</kbd>                              | Instances / Log                                                 |
-| <kbd>s</kbd> / <kbd>c</kbd> / <kbd>h</kbd>               | State / Changes / History                                       |
-| <kbd>[</kbd> / <kbd>]</kbd>                              | Previous / next version                                         |
-| <kbd>l</kbd>                                             | Back to latest                                                  |
-| <kbd>Esc</kbd>                                           | Leave the filter, then back to latest, then clear the selection |
+| Key                                                       | Action                                                          |
+| --------------------------------------------------------- | --------------------------------------------------------------- |
+| <kbd>Alt</kbd>+<kbd>D</kbd>                               | Toggle the in-app overlay                                       |
+| <kbd>/</kbd>                                              | Focus the filter                                                |
+| <kbd>j</kbd> / <kbd>k</kbd>, <kbd>↓</kbd> / <kbd>↑</kbd>  | Next / previous row                                             |
+| <kbd>1</kbd> / <kbd>2</kbd>                               | Instances / Log                                                 |
+| <kbd>s</kbd> / <kbd>c</kbd> / <kbd>h</kbd> / <kbd>i</kbd> | State / Changes / History / Info                                |
+| <kbd>[</kbd> / <kbd>]</kbd>                               | Previous / next version                                         |
+| <kbd>l</kbd>                                              | Back to latest                                                  |
+| <kbd>Esc</kbd>                                            | Leave the filter, then back to latest, then clear the selection |
 
 All but <kbd>Alt</kbd>+<kbd>D</kbd> work while focus is inside the devtools.
 
