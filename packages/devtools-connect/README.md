@@ -33,14 +33,14 @@ Then add the UI from [`@blac/devtools-ui`](../devtools-ui/README.md) or install 
 
 ```ts
 createDevToolsAgent({
-  historySize: 50, // recorded changes kept per instance
-  maxDisposed: 100, // disposed instances kept listed
+  historySize: 50, // recorded changes kept per live instance
+  maxDisposed: 100, // disposed instances kept listed (final state only)
 });
 ```
 
 ## How it works
 
-- The agent keeps references only — nothing is serialized, and nothing is posted, until a client sends `hello`. With no client attached the cost is a ring-buffer push per state flush.
+- The agent keeps references only — nothing is serialized, and nothing is posted, until a client sends `hello`. With no client attached the cost is a ring-buffer push per state flush, plus memory for each live instance's last `historySize` states.
 - One record per plugin flush (changes inside one microtask are coalesced by the core). Messages to a client are batched per frame, and state is sent only for the instance the client is watching.
 - Every message carries a `session` and a `seq`; a client that sees a gap asks for a `snapshot`.
 
@@ -65,7 +65,7 @@ client.select(id); // watch one instance's state + history
 
 ## Security
 
-Only install in development — never ship DevTools to production. Serialization caps depth, breadth, string length and total size, and never walks DOM nodes.
+Only install in development — never ship DevTools to production. Import it behind `import.meta.env.DEV` (or your bundler's equivalent) so it is dropped from production bundles; see the [docs](https://blac.42.dog/plugins/devtools). Serialization caps depth, breadth, string length and total size, and never walks DOM nodes.
 
 ## License
 

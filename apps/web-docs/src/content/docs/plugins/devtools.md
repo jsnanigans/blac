@@ -53,7 +53,41 @@ function App() {
 }
 ```
 
-`<BlacDevtoolsUi />` renders a panel docked to the bottom of the page, toggled with **Alt+D** (or by dispatching a `blac-devtools-toggle` event on `window`). Drag its top edge to resize. The overlay connects only while it is open, and it renders in a Shadow DOM so it cannot clash with your app's CSS.
+`<BlacDevtoolsUi />` renders a floating window, toggled with **Alt+D** (or by dispatching a `blac-devtools-toggle` event on `window`). Drag its title bar to move it and its corner to resize it; position and size persist. In Chromium, the pop-out button moves it into a Picture-in-Picture window, and closing that window returns it to the page. The overlay connects only while it is open, picks up an agent installed after it opened, and renders in a Shadow DOM so it cannot clash with your app's CSS. It renders nothing when `process.env.NODE_ENV` is `'production'`.
+
+### Keep DevTools out of production bundles
+
+`environment: 'development'` and the overlay's production check keep DevTools inert in production, but statically imported code still ships. Import both packages only in development so the bundler drops them:
+
+```tsx
+import { lazy, Suspense } from 'react';
+import { getPluginManager } from '@blac/core/plugins';
+
+if (import.meta.env.DEV) {
+  void import('@blac/devtools-connect').then(({ createDevToolsAgent }) =>
+    getPluginManager().install(createDevToolsAgent()),
+  );
+}
+
+const DevTools = import.meta.env.DEV
+  ? lazy(() =>
+      import('@blac/devtools-ui').then((m) => ({ default: m.BlacDevtoolsUi })),
+    )
+  : () => null;
+
+function App() {
+  return (
+    <>
+      <YourApp />
+      <Suspense>
+        <DevTools />
+      </Suspense>
+    </>
+  );
+}
+```
+
+Instances created before the agent installs are picked up when it does, but their earlier history is not.
 
 ### 3. Chrome extension (optional)
 
@@ -63,16 +97,18 @@ Install the BlaC Chrome Extension from the Chrome Web Store (or build `apps/devt
 
 ```ts
 createDevToolsAgent({
-  historySize: 50, // recorded changes kept per instance
-  maxDisposed: 100, // disposed instances kept listed
+  historySize: 50, // recorded changes kept per live instance
+  maxDisposed: 100, // disposed instances kept listed (final state only)
 });
 ```
+
+With no client attached the agent serializes and sends nothing, but it does keep references to each live instance's last `historySize` states. Lower `historySize` if your states are large and change wholesale.
 
 ## What you can do
 
 ### Inspect instances
 
-The **Instances** view lists every container grouped by class, with a text filter, a toggle for disposed instances, and a change counter that flashes when an instance updates. Select one to open the inspector:
+The **Instances** view lists every container grouped by class, with a text filter, a toggle for disposed instances, and a change counter that flashes when an instance updates. Large classes show 200 rows at a time. Select one to open the inspector (if a selected keyed instance is disposed and re-created, the selection follows the new one):
 
 - the `args` that keyed the instance, so two instances of the same class are easy to tell apart;
 - its current state as a collapsible tree (Maps, Sets, Dates, Errors and other non-JSON values are tagged);
