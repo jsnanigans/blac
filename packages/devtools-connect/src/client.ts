@@ -64,7 +64,10 @@ export class DevToolsClient {
   private resyncing = false;
   private selectedId: string | null = null;
   private history: HistoryEntry[] = [];
+  /** Grows to twice `logSize` before trimming, so appends stay O(1). */
   private log: LogEntry[] = [];
+  private logView: LogEntry[] = [];
+  private logDirty = false;
   private logKey = 0;
   private notifyQueued = false;
   private state: ClientState;
@@ -101,6 +104,7 @@ export class DevToolsClient {
 
   clearLog(): void {
     this.log = [];
+    this.logDirty = true;
     this.touch();
   }
 
@@ -178,6 +182,7 @@ export class DevToolsClient {
       this.session = session;
       this.history = [];
       this.log = [];
+      this.logDirty = true;
     }
     this.lastSeq = seq;
     this.resyncing = false;
@@ -195,6 +200,11 @@ export class DevToolsClient {
         this.instances.set(msg.meta.id, msg.meta);
         this.record('created', msg.meta, msg.meta.createdAt);
         if (msg.meta.id === this.selectedId) this.watchSelected();
+        else if (this.isRecreationOfSelected(msg.meta.id)) {
+          this.selectedId = msg.meta.id;
+          this.history = [];
+          this.watchSelected();
+        }
         break;
       case 'changed': {
         const meta = this.instances.get(msg.id);
@@ -245,7 +255,21 @@ export class DevToolsClient {
       version,
       paths,
     };
-    this.log = [...this.log, entry].slice(-this.logSize);
+    this.log.push(entry);
+    if (this.log.length > this.logSize * 2) {
+      this.log = this.log.slice(-this.logSize);
+    }
+    this.logDirty = true;
+  }
+
+  /** A keyed instance came back (`Id#n`) while its disposed self is selected. */
+  private isRecreationOfSelected(id: string): boolean {
+    const selected = this.selectedId && this.instances.get(this.selectedId);
+    return (
+      !!selected &&
+      selected.disposedAt !== undefined &&
+      baseId(selected.id) === baseId(id)
+    );
   }
 
   private touch(): void {
@@ -259,16 +283,22 @@ export class DevToolsClient {
   }
 
   private build(): ClientState {
+    if (this.logDirty) {
+      this.logDirty = false;
+      this.logView = this.log.slice(-this.logSize);
+    }
     return {
       status: this.status,
       agentProtocol: this.agentProtocol,
       instances: [...this.instances.values()],
       selectedId: this.selectedId,
       history: this.history,
-      log: this.log,
+      log: this.logView,
     };
   }
 }
+
+const baseId = (id: string) => id.replace(/#\d+$/, '');
 
 /** Connect to the agent running in this page (the overlay host). */
 export function connectInPage(): DevToolsClient | undefined {

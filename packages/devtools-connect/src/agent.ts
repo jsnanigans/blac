@@ -227,6 +227,8 @@ export class DevToolsAgent implements BlacPlugin {
     if (!entry) return;
 
     entry.disposedAt = Date.now();
+    // A disposed instance can't change again; its final state is enough.
+    entry.ring = entry.ring.slice(-1);
     this.disposedOrder.push(entry);
     while (this.disposedOrder.length > this.maxDisposed) {
       const evicted = this.disposedOrder.shift();
@@ -335,6 +337,12 @@ export class DevToolsAgent implements BlacPlugin {
       conn.disposed = [];
       conn.removed = [];
 
+      // Disposals first, so a keyed instance re-created in the same frame
+      // arrives after its predecessor is marked disposed.
+      for (const { id, at } of disposed) {
+        this.send(conn, { t: 'disposed', id, at });
+      }
+      for (const id of removed) this.send(conn, { t: 'removed', id });
       for (const id of created) {
         const entry = this.byId.get(id);
         if (entry) this.send(conn, { t: 'created', meta: this.meta(entry) });
@@ -357,10 +365,6 @@ export class DevToolsAgent implements BlacPlugin {
         conn.sent = entry.version;
         if (entries.length > 0) this.send(conn, { t: 'history', id, entries });
       }
-      for (const { id, at } of disposed) {
-        this.send(conn, { t: 'disposed', id, at });
-      }
-      for (const id of removed) this.send(conn, { t: 'removed', id });
     }
   }
 

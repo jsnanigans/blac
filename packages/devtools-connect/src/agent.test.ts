@@ -156,6 +156,27 @@ describe('agent + client', () => {
     expect(new Set(ids).size).toBe(2);
   });
 
+  it('moves the selection to a re-created instance and trims disposed history', async () => {
+    const cubit = acquire(CounterCubit);
+    cubit.inc();
+    const { client } = connect();
+    await snapshot(client);
+    const firstId = client.getSnapshot().instances[0].id;
+    client.select(firstId);
+
+    release(CounterCubit);
+    acquire(CounterCubit);
+    await frame();
+    const state = await snapshot(client);
+
+    expect(state.selectedId).not.toBe(firstId);
+    expect(state.selectedId?.startsWith(firstId)).toBe(true);
+
+    client.select(firstId);
+    await frame();
+    expect((await snapshot(client)).history.map((h) => h.version)).toEqual([1]);
+  });
+
   it('recovers from a sequence gap with a snapshot', async () => {
     let dropNext = false;
     const cubit = acquire(CounterCubit);
