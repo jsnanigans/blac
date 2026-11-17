@@ -53,7 +53,7 @@ function App() {
 }
 ```
 
-`<BlacDevtoolsUi />` renders a floating window, toggled with **Alt+D** (or by dispatching a `blac-devtools-toggle` event on `window`). Drag its title bar to move it and its corner to resize it; position and size persist. In Chromium, the pop-out button moves it into a Picture-in-Picture window, and closing that window returns it to the page. The overlay connects only while it is open, picks up an agent installed after it opened, and renders in a Shadow DOM so it cannot clash with your app's CSS. It renders nothing when `process.env.NODE_ENV` is `'production'`.
+`<BlacDevtoolsUi />` renders a floating window, toggled with **Alt+D** (or by dispatching a `blac-devtools-toggle` event on `window`). Drag its header to move it and its corner to resize it; position and size persist. In Chromium, the pop-out button moves it into a Picture-in-Picture window, and closing that window returns it to the page. The overlay connects only while it is open, picks up an agent installed after it opened, and renders in a Shadow DOM so it cannot clash with your app's CSS. It renders nothing when `process.env.NODE_ENV` is `'production'`.
 
 ### Keep DevTools out of production bundles
 
@@ -98,7 +98,6 @@ Install the BlaC Chrome Extension from the Chrome Web Store (or build `apps/devt
 ```ts
 createDevToolsAgent({
   historySize: 50, // recorded changes kept per live instance
-  maxDisposed: 100, // disposed instances kept listed (final state only)
 });
 ```
 
@@ -108,17 +107,17 @@ With no client attached the agent serializes and sends nothing, but it does keep
 
 ### Inspect instances
 
-The **Instances** view lists every container grouped by class, with a text filter, a toggle for disposed instances, and a change counter that flashes when an instance updates. Large classes show 200 rows at a time. Select one to open the inspector (if a selected keyed instance is disposed and re-created, the selection follows the new one):
+The **Instances** view lists every container one line per instance (`ClassName · key · version · last change`), sorted by class, with a text filter. Each class gets a colored monogram, kept the same across sessions. A class with several instances becomes a collapsible group, and instances that share a key (duplicates or `isolated` mounts) carry a `#n` badge. Only live instances are listed: a disposed one disappears at once, and all of them go when the page reloads (the log is cleared when the new page connects). Large classes show 200 rows at a time. While the pointer is over the list, rows aren't added or removed under it; a **Show updates** button applies what arrived. Select one to open the inspector (if a selected keyed instance is disposed and re-created, the selection follows the new one; otherwise the inspector empties). Its header shows the `args` that keyed the instance and a button to copy the state, with three views:
 
-- the `args` that keyed the instance, so two instances of the same class are easy to tell apart;
-- its current state as a collapsible tree (Maps, Sets, Dates, Errors and other non-JSON values are tagged);
-- its history, newest first, with the paths each change touched.
+- **State**: the current state as a collapsible tree (Maps, Sets, Dates, Errors and other non-JSON values are tagged), with the paths the last change touched marked;
+- **Changes**: the diff against the previous version;
+- **History**: recorded versions, newest first, with the paths each change touched.
 
 State is sent only for the selected instance; everything else sends just metadata, which keeps large apps responsive.
 
 ### Diff a change
 
-Select a history entry to see its state and a **Changes** list — every path that was added, removed or changed compared with the previous entry, with before and after values.
+Select a history entry to hold the inspector at that version (the instance list stays live); **State** and **Changes** then show that version, and **Changes** lists every path that was added, removed or changed compared with the previous entry, with before and after values. **Back to latest** follows the live state again.
 
 :::note[Changed paths]
 The path list on a history entry is the finest the core reports. While a path-scoped consumer (such as a `useBloc` mount) is subscribed it is precise; otherwise the agent falls back to the top-level keys that differ. The **Changes** diff is always computed from the two states.
@@ -130,11 +129,22 @@ One record is kept per plugin flush — changes made in the same microtask are c
 
 ### Follow the log
 
-The **Log** view is a bounded, global stream of created, changed and disposed events. Click an entry to jump to that instance and history entry.
+The **Log** view is a bounded, global stream of created, changed and disposed events, newest first, starting with the instances that existed at connect. Back-to-back changes of one instance less than a second apart fold into one row. Filter by text or by kind (lifecycle or changes), and click an entry to jump to that instance and version.
 
-## Keyboard shortcut
+## Keyboard shortcuts
 
-Press **Alt+D** to toggle the in-app overlay.
+| Key                                                      | Action                                                          |
+| -------------------------------------------------------- | --------------------------------------------------------------- |
+| <kbd>Alt</kbd>+<kbd>D</kbd>                              | Toggle the in-app overlay                                       |
+| <kbd>/</kbd>                                             | Focus the filter                                                |
+| <kbd>j</kbd> / <kbd>k</kbd>, <kbd>↓</kbd> / <kbd>↑</kbd> | Next / previous row                                             |
+| <kbd>1</kbd> / <kbd>2</kbd>                              | Instances / Log                                                 |
+| <kbd>s</kbd> / <kbd>c</kbd> / <kbd>h</kbd>               | State / Changes / History                                       |
+| <kbd>[</kbd> / <kbd>]</kbd>                              | Previous / next version                                         |
+| <kbd>l</kbd>                                             | Back to latest                                                  |
+| <kbd>Esc</kbd>                                           | Leave the filter, then back to latest, then clear the selection |
+
+All but <kbd>Alt</kbd>+<kbd>D</kbd> work while focus is inside the devtools.
 
 ## Excluding instances from DevTools
 
