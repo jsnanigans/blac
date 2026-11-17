@@ -1,6 +1,6 @@
 {
   "name": "@blac/devtools-connect",
-  "version": "2.0.24",
+  "version": "2.0.25",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "DevTools agent and client for BlaC state management",

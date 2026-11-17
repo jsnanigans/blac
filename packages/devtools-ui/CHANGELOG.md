@@ -1,5 +1,20 @@
 # @blac/devtools-ui
 
+## 2.0.25
+
+### Patch Changes
+
+- 3ac8850: DevTools readiness fixes: the overlay renders nothing in production and
+  connects to an agent installed after it opened; Alt+D no longer toggles while
+  typing and also works in the pop-out window. The selection follows a
+  re-created keyed instance, and large instance lists and logs stay fast.
+- 274b4a2: Redesign the devtools UI: new theme and dark mode, one-line instance rows with last-change times, colored class monograms, collapsible class groups, `#n` badges for instances sharing a key, inspector views (State, Changes, History), a log that folds bursts and starts with the instances present at connect, live updates with a clear flash on every change, keyboard navigation, and a narrow single-pane layout.
+  
+  The devtools now list only live instances: disposed ones are dropped at once (the agent no longer keeps them, and `maxDisposed` is gone), instances are cleared when the page goes away, and the log is cleared when a new page connects.
+- Updated dependencies [3ac8850]
+- Updated dependencies [274b4a2]
+  - @blac/devtools-connect@2.0.25
+
 ## 2.0.24
 
 ### Patch Changes
