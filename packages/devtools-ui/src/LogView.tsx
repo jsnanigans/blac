@@ -1,7 +1,25 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { LogEntry } from '@blac/devtools-connect/client';
-import { clock, instanceKey } from './format';
-import { PathChips } from './PathChips';
+import {
+  ago,
+  clock,
+  instanceKey,
+  keyLabel,
+  logRows,
+  plural,
+  type LogRow,
+} from './format';
+import {
+  ClassMark,
+  Empty,
+  Icon,
+  Kbd,
+  Segmented,
+  UpdatesPill,
+  useHeldValue,
+  useInteractionHold,
+  useNow,
+} from './ui';
 
 interface Props {
   log: LogEntry[];
@@ -9,55 +27,148 @@ interface Props {
   onClear: () => void;
 }
 
+type Kind = 'all' | 'lifecycle' | 'changes';
+
+const KINDS: readonly Kind[] = ['all', 'lifecycle', 'changes'];
+const KIND_LABEL: Record<Kind, string> = {
+  all: 'All',
+  lifecycle: 'Lifecycle',
+  changes: 'Changes',
+};
 const MAX_SHOWN = 500;
 
+const newest = (log: LogEntry[]) => log[log.length - 1]?.key ?? 0;
+
+function meta({ entry, count, first }: LogRow): string {
+  if (entry.kind === 'created') return 'created';
+  if (entry.kind === 'disposed') return 'disposed';
+  const paths =
+    entry.paths === 'all' ? 'whole state' : (entry.paths ?? []).join(', ');
+  if (count === 1) return `v${entry.version} · ${paths}`;
+  const span = ((entry.at - first) / 1000).toFixed(1);
+  return `${count} changes in ${span}s · up to v${entry.version}`;
+}
+
 export function LogView({ log, onOpen, onClear }: Props) {
+  const now = useNow();
   const [filter, setFilter] = useState('');
+  const [kind, setKind] = useState<Kind>('all');
+  const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
+  const held = useInteractionHold(scroller);
+  const { shown, pending, release } = useHeldValue(
+    log,
+    held,
+    (a, b) => newest(a) === newest(b),
+  );
+  const waiting = pending ? log.filter((e) => e.key > newest(shown)).length : 0;
   const query = filter.trim().toLowerCase();
-  const shown = log
-    .filter(
-      (e) =>
-        !query ||
-        [e.className, e.name, e.id, e.kind].some((text) =>
-          text.toLowerCase().includes(query),
+
+  const rows = useMemo(
+    () =>
+      logRows(
+        shown.filter(
+          (e) =>
+            (kind === 'all' ||
+              (kind === 'changes') === (e.kind === 'changed')) &&
+            (!query ||
+              [e.className, e.name, e.id].some((text) =>
+                text.toLowerCase().includes(query),
+              )),
         ),
-    )
-    .slice(-MAX_SHOWN)
-    .reverse();
+      ).slice(0, MAX_SHOWN),
+    [shown, kind, query],
+  );
 
   return (
-    <div className="list wide log">
+    <>
       <div className="toolbar">
-        <input
-          type="search"
-          placeholder="Filter log"
-          aria-label="Filter log"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
+        <label className="search">
+          <Icon name="search" size={13} />
+          <input
+            type="search"
+            placeholder="Filter by class or key"
+            aria-label="Filter log"
+            data-filter
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && filter) {
+                e.stopPropagation();
+                setFilter('');
+              }
+            }}
+          />
+          <Kbd>/</Kbd>
+        </label>
+        <Segmented
+          label="Event kind"
+          options={KINDS}
+          value={kind}
+          onChange={setKind}
+          render={(k) => KIND_LABEL[k]}
         />
-        <button type="button" onClick={onClear} disabled={log.length === 0}>
-          Clear
+        <button
+          type="button"
+          className="btn"
+          onClick={onClear}
+          disabled={log.length === 0}
+        >
+          Clear log
         </button>
       </div>
-      <div className="scroll">
-        {shown.length === 0 && <p className="empty">No log entries.</p>}
-        {shown.map((e) => (
-          <button
-            key={e.key}
-            type="button"
-            className="item"
-            onClick={() => onOpen(e)}
-          >
-            <span className={`badge ${e.kind}`}>{e.kind}</span>
-            <span className="muted time">{clock(e.at)}</span>
-            <span className="name">
-              {e.className}
-              <span className="muted">:{instanceKey(e)}</span>
-            </span>
-            {e.kind === 'changed' && <PathChips paths={e.paths} />}
-          </button>
-        ))}
+      <div className="scroll" ref={setScroller}>
+        <UpdatesPill
+          visible={waiting > 0}
+          label={`${plural(waiting, 'new event')} · show`}
+          onApply={release}
+        />
+        {rows.length === 0 ? (
+          <Empty
+            title={log.length === 0 ? 'No events yet' : 'No events match'}
+            hint={
+              log.length === 0
+                ? 'Lifecycle events and state changes appear here as the app runs.'
+                : 'Try another filter or event kind.'
+            }
+          />
+        ) : (
+          <div className="card" data-list>
+            {rows.map((row) => {
+              const { entry } = row;
+              const key = instanceKey(entry);
+              return (
+                <button
+                  key={entry.key}
+                  type="button"
+                  className="row"
+                  data-row
+                  data-disposed={entry.kind === 'disposed' ? '' : undefined}
+                  title="Open in inspector"
+                  onClick={() => onOpen(entry)}
+                >
+                  <span className="row-icon" data-kind={entry.kind}>
+                    <Icon
+                      name={entry.kind === 'changed' ? 'dot' : entry.kind}
+                      size={14}
+                    />
+                  </span>
+                  <ClassMark className={entry.className} />
+                  <span className="row-text">
+                    <span className="row-primary">
+                      {entry.className}
+                      <span className="muted"> · {keyLabel(key)}</span>
+                    </span>
+                    <span className="row-meta mono">{meta(row)}</span>
+                  </span>
+                  <span className="row-end" title={clock(entry.at)}>
+                    {ago(entry.at, now)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 }

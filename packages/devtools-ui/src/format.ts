@@ -1,3 +1,4 @@
+import type { LogEntry } from '@blac/devtools-connect/client';
 import { isTagged, type Wire } from '@blac/devtools-connect/protocol';
 
 export interface Scalar {
@@ -5,16 +6,63 @@ export interface Scalar {
   kind: string;
 }
 
-export const clock = (at: number) => {
-  const d = new Date(at);
-  const ms = String(d.getMilliseconds()).padStart(3, '0');
-  return `${d.toLocaleTimeString([], { hour12: false })}.${ms}`;
-};
+export const time = (at: number) =>
+  new Date(at).toLocaleTimeString([], { hour12: false });
+
+export const clock = (at: number) =>
+  `${time(at)}.${String(new Date(at).getMilliseconds()).padStart(3, '0')}`;
+
+export const plural = (count: number, word: string) =>
+  `${count} ${word}${count === 1 ? '' : 's'}`;
+
+export function ago(at: number, now: number): string {
+  const s = Math.max(0, Math.round((now - at) / 1000));
+  if (s < 5) return 'just now';
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return new Date(at).toLocaleDateString();
+}
+
+export interface LogRow {
+  entry: LogEntry;
+  /** Events folded into this row; 1 for a single event. */
+  count: number;
+  first: number;
+}
+
+const BURST_MS = 1000;
 
 /**
- * An instance's key within its class: `CounterCubit:main` → `main`. Drops the
- * `#n` the agent appends to keep a re-created instance's id unique.
+ * Newest first, with back-to-back changes of one instance less than a second
+ * apart folded into one row.
  */
+export function logRows(log: readonly LogEntry[]): LogRow[] {
+  const rows: LogRow[] = [];
+  let last: LogRow | undefined;
+  for (let i = log.length - 1; i >= 0; i--) {
+    const entry = log[i];
+    if (
+      last &&
+      entry.kind === 'changed' &&
+      last.entry.kind === 'changed' &&
+      entry.id === last.entry.id &&
+      last.first - entry.at < BURST_MS
+    ) {
+      last.count++;
+      last.first = entry.at;
+      continue;
+    }
+    last = { entry, count: 1, first: entry.at };
+    rows.push(last);
+  }
+  return rows;
+}
+
+/** The suffix that keeps ids unique: `#n` for a duplicate, `#useBloc-n` for an isolated mount. */
+const SUFFIX = /#(?:useBloc-)?(\d+)$/;
+
+/** An instance's key within its class: `CounterCubit:main#2` → `main`. */
 export const instanceKey = ({
   id,
   className,
@@ -25,7 +73,45 @@ export const instanceKey = ({
   (id.startsWith(`${className}:`)
     ? id.slice(className.length + 1)
     : id
-  ).replace(/#\d+$/, '');
+  ).replace(SUFFIX, '');
+
+/** `2` for `CounterCubit:main#2`, so instances sharing a key stay apart. */
+export const instanceCopy = (id: string) => SUFFIX.exec(id)?.[1];
+
+const short = (text: string) =>
+  text.length > 16 ? `${text.slice(0, 8)}…${text.slice(-4)}` : text;
+
+/** A key built from JSON args, compacted: `{"id":"01a1e9fa-…"}` → `id 01a1e9fa…1520`. */
+export function keyLabel(key: string): string {
+  if (!key.startsWith('{')) return key;
+  try {
+    const args = JSON.parse(key) as Record<string, unknown>;
+    return Object.entries(args)
+      .map(
+        ([k, v]) =>
+          `${k} ${short(typeof v === 'string' ? v : JSON.stringify(v))}`,
+      )
+      .join(', ');
+  } catch {
+    return key;
+  }
+}
+
+/** A stable hue per class, so a class keeps its color across sessions. */
+export function classHue(className: string): number {
+  let hash = 0;
+  for (const char of className) hash = (hash * 31 + char.charCodeAt(0)) | 0;
+  return (Math.abs(hash) % 24) * 15;
+}
+
+/** Two letters, ignoring a `Bloc`/`Cubit` suffix: `ChatComposerCubit` → `CC`, `TodoBloc` → `TO`. */
+export function monogram(className: string): string {
+  const base = className.replace(/(Bloc|Cubit)$/, '') || className;
+  const caps = base.match(/[A-Z0-9]/g) ?? [];
+  return (
+    caps.length > 1 ? caps.slice(0, 2).join('') : base.slice(0, 2)
+  ).toUpperCase();
+}
 
 const str = (value: Wire | undefined) =>
   typeof value === 'object' ? '' : String(value ?? '');

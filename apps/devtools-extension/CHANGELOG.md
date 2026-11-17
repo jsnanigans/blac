@@ -12,7 +12,9 @@
 - The panel follows reloads and SPA navigation, keeps its selection and log
   across a reload of the same session, and reconnects after the service
   worker restarts.
-- Shares the `Panel` UI with the in-app overlay (`@blac/devtools-ui`).
+- Shares the `Panel` UI with the in-app overlay (`@blac/devtools-ui`):
+  redesigned with one-line instance rows, State / Changes / History views, a
+  log that folds bursts, keyboard navigation and a narrow single-pane layout.
 
 ## 2.0.3
 

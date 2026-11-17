@@ -40,7 +40,7 @@ afterEach(() => {
 describe('BlacDevtoolsUi', () => {
   it('connects to an agent installed after it opened', async () => {
     await act(async () => root.render(<BlacDevtoolsUi />));
-    expect(overlayText()).toContain('No BlaC DevTools agent');
+    expect(overlayText()).toContain('No devtools agent');
 
     const connect = vi.fn(() => () => {});
     g[AGENT_HOOK] = { connect };
@@ -53,7 +53,7 @@ describe('BlacDevtoolsUi', () => {
     });
 
     expect(connect).toHaveBeenCalledOnce();
-    expect(overlayText()).not.toContain('No BlaC DevTools agent');
+    expect(overlayText()).not.toContain('No devtools agent');
   });
 
   it('renders nothing in production', async () => {

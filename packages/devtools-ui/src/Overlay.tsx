@@ -5,11 +5,11 @@ import {
   type DevToolsClient,
 } from '@blac/devtools-connect/client';
 import { WINDOW_AGENT_SOURCE } from '@blac/devtools-connect/protocol';
-import { Panel, type PanelProps } from './Panel';
-import { CSS } from './styles';
+import { Panel, Shell, type Chrome, type Theme } from './Panel';
+import { Icon, Notice, read, write } from './ui';
 
 export interface BlacDevtoolsUiProps {
-  theme?: PanelProps['theme'];
+  theme?: Theme;
 }
 
 interface Box {
@@ -28,22 +28,6 @@ const BOX_KEY = 'blac-devtools-box';
 const TOGGLE_EVENT = 'blac-devtools-toggle';
 const MIN_W = 320;
 const MIN_H = 160;
-
-function read(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function write(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // storage unavailable
-  }
-}
 
 declare const process: { env: Record<string, string | undefined> };
 
@@ -114,7 +98,7 @@ function clampBox({ x, y, w, h }: Box): Box {
 
 function readBox(): Box {
   const stored = read(BOX_KEY);
-  const fallback = { x: Infinity, y: Infinity, w: 560, h: 360 };
+  const fallback = { x: Infinity, y: Infinity, w: 720, h: 440 };
   try {
     return clampBox({ ...fallback, ...(stored ? JSON.parse(stored) : {}) });
   } catch {
@@ -122,17 +106,15 @@ function readBox(): Box {
   }
 }
 
-function Content({ theme }: { theme: PanelProps['theme'] }) {
+function Content({ theme, chrome }: { theme: Theme; chrome?: Chrome }) {
   const client = useInPageClient();
-  if (client) return <Panel client={client} theme={theme} />;
+  if (client) return <Panel client={client} theme={theme} chrome={chrome} />;
   return (
-    <div className="bd" data-theme={theme}>
-      <style>{CSS}</style>
-      <p className="empty">
-        No BlaC DevTools agent in this page. Install createDevToolsAgent() and
-        reload.
-      </p>
-    </div>
+    <Shell theme={theme} chrome={chrome}>
+      <Notice tone="info" title="No devtools agent in this page">
+        Install <code>createDevToolsAgent()</code>, then reload.
+      </Notice>
+    </Shell>
   );
 }
 
@@ -141,7 +123,7 @@ function FloatingWindow({
   onPopOut,
   onClose,
 }: {
-  theme: PanelProps['theme'];
+  theme: Theme;
   onPopOut: (box: Box) => void;
   onClose: () => void;
 }) {
@@ -151,13 +133,13 @@ function FloatingWindow({
   );
   useEffect(() => write(BOX_KEY, JSON.stringify(box)), [box]);
 
-  const begin = (resize: boolean) => (e: PointerEvent<HTMLDivElement>) => {
-    if ((e.target as Element).closest('button')) return;
+  const begin = (resize: boolean) => (e: PointerEvent<HTMLElement>) => {
+    if ((e.target as Element).closest('button, input')) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     gesture.current = { resize, x: e.clientX, y: e.clientY, box };
   };
 
-  const track = (e: PointerEvent<HTMLDivElement>) => {
+  const track = (e: PointerEvent<HTMLElement>) => {
     const start = gesture.current;
     if (!start || e.buttons !== 1) return;
     const dx = e.clientX - start.x;
@@ -171,38 +153,45 @@ function FloatingWindow({
     );
   };
 
+  const chrome: Chrome = {
+    headProps: { onPointerDown: begin(false), onPointerMove: track },
+    actions: (
+      <>
+        {pictureInPicture() && (
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="Pop out"
+            title="Pop out into its own window"
+            onClick={() => onPopOut(box)}
+          >
+            <Icon name="pip" size={15} />
+          </button>
+        )}
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label="Close"
+          title="Close (Alt+D)"
+          onClick={onClose}
+        >
+          <Icon name="x" size={16} />
+        </button>
+      </>
+    ),
+  };
+
   return (
     <div
       className="bd-float"
       data-theme={theme}
       style={{ left: box.x, top: box.y, width: box.w, height: box.h }}
     >
-      <div
-        className="bd-bar"
-        onPointerDown={begin(false)}
-        onPointerMove={track}
-      >
-        <span className="bd-title">BlaC DevTools</span>
-        {pictureInPicture() && (
-          <button
-            type="button"
-            aria-label="Pop out"
-            title="Pop out (Picture-in-Picture)"
-            onClick={() => onPopOut(box)}
-          >
-            ⧉
-          </button>
-        )}
-        <button type="button" aria-label="Close" onClick={onClose}>
-          ×
-        </button>
-      </div>
-      <div className="bd-body">
-        <Content theme={theme} />
-      </div>
+      <Content theme={theme} chrome={chrome} />
       <div
         className="bd-grip"
         role="separator"
+        aria-label="Resize"
         onPointerDown={begin(true)}
         onPointerMove={track}
       />

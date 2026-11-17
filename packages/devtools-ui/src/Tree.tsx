@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Wire } from '@blac/devtools-connect/protocol';
 import type { Change } from './diff';
 import { children, scalar, summary } from './format';
+import { Icon } from './ui';
 
 export type Marks = ReadonlyMap<string, Change['kind']>;
 
@@ -27,13 +28,13 @@ function Node({ label, value, path, depth, marks }: NodeProps) {
   const key = label !== undefined && (
     <>
       <span className="key">{label}</span>
-      {': '}
+      <span className="sep">: </span>
     </>
   );
 
   if (leaf) {
     return (
-      <div className={`leaf ${mark ?? ''}`}>
+      <div className="leaf" data-mark={mark}>
         {key}
         <span className={`val ${leaf.kind}`}>{leaf.text}</span>
       </div>
@@ -44,11 +45,12 @@ function Node({ label, value, path, depth, marks }: NodeProps) {
     <div>
       <button
         type="button"
-        className={`node ${mark ?? (!open && hasMarkInside(marks, path) ? 'inside' : '')}`}
+        className={`node${!open && !mark && hasMarkInside(marks, path) ? ' inside' : ''}`}
+        data-mark={mark}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        <span className="caret">{open ? '▾' : '▸'}</span>
+        <Icon name="chevronRight" size={12} className="caret" />
         {key}
         {!open && <span className="muted">{summary(value)}</span>}
       </button>

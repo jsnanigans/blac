@@ -10,19 +10,13 @@ import { Panel } from './Panel';
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const meta = (
-  id: string,
-  className: string,
-  name: string,
-  disposedAt?: number,
-) => ({
+const meta = (id: string, className: string, name: string) => ({
   id,
   className,
   name,
   createdAt: 0,
   updatedAt: 0,
   version: 1,
-  disposedAt,
 });
 
 const base: ClientState = {
@@ -31,7 +25,6 @@ const base: ClientState = {
     meta('a', 'CounterBloc', 'main'),
     meta('b', 'CounterBloc', 'side'),
     meta('c', 'TodoBloc', 'todos'),
-    meta('d', 'TodoBloc', 'old', 5),
   ],
   selectedId: null,
   history: [],
@@ -75,11 +68,23 @@ afterEach(() => {
 });
 
 describe('Panel', () => {
-  it('groups instances, hides disposed and filters by text', () => {
+  it('groups instances and filters by text', () => {
     render(base);
     expect(
-      [...container.querySelectorAll('h3')].map((h) => h.textContent),
-    ).toEqual(['CounterBloc 2', 'TodoBloc 1']);
+      [...container.querySelectorAll('[data-row]')].map((r) =>
+        r.textContent?.split(' · ').slice(0, -1).join(' · '),
+      ),
+    ).toEqual([
+      'a · main · v1',
+      'b · side · v1',
+      'TOTodoBloc · c · todos · v1',
+    ]);
+
+    const header = container.querySelector('.group .row');
+    expect(header?.textContent).toBe('COCounterBloc2');
+    click(header);
+    expect(container.querySelectorAll('[data-row]')).toHaveLength(1);
+    click(header);
 
     const input = container.querySelector(
       'input[type=search]',
@@ -91,7 +96,7 @@ describe('Panel', () => {
       )?.set?.call(input, 'side');
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
-    expect(container.querySelectorAll('.item')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-row]')).toHaveLength(1);
   });
 
   it('selects an instance through the client', () => {
@@ -100,7 +105,7 @@ describe('Panel', () => {
     expect(client.select).toHaveBeenCalledWith('c');
   });
 
-  it('shows state and the diff for a chosen history entry', () => {
+  it('diffs a chosen history entry against the one before', () => {
     const entry = (version: number, count: number) => ({
       version,
       at: version,
@@ -112,16 +117,42 @@ describe('Panel', () => {
       selectedId: 'a',
       history: [entry(0, 0), entry(1, 1), entry(2, 5)],
     });
-    expect(container.textContent).toContain('Changes vs v1');
-
-    click(button('v1'));
-    expect(container.textContent).toContain('Changes vs v0');
+    click(button('Changes'));
     expect(container.querySelector('.changes')?.textContent).toContain('count');
+    expect(container.textContent).toContain('v1 → v2');
+
+    click(button('History'));
+    click(
+      [...container.querySelectorAll('.insp-body .row')].find((row) =>
+        row.textContent?.startsWith('v1'),
+      ),
+    );
+    click(button('Changes'));
+    expect(container.textContent).toContain('v0 → v1');
+    expect(container.textContent).toContain('Viewing v1');
+  });
+
+  it('moves through instances with j and switches tabs with 2', () => {
+    const client = render(base);
+    const row = button('main') as HTMLElement;
+    const key = (k: string) =>
+      act(() => {
+        document.activeElement?.dispatchEvent(
+          new KeyboardEvent('keydown', { key: k, bubbles: true }),
+        );
+      });
+    row.focus();
+
+    key('j');
+    expect(client.select).toHaveBeenLastCalledWith('b');
+
+    key('2');
+    expect(container.textContent).toContain('No events yet');
   });
 
   it('shows the version mismatch only', () => {
     render({ ...base, status: 'incompatible', agentProtocol: 9 });
-    expect(container.textContent).toContain('agent v9 / panel v1');
-    expect(container.querySelector('nav')).toBeNull();
+    expect(container.textContent).toContain('protocol v9, this panel v1');
+    expect(container.querySelector('.seg')).toBeNull();
   });
 });
