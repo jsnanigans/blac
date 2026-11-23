@@ -15,6 +15,7 @@ export type {
   SystemEvent,
   SystemEventPayloads,
   DepHandle,
+  PatchOptions,
 } from './core/StateContainer';
 export { Cubit } from './core/Cubit';
 

@@ -1,4 +1,4 @@
-import { StateContainer } from './StateContainer';
+import { StateContainer, type PatchOptions } from './StateContainer';
 import type { DeepPartial } from '@dirtytalk/structural';
 
 /**
@@ -23,8 +23,13 @@ export abstract class Cubit<
     super.emit(next);
   }
 
-  override patch(partial: DeepPartial<S>): void {
-    super.patch(partial);
+  override patch(partial: DeepPartial<S>, options?: { merge?: 'deep' }): void;
+  override patch(partial: Partial<S>, options: { merge: 'shallow' }): void;
+  override patch(
+    partial: DeepPartial<S> | Partial<S>,
+    options?: PatchOptions,
+  ): void {
+    super.patch(partial as Partial<S>, options as { merge: 'shallow' });
   }
 
   override update(fn: (state: S) => S): void {

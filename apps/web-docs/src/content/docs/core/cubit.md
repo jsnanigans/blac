@@ -158,24 +158,34 @@ class CounterCubit extends Cubit<{ count: number }> {
 }
 ```
 
-### `patch(partial)`
+### `patch(partial, options?)`
 
 Deep-merge partial changes into the current state. Use when you want to update some fields without touching others.
 
 ```ts
-patch(partial: DeepPartial<S>): void
+patch(partial: DeepPartial<S>, options?: { merge?: 'deep' }): void
+patch(partial: Partial<S>, options: { merge: 'shallow' }): void
 ```
 
-| Parameter | Type             | Required | Description                                                                                                                                                               |
-| --------- | ---------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `partial` | `DeepPartial<S>` | yes      | The subtree to merge. Nested objects can be patched without spreading the full structure; arrays, `Date`, `Map`, `Set`, and class instances are treated as atomic leaves. |
+| Parameter       | Type                  | Required | Description                                                                                                                                                               |
+| --------------- | --------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `partial`       | `DeepPartial<S>`      | yes      | The subtree to merge. Nested objects can be patched without spreading the full structure; arrays, `Date`, `Map`, `Set`, and class instances are treated as atomic leaves. |
+| `options.merge` | `'deep' \| 'shallow'` | no       | `'deep'` (default) merges into nested objects. `'shallow'` replaces each given top-level key, so `partial` takes complete values (`Partial<S>`).                          |
 
 **Returns:** `void`.
+
+**Replace vs merge.** A deep merge cannot remove nested keys: `patch({ filters: {} })` keeps every existing filter, and patching a record without one of its entries keeps that entry. Use `{ merge: 'shallow' }` for those writes:
+
+```ts
+this.patch({ filters: {}, page: 0 }, { merge: 'shallow' });
+```
+
+A shallow patch is `emit({ ...state, ...partial })`, so it goes through `emit`'s equality check and diff. It is a no-op when every given key is `Object.is`-equal, and it throws for array state (use `emit`).
 
 **Behavior.** `patch` deep-merges along plain-object branches and value-filters the result: a path is marked dirty only if its value actually changed. It skips the update entirely if all provided top-level values are already `Object.is`-equal to the current state (a shallow pre-spread no-op check), and `deepMerge` also returns the previous state by reference on a deep no-op.
 
 :::caution[patch ignores the equality function]
-The per-class/global equality function applies to `emit` and `update` only. `patch` does its own per-key/per-path `Object.is` filtering instead, so a custom `equality` will not change how `patch` decides what counts as a change.
+The per-class/global equality function applies to `emit`, `update` and shallow `patch` only. A deep `patch` does its own per-key/per-path `Object.is` filtering instead, so a custom `equality` will not change how `patch` decides what counts as a change.
 :::
 
 ```ts twoslash
@@ -567,18 +577,18 @@ These are available inside your Cubit class but not from the outside:
 
 ## Public properties
 
-| Property                     | Type                     | Description                                                                                                               |
-| ---------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `state`                      | `Readonly<S>`            | Current state value                                                                                                       |
-| `$blac`                      | `BlacMeta<S>`            | Identity and lifecycle metadata. See the table below.                                                                     |
-| `$blac.name`                 | `string`                 | Display name (defaults to class name)                                                                                     |
-| `$blac.id`                   | `string`                 | Unique instance identifier                                                                                                |
-| `$blac.createdAt`            | `number`                 | Creation timestamp                                                                                                        |
-| `$blac.disposed`             | `boolean`                | Whether the instance has been disposed                                                                                    |
-| `$blac.registry`             | `StateContainerRegistry` | The registry that owns this instance (the global one for a bare `new`)                                                    |
-| `$blac.hydration`            | `BlacHydration<S>`       | Hydration lifecycle object. See below.                                                                                    |
+| Property                     | Type                     | Description                                                                                                                    |
+| ---------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `state`                      | `Readonly<S>`            | Current state value                                                                                                            |
+| `$blac`                      | `BlacMeta<S>`            | Identity and lifecycle metadata. See the table below.                                                                          |
+| `$blac.name`                 | `string`                 | Display name (defaults to class name)                                                                                          |
+| `$blac.id`                   | `string`                 | Unique instance identifier                                                                                                     |
+| `$blac.createdAt`            | `number`                 | Creation timestamp                                                                                                             |
+| `$blac.disposed`             | `boolean`                | Whether the instance has been disposed                                                                                         |
+| `$blac.registry`             | `StateContainerRegistry` | The registry that owns this instance (the global one for a bare `new`)                                                         |
+| `$blac.hydration`            | `BlacHydration<S>`       | Hydration lifecycle object. See below.                                                                                         |
 | `$blac.hydration.status`     | `HydrationStatus`        | Current hydration phase (`'idle'` \| `'hydrating'` \| `'hydrated'` \| `'error'`); see [Persistence](/docs/plugins/persistence) |
-| `$blac.hydration.isHydrated` | `boolean`                | Shorthand: `status === 'hydrated'`                                                                                        |
+| `$blac.hydration.isHydrated` | `boolean`                | Shorthand: `status === 'hydrated'`                                                                                             |
 | `$blac.hydration.wait()`     | `Promise<void>`          | Resolves once hydration settles; see [Persistence](/docs/plugins/persistence)                                                  |
 
 ## Async methods

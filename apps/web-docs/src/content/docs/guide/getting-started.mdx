@@ -84,7 +84,7 @@ Three ways to change state:
 | `patch(partial)` | Deep-merge partial changes (`DeepPartial<S>`) | You want to update some fields and keep the rest |
 
 :::caution[`emit` and `update` replace; only `patch` merges]
-`emit(next)` and `update(fn)` set state to _exactly_ what you return — any key you forget to include is dropped. `patch(partial)` deep-merges, so the keys you omit survive. The `increment` above is fine because `count` is the only key; for multi-field state, either spread the previous state (`update((s) => ({ ...s, count: s.count + 1 }))`) or use `patch`.
+`emit(next)` and `update(fn)` set state to _exactly_ what you return — any key you forget to include is dropped. `patch(partial)` deep-merges, so the keys you omit survive (pass `{ merge: 'shallow' }` to replace nested objects instead). The `increment` above is fine because `count` is the only key; for multi-field state, either spread the previous state (`update((s) => ({ ...s, count: s.count + 1 }))`) or use `patch`.
 :::
 
 :::tip[Define methods as arrow-function fields]
