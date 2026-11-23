@@ -1,6 +1,6 @@
 {
   "name": "@blac/core",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "Type-safe, class-based state management with proxy tracking and plugin system",

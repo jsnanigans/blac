@@ -1,5 +1,13 @@
 # @blac/devtools-ui
 
+## 2.0.27
+
+### Patch Changes
+
+- 46c1fdc: DevTools shows each instance's lifetime (`keepAlive` / `isolated`), owners, hydration status and the refs holding it in a new **Info** view, marks idle and hydrating instances in the list, warns about classes with short-lived instances, exposes the selected instance as `$bloc` in the page console, and can download an instance's recorded history.
+- Updated dependencies [46c1fdc]
+  - @blac/devtools-connect@2.0.27
+
 ## 2.0.26
 
 ### Patch Changes
