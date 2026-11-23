@@ -236,7 +236,8 @@ Where do the changed paths come from? The mutators compute them:
 
 - **`emit(next)`** installs a new immutable state, then diffs to find which
   observed paths changed value (Stage 3 covers the skeleton bound on that diff).
-- **`patch(partial)`** is exactly `emit(deepMerge(state, partial))`: it goes
+- **`patch(partial)`** is exactly `emit(deepMerge(state, partial))` (with
+  `{ merge: 'shallow' }`, `emit({ ...state, ...partial })`): it goes
   through the same diff as `emit`, which is value-filtered and prunes unchanged
   references. So an over-spread patch that re-sets a whole parent when one field
   changed does not over-wake the siblings, and a patch that replaces an array
@@ -398,7 +399,10 @@ const { interner } = bloc;
 const a = bloc.consume(() => console.log('A woke'));
 a.setPaths(new Set([interner.intern('user.name')]));
 const b = bloc.consume((dirty) =>
-  console.log('B woke', [...(dirty as Set<number>)].map((id) => interner.lookup(id))),
+  console.log(
+    'B woke',
+    [...(dirty as Set<number>)].map((id) => interner.lookup(id)),
+  ),
 );
 b.setPaths(new Set([interner.intern('user.email')]));
 

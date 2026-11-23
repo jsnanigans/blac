@@ -26,6 +26,8 @@ import { type EqualityFn, getBlacConfig } from '../config';
 import { getClassEquality, getBlacName } from '../utils/static-props';
 import { BlacMeta, META_BRAND, type BlacHydration } from './meta';
 
+export type PatchOptions = { merge?: 'deep' | 'shallow' };
+
 /**
  * Brand symbol carried (non-enumerable) on every handle returned by
  * `depend()`. Framework adapters (`@blac/react`) use this to detect handles
@@ -620,13 +622,44 @@ export abstract class StateContainer<
     this.applyState(next, 'default');
   }
 
-  /** `super.patch` merges and calls `emit`, so only the warning differs. */
-  protected override patch(partial: DeepPartial<S>): void {
+  /**
+   * Deep-merges by default. `{ merge: 'shallow' }` replaces each given
+   * top-level key instead, for writes that must drop nested keys (reset a
+   * record to `{}`, remove an entry).
+   */
+  protected override patch(
+    partial: DeepPartial<S>,
+    options?: { merge?: 'deep' },
+  ): void;
+  protected override patch(
+    partial: Partial<S>,
+    options: { merge: 'shallow' },
+  ): void;
+  protected override patch(
+    partial: DeepPartial<S> | Partial<S>,
+    options?: PatchOptions,
+  ): void {
     if (this._disposed) {
       this._warnDisposedMutation('patch');
       return;
     }
-    super.patch(partial);
+    if (options?.merge === 'shallow') {
+      this.shallowPatch(partial as Partial<S>);
+      return;
+    }
+    super.patch(partial as DeepPartial<S>);
+  }
+
+  private shallowPatch(partial: Partial<S>): void {
+    const prev = super.state;
+    if (Array.isArray(prev)) {
+      throw new TypeError(
+        `[blac] ${this._name}: patch(..., { merge: 'shallow' }) needs object state, got an array. Use emit().`,
+      );
+    }
+    const keys = Object.keys(partial) as Array<keyof S>;
+    if (keys.every((key) => Object.is(partial[key], prev[key]))) return;
+    this.emit({ ...prev, ...partial });
   }
 
   private applyState(next: S, source: 'default' | 'hydration'): void {

@@ -142,6 +142,17 @@ const fixture = {
 
 // ============ Tests ============
 
+interface FilterState {
+  filters: Record<string, string>;
+  page: number;
+}
+
+class FilterCubit extends Cubit<FilterState> {
+  constructor() {
+    super({ filters: { status: 'open', owner: 'me' }, page: 2 });
+  }
+}
+
 describe('Cubit', () => {
   blacTestSetup();
 
@@ -211,6 +222,67 @@ describe('Cubit', () => {
         expect(listener).toHaveBeenCalledWith(
           expect.objectContaining({ email: 'newemail@example.com' }),
         );
+      });
+
+      describe("{ merge: 'shallow' }", () => {
+        it('replaces a nested object that a deep patch would merge into', () => {
+          const deep = new FilterCubit();
+          deep.patch({ filters: {} });
+          expect(deep.state.filters).toEqual({ status: 'open', owner: 'me' });
+
+          const shallow = new FilterCubit();
+          shallow.patch({ filters: {}, page: 0 }, { merge: 'shallow' });
+          expect(shallow.state).toEqual({ filters: {}, page: 0 });
+        });
+
+        it('drops a removed record key', () => {
+          const cubit = new FilterCubit();
+          const { owner: _owner, ...rest } = cubit.state.filters;
+
+          cubit.patch({ filters: rest }, { merge: 'shallow' });
+
+          expect(cubit.state.filters).toEqual({ status: 'open' });
+        });
+
+        it('does not notify when every given key is unchanged', async () => {
+          const cubit = new FilterCubit();
+          const listener = vi.fn();
+          cubit.subscribe(listener);
+
+          cubit.patch(
+            { filters: cubit.state.filters, page: 2 },
+            { merge: 'shallow' },
+          );
+          await flush();
+
+          expect(listener).not.toHaveBeenCalled();
+        });
+
+        it('requires complete values for the keys it names', () => {
+          class SettingsCubit extends Cubit<{
+            settings: { theme: string; size: number };
+          }> {
+            constructor() {
+              super({ settings: { theme: 'dark', size: 1 } });
+            }
+          }
+          const cubit = new SettingsCubit();
+
+          cubit.patch({ settings: { theme: 'light' } });
+          // @ts-expect-error a shallow patch would drop `size`
+          cubit.patch({ settings: { theme: 'light' } }, { merge: 'shallow' });
+        });
+
+        it('throws for array state', () => {
+          class ListCubit extends Cubit<number[]> {
+            constructor() {
+              super([1]);
+            }
+          }
+          expect(() =>
+            new ListCubit().patch([2], { merge: 'shallow' }),
+          ).toThrow(TypeError);
+        });
       });
 
       it('should work alongside emit method', async () => {
